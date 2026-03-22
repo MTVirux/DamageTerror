@@ -23,7 +23,7 @@ public class Configuration : IPluginConfiguration
     /// </summary>
     public bool PreferIpc { get; set; } = true;
 
-    // ===== Display Settings =====
+    // ===== Window Settings =====
 
     /// <summary>
     /// If true, the main window is opened on plugin start.
@@ -56,6 +56,26 @@ public class Configuration : IPluginConfiguration
     public bool ShowHps { get; set; } = false;
 
     /// <summary>
+    /// If true, the main window is hidden when the player is not in combat.
+    /// </summary>
+    public bool HideOutOfCombat { get; set; } = false;
+
+    /// <summary>
+    /// Seconds to wait after leaving combat before hiding the window (0 = immediate).
+    /// </summary>
+    public float HideOutOfCombatDelay { get; set; } = 5f;
+
+    /// <summary>
+    /// If true, pressing ESC will not close the main meter window.
+    /// </summary>
+    public bool IgnoreEscClose { get; set; } = true;
+
+    /// <summary>
+    /// If true, the ImGui window title bar / header is hidden on the main window.
+    /// </summary>
+    public bool HideWindowHeader { get; set; } = false;
+
+    /// <summary>
     /// Alpha (opacity) for the colored DPS/HPS bars. 0.0 = transparent, 1.0 = opaque.
     /// </summary>
     public float BarAlpha { get; set; } = 0.7f;
@@ -71,6 +91,7 @@ public class Configuration : IPluginConfiguration
     public Vector4 BarBackgroundColor { get; set; } = new(0.15f, 0.15f, 0.15f, 1.0f);
     public Vector4 NameTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 ValueTextColor { get; set; } = new(1f, 1f, 1f, 1f);
+    public Vector4 WindowBackgroundColor { get; set; } = new(0.06f, 0.06f, 0.06f, 0.94f);
 
     // ===== Customization — Bar Appearance =====
 
@@ -81,11 +102,18 @@ public class Configuration : IPluginConfiguration
 
     // ===== Customization — Bar Info =====
 
+    public bool ShowMeterHeader { get; set; } = true;
     public bool ShowNameOnBar { get; set; } = true;
+    public bool ShowYouOnBar { get; set; } = true;
+    public NameDisplayFormat SelfNameFormat { get; set; } = NameDisplayFormat.FullName;
+    public NameDisplayFormat OthersNameFormat { get; set; } = NameDisplayFormat.FullName;
     public bool ShowValueOnBar { get; set; } = true;
     public bool ShowDamagePercentOnBar { get; set; } = false;
     public bool ShowJobAbbrevOnBar { get; set; } = false;
     public bool ShowRankNumber { get; set; } = false;
+    public bool ShowDirectHitOnBar { get; set; } = false;
+    public bool ShowCritOnBar { get; set; } = false;
+    public bool ShowCritDirectHitOnBar { get; set; } = false;
 
     // ===== Customization — Detail Panel =====
 
@@ -95,6 +123,25 @@ public class Configuration : IPluginConfiguration
     public bool DetailShowOverheal { get; set; } = true;
     public bool DetailShowMaxHit { get; set; } = true;
     public bool DetailShowDpsTrend { get; set; } = true;
+    public bool DetailShowSkillBreakdown { get; set; } = true;
+
+    /// <summary>
+    /// Maximum number of skills to show in each breakdown (0 = show all).
+    /// </summary>
+    public int MaxSkillBreakdownCount { get; set; } = 0;
+
+    // ===== Customization — Skill Breakdown Colors =====
+
+    public Vector4 SkillDamageFillColor { get; set; } = new(0.35f, 0.35f, 0.55f, 0.7f);
+    public Vector4 SkillHealingFillColor { get; set; } = new(0.25f, 0.50f, 0.30f, 0.7f);
+    public Vector4 SkillRowBackgroundColor { get; set; } = new(0.12f, 0.12f, 0.12f, 0.6f);
+    public Vector4 SkillTextColor { get; set; } = new(1f, 1f, 1f, 0.9f);
+    public Vector4 SkillHeaderTextColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
+
+    // ===== Customization — Skill Breakdown Appearance =====
+
+    public float SkillRowHeight { get; set; } = 14f;
+    public float SkillColumnPadding { get; set; } = 6f;
 
     // ===== Window Settings =====
 
