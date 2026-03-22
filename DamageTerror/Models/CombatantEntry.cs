@@ -38,4 +38,10 @@ public class CombatantEntry
     public double Last30Dps { get; set; }
 
     public double Last60Dps { get; set; }
+
+    public List<SkillEntry> Skills { get; set; } = new();
+
+    public List<SkillEntry> HealingSkills { get; set; } = new();
+
+    public bool IsLocalPlayer { get; set; }
 }
