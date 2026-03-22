@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using Newtonsoft.Json;
 
 namespace DamageTerror.Services;
 
@@ -13,6 +14,8 @@ public class EncounterStore
     private readonly List<EncounterSnapshot> history = new();
     private EncounterSnapshot? active;
     private bool wasActive;
+    private string? savePath;
+    private bool dirty;
 
     public EncounterStore(int maxHistory)
     {
@@ -73,10 +76,11 @@ public class EncounterStore
     {
         lock (syncLock)
         {
-            if (!snapshot.Encounter.IsActive && wasActive && active != null)
+            if (snapshot.Encounter.IsActive && !wasActive && active != null)
             {
-                // Encounter ended — archive the previous active encounter
+                // New encounter started — archive the previous encounter
                 history.Add(active);
+                dirty = true;
 
                 // Trim history if needed
                 while (history.Count > maxHistory)
@@ -85,6 +89,21 @@ public class EncounterStore
 
             active = snapshot;
             wasActive = snapshot.Encounter.IsActive;
+        }
+    }
+
+    /// <summary>
+    /// Remove a history encounter by index.
+    /// </summary>
+    public void RemoveHistory(int index)
+    {
+        lock (syncLock)
+        {
+            if (index >= 0 && index < history.Count)
+            {
+                history.RemoveAt(index);
+                dirty = true;
+            }
         }
     }
 
@@ -98,6 +117,87 @@ public class EncounterStore
             history.Clear();
             active = null;
             wasActive = false;
+            dirty = true;
+        }
+    }
+
+    /// <summary>
+    /// Set the file path used for persisting encounter history.
+    /// </summary>
+    public void SetSavePath(string path)
+    {
+        savePath = path;
+    }
+
+    /// <summary>
+    /// Load encounter history from disk. Should be called once at startup.
+    /// </summary>
+    public void Load()
+    {
+        if (string.IsNullOrEmpty(savePath) || !System.IO.File.Exists(savePath))
+            return;
+
+        try
+        {
+            var json = System.IO.File.ReadAllText(savePath);
+            var loaded = JsonConvert.DeserializeObject<List<EncounterSnapshot>>(json);
+            if (loaded != null)
+            {
+                lock (syncLock)
+                {
+                    history.Clear();
+                    history.AddRange(loaded);
+
+                    // Trim to limit
+                    while (history.Count > maxHistory)
+                        history.RemoveAt(0);
+                }
+            }
+        }
+        catch
+        {
+            // If the file is corrupt, just start fresh
+        }
+    }
+
+    /// <summary>
+    /// Save encounter history to disk. Only writes if data has changed.
+    /// </summary>
+    public void Save(bool force = false)
+    {
+        if (string.IsNullOrEmpty(savePath))
+            return;
+
+        lock (syncLock)
+        {
+            if (!force && !dirty)
+                return;
+
+            dirty = false;
+        }
+
+        try
+        {
+            List<EncounterSnapshot> snapshot;
+            lock (syncLock)
+            {
+                snapshot = new List<EncounterSnapshot>(history);
+            }
+
+            var json = JsonConvert.SerializeObject(snapshot, Formatting.None, new JsonSerializerSettings
+            {
+                DefaultValueHandling = DefaultValueHandling.Ignore,
+            });
+
+            var dir = System.IO.Path.GetDirectoryName(savePath);
+            if (!string.IsNullOrEmpty(dir))
+                System.IO.Directory.CreateDirectory(dir);
+
+            System.IO.File.WriteAllText(savePath, json);
+        }
+        catch
+        {
+            // Best-effort save
         }
     }
 }
