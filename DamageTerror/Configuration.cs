@@ -60,6 +60,42 @@ public class Configuration : IPluginConfiguration
     /// </summary>
     public float BarAlpha { get; set; } = 0.7f;
 
+    // ===== Customization — Role Colors =====
+
+    public Vector4 TankColor { get; set; } = new(0.2f, 0.4f, 0.8f, 1.0f);
+    public Vector4 HealerColor { get; set; } = new(0.2f, 0.7f, 0.3f, 1.0f);
+    public Vector4 MeleeDpsColor { get; set; } = new(0.8f, 0.2f, 0.2f, 1.0f);
+    public Vector4 RangedDpsColor { get; set; } = new(0.9f, 0.5f, 0.2f, 1.0f);
+    public Vector4 CasterDpsColor { get; set; } = new(0.6f, 0.3f, 0.8f, 1.0f);
+    public Vector4 DefaultJobColor { get; set; } = new(0.5f, 0.5f, 0.5f, 1.0f);
+    public Vector4 BarBackgroundColor { get; set; } = new(0.15f, 0.15f, 0.15f, 1.0f);
+    public Vector4 NameTextColor { get; set; } = new(1f, 1f, 1f, 1f);
+    public Vector4 ValueTextColor { get; set; } = new(1f, 1f, 1f, 1f);
+
+    // ===== Customization — Bar Appearance =====
+
+    public float BarHeight { get; set; } = 22.0f;
+    public float BarSpacing { get; set; } = 1.0f;
+    public float BarRounding { get; set; } = 0.0f;
+    public float IconSize { get; set; } = 16.0f;
+
+    // ===== Customization — Bar Info =====
+
+    public bool ShowNameOnBar { get; set; } = true;
+    public bool ShowValueOnBar { get; set; } = true;
+    public bool ShowDamagePercentOnBar { get; set; } = false;
+    public bool ShowJobAbbrevOnBar { get; set; } = false;
+    public bool ShowRankNumber { get; set; } = false;
+
+    // ===== Customization — Detail Panel =====
+
+    public bool DetailShowDamage { get; set; } = true;
+    public bool DetailShowCritDhStats { get; set; } = true;
+    public bool DetailShowDeaths { get; set; } = true;
+    public bool DetailShowOverheal { get; set; } = true;
+    public bool DetailShowMaxHit { get; set; } = true;
+    public bool DetailShowDpsTrend { get; set; } = true;
+
     // ===== Window Settings =====
 
     /// <summary>

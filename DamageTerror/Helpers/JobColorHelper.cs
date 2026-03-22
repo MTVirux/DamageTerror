@@ -2,17 +2,10 @@ namespace DamageTerror.Helpers;
 
 /// <summary>
 /// Maps FFXIV job roles to colors for the damage meter bars.
+/// Supports config-overridden colors and hardcoded defaults.
 /// </summary>
 public static class JobColorHelper
 {
-    // Role colors (RGBA as Vector4)
-    private static readonly Vector4 TankColor = new(0.2f, 0.4f, 0.8f, 1.0f);       // Blue
-    private static readonly Vector4 HealerColor = new(0.2f, 0.7f, 0.3f, 1.0f);     // Green
-    private static readonly Vector4 MeleeDpsColor = new(0.8f, 0.2f, 0.2f, 1.0f);   // Red
-    private static readonly Vector4 RangedDpsColor = new(0.9f, 0.5f, 0.2f, 1.0f);  // Orange
-    private static readonly Vector4 CasterDpsColor = new(0.6f, 0.3f, 0.8f, 1.0f);  // Purple
-    private static readonly Vector4 DefaultColor = new(0.5f, 0.5f, 0.5f, 1.0f);    // Grey
-
     // Tank jobs
     private static readonly HashSet<string> Tanks = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -46,28 +39,51 @@ public static class JobColorHelper
     };
 
     /// <summary>
-    /// Returns the role color for a given job abbreviation as used by ACT/IINACT.
+    /// Returns the role for a given job abbreviation.
     /// </summary>
-    public static Vector4 GetColor(string job)
+    public static JobRole GetRole(string job)
     {
-        if (string.IsNullOrEmpty(job))
-            return DefaultColor;
-
-        if (Tanks.Contains(job)) return TankColor;
-        if (Healers.Contains(job)) return HealerColor;
-        if (MeleeDps.Contains(job)) return MeleeDpsColor;
-        if (RangedDps.Contains(job)) return RangedDpsColor;
-        if (CasterDps.Contains(job)) return CasterDpsColor;
-
-        return DefaultColor;
+        if (string.IsNullOrEmpty(job)) return JobRole.Default;
+        if (Tanks.Contains(job)) return JobRole.Tank;
+        if (Healers.Contains(job)) return JobRole.Healer;
+        if (MeleeDps.Contains(job)) return JobRole.MeleeDps;
+        if (RangedDps.Contains(job)) return JobRole.RangedDps;
+        if (CasterDps.Contains(job)) return JobRole.CasterDps;
+        return JobRole.Default;
     }
 
     /// <summary>
-    /// Returns a darkened version of the job color, suitable for bar backgrounds.
+    /// Returns the role color for a given job, using config overrides.
     /// </summary>
-    public static Vector4 GetBarColor(string job, float alpha)
+    public static Vector4 GetColor(string job, Configuration config)
     {
-        var c = GetColor(job);
+        return GetRole(job) switch
+        {
+            JobRole.Tank => config.TankColor,
+            JobRole.Healer => config.HealerColor,
+            JobRole.MeleeDps => config.MeleeDpsColor,
+            JobRole.RangedDps => config.RangedDpsColor,
+            JobRole.CasterDps => config.CasterDpsColor,
+            _ => config.DefaultJobColor,
+        };
+    }
+
+    /// <summary>
+    /// Returns a darkened version of the job color, suitable for bar fills.
+    /// </summary>
+    public static Vector4 GetBarColor(string job, float alpha, Configuration config)
+    {
+        var c = GetColor(job, config);
         return new Vector4(c.X * 0.8f, c.Y * 0.8f, c.Z * 0.8f, alpha);
     }
+}
+
+public enum JobRole
+{
+    Tank,
+    Healer,
+    MeleeDps,
+    RangedDps,
+    CasterDps,
+    Default,
 }

@@ -54,7 +54,7 @@ public class MainWindow : Window, IDisposable
 
         this.headerComponent = new EncounterHeaderComponent(plugin.DataService);
         this.barComponent = new CombatantBarComponent(plugin.Config, textureProvider);
-        this.detailPanel = new CombatantDetailPanel();
+        this.detailPanel = new CombatantDetailPanel(plugin.Config);
 
         // Settings button
         TitleBarButtons.Add(new TitleBarButton

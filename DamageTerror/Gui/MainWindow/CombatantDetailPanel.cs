@@ -8,7 +8,13 @@ namespace DamageTerror.Gui.MainWindow;
 /// </summary>
 public class CombatantDetailPanel
 {
+    private readonly Configuration config;
     private int expandedIndex = -1;
+
+    public CombatantDetailPanel(Configuration config)
+    {
+        this.config = config;
+    }
 
     /// <summary>
     /// Toggle expansion of a combatant's detail panel.
@@ -34,49 +40,58 @@ public class CombatantDetailPanel
         ImGui.Indent(8.0f);
 
         // Row 1: Damage stats
-        ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Damage:");
-        ImGui.SameLine();
-        ImGui.TextUnformatted($"{combatant.Damage:N0}  ({combatant.DamagePercent})");
+        if (config.DetailShowDamage)
+        {
+            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Damage:");
+            ImGui.SameLine();
+            ImGui.TextUnformatted($"{combatant.Damage:N0}  ({combatant.DamagePercent})");
+        }
 
         // Row 2: Crit/DH stats
-        ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Crit:");
-        ImGui.SameLine();
-        ImGui.TextUnformatted($"{combatant.CritPct:F1}%");
-        ImGui.SameLine();
-        ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "  DH:");
-        ImGui.SameLine();
-        ImGui.TextUnformatted($"{combatant.DirectHitPct:F1}%");
-        ImGui.SameLine();
-        ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "  CDH:");
-        ImGui.SameLine();
-        ImGui.TextUnformatted($"{combatant.CritDirectHitPct:F1}%");
+        if (config.DetailShowCritDhStats)
+        {
+            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Crit:");
+            ImGui.SameLine();
+            ImGui.TextUnformatted($"{combatant.CritPct:F1}%");
+            ImGui.SameLine();
+            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "  DH:");
+            ImGui.SameLine();
+            ImGui.TextUnformatted($"{combatant.DirectHitPct:F1}%");
+            ImGui.SameLine();
+            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "  CDH:");
+            ImGui.SameLine();
+            ImGui.TextUnformatted($"{combatant.CritDirectHitPct:F1}%");
+        }
 
         // Row 3: Deaths and Overheal
-        ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Deaths:");
-        ImGui.SameLine();
-        if (combatant.Deaths > 0)
-            ImGui.TextColored(new Vector4(1f, 0.3f, 0.3f, 1f), combatant.Deaths.ToString());
-        else
-            ImGui.TextUnformatted("0");
-
-        if (combatant.OverhealPct > 0)
+        if (config.DetailShowDeaths)
         {
+            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Deaths:");
             ImGui.SameLine();
+            if (combatant.Deaths > 0)
+                ImGui.TextColored(new Vector4(1f, 0.3f, 0.3f, 1f), combatant.Deaths.ToString());
+            else
+                ImGui.TextUnformatted("0");
+        }
+
+        if (config.DetailShowOverheal && combatant.OverhealPct > 0)
+        {
+            if (config.DetailShowDeaths) ImGui.SameLine();
             ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "  Overheal:");
             ImGui.SameLine();
             ImGui.TextUnformatted($"{combatant.OverhealPct:F1}%");
         }
 
         // Row 4: Max Hit
-        if (!string.IsNullOrEmpty(combatant.MaxHit))
+        if (config.DetailShowMaxHit && !string.IsNullOrEmpty(combatant.MaxHit))
         {
             ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Max Hit:");
             ImGui.SameLine();
             ImGui.TextUnformatted($"{combatant.MaxHit} ({combatant.MaxHitDamage:N0})");
         }
 
-        // Row 5: DPS trend (Last 10/30/60)
-        if (combatant.Last10Dps > 0 || combatant.Last30Dps > 0 || combatant.Last60Dps > 0)
+        // Row 5: DPS trend
+        if (config.DetailShowDpsTrend && (combatant.Last10Dps > 0 || combatant.Last30Dps > 0 || combatant.Last60Dps > 0))
         {
             ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "DPS 10s/30s/60s:");
             ImGui.SameLine();
