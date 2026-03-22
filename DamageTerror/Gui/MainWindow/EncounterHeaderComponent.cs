@@ -37,25 +37,8 @@ public class EncounterHeaderComponent : IUIComponent
         var totalCount = dataService.Store.TotalCount;
         var encounter = SelectedEncounter;
 
-        var windowWidth = ImGui.GetContentRegionAvail().X;
-
-        // Left arrow
-        if (totalCount > 1)
-        {
-            var canGoLeft = selectedIndex == -1 ? totalCount > 1 : selectedIndex > 0;
-            if (!canGoLeft) ImGui.BeginDisabled();
-            if (ImGui.ArrowButton("##enc_left", ImGuiDir.Left))
-            {
-                if (selectedIndex == -1)
-                    selectedIndex = totalCount - 2; // Go to last history item
-                else
-                    selectedIndex--;
-            }
-            if (!canGoLeft) ImGui.EndDisabled();
-            ImGui.SameLine();
-        }
-
-        // Encounter info
+        // Build the preview label for the combo box
+        string previewLabel;
         if (encounter != null)
         {
             var enc = encounter.Encounter;
@@ -63,30 +46,46 @@ public class EncounterHeaderComponent : IUIComponent
             var primaryValue = dataService.Config.ShowHps
                 ? $"{enc.EncHps:F1} rHPS"
                 : $"{enc.EncDps:F1} rDPS";
-
-            var text = $"{statusIcon} {enc.ZoneName}  |  {enc.Duration}  |  {primaryValue}";
-            ImGui.TextUnformatted(text);
+            previewLabel = $"{statusIcon} {enc.ZoneName}  |  {enc.Duration}  |  {primaryValue}";
         }
         else
         {
-            var status = dataService.ConnectionStatus;
-            ImGui.TextDisabled(status);
+            previewLabel = dataService.ConnectionStatus;
         }
 
-        // Right arrow
-        if (totalCount > 1)
+        // Encounter combo box
+        ImGui.SetNextItemWidth(-1);
+        if (ImGui.BeginCombo("##enc_combo", previewLabel))
         {
-            ImGui.SameLine(windowWidth - 22);
-            var canGoRight = selectedIndex != -1;
-            if (!canGoRight) ImGui.BeginDisabled();
-            if (ImGui.ArrowButton("##enc_right", ImGuiDir.Right))
+            var history = dataService.Store.History;
+            var active = dataService.Store.ActiveEncounter;
+
+            // History entries (oldest first)
+            for (var i = 0; i < history.Count; i++)
             {
-                if (selectedIndex >= totalCount - 2)
-                    selectedIndex = -1; // Back to active
-                else
-                    selectedIndex++;
+                var h = history[i];
+                var hEnc = h.Encounter;
+                var hValue = dataService.Config.ShowHps
+                    ? $"{hEnc.EncHps:F1} rHPS"
+                    : $"{hEnc.EncDps:F1} rDPS";
+                var label = $"○ {hEnc.ZoneName}  |  {hEnc.Duration}  |  {hValue}##{i}";
+                if (ImGui.Selectable(label, selectedIndex == i))
+                    selectedIndex = i;
             }
-            if (!canGoRight) ImGui.EndDisabled();
+
+            // Active encounter
+            if (active != null)
+            {
+                var aEnc = active.Encounter;
+                var aValue = dataService.Config.ShowHps
+                    ? $"{aEnc.EncHps:F1} rHPS"
+                    : $"{aEnc.EncDps:F1} rDPS";
+                var activeLabel = $"● {aEnc.ZoneName}  |  {aEnc.Duration}  |  {aValue}##active";
+                if (ImGui.Selectable(activeLabel, selectedIndex == -1))
+                    selectedIndex = -1;
+            }
+
+            ImGui.EndCombo();
         }
 
         ImGui.Separator();
