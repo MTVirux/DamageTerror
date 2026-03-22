@@ -12,13 +12,25 @@ namespace DamageTerror.Gui.MainWindow;
 public class EncounterHeaderComponent : IUIComponent
 {
     private readonly DataService dataService;
+    private readonly Action saveConfig;
     private int selectedIndex = -1; // -1 = active encounter (latest)
     private string searchFilter = string.Empty;
     private bool comboWasOpen;
 
-    public EncounterHeaderComponent(DataService dataService)
+    private static readonly (SortField Field, string Label)[] SortOptions =
+    [
+        (SortField.EncDps, "DPS"),
+        (SortField.EncHps, "HPS"),
+        (SortField.Damage, "Damage"),
+        (SortField.Healed, "Healed"),
+        (SortField.CritPct, "Crit%"),
+        (SortField.Deaths, "Deaths"),
+    ];
+
+    public EncounterHeaderComponent(DataService dataService, Action saveConfig)
     {
         this.dataService = dataService;
+        this.saveConfig = saveConfig;
     }
 
     /// <summary>
@@ -58,8 +70,15 @@ public class EncounterHeaderComponent : IUIComponent
             previewLabel = dataService.ConnectionStatus;
         }
 
+        // Sort dropdown width
+        var currentSort = dataService.Config.SortBy;
+        var sortLabel = SortOptions.FirstOrDefault(o => o.Field == currentSort).Label ?? "DPS";
+        var sortArrow = dataService.Config.SortDescending ? "\u25BC" : "\u25B2";
+        var sortPreview = $"{sortLabel} {sortArrow}";
+        var sortComboWidth = ImGui.CalcTextSize("Damage \u25BC").X + ImGui.GetStyle().FramePadding.X * 2 + 20;
+
         // Encounter combo box (right-click for context menu)
-        ImGui.SetNextItemWidth(-1);
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - sortComboWidth - ImGui.GetStyle().ItemSpacing.X);
         if (ImGui.BeginCombo("##enc_combo", previewLabel))
         {
             // Reset search filter when combo first opens
@@ -133,6 +152,31 @@ public class EncounterHeaderComponent : IUIComponent
         else
         {
             comboWasOpen = false;
+        }
+
+        // Sort dropdown
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(sortComboWidth);
+        if (ImGui.BeginCombo("##sort_combo", sortPreview))
+        {
+            foreach (var (field, label) in SortOptions)
+            {
+                var isSelected = currentSort == field;
+                if (ImGui.Selectable(label, isSelected))
+                {
+                    if (isSelected)
+                    {
+                        dataService.Config.SortDescending = !dataService.Config.SortDescending;
+                    }
+                    else
+                    {
+                        dataService.Config.SortBy = field;
+                        dataService.Config.SortDescending = true;
+                    }
+                    saveConfig();
+                }
+            }
+            ImGui.EndCombo();
         }
 
         // Right-click context menu on the combo

@@ -31,8 +31,7 @@ public class CombatantBarComponent
     {
         var barHeight = config.BarHeight;
         var iconSize = config.IconSize;
-        var showHps = config.ShowHps;
-        var value = showHps ? combatant.EncHps : combatant.EncDps;
+        var value = GetSortValue(combatant, config.SortBy);
         var fraction = maxValue > 0 ? (float)(value / maxValue) : 0f;
         fraction = Math.Clamp(fraction, 0f, 1f);
 
@@ -174,6 +173,17 @@ public class CombatantBarComponent
 
         return clicked;
     }
+
+    public static double GetSortValue(CombatantEntry c, SortField field) => field switch
+    {
+        SortField.EncDps => c.EncDps,
+        SortField.EncHps => c.EncHps,
+        SortField.Damage => c.Damage,
+        SortField.Healed => c.Healed,
+        SortField.CritPct => c.CritPct,
+        SortField.Deaths => c.Deaths,
+        _ => c.EncDps,
+    };
 
     private static string FormatValue(double value)
     {

@@ -54,7 +54,7 @@ public class MainWindow : Window, IDisposable
             MaximumSize = new Vector2(2000, 2000),
         };
 
-        this.headerComponent = new EncounterHeaderComponent(plugin.DataService);
+        this.headerComponent = new EncounterHeaderComponent(plugin.DataService, plugin.SaveConfig);
         this.barComponent = new CombatantBarComponent(plugin.Config, textureProvider);
         this.detailPanel = new CombatantDetailPanel(plugin.Config);
 
@@ -199,7 +199,8 @@ public class MainWindow : Window, IDisposable
 
         // Determine max value for bar scaling
         var showHps = plugin.Config.ShowHps;
-        var maxVal = combatants.Max(c => showHps ? c.EncHps : c.EncDps);
+        var sortBy = plugin.Config.SortBy;
+        var maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
 
         // Render bars in a scrollable child region
         if (ImGui.BeginChild("##combatants", new Vector2(0, 0), false))
@@ -247,7 +248,16 @@ public class MainWindow : Window, IDisposable
 
                 if (plugin.Config.ShowValueOnBar)
                 {
-                    var valLabel = showHps ? "HPS" : "DPS";
+                    var valLabel = sortBy switch
+                    {
+                        SortField.EncDps => "DPS",
+                        SortField.EncHps => "HPS",
+                        SortField.Damage => "Dmg",
+                        SortField.Healed => "Heal",
+                        SortField.CritPct => "Crit%",
+                        SortField.Deaths => "Deaths",
+                        _ => showHps ? "HPS" : "DPS",
+                    };
                     var labelWidth = ImGui.CalcTextSize(valLabel).X;
                     drawList.AddText(new Vector2(rightX - labelWidth, textY), headerColor, valLabel);
                 }
