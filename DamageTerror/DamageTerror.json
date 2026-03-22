@@ -1,0 +1,25 @@
+{
+  "Author": "MTVirux",
+  "Name": "Damage Terror",
+  "Punchline": "Native ImGui damage meter overlay powered by IINACT",
+  "Description": "A native damage meter that connects to IINACT via IPC or WebSocket and renders DPS/HPS bars entirely in ImGui. No browser overlay needed. Commands: /dt - toggle the damage meter window.",
+  "Tags": [
+    "Damage",
+    "Meter",
+    "DPS",
+    "HPS",
+    "Combat",
+    "IINACT",
+    "ACT",
+    "Overlay",
+    "Terror"
+  ],
+  "LastUpdate": 1618608322,
+  "InternalName": "DamageTerror",
+  "AssemblyVersion": "1.0.0.0",
+  "RepoUrl": "https://github.com/MTVirux/DamageTerror",
+  "ApplicableVersion": "any",
+  "DalamudApiLevel": 14,
+  "ImageUrls": null,
+  "IconUrl": null
+}

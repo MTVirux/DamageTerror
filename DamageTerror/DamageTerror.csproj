@@ -1,0 +1,30 @@
+<Project Sdk="Dalamud.NET.Sdk/14.0.1">
+  <PropertyGroup>
+    <AssemblyName>DamageTerror</AssemblyName>
+    <Authors>MTVirux</Authors>
+    <Description>Native ImGui damage meter overlay for FFXIV, powered by IINACT.</Description>
+    <Version>1.0.0.0</Version>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <TargetFramework>net10.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="DamageTerror.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ECommons\ECommons\ECommons.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NightmareUI\NightmareUI\NightmareUI.csproj" />
+    <ProjectReference Include="..\NightmareUI.OtterGuiWrapper\NightmareUI.OtterGuiWrapper\NightmareUI.OtterGuiWrapper.csproj" />
+  </ItemGroup>
+</Project>
