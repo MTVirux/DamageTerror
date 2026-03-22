@@ -22,6 +22,7 @@ public class WebSocketDataSource : IDataSource
 
     public event Action<EncounterSnapshot>? OnCombatData;
     public event Action<string, uint>? OnPrimaryPlayerChanged;
+    public event Action<string[]>? OnLogLine;
 
     public bool IsConnected => ws?.State == WebSocketState.Open;
 
@@ -48,7 +49,7 @@ public class WebSocketDataSource : IDataSource
             var subscribeMsg = JsonConvert.SerializeObject(new
             {
                 call = "subscribe",
-                events = new[] { "CombatData", "ChangePrimaryPlayer" },
+                events = new[] { "CombatData", "ChangePrimaryPlayer", "LogLine" },
             });
             var bytes = Encoding.UTF8.GetBytes(subscribeMsg);
             await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cts.Token)
@@ -125,6 +126,15 @@ public class WebSocketDataSource : IDataSource
                     var charId = data["charID"]?.ToObject<uint>() ?? 0;
                     if (!string.IsNullOrEmpty(charName))
                         OnPrimaryPlayerChanged?.Invoke(charName, charId);
+                    break;
+
+                case "LogLine":
+                    var lineArray = data["line"] as JArray;
+                    if (lineArray != null)
+                    {
+                        var fields = lineArray.Select(t => t.ToString()).ToArray();
+                        OnLogLine?.Invoke(fields);
+                    }
                     break;
             }
         }

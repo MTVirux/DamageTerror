@@ -26,6 +26,7 @@ public class IpcDataSource : IDataSource
 
     public event Action<EncounterSnapshot>? OnCombatData;
     public event Action<string, uint>? OnPrimaryPlayerChanged;
+    public event Action<string[]>? OnLogLine;
 
     public bool IsConnected => connected;
 
@@ -53,7 +54,7 @@ public class IpcDataSource : IDataSource
             var subscribeMsg = JObject.FromObject(new
             {
                 call = "subscribe",
-                events = new[] { "CombatData", "ChangePrimaryPlayer" },
+                events = new[] { "CombatData", "ChangePrimaryPlayer", "LogLine" },
             });
 
             try
@@ -96,6 +97,15 @@ public class IpcDataSource : IDataSource
                     var charId = data["charID"]?.ToObject<uint>() ?? 0;
                     if (!string.IsNullOrEmpty(charName))
                         OnPrimaryPlayerChanged?.Invoke(charName, charId);
+                    break;
+
+                case "LogLine":
+                    var lineArray = data["line"] as Newtonsoft.Json.Linq.JArray;
+                    if (lineArray != null)
+                    {
+                        var fields = lineArray.Select(t => t.ToString()).ToArray();
+                        OnLogLine?.Invoke(fields);
+                    }
                     break;
             }
         }

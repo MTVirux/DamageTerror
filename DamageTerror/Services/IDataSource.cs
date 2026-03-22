@@ -16,6 +16,11 @@ public interface IDataSource : IDisposable
     event Action<string, uint>? OnPrimaryPlayerChanged;
 
     /// <summary>
+    /// Fired when a LogLine event is received, providing the parsed line fields.
+    /// </summary>
+    event Action<string[]>? OnLogLine;
+
+    /// <summary>
     /// Whether the data source is currently connected and receiving data.
     /// </summary>
     bool IsConnected { get; }
