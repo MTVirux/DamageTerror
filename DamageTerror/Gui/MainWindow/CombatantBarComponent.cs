@@ -42,7 +42,7 @@ public class CombatantBarComponent
 
         // Bar background
         var bgColor = config.BarBackgroundColor;
-        var barBgColor = ImGui.ColorConvertFloat4ToU32(new Vector4(bgColor.X, bgColor.Y, bgColor.Z, config.BarAlpha));
+        var barBgColor = ImGui.ColorConvertFloat4ToU32(bgColor);
         drawList.AddRectFilled(
             cursorPos,
             new Vector2(cursorPos.X + windowWidth, cursorPos.Y + barHeight),
@@ -99,7 +99,7 @@ public class CombatantBarComponent
         // Job abbreviation text (when icons are off, or alongside icons)
         if (config.ShowJobAbbrevOnBar && !string.IsNullOrEmpty(combatant.Job))
         {
-            var jobStr = $"[{combatant.Job}] ";
+            var jobStr = $"[{combatant.Job.ToUpperInvariant()}] ";
             var jobColor = ImGui.ColorConvertFloat4ToU32(config.NameTextColor);
             drawList.AddText(new Vector2(textStartX, textY), jobColor, jobStr);
             textStartX += ImGui.CalcTextSize(jobStr).X;
@@ -108,8 +108,11 @@ public class CombatantBarComponent
         // Player name
         if (config.ShowNameOnBar)
         {
+            var displayName = combatant.IsLocalPlayer && config.ShowYouOnBar ? "YOU" : combatant.Name;
+            var fmt = combatant.IsLocalPlayer ? config.SelfNameFormat : config.OthersNameFormat;
+            displayName = FormatName(displayName, combatant.Job, fmt);
             var nameColor = ImGui.ColorConvertFloat4ToU32(config.NameTextColor);
-            drawList.AddText(new Vector2(textStartX, textY), nameColor, combatant.Name);
+            drawList.AddText(new Vector2(textStartX, textY), nameColor, displayName);
         }
 
         // Right-side values
@@ -124,6 +127,34 @@ public class CombatantBarComponent
             rightX -= pctSize.X;
             drawList.AddText(new Vector2(rightX, textY), valColor, pctStr);
             rightX -= 8.0f; // spacing
+        }
+
+        // Crit/DH stats (right-aligned, before the value)
+        if (config.ShowCritDirectHitOnBar)
+        {
+            var cdhStr = $"!!!{combatant.CritDirectHitPct:F0}%";
+            var cdhSize = ImGui.CalcTextSize(cdhStr);
+            rightX -= cdhSize.X;
+            drawList.AddText(new Vector2(rightX, textY), valColor, cdhStr);
+            rightX -= 6.0f;
+        }
+
+        if (config.ShowCritOnBar)
+        {
+            var critStr = $"!!{combatant.CritPct:F0}%";
+            var critSize = ImGui.CalcTextSize(critStr);
+            rightX -= critSize.X;
+            drawList.AddText(new Vector2(rightX, textY), valColor, critStr);
+            rightX -= 6.0f;
+        }
+
+        if (config.ShowDirectHitOnBar)
+        {
+            var dhStr = $"!{combatant.DirectHitPct:F0}%";
+            var dhSize = ImGui.CalcTextSize(dhStr);
+            rightX -= dhSize.X;
+            drawList.AddText(new Vector2(rightX, textY), valColor, dhStr);
+            rightX -= 6.0f;
         }
 
         // DPS/HPS value (right-aligned)
@@ -151,5 +182,35 @@ public class CombatantBarComponent
         if (value >= 10_000)
             return $"{value / 1_000:F1}K";
         return $"{value:F1}";
+    }
+
+    private static string FormatName(string name, string job, NameDisplayFormat fmt)
+    {
+        switch (fmt)
+        {
+            case NameDisplayFormat.FirstNameOnly:
+            {
+                var spaceIdx = name.IndexOf(' ');
+                return spaceIdx > 0 ? name[..spaceIdx] : name;
+            }
+            case NameDisplayFormat.LastNameOnly:
+            {
+                var spaceIdx = name.LastIndexOf(' ');
+                return spaceIdx >= 0 ? name[(spaceIdx + 1)..] : name;
+            }
+            case NameDisplayFormat.Initials:
+            {
+                var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                return parts.Length >= 2
+                    ? $"{parts[0][0]}. {parts[1][0]}."
+                    : name;
+            }
+            case NameDisplayFormat.JobAbbreviation:
+                return !string.IsNullOrEmpty(job) ? job.ToUpperInvariant() : name;
+            case NameDisplayFormat.JobFullName:
+                return !string.IsNullOrEmpty(job) ? JobNameHelper.GetFullName(job) : name;
+            default:
+                return name;
+        }
     }
 }

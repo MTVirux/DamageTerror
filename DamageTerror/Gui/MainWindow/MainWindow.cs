@@ -1,3 +1,4 @@
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
@@ -40,6 +41,7 @@ public class MainWindow : Window, IDisposable
     private readonly CombatantBarComponent barComponent;
     private readonly CombatantDetailPanel detailPanel;
     private TitleBarButton? lockButton;
+    private DateTime? combatEndTime;
 
     public MainWindow(DamageTerrorPlugin plugin, ITextureProvider textureProvider)
         : base(GetTitleWithVersion())
@@ -110,8 +112,38 @@ public class MainWindow : Window, IDisposable
     {
     }
 
+    public override bool DrawConditions()
+    {
+        if (!this.plugin.Config.HideOutOfCombat)
+        {
+            combatEndTime = null;
+            return true;
+        }
+
+        if (Svc.Condition[ConditionFlag.InCombat])
+        {
+            combatEndTime = null;
+            return true;
+        }
+
+        // Player is out of combat — apply delay
+        combatEndTime ??= DateTime.UtcNow;
+        var elapsed = (DateTime.UtcNow - combatEndTime.Value).TotalSeconds;
+        return elapsed < this.plugin.Config.HideOutOfCombatDelay;
+    }
+
     public override void PreDraw()
     {
+        RespectCloseHotkey = !this.plugin.Config.IgnoreEscClose;
+
+        var io = ImGui.GetIO();
+        var forceShowHeader = io.KeyCtrl && io.KeyShift;
+
+        if (this.plugin.Config.HideWindowHeader && !forceShowHeader)
+            Flags |= ImGuiWindowFlags.NoTitleBar;
+        else
+            Flags &= ~ImGuiWindowFlags.NoTitleBar;
+
         if (this.plugin.Config.PinMainWindow)
         {
             Flags |= ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize;
@@ -132,6 +164,13 @@ public class MainWindow : Window, IDisposable
 
         if (lockButton != null)
             lockButton.Icon = this.plugin.Config.PinMainWindow ? FontAwesomeIcon.Lock : FontAwesomeIcon.LockOpen;
+
+        ImGui.PushStyleColor(ImGuiCol.WindowBg, this.plugin.Config.WindowBackgroundColor);
+    }
+
+    public override void PostDraw()
+    {
+        ImGui.PopStyleColor();
     }
 
     public override void Draw()
@@ -165,6 +204,57 @@ public class MainWindow : Window, IDisposable
         // Render bars in a scrollable child region
         if (ImGui.BeginChild("##combatants", new Vector2(0, 0), false))
         {
+            // Header row
+            if (plugin.Config.ShowMeterHeader)
+            {
+                var headerHeight = plugin.Config.BarHeight;
+                var windowWidth = ImGui.GetContentRegionAvail().X;
+                var cursorPos = ImGui.GetCursorScreenPos();
+                var drawList = ImGui.GetWindowDrawList();
+                var headerColor = ImGui.ColorConvertFloat4ToU32(new Vector4(0.7f, 0.7f, 0.7f, 0.9f));
+                var textY = cursorPos.Y + (headerHeight - ImGui.GetTextLineHeight()) * 0.5f;
+                var textStartX = cursorPos.X + 4.0f;
+
+                if (plugin.Config.ShowRankNumber)
+                {
+                    drawList.AddText(new Vector2(textStartX, textY), headerColor, "#");
+                    textStartX += ImGui.CalcTextSize("#. ").X;
+                }
+
+                if (plugin.Config.ShowJobIcons)
+                    textStartX += plugin.Config.IconSize + 4.0f;
+
+                if (plugin.Config.ShowJobAbbrevOnBar)
+                {
+                    drawList.AddText(new Vector2(textStartX, textY), headerColor, "Job");
+                    textStartX += ImGui.CalcTextSize("[WHM] ").X;
+                }
+
+                if (plugin.Config.ShowNameOnBar)
+                    drawList.AddText(new Vector2(textStartX, textY), headerColor, "Name");
+
+                var rightX = cursorPos.X + windowWidth - 6.0f;
+
+                // Mirror the exact right-align logic from CombatantBarComponent:
+                // Bar draws percent at (rightX - pctSize.X), then subtracts 8px spacing,
+                // then draws value at (rightX - valueSize.X).
+                if (plugin.Config.ShowDamagePercentOnBar)
+                {
+                    var labelWidth = ImGui.CalcTextSize("%").X;
+                    drawList.AddText(new Vector2(rightX - labelWidth, textY), headerColor, "%");
+                    rightX -= ImGui.CalcTextSize("00.0%").X + 8.0f;
+                }
+
+                if (plugin.Config.ShowValueOnBar)
+                {
+                    var valLabel = showHps ? "HPS" : "DPS";
+                    var labelWidth = ImGui.CalcTextSize(valLabel).X;
+                    drawList.AddText(new Vector2(rightX - labelWidth, textY), headerColor, valLabel);
+                }
+
+                ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + headerHeight + plugin.Config.BarSpacing));
+            }
+
             for (int i = 0; i < combatants.Count; i++)
             {
                 var combatant = combatants[i];

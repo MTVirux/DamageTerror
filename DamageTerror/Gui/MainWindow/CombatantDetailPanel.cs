@@ -1,3 +1,4 @@
+using Dalamud.Bindings.ImGui;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
@@ -98,8 +99,107 @@ public class CombatantDetailPanel
             ImGui.TextUnformatted($"{combatant.Last10Dps:F1} / {combatant.Last30Dps:F1} / {combatant.Last60Dps:F1}");
         }
 
+        // Row 6: Skill Breakdown (Damage)
+        if (config.DetailShowSkillBreakdown && combatant.Skills.Count > 0)
+        {
+            ImGui.Spacing();
+            if (ImGui.TreeNodeEx($"Damage Skills##{index}", ImGuiTreeNodeFlags.DefaultOpen))
+            {
+                DrawSkillTable(combatant.Skills, index, "dmg", config.SkillDamageFillColor);
+                ImGui.TreePop();
+            }
+        }
+
+        // Row 7: Skill Breakdown (Healing)
+        if (config.DetailShowSkillBreakdown && combatant.HealingSkills.Count > 0)
+        {
+            ImGui.Spacing();
+            if (ImGui.TreeNodeEx($"Healing Skills##{index}", ImGuiTreeNodeFlags.DefaultOpen))
+            {
+                DrawSkillTable(combatant.HealingSkills, index, "heal", config.SkillHealingFillColor);
+                ImGui.TreePop();
+            }
+        }
+
         ImGui.Unindent(8.0f);
         ImGui.Spacing();
+    }
+
+    private void DrawSkillTable(List<SkillEntry> skills, int index, string idPrefix, Vector4 fillColorVec)
+    {
+        var availWidth = ImGui.GetContentRegionAvail().X;
+        var skillBarHeight = config.SkillRowHeight;
+        var maxSkillVal = skills[0].TotalDamage; // Already sorted descending
+        var drawList = ImGui.GetWindowDrawList();
+        var bgColor = ImGui.ColorConvertFloat4ToU32(config.SkillRowBackgroundColor);
+        var fillColor = ImGui.ColorConvertFloat4ToU32(fillColorVec);
+        var textColor = ImGui.ColorConvertFloat4ToU32(config.SkillTextColor);
+
+        var topSkills = config.MaxSkillBreakdownCount > 0 ? skills.Take(config.MaxSkillBreakdownCount).ToList() : skills;
+        var headerColor = ImGui.ColorConvertFloat4ToU32(config.SkillHeaderTextColor);
+        var colPad = config.SkillColumnPadding;
+
+        // Measure widest text per column across all skills
+        float colValW = ImGui.CalcTextSize("Amount").X;
+        float colPctW = ImGui.CalcTextSize("%").X;
+        float colHitsW = ImGui.CalcTextSize("Hits").X;
+        float colCritW = ImGui.CalcTextSize("!").X;
+        float colDhW = ImGui.CalcTextSize("!!").X;
+        float colCdhW = ImGui.CalcTextSize("!!!").X;
+
+        foreach (var s in topSkills)
+        {
+            colValW = Math.Max(colValW, ImGui.CalcTextSize($"{s.TotalDamage:N0}").X);
+            colPctW = Math.Max(colPctW, ImGui.CalcTextSize($"{s.DamagePercent:F1}%").X);
+            colHitsW = Math.Max(colHitsW, ImGui.CalcTextSize($"x{s.HitCount}").X);
+            colCritW = Math.Max(colCritW, ImGui.CalcTextSize($"{s.CritPct:F0}%").X);
+            colDhW = Math.Max(colDhW, ImGui.CalcTextSize($"{s.DirectHitPct:F0}%").X);
+            colCdhW = Math.Max(colCdhW, ImGui.CalcTextSize($"{s.CritDirectHitPct:F0}%").X);
+        }
+
+        // Draw header row
+        ImGui.InvisibleButton($"##{idPrefix}_hdr_{index}", new Vector2(availWidth, skillBarHeight));
+        var hdrMin = ImGui.GetItemRectMin();
+        var hdrMax = ImGui.GetItemRectMax();
+        drawList.AddText(new Vector2(hdrMin.X + 3, hdrMin.Y), headerColor, "Skill");
+
+        var hdrX = hdrMax.X - 3;
+        hdrX -= colHitsW; drawList.AddText(new Vector2(hdrX + colHitsW - ImGui.CalcTextSize("Hits").X, hdrMin.Y), headerColor, "Hits"); hdrX -= colPad;
+        hdrX -= colCdhW; drawList.AddText(new Vector2(hdrX + colCdhW - ImGui.CalcTextSize("!!!").X, hdrMin.Y), headerColor, "!!!"); hdrX -= colPad;
+        hdrX -= colDhW; drawList.AddText(new Vector2(hdrX + colDhW - ImGui.CalcTextSize("!!").X, hdrMin.Y), headerColor, "!!"); hdrX -= colPad;
+        hdrX -= colCritW; drawList.AddText(new Vector2(hdrX + colCritW - ImGui.CalcTextSize("!").X, hdrMin.Y), headerColor, "!"); hdrX -= colPad;
+        hdrX -= colPctW; drawList.AddText(new Vector2(hdrX + colPctW - ImGui.CalcTextSize("%").X, hdrMin.Y), headerColor, "%"); hdrX -= colPad;
+        hdrX -= colValW; drawList.AddText(new Vector2(hdrX + colValW - ImGui.CalcTextSize("Amount").X, hdrMin.Y), headerColor, "Amount");
+
+        var skillIdx = 0;
+        foreach (var skill in topSkills)
+        {
+            var barFraction = maxSkillVal > 0 ? (float)skill.TotalDamage / maxSkillVal : 0f;
+
+            ImGui.InvisibleButton($"##{idPrefix}_{index}_{skillIdx}", new Vector2(availWidth, skillBarHeight));
+            var min = ImGui.GetItemRectMin();
+            var max = ImGui.GetItemRectMax();
+
+            drawList.AddRectFilled(min, max, bgColor);
+            drawList.AddRectFilled(min, new Vector2(min.X + availWidth * barFraction, max.Y), fillColor);
+            drawList.AddText(new Vector2(min.X + 3, min.Y), textColor, skill.Name);
+
+            var x = max.X - 3;
+            var hitsText = $"x{skill.HitCount}";
+            x -= colHitsW; drawList.AddText(new Vector2(x + colHitsW - ImGui.CalcTextSize(hitsText).X, min.Y), textColor, hitsText); x -= colPad;
+            var cdhText = $"{skill.CritDirectHitPct:F0}%";
+            x -= colCdhW; drawList.AddText(new Vector2(x + colCdhW - ImGui.CalcTextSize(cdhText).X, min.Y), textColor, cdhText); x -= colPad;
+            var dhText = $"{skill.DirectHitPct:F0}%";
+            x -= colDhW; drawList.AddText(new Vector2(x + colDhW - ImGui.CalcTextSize(dhText).X, min.Y), textColor, dhText); x -= colPad;
+            var critText = $"{skill.CritPct:F0}%";
+            x -= colCritW; drawList.AddText(new Vector2(x + colCritW - ImGui.CalcTextSize(critText).X, min.Y), textColor, critText); x -= colPad;
+            var pctText = $"{skill.DamagePercent:F1}%";
+            x -= colPctW; drawList.AddText(new Vector2(x + colPctW - ImGui.CalcTextSize(pctText).X, min.Y), textColor, pctText); x -= colPad;
+            var valText = $"{skill.TotalDamage:N0}";
+            x -= colValW; drawList.AddText(new Vector2(x + colValW - ImGui.CalcTextSize(valText).X, min.Y), textColor, valText);
+
+            skillIdx++;
+        }
     }
 
     /// <summary>
