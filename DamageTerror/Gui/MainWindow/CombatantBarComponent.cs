@@ -122,37 +122,37 @@ public class CombatantBarComponent
         if (config.ShowDamagePercentOnBar && !string.IsNullOrEmpty(combatant.DamagePercent))
         {
             var pctStr = combatant.DamagePercent;
-            var pctSize = ImGui.CalcTextSize(pctStr);
-            rightX -= pctSize.X;
-            drawList.AddText(new Vector2(rightX, textY), valColor, pctStr);
+            var colW = ImGui.CalcTextSize("00.0%").X;
+            rightX -= colW;
+            drawList.AddText(new Vector2(rightX + colW - ImGui.CalcTextSize(pctStr).X, textY), valColor, pctStr);
             rightX -= 8.0f; // spacing
         }
 
-        // Crit/DH stats (right-aligned, before the value)
+        // Crit/DH stats (right-aligned within fixed-width columns)
         if (config.ShowCritDirectHitOnBar)
         {
-            var cdhStr = $"!!!{combatant.CritDirectHitPct:F0}%";
-            var cdhSize = ImGui.CalcTextSize(cdhStr);
-            rightX -= cdhSize.X;
-            drawList.AddText(new Vector2(rightX, textY), valColor, cdhStr);
+            var cdhStr = $"{combatant.CritDirectHitPct:F0}%";
+            var colW = ImGui.CalcTextSize("100%").X;
+            rightX -= colW;
+            drawList.AddText(new Vector2(rightX + colW - ImGui.CalcTextSize(cdhStr).X, textY), valColor, cdhStr);
             rightX -= 6.0f;
         }
 
         if (config.ShowCritOnBar)
         {
-            var critStr = $"!!{combatant.CritPct:F0}%";
-            var critSize = ImGui.CalcTextSize(critStr);
-            rightX -= critSize.X;
-            drawList.AddText(new Vector2(rightX, textY), valColor, critStr);
+            var critStr = $"{combatant.CritPct:F0}%";
+            var colW = ImGui.CalcTextSize("100%").X;
+            rightX -= colW;
+            drawList.AddText(new Vector2(rightX + colW - ImGui.CalcTextSize(critStr).X, textY), valColor, critStr);
             rightX -= 6.0f;
         }
 
         if (config.ShowDirectHitOnBar)
         {
-            var dhStr = $"!{combatant.DirectHitPct:F0}%";
-            var dhSize = ImGui.CalcTextSize(dhStr);
-            rightX -= dhSize.X;
-            drawList.AddText(new Vector2(rightX, textY), valColor, dhStr);
+            var dhStr = $"{combatant.DirectHitPct:F0}%";
+            var colW = ImGui.CalcTextSize("100%").X;
+            rightX -= colW;
+            drawList.AddText(new Vector2(rightX + colW - ImGui.CalcTextSize(dhStr).X, textY), valColor, dhStr);
             rightX -= 6.0f;
         }
 
