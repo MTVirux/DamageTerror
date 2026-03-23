@@ -35,6 +35,20 @@ public class Configuration : IPluginConfiguration
     /// </summary>
     public int MaxEncounterHistory { get; set; } = 30;
 
+    // ===== Duty Type Filters =====
+
+    public bool EnableInOverworld { get; set; } = true;
+    public bool EnableInDungeons { get; set; } = true;
+    public bool EnableInTrials { get; set; } = true;
+    public bool EnableInRaids { get; set; } = true;
+    public bool EnableInAllianceRaids { get; set; } = true;
+    public bool EnableInDeepDungeons { get; set; } = true;
+    public bool EnableInFieldOperations { get; set; } = true;
+    public bool EnableInFieldRaids { get; set; } = true;
+    public bool EnableInCriterion { get; set; } = true;
+    public bool EnableInVariant { get; set; } = true;
+    public bool EnableInPvP { get; set; } = true;
+
     /// <summary>
     /// Which field to sort the combatant list by.
     /// </summary>
@@ -176,6 +190,20 @@ public class Configuration : IPluginConfiguration
 
     public float SkillRowHeight { get; set; } = 14f;
     public float SkillColumnPadding { get; set; } = 6f;
+
+    // ===== Customization — Status Bar =====
+
+    public bool ShowStatusBar { get; set; } = true;
+    public bool StatusBarAbove { get; set; } = true;
+    public bool ShowStatusBarTimer { get; set; } = true;
+    public float StatusBarFontScale { get; set; } = 1.0f;
+    public float StatusBarHeight { get; set; } = 20f;
+    public bool ShowStatusBarSeparator { get; set; } = true;
+    public Vector4 StatusBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
+    public Vector4 StatusBarBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.9f);
+    public Vector4 StatusBarActiveColor { get; set; } = new(1.0f, 0.6f, 0.0f, 1.0f);
+    public Vector4 StatusBarInactiveColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
+    public Vector4 StatusBarLabelColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
 
     // ===== Window Settings =====
 
