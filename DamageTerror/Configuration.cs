@@ -88,6 +88,19 @@ public class Configuration : IPluginConfiguration
     public Vector4 RangedDpsColor { get; set; } = new(0.9f, 0.5f, 0.2f, 1.0f);
     public Vector4 CasterDpsColor { get; set; } = new(0.6f, 0.3f, 0.8f, 1.0f);
     public Vector4 DefaultJobColor { get; set; } = new(0.5f, 0.5f, 0.5f, 1.0f);
+
+    // ===== Customization — Per-Job Colors =====
+
+    /// <summary>
+    /// If true, use individual per-job colors instead of role-based colors.
+    /// </summary>
+    public bool UsePerJobColors { get; set; } = false;
+
+    /// <summary>
+    /// Per-job color overrides keyed by job abbreviation (e.g. "Pld", "Whm").
+    /// Only used when <see cref="UsePerJobColors"/> is true.
+    /// </summary>
+    public Dictionary<string, Vector4> JobColors { get; set; } = new();
     public Vector4 BarBackgroundColor { get; set; } = new(0.15f, 0.15f, 0.15f, 1.0f);
     public Vector4 NameTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 ValueTextColor { get; set; } = new(1f, 1f, 1f, 1f);
