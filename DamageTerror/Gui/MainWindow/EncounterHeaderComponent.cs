@@ -133,7 +133,7 @@ public class EncounterHeaderComponent : IUIComponent
 
             // Search input at the top of the dropdown
             ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextWithHint("##enc_search", "Search encounters...", ref searchFilter, 256);
+            ImGui.InputTextWithHint("##enc_search", "Search by zone, title, player, or job...", ref searchFilter, 256);
 
             var history = dataService.Store.History;
             var active = dataService.Store.ActiveEncounter;
@@ -146,7 +146,9 @@ public class EncounterHeaderComponent : IUIComponent
                 var hEnc = h.Encounter;
                 if (filter.Length > 0
                     && !hEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                    && !(hEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false))
+                    && !(hEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
+                    && !h.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                        || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                     continue;
                 var hValue = dataService.Config.ShowHps
                     ? $"{hEnc.EncHps:F1} rHPS"
@@ -177,7 +179,9 @@ public class EncounterHeaderComponent : IUIComponent
                 var aEnc = active.Encounter;
                 if (filter.Length == 0
                     || aEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                    || (aEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false))
+                    || (aEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || active.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                        || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                 {
                     var aValue = dataService.Config.ShowHps
                         ? $"{aEnc.EncHps:F1} rHPS"

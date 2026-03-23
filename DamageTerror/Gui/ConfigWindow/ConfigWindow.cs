@@ -11,6 +11,7 @@ public class ConfigWindow : Window, IDisposable
 {
     private readonly DamageTerrorPlugin plugin;
     private string wsUrlBuffer;
+    private string historySearchFilter = string.Empty;
 
     private static readonly string[] NameFormatLabels = new[]
     {
@@ -353,12 +354,41 @@ public class ConfigWindow : Window, IDisposable
             // --- Meter Colors ---
             if (ImGui.TreeNodeEx("Meter Colors", ImGuiTreeNodeFlags.DefaultOpen))
             {
-                changed |= ColorEditProp("Tank", config.TankColor, v => config.TankColor = v);
-                changed |= ColorEditProp("Healer", config.HealerColor, v => config.HealerColor = v);
-                changed |= ColorEditProp("Melee DPS", config.MeleeDpsColor, v => config.MeleeDpsColor = v);
-                changed |= ColorEditProp("Ranged DPS", config.RangedDpsColor, v => config.RangedDpsColor = v);
-                changed |= ColorEditProp("Caster DPS", config.CasterDpsColor, v => config.CasterDpsColor = v);
-                changed |= ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
+                var usePerJob = config.UsePerJobColors;
+                if (ImGui.Checkbox("Use per-job colors", ref usePerJob))
+                {
+                    config.UsePerJobColors = usePerJob;
+                    changed = true;
+                }
+
+                ImGui.Spacing();
+
+                if (!config.UsePerJobColors)
+                {
+                    // Role-based colors
+                    changed |= ColorEditProp("Tank", config.TankColor, v => config.TankColor = v);
+                    changed |= ColorEditProp("Healer", config.HealerColor, v => config.HealerColor = v);
+                    changed |= ColorEditProp("Melee DPS", config.MeleeDpsColor, v => config.MeleeDpsColor = v);
+                    changed |= ColorEditProp("Phys Ranged DPS", config.RangedDpsColor, v => config.RangedDpsColor = v);
+                    changed |= ColorEditProp("Caster DPS", config.CasterDpsColor, v => config.CasterDpsColor = v);
+                    changed |= ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
+                }
+                else
+                {
+                    // Per-job colors grouped by role
+                    changed |= DrawPerJobColorGroup("Tanks", new[] { "Pld", "War", "Drk", "Gnb" }, config);
+                    changed |= DrawPerJobColorGroup("Healers", new[] { "Whm", "Sch", "Ast", "Sge" }, config);
+                    changed |= DrawPerJobColorGroup("Melee DPS", new[] { "Mnk", "Drg", "Nin", "Sam", "Rpr", "Vpr" }, config);
+                    changed |= DrawPerJobColorGroup("Phys Ranged DPS", new[] { "Brd", "Mch", "Dnc" }, config);
+                    changed |= DrawPerJobColorGroup("Caster DPS", new[] { "Blm", "Smn", "Rdm", "Pct", "Blu" }, config);
+                    changed |= ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
+
+                    if (ImGui.Button("Reset Per-Job Colors"))
+                    {
+                        config.JobColors.Clear();
+                        changed = true;
+                    }
+                }
 
                 ImGui.Spacing();
 
@@ -379,6 +409,8 @@ public class ConfigWindow : Window, IDisposable
                     config.ValueTextColor = new Vector4(1f, 1f, 1f, 1f);
                     config.BarBackgroundColor = new Vector4(0.15f, 0.15f, 0.15f, 1.0f);
                     config.WindowBackgroundColor = new Vector4(0.06f, 0.06f, 0.06f, 0.94f);
+                    config.JobColors.Clear();
+                    config.UsePerJobColors = false;
                     changed = true;
                 }
 
@@ -673,6 +705,34 @@ public class ConfigWindow : Window, IDisposable
         return false;
     }
 
+    private static bool DrawPerJobColorGroup(string groupLabel, string[] jobs, Configuration config)
+    {
+        var changed = false;
+        if (ImGui.TreeNodeEx(groupLabel, ImGuiTreeNodeFlags.None))
+        {
+            foreach (var job in jobs)
+            {
+                var current = config.JobColors.TryGetValue(job, out var custom)
+                    ? custom
+                    : JobColorHelper.GetDefaultJobColor(job);
+
+                var fullName = JobNameHelper.GetFullName(job);
+                var label = $"{fullName} ({job})";
+
+                var c = current;
+                if (ImGui.ColorEdit4(label, ref c, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
+                {
+                    config.JobColors[job] = c;
+                    changed = true;
+                }
+            }
+
+            ImGui.TreePop();
+        }
+
+        return changed;
+    }
+
     private void DrawEncounterHistoryTab()
     {
         var store = plugin.DataService.Store;
@@ -687,6 +747,11 @@ public class ConfigWindow : Window, IDisposable
             ImGui.TextUnformatted("No encounters in history yet.");
             return;
         }
+
+        // Search bar
+        ImGui.SetNextItemWidth(-1);
+        ImGui.InputTextWithHint("##historySearch", "Search by zone, title, player, or job...", ref historySearchFilter, 256);
+        ImGui.Spacing();
 
         // Clear all button
         if (ImGui.Button("Clear All History"))
@@ -717,6 +782,8 @@ public class ConfigWindow : Window, IDisposable
 
         int removeIdx = -1;
 
+        var filter = historySearchFilter.Trim();
+
         for (int i = history.Count - 1; i >= 0; i--)
         {
             var enc = history[i];
@@ -726,6 +793,14 @@ public class ConfigWindow : Window, IDisposable
                 label = $"{encounter.Title} — {encounter.ZoneName}";
             if (string.IsNullOrEmpty(label))
                 label = "Unknown";
+
+            // Apply search filter
+            if (filter.Length > 0
+                && !encounter.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                && !(encounter.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
+                && !enc.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                    || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                continue;
 
             var header = $"[{enc.Timestamp.ToLocalTime():yyyy-MM-dd HH:mm}]  {label}  ({encounter.Duration})";
 
