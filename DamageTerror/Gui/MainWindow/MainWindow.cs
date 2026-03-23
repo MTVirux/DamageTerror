@@ -114,6 +114,9 @@ public class MainWindow : Window, IDisposable
 
     public override bool DrawConditions()
     {
+        if (!Svc.ClientState.IsLoggedIn)
+            return false;
+
         if (!this.plugin.Config.HideOutOfCombat)
         {
             combatEndTime = null;
