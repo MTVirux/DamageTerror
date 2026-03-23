@@ -50,6 +50,20 @@ public class EncounterHeaderComponent : IUIComponent
 
     public void Render()
     {
+        if (!dataService.Config.ShowSelectionBar)
+            return;
+
+        // Hide when pinned (optionally show with Ctrl+Shift)
+        if (dataService.Config.HideSelectionBarWhenPinned && dataService.Config.PinMainWindow)
+        {
+            if (!dataService.Config.SelectionBarShowOnCtrlShift)
+                return;
+
+            var io = ImGui.GetIO();
+            if (!(io.KeyCtrl && io.KeyShift))
+                return;
+        }
+
         var totalCount = dataService.Store.TotalCount;
         var encounter = SelectedEncounter;
 
@@ -70,15 +84,44 @@ public class EncounterHeaderComponent : IUIComponent
             previewLabel = dataService.ConnectionStatus;
         }
 
+        // Apply selection bar styling
+        var selBarBg = dataService.Config.SelectionBarBackgroundColor;
+        var selBarPad = dataService.Config.SelectionBarHeight;
+        var selBarTextCol = dataService.Config.SelectionBarTextColor;
+        var hasSelBarBg = selBarBg.W > 0f;
+
+        if (hasSelBarBg)
+        {
+            var drawList = ImGui.GetWindowDrawList();
+            var curPos = ImGui.GetCursorScreenPos();
+            var regionW = ImGui.GetContentRegionAvail().X;
+            var frameH = ImGui.GetFrameHeight() + selBarPad * 2;
+            drawList.AddRectFilled(curPos, new Vector2(curPos.X + regionW, curPos.Y + frameH), ImGui.ColorConvertFloat4ToU32(selBarBg));
+        }
+
+        if (selBarPad > 0f)
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + selBarPad);
+
+        ImGui.PushStyleColor(ImGuiCol.Text, selBarTextCol);
+
         // Sort dropdown width
         var currentSort = dataService.Config.SortBy;
         var sortLabel = SortOptions.FirstOrDefault(o => o.Field == currentSort).Label ?? "DPS";
         var sortArrow = dataService.Config.SortDescending ? "\u25BC" : "\u25B2";
         var sortPreview = $"{sortLabel} {sortArrow}";
-        var sortComboWidth = ImGui.CalcTextSize("Damage \u25BC").X + ImGui.GetStyle().FramePadding.X * 2 + 20;
+        var sortComboWidth = dataService.Config.ShowSortDropdown
+            ? ImGui.CalcTextSize("Damage \u25BC").X + ImGui.GetStyle().FramePadding.X * 2 + 20
+            : 0f;
 
         // Encounter combo box (right-click for context menu)
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - sortComboWidth - ImGui.GetStyle().ItemSpacing.X);
+        var comboWidth = dataService.Config.ShowSortDropdown
+            ? ImGui.GetContentRegionAvail().X - sortComboWidth - ImGui.GetStyle().ItemSpacing.X
+            : ImGui.GetContentRegionAvail().X;
+
+        if (!dataService.Config.ShowEncounterPicker)
+            goto SkipEncounterPicker;
+
+        ImGui.SetNextItemWidth(comboWidth);
         if (ImGui.BeginCombo("##enc_combo", previewLabel))
         {
             // Reset search filter when combo first opens
@@ -154,8 +197,14 @@ public class EncounterHeaderComponent : IUIComponent
             comboWasOpen = false;
         }
 
+SkipEncounterPicker:
+
         // Sort dropdown
-        ImGui.SameLine();
+        if (!dataService.Config.ShowSortDropdown)
+            goto SkipSortDropdown;
+
+        if (dataService.Config.ShowEncounterPicker)
+            ImGui.SameLine();
         ImGui.SetNextItemWidth(sortComboWidth);
         if (ImGui.BeginCombo("##sort_combo", sortPreview))
         {
@@ -179,6 +228,8 @@ public class EncounterHeaderComponent : IUIComponent
             ImGui.EndCombo();
         }
 
+SkipSortDropdown:
+
         // Right-click context menu on the combo
         if (ImGui.BeginPopupContextItem("##enc_context"))
         {
@@ -199,7 +250,19 @@ public class EncounterHeaderComponent : IUIComponent
             ImGui.EndPopup();
         }
 
-        ImGui.Separator();
+        if (selBarPad > 0f)
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + selBarPad);
+
+        ImGui.PopStyleColor();
+
+        if (dataService.Config.ShowSelectionBarSeparator)
+        {
+            var drawList = ImGui.GetWindowDrawList();
+            var sepPos = ImGui.GetCursorScreenPos();
+            var sepW = ImGui.GetContentRegionAvail().X;
+            drawList.AddLine(sepPos, new Vector2(sepPos.X + sepW, sepPos.Y), ImGui.ColorConvertFloat4ToU32(dataService.Config.SelectionBarSeparatorColor));
+            ImGui.Spacing();
+        }
     }
 
     /// <summary>

@@ -93,6 +93,27 @@ public class Configuration : IPluginConfiguration
     public Vector4 ValueTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 WindowBackgroundColor { get; set; } = new(0.06f, 0.06f, 0.06f, 0.94f);
 
+    // ===== Customization — Selection Bar =====
+
+    public bool ShowSelectionBar { get; set; } = true;
+    public Vector4 SelectionBarTextColor { get; set; } = new(1f, 1f, 1f, 1f);
+    public Vector4 SelectionBarBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
+    public float SelectionBarHeight { get; set; } = 0.0f;
+    public bool ShowEncounterPicker { get; set; } = true;
+    public bool ShowSortDropdown { get; set; } = true;
+    public bool ShowSelectionBarSeparator { get; set; } = true;
+    public Vector4 SelectionBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
+    public bool HideSelectionBarWhenPinned { get; set; } = false;
+    public bool SelectionBarShowOnCtrlShift { get; set; } = true;
+
+    // ===== Customization — Header Row =====
+
+    public Vector4 HeaderTextColor { get; set; } = new(0.7f, 0.7f, 0.7f, 0.9f);
+    public Vector4 HeaderBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
+    public float HeaderHeight { get; set; } = 22.0f;
+    public bool HeaderSeparator { get; set; } = false;
+    public Vector4 HeaderSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
+
     // ===== Customization — Bar Appearance =====
 
     public float BarHeight { get; set; } = 22.0f;

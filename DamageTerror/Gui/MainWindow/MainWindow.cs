@@ -211,11 +211,21 @@ public class MainWindow : Window, IDisposable
             // Header row
             if (plugin.Config.ShowMeterHeader)
             {
-                var headerHeight = plugin.Config.BarHeight;
+                var headerHeight = plugin.Config.HeaderHeight;
                 var windowWidth = ImGui.GetContentRegionAvail().X;
                 var cursorPos = ImGui.GetCursorScreenPos();
                 var drawList = ImGui.GetWindowDrawList();
-                var headerColor = ImGui.ColorConvertFloat4ToU32(new Vector4(0.7f, 0.7f, 0.7f, 0.9f));
+                var headerColor = ImGui.ColorConvertFloat4ToU32(plugin.Config.HeaderTextColor);
+
+                // Header background
+                var headerBg = plugin.Config.HeaderBackgroundColor;
+                if (headerBg.W > 0f)
+                {
+                    drawList.AddRectFilled(
+                        cursorPos,
+                        new Vector2(cursorPos.X + windowWidth, cursorPos.Y + headerHeight),
+                        ImGui.ColorConvertFloat4ToU32(headerBg));
+                }
                 var textY = cursorPos.Y + (headerHeight - ImGui.GetTextLineHeight()) * 0.5f;
                 var textStartX = cursorPos.X + 4.0f;
 
@@ -244,9 +254,38 @@ public class MainWindow : Window, IDisposable
                 // then draws value at (rightX - valueSize.X).
                 if (plugin.Config.ShowDamagePercentOnBar)
                 {
+                    var colW = ImGui.CalcTextSize("00.0%").X;
                     var labelWidth = ImGui.CalcTextSize("%").X;
-                    drawList.AddText(new Vector2(rightX - labelWidth, textY), headerColor, "%");
-                    rightX -= ImGui.CalcTextSize("00.0%").X + 8.0f;
+                    rightX -= colW;
+                    drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "%");
+                    rightX -= 8.0f;
+                }
+
+                if (plugin.Config.ShowCritDirectHitOnBar)
+                {
+                    var colW = ImGui.CalcTextSize("100%").X;
+                    var labelWidth = ImGui.CalcTextSize("!!!").X;
+                    rightX -= colW;
+                    drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!!!");
+                    rightX -= 6.0f;
+                }
+
+                if (plugin.Config.ShowCritOnBar)
+                {
+                    var colW = ImGui.CalcTextSize("100%").X;
+                    var labelWidth = ImGui.CalcTextSize("!!").X;
+                    rightX -= colW;
+                    drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!!");
+                    rightX -= 6.0f;
+                }
+
+                if (plugin.Config.ShowDirectHitOnBar)
+                {
+                    var colW = ImGui.CalcTextSize("100%").X;
+                    var labelWidth = ImGui.CalcTextSize("!").X;
+                    rightX -= colW;
+                    drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!");
+                    rightX -= 6.0f;
                 }
 
                 if (plugin.Config.ShowValueOnBar)
@@ -263,6 +302,16 @@ public class MainWindow : Window, IDisposable
                     };
                     var labelWidth = ImGui.CalcTextSize(valLabel).X;
                     drawList.AddText(new Vector2(rightX - labelWidth, textY), headerColor, valLabel);
+                }
+
+                // Header separator line
+                if (plugin.Config.HeaderSeparator)
+                {
+                    var sepY = cursorPos.Y + headerHeight;
+                    drawList.AddLine(
+                        new Vector2(cursorPos.X, sepY),
+                        new Vector2(cursorPos.X + windowWidth, sepY),
+                        ImGui.ColorConvertFloat4ToU32(plugin.Config.HeaderSeparatorColor));
                 }
 
                 ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + headerHeight + plugin.Config.BarSpacing));

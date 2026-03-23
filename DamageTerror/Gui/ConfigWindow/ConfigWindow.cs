@@ -209,11 +209,143 @@ public class ConfigWindow : Window, IDisposable
         {
             ImGui.Indent();
 
-            var showHeader = config.ShowMeterHeader;
-            if (ImGui.Checkbox("Show header row", ref showHeader))
+            // --- Selection Bar ---
+            if (ImGui.TreeNodeEx("Selection Bar", ImGuiTreeNodeFlags.None))
             {
-                config.ShowMeterHeader = showHeader;
-                changed = true;
+                var hideWhenPinned = config.HideSelectionBarWhenPinned;
+                if (ImGui.Checkbox("Hide when window is pinned", ref hideWhenPinned))
+                {
+                    config.HideSelectionBarWhenPinned = hideWhenPinned;
+                    changed = true;
+                }
+
+                if (config.HideSelectionBarWhenPinned)
+                {
+                    ImGui.Indent();
+                    var showOnCtrlShift = config.SelectionBarShowOnCtrlShift;
+                    if (ImGui.Checkbox("Show if Ctrl + Shift is held", ref showOnCtrlShift))
+                    {
+                        config.SelectionBarShowOnCtrlShift = showOnCtrlShift;
+                        changed = true;
+                    }
+                    ImGui.Unindent();
+                }
+
+                ImGui.Spacing();
+
+                var showSelBar = config.ShowSelectionBar;
+                if (ImGui.Checkbox("Show selection bar", ref showSelBar))
+                {
+                    config.ShowSelectionBar = showSelBar;
+                    changed = true;
+                }
+
+                var showEncPicker = config.ShowEncounterPicker;
+                if (ImGui.Checkbox("Show encounter picker", ref showEncPicker))
+                {
+                    config.ShowEncounterPicker = showEncPicker;
+                    changed = true;
+                }
+
+                var showSortDd = config.ShowSortDropdown;
+                if (ImGui.Checkbox("Show sort dropdown", ref showSortDd))
+                {
+                    config.ShowSortDropdown = showSortDd;
+                    changed = true;
+                }
+
+                ImGui.Spacing();
+                changed |= ColorEditProp("Text color", config.SelectionBarTextColor, v => config.SelectionBarTextColor = v);
+                changed |= ColorEditProp("Background color", config.SelectionBarBackgroundColor, v => config.SelectionBarBackgroundColor = v);
+
+                var selBarHeight = config.SelectionBarHeight;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderFloat("Extra padding", ref selBarHeight, 0.0f, 16.0f, "%.0f px"))
+                {
+                    config.SelectionBarHeight = selBarHeight;
+                    changed = true;
+                }
+
+                var showSelSep = config.ShowSelectionBarSeparator;
+                if (ImGui.Checkbox("Show separator line", ref showSelSep))
+                {
+                    config.ShowSelectionBarSeparator = showSelSep;
+                    changed = true;
+                }
+
+                if (config.ShowSelectionBarSeparator)
+                {
+                    ImGui.Indent();
+                    changed |= ColorEditProp("Separator color", config.SelectionBarSeparatorColor, v => config.SelectionBarSeparatorColor = v);
+                    ImGui.Unindent();
+                }
+
+                if (ImGui.Button("Reset Selection Bar"))
+                {
+                    config.ShowSelectionBar = true;
+                    config.SelectionBarTextColor = new Vector4(1f, 1f, 1f, 1f);
+                    config.SelectionBarBackgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+                    config.SelectionBarHeight = 0.0f;
+                    config.ShowEncounterPicker = true;
+                    config.ShowSortDropdown = true;
+                    config.ShowSelectionBarSeparator = true;
+                    config.SelectionBarSeparatorColor = new Vector4(0.4f, 0.4f, 0.4f, 0.5f);
+                    config.HideSelectionBarWhenPinned = false;
+                    config.SelectionBarShowOnCtrlShift = true;
+                    changed = true;
+                }
+
+                ImGui.TreePop();
+            }
+
+            ImGui.Spacing();
+
+            // --- Header Row ---
+            if (ImGui.TreeNodeEx("Header Row", ImGuiTreeNodeFlags.None))
+            {
+                var showHeader = config.ShowMeterHeader;
+                if (ImGui.Checkbox("Show header row", ref showHeader))
+                {
+                    config.ShowMeterHeader = showHeader;
+                    changed = true;
+                }
+
+                changed |= ColorEditProp("Header text color", config.HeaderTextColor, v => config.HeaderTextColor = v);
+                changed |= ColorEditProp("Header background", config.HeaderBackgroundColor, v => config.HeaderBackgroundColor = v);
+
+                var headerHeight = config.HeaderHeight;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderFloat("Header height", ref headerHeight, 14.0f, 40.0f, "%.0f px"))
+                {
+                    config.HeaderHeight = headerHeight;
+                    changed = true;
+                }
+
+                var headerSep = config.HeaderSeparator;
+                if (ImGui.Checkbox("Show separator line", ref headerSep))
+                {
+                    config.HeaderSeparator = headerSep;
+                    changed = true;
+                }
+
+                if (config.HeaderSeparator)
+                {
+                    ImGui.Indent();
+                    changed |= ColorEditProp("Separator color", config.HeaderSeparatorColor, v => config.HeaderSeparatorColor = v);
+                    ImGui.Unindent();
+                }
+
+                if (ImGui.Button("Reset Header"))
+                {
+                    config.HeaderTextColor = new Vector4(0.7f, 0.7f, 0.7f, 0.9f);
+                    config.HeaderBackgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+                    config.HeaderHeight = 22.0f;
+                    config.HeaderSeparator = false;
+                    config.HeaderSeparatorColor = new Vector4(0.4f, 0.4f, 0.4f, 0.5f);
+                    changed = true;
+                }
+
+                ImGui.TreePop();
             }
 
             ImGui.Spacing();
