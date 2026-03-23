@@ -40,6 +40,7 @@ public class MainWindow : Window, IDisposable
     private readonly EncounterHeaderComponent headerComponent;
     private readonly CombatantBarComponent barComponent;
     private readonly CombatantDetailPanel detailPanel;
+    private readonly StatusBarComponent statusBarComponent;
     private TitleBarButton? lockButton;
     private DateTime? combatEndTime;
 
@@ -57,6 +58,7 @@ public class MainWindow : Window, IDisposable
         this.headerComponent = new EncounterHeaderComponent(plugin.DataService, plugin.SaveConfig);
         this.barComponent = new CombatantBarComponent(plugin.Config, textureProvider);
         this.detailPanel = new CombatantDetailPanel(plugin.Config);
+        this.statusBarComponent = new StatusBarComponent(plugin.Config);
 
         // Settings button
         TitleBarButtons.Add(new TitleBarButton
@@ -117,6 +119,10 @@ public class MainWindow : Window, IDisposable
         if (!Svc.ClientState.IsLoggedIn)
             return false;
 
+        // Duty type filter
+        if (!IsDutyTypeEnabled())
+            return false;
+
         if (!this.plugin.Config.HideOutOfCombat)
         {
             combatEndTime = null;
@@ -133,6 +139,27 @@ public class MainWindow : Window, IDisposable
         combatEndTime ??= DateTime.UtcNow;
         var elapsed = (DateTime.UtcNow - combatEndTime.Value).TotalSeconds;
         return elapsed < this.plugin.Config.HideOutOfCombatDelay;
+    }
+
+    private bool IsDutyTypeEnabled()
+    {
+        var contentType = Content.ContentType;
+        var config = this.plugin.Config;
+        return contentType switch
+        {
+            ECommons.GameHelpers.ContentType.Dungeon => config.EnableInDungeons,
+            ECommons.GameHelpers.ContentType.Trial => config.EnableInTrials,
+            ECommons.GameHelpers.ContentType.Raid => config.EnableInRaids,
+            ECommons.GameHelpers.ContentType.ARaid => config.EnableInAllianceRaids,
+            ECommons.GameHelpers.ContentType.DeepDungeon => config.EnableInDeepDungeons,
+            ECommons.GameHelpers.ContentType.FieldOperations => config.EnableInFieldOperations,
+            ECommons.GameHelpers.ContentType.FieldRaid => config.EnableInFieldRaids,
+            ECommons.GameHelpers.ContentType.Criterion => config.EnableInCriterion,
+            ECommons.GameHelpers.ContentType.Variant => config.EnableInVariant,
+            ECommons.GameHelpers.ContentType.PVP => config.EnableInPvP,
+            ECommons.GameHelpers.ContentType.OverWorld => config.EnableInOverworld,
+            _ => config.EnableInOverworld,
+        };
     }
 
     public override void PreDraw()
@@ -205,8 +232,16 @@ public class MainWindow : Window, IDisposable
         var sortBy = plugin.Config.SortBy;
         var maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
 
+        // Status bar (above)
+        if (plugin.Config.StatusBarAbove)
+            statusBarComponent.Render(encounter);
+
+        // Reserve space for status bar at bottom if below
+        var statusBarHeight = !plugin.Config.StatusBarAbove ? statusBarComponent.GetHeight() : 0f;
+        var childHeight = statusBarHeight > 0 ? ImGui.GetContentRegionAvail().Y - statusBarHeight : 0;
+
         // Render bars in a scrollable child region
-        if (ImGui.BeginChild("##combatants", new Vector2(0, 0), false))
+        if (ImGui.BeginChild("##combatants", new Vector2(0, childHeight), false))
         {
             // Header row
             if (plugin.Config.ShowMeterHeader)
@@ -330,6 +365,10 @@ public class MainWindow : Window, IDisposable
             }
         }
         ImGui.EndChild();
+
+        // Status bar (below)
+        if (!plugin.Config.StatusBarAbove)
+            statusBarComponent.Render(encounter);
     }
 
     private List<CombatantEntry> GetSortedCombatants(EncounterSnapshot encounter)
