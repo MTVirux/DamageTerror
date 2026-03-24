@@ -70,6 +70,12 @@ public class AppearanceTab
                 ImGui.EndTabItem();
             }
 
+            if (ImGui.BeginTabItem("Details"))
+            {
+                changed |= DrawDetailsTab(config);
+                ImGui.EndTabItem();
+            }
+
             ImGui.EndTabBar();
         }
 
@@ -310,6 +316,41 @@ public class AppearanceTab
             changed = true;
         }
 
+        var barFontScale = config.BarFontScale;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Bar font scale", ref barFontScale, 0.5f, 2.0f, "%.2f"))
+        {
+            config.BarFontScale = barFontScale;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+        ImGui.TextDisabled("Padding");
+
+        var barLeftPad = config.BarLeftPadding;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Left padding", ref barLeftPad, 0.0f, 20.0f, "%.0f px"))
+        {
+            config.BarLeftPadding = barLeftPad;
+            changed = true;
+        }
+
+        var barRightPad = config.BarRightPadding;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Right padding", ref barRightPad, 0.0f, 20.0f, "%.0f px"))
+        {
+            config.BarRightPadding = barRightPad;
+            changed = true;
+        }
+
+        var barColSpacing = config.BarColumnSpacing;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Column spacing", ref barColSpacing, 0.0f, 16.0f, "%.0f px"))
+        {
+            config.BarColumnSpacing = barColSpacing;
+            changed = true;
+        }
+
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.Spacing();
@@ -319,6 +360,14 @@ public class AppearanceTab
         changed |= ConfigHelpers.ColorEditProp("Value text", config.ValueTextColor, v => config.ValueTextColor = v);
         changed |= ConfigHelpers.ColorEditProp("Bar background", config.BarBackgroundColor, v => config.BarBackgroundColor = v);
         changed |= ConfigHelpers.ColorEditProp("Window background", config.WindowBackgroundColor, v => config.WindowBackgroundColor = v);
+
+        var windowRounding = config.WindowRounding;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Window rounding", ref windowRounding, 0.0f, 12.0f, "%.1f"))
+        {
+            config.WindowRounding = windowRounding;
+            changed = true;
+        }
 
         return changed;
     }
@@ -441,6 +490,14 @@ public class AppearanceTab
             changed = true;
         }
 
+        var headerFontScale = config.HeaderFontScale;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Header font scale", ref headerFontScale, 0.5f, 2.0f, "%.2f"))
+        {
+            config.HeaderFontScale = headerFontScale;
+            changed = true;
+        }
+
         var headerSep = config.HeaderSeparator;
         if (ImGui.Checkbox("Show separator line", ref headerSep))
         {
@@ -462,6 +519,7 @@ public class AppearanceTab
             config.HeaderTextColor = new Vector4(0.7f, 0.7f, 0.7f, 0.9f);
             config.HeaderBackgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
             config.HeaderHeight = 22.0f;
+            config.HeaderFontScale = 1.0f;
             config.HeaderSeparator = false;
             config.HeaderSeparatorColor = new Vector4(0.4f, 0.4f, 0.4f, 0.5f);
             changed = true;
@@ -580,6 +638,14 @@ public class AppearanceTab
                 changed = true;
             }
 
+            var statusPad = config.StatusBarPadding;
+            ImGui.SetNextItemWidth(150);
+            if (ImGui.SliderFloat("Padding##statusbar", ref statusPad, 0f, 20f, "%.0f px"))
+            {
+                config.StatusBarPadding = statusPad;
+                changed = true;
+            }
+
             ImGui.Spacing();
             ImGui.TextDisabled("Colors");
 
@@ -648,6 +714,14 @@ public class AppearanceTab
             changed = true;
         }
 
+        var skillRounding = config.SkillBarRounding;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Bar rounding##skills", ref skillRounding, 0.0f, 12.0f, "%.1f"))
+        {
+            config.SkillBarRounding = skillRounding;
+            changed = true;
+        }
+
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.Spacing();
@@ -668,6 +742,40 @@ public class AppearanceTab
             config.SkillRowBackgroundColor = new Vector4(0.12f, 0.12f, 0.12f, 0.6f);
             config.SkillTextColor = new Vector4(1f, 1f, 1f, 0.9f);
             config.SkillHeaderTextColor = new Vector4(0.6f, 0.6f, 0.6f, 0.9f);
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    private static bool DrawDetailsTab(Configuration config)
+    {
+        var changed = false;
+
+        ImGui.Spacing();
+        ImGui.TextDisabled("Layout");
+
+        var detailIndent = config.DetailIndent;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Indent", ref detailIndent, 0.0f, 24.0f, "%.0f px"))
+        {
+            config.DetailIndent = detailIndent;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+        ImGui.TextDisabled("Colors");
+
+        changed |= ConfigHelpers.ColorEditProp("Label color", config.DetailLabelColor, v => config.DetailLabelColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Death highlight", config.DetailDeathColor, v => config.DetailDeathColor = v);
+
+        ImGui.Spacing();
+
+        if (ImGui.Button("Reset Details"))
+        {
+            config.DetailLabelColor = new Vector4(0.7f, 0.7f, 0.7f, 1f);
+            config.DetailDeathColor = new Vector4(1f, 0.3f, 0.3f, 1f);
+            config.DetailIndent = 8.0f;
             changed = true;
         }
 
