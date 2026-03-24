@@ -10,9 +10,27 @@ namespace DamageTerror.Gui.ConfigWindow;
 /// </summary>
 public class AppearanceTab
 {
+    private readonly PresetManager presetManager;
+    private int selectedPresetIndex = -1;
+    private string savePresetName = string.Empty;
+    private string savePresetDesc = string.Empty;
+    private string importJson = string.Empty;
+    private string? importError;
+
+    public AppearanceTab(PresetManager presetManager)
+    {
+        this.presetManager = presetManager;
+    }
+
     public bool Draw(Configuration config)
     {
         var changed = false;
+
+        changed |= DrawPresetSection(config);
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
 
         if (ImGui.BeginTabBar("##appearanceTabs"))
         {
@@ -53,6 +71,194 @@ public class AppearanceTab
             }
 
             ImGui.EndTabBar();
+        }
+
+        return changed;
+    }
+
+    private bool DrawPresetSection(Configuration config)
+    {
+        var changed = false;
+        var allPresets = presetManager.GetAllPresets().ToList();
+
+        ImGui.TextDisabled("Theme Preset");
+
+        // ---- Preset combo dropdown ----
+        var previewLabel = selectedPresetIndex >= 0 && selectedPresetIndex < allPresets.Count
+            ? allPresets[selectedPresetIndex].Name
+            : "Select a preset...";
+
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 220);
+        if (ImGui.BeginCombo("##presetCombo", previewLabel))
+        {
+            // Built-in group
+            ImGui.TextDisabled("Built-in");
+            for (var i = 0; i < allPresets.Count; i++)
+            {
+                var preset = allPresets[i];
+                if (preset.IsBuiltIn)
+                {
+                    var isSelected = selectedPresetIndex == i;
+                    if (ImGui.Selectable($"  {preset.Name}##preset{i}", isSelected))
+                        selectedPresetIndex = i;
+
+                    if (!string.IsNullOrEmpty(preset.Description) && ImGui.IsItemHovered())
+                        ImGui.SetTooltip(preset.Description);
+                }
+            }
+
+            // Custom group (if any exist)
+            var hasCustom = allPresets.Any(p => !p.IsBuiltIn);
+            if (hasCustom)
+            {
+                ImGui.Spacing();
+                ImGui.TextDisabled("Custom");
+                for (var i = 0; i < allPresets.Count; i++)
+                {
+                    var preset = allPresets[i];
+                    if (!preset.IsBuiltIn)
+                    {
+                        var isSelected = selectedPresetIndex == i;
+                        if (ImGui.Selectable($"  {preset.Name}##preset{i}", isSelected))
+                            selectedPresetIndex = i;
+
+                        if (!string.IsNullOrEmpty(preset.Description) && ImGui.IsItemHovered())
+                            ImGui.SetTooltip(preset.Description);
+
+                        // Right-click context menu for custom presets
+                        if (ImGui.BeginPopupContextItem($"##presetCtx{i}"))
+                        {
+                            if (ImGui.MenuItem("Export to Clipboard"))
+                            {
+                                var json = presetManager.ExportPreset(preset);
+                                ImGui.SetClipboardText(json);
+                            }
+
+                            if (ImGui.MenuItem("Delete"))
+                            {
+                                presetManager.DeleteCustomPreset(preset.Name);
+                                if (selectedPresetIndex == i) selectedPresetIndex = -1;
+                            }
+
+                            ImGui.EndPopup();
+                        }
+                    }
+                }
+            }
+
+            ImGui.EndCombo();
+        }
+
+        // ---- Action buttons (same line) ----
+        ImGui.SameLine();
+        if (ImGui.Button("Apply") && selectedPresetIndex >= 0 && selectedPresetIndex < allPresets.Count)
+        {
+            allPresets[selectedPresetIndex].ApplyTo(config);
+            changed = true;
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Save Current"))
+        {
+            savePresetName = string.Empty;
+            savePresetDesc = string.Empty;
+            ImGui.OpenPopup("##savePresetPopup");
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Import"))
+        {
+            importJson = string.Empty;
+            importError = null;
+            ImGui.OpenPopup("##importPresetPopup");
+        }
+
+        // ---- Save popup ----
+        if (ImGui.BeginPopup("##savePresetPopup"))
+        {
+            ImGui.Text("Save current settings as a custom preset:");
+            ImGui.Spacing();
+
+            ImGui.SetNextItemWidth(250);
+            ImGui.InputText("Name", ref savePresetName, 128);
+
+            ImGui.SetNextItemWidth(250);
+            ImGui.InputText("Description", ref savePresetDesc, 256);
+
+            ImGui.Spacing();
+
+            var canSave = !string.IsNullOrWhiteSpace(savePresetName);
+            if (!canSave) ImGui.BeginDisabled();
+            if (ImGui.Button("Save"))
+            {
+                var preset = ThemePreset.CreateFromConfig(config, savePresetName.Trim(), savePresetDesc.Trim());
+                presetManager.SaveCustomPreset(preset);
+                selectedPresetIndex = -1; // reset selection since list changed
+                ImGui.CloseCurrentPopup();
+            }
+            if (!canSave) ImGui.EndDisabled();
+
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel"))
+                ImGui.CloseCurrentPopup();
+
+            ImGui.EndPopup();
+        }
+
+        // ---- Import popup ----
+        if (ImGui.BeginPopup("##importPresetPopup"))
+        {
+            ImGui.Text("Paste preset JSON from clipboard:");
+            ImGui.Spacing();
+
+            ImGui.SetNextItemWidth(350);
+            ImGui.InputTextMultiline("##importJson", ref importJson, 8192, new Vector2(350, 150));
+
+            ImGui.Spacing();
+
+            if (ImGui.Button("Paste from Clipboard"))
+                importJson = ImGui.GetClipboardText() ?? string.Empty;
+
+            ImGui.SameLine();
+            var canImport = !string.IsNullOrWhiteSpace(importJson);
+            if (!canImport) ImGui.BeginDisabled();
+            if (ImGui.Button("Import & Apply"))
+            {
+                var preset = presetManager.ImportPreset(importJson, out importError);
+                if (preset != null)
+                {
+                    presetManager.SaveCustomPreset(preset);
+                    preset.ApplyTo(config);
+                    changed = true;
+                    selectedPresetIndex = -1;
+                    ImGui.CloseCurrentPopup();
+                }
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Import Only"))
+            {
+                var preset = presetManager.ImportPreset(importJson, out importError);
+                if (preset != null)
+                {
+                    presetManager.SaveCustomPreset(preset);
+                    selectedPresetIndex = -1;
+                    ImGui.CloseCurrentPopup();
+                }
+            }
+            if (!canImport) ImGui.EndDisabled();
+
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel##import"))
+                ImGui.CloseCurrentPopup();
+
+            if (importError != null)
+            {
+                ImGui.Spacing();
+                ImGui.TextColored(new Vector4(1f, 0.3f, 0.3f, 1f), importError);
+            }
+
+            ImGui.EndPopup();
         }
 
         return changed;
