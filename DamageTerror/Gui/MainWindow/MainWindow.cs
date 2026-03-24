@@ -196,10 +196,12 @@ public class MainWindow : Window, IDisposable
             lockButton.Icon = this.plugin.Config.PinMainWindow ? FontAwesomeIcon.Lock : FontAwesomeIcon.LockOpen;
 
         ImGui.PushStyleColor(ImGuiCol.WindowBg, this.plugin.Config.WindowBackgroundColor);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, this.plugin.Config.WindowRounding);
     }
 
     public override void PostDraw()
     {
+        ImGui.PopStyleVar();
         ImGui.PopStyleColor();
     }
 
@@ -261,8 +263,14 @@ public class MainWindow : Window, IDisposable
                         new Vector2(cursorPos.X + windowWidth, cursorPos.Y + headerHeight),
                         ImGui.ColorConvertFloat4ToU32(headerBg));
                 }
+
+                // Apply header font scale
+                var prevHdrScale = ImGui.GetFont().Scale;
+                ImGui.GetFont().Scale = plugin.Config.HeaderFontScale;
+                ImGui.PushFont(ImGui.GetFont());
+
                 var textY = cursorPos.Y + (headerHeight - ImGui.GetTextLineHeight()) * 0.5f;
-                var textStartX = cursorPos.X + 4.0f;
+                var textStartX = cursorPos.X + plugin.Config.BarLeftPadding;
 
                 if (plugin.Config.ShowRankNumber)
                 {
@@ -282,18 +290,16 @@ public class MainWindow : Window, IDisposable
                 if (plugin.Config.ShowNameOnBar)
                     drawList.AddText(new Vector2(textStartX, textY), headerColor, "Name");
 
-                var rightX = cursorPos.X + windowWidth - 6.0f;
+                var rightX = cursorPos.X + windowWidth - plugin.Config.BarRightPadding;
+                var colSpacing = plugin.Config.BarColumnSpacing;
 
-                // Mirror the exact right-align logic from CombatantBarComponent:
-                // Bar draws percent at (rightX - pctSize.X), then subtracts 8px spacing,
-                // then draws value at (rightX - valueSize.X).
                 if (plugin.Config.ShowDamagePercentOnBar)
                 {
                     var colW = ImGui.CalcTextSize("00.0%").X;
                     var labelWidth = ImGui.CalcTextSize("%").X;
                     rightX -= colW;
                     drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "%");
-                    rightX -= 8.0f;
+                    rightX -= colSpacing;
                 }
 
                 if (plugin.Config.ShowCritDirectHitOnBar)
@@ -302,7 +308,7 @@ public class MainWindow : Window, IDisposable
                     var labelWidth = ImGui.CalcTextSize("!!!").X;
                     rightX -= colW;
                     drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!!!");
-                    rightX -= 6.0f;
+                    rightX -= colSpacing;
                 }
 
                 if (plugin.Config.ShowCritOnBar)
@@ -311,7 +317,7 @@ public class MainWindow : Window, IDisposable
                     var labelWidth = ImGui.CalcTextSize("!!").X;
                     rightX -= colW;
                     drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!!");
-                    rightX -= 6.0f;
+                    rightX -= colSpacing;
                 }
 
                 if (plugin.Config.ShowDirectHitOnBar)
@@ -320,7 +326,7 @@ public class MainWindow : Window, IDisposable
                     var labelWidth = ImGui.CalcTextSize("!").X;
                     rightX -= colW;
                     drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!");
-                    rightX -= 6.0f;
+                    rightX -= colSpacing;
                 }
 
                 if (plugin.Config.ShowValueOnBar)
@@ -338,6 +344,10 @@ public class MainWindow : Window, IDisposable
                     var labelWidth = ImGui.CalcTextSize(valLabel).X;
                     drawList.AddText(new Vector2(rightX - labelWidth, textY), headerColor, valLabel);
                 }
+
+                // Restore header font scale
+                ImGui.GetFont().Scale = prevHdrScale;
+                ImGui.PopFont();
 
                 // Header separator line
                 if (plugin.Config.HeaderSeparator)

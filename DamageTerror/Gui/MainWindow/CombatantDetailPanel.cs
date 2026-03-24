@@ -38,12 +38,13 @@ public class CombatantDetailPanel
         if (expandedIndex != index)
             return;
 
-        ImGui.Indent(8.0f);
+        var labelColor = config.DetailLabelColor;
+        ImGui.Indent(config.DetailIndent);
 
         // Row 1: Damage stats
         if (config.DetailShowDamage)
         {
-            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Damage:");
+            ImGui.TextColored(labelColor, "Damage:");
             ImGui.SameLine();
             ImGui.TextUnformatted($"{combatant.Damage:N0}  ({combatant.DamagePercent})");
         }
@@ -51,15 +52,15 @@ public class CombatantDetailPanel
         // Row 2: Crit/DH stats
         if (config.DetailShowCritDhStats)
         {
-            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Crit:");
+            ImGui.TextColored(labelColor, "Crit:");
             ImGui.SameLine();
             ImGui.TextUnformatted($"{combatant.CritPct:F1}%");
             ImGui.SameLine();
-            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "  DH:");
+            ImGui.TextColored(labelColor, "  DH:");
             ImGui.SameLine();
             ImGui.TextUnformatted($"{combatant.DirectHitPct:F1}%");
             ImGui.SameLine();
-            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "  CDH:");
+            ImGui.TextColored(labelColor, "  CDH:");
             ImGui.SameLine();
             ImGui.TextUnformatted($"{combatant.CritDirectHitPct:F1}%");
         }
@@ -67,10 +68,10 @@ public class CombatantDetailPanel
         // Row 3: Deaths and Overheal
         if (config.DetailShowDeaths)
         {
-            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Deaths:");
+            ImGui.TextColored(labelColor, "Deaths:");
             ImGui.SameLine();
             if (combatant.Deaths > 0)
-                ImGui.TextColored(new Vector4(1f, 0.3f, 0.3f, 1f), combatant.Deaths.ToString());
+                ImGui.TextColored(config.DetailDeathColor, combatant.Deaths.ToString());
             else
                 ImGui.TextUnformatted("0");
         }
@@ -78,7 +79,7 @@ public class CombatantDetailPanel
         if (config.DetailShowOverheal && combatant.OverhealPct > 0)
         {
             if (config.DetailShowDeaths) ImGui.SameLine();
-            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "  Overheal:");
+            ImGui.TextColored(labelColor, "  Overheal:");
             ImGui.SameLine();
             ImGui.TextUnformatted($"{combatant.OverhealPct:F1}%");
         }
@@ -86,7 +87,7 @@ public class CombatantDetailPanel
         // Row 4: Max Hit
         if (config.DetailShowMaxHit && !string.IsNullOrEmpty(combatant.MaxHit))
         {
-            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Max Hit:");
+            ImGui.TextColored(labelColor, "Max Hit:");
             ImGui.SameLine();
             ImGui.TextUnformatted($"{combatant.MaxHit} ({combatant.MaxHitDamage:N0})");
         }
@@ -94,7 +95,7 @@ public class CombatantDetailPanel
         // Row 5: DPS trend
         if (config.DetailShowDpsTrend && (combatant.Last10Dps > 0 || combatant.Last30Dps > 0 || combatant.Last60Dps > 0))
         {
-            ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "DPS 10s/30s/60s:");
+            ImGui.TextColored(labelColor, "DPS 10s/30s/60s:");
             ImGui.SameLine();
             ImGui.TextUnformatted($"{combatant.Last10Dps:F1} / {combatant.Last30Dps:F1} / {combatant.Last60Dps:F1}");
         }
@@ -121,7 +122,7 @@ public class CombatantDetailPanel
             }
         }
 
-        ImGui.Unindent(8.0f);
+        ImGui.Unindent(config.DetailIndent);
         ImGui.Spacing();
     }
 
@@ -134,6 +135,7 @@ public class CombatantDetailPanel
         var bgColor = ImGui.ColorConvertFloat4ToU32(config.SkillRowBackgroundColor);
         var fillColor = ImGui.ColorConvertFloat4ToU32(fillColorVec);
         var textColor = ImGui.ColorConvertFloat4ToU32(config.SkillTextColor);
+        var skillRounding = config.SkillBarRounding;
 
         var topSkills = config.MaxSkillBreakdownCount > 0 ? skills.Take(config.MaxSkillBreakdownCount).ToList() : skills;
         var headerColor = ImGui.ColorConvertFloat4ToU32(config.SkillHeaderTextColor);
@@ -180,8 +182,8 @@ public class CombatantDetailPanel
             var min = ImGui.GetItemRectMin();
             var max = ImGui.GetItemRectMax();
 
-            drawList.AddRectFilled(min, max, bgColor);
-            drawList.AddRectFilled(min, new Vector2(min.X + availWidth * barFraction, max.Y), fillColor);
+            drawList.AddRectFilled(min, max, bgColor, skillRounding);
+            drawList.AddRectFilled(min, new Vector2(min.X + availWidth * barFraction, max.Y), fillColor, skillRounding);
             drawList.AddText(new Vector2(min.X + 3, min.Y), textColor, skill.Name);
 
             var x = max.X - 3;

@@ -65,7 +65,7 @@ public class StatusBarComponent
         var textColor = ImGui.ColorConvertFloat4ToU32(isActive ? config.StatusBarActiveColor : config.StatusBarInactiveColor);
         var labelColor = ImGui.ColorConvertFloat4ToU32(config.StatusBarLabelColor);
         var textY = cursorPos.Y + (height - ImGui.GetTextLineHeight()) * 0.5f;
-        var padding = 6f;
+        var padding = config.StatusBarPadding;
 
         // Find local player
         var localPlayer = encounter.Combatants.FirstOrDefault(c => c.IsLocalPlayer);

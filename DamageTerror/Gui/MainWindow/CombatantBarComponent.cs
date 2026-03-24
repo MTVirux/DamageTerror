@@ -63,9 +63,14 @@ public class CombatantBarComponent
         // Make the bar area interactive
         var clicked = ImGui.InvisibleButton($"##combatant_{index}", new Vector2(windowWidth, barHeight));
 
+        // Apply font scale
+        var prevScale = ImGui.GetFont().Scale;
+        ImGui.GetFont().Scale = config.BarFontScale;
+        ImGui.PushFont(ImGui.GetFont());
+
         // Draw content on top of the bar
         var textY = cursorPos.Y + (barHeight - ImGui.GetTextLineHeight()) * 0.5f;
-        var textStartX = cursorPos.X + 4.0f;
+        var textStartX = cursorPos.X + config.BarLeftPadding;
 
         // Rank number
         if (config.ShowRankNumber)
@@ -115,8 +120,9 @@ public class CombatantBarComponent
         }
 
         // Right-side values
-        var rightX = cursorPos.X + windowWidth - 6.0f;
+        var rightX = cursorPos.X + windowWidth - config.BarRightPadding;
         var valColor = ImGui.ColorConvertFloat4ToU32(config.ValueTextColor);
+        var colSpacing = config.BarColumnSpacing;
 
         // Damage percent (rightmost if shown alongside value)
         if (config.ShowDamagePercentOnBar && !string.IsNullOrEmpty(combatant.DamagePercent))
@@ -125,7 +131,7 @@ public class CombatantBarComponent
             var colW = ImGui.CalcTextSize("00.0%").X;
             rightX -= colW;
             drawList.AddText(new Vector2(rightX + colW - ImGui.CalcTextSize(pctStr).X, textY), valColor, pctStr);
-            rightX -= 8.0f; // spacing
+            rightX -= colSpacing; // spacing
         }
 
         // Crit/DH stats (right-aligned within fixed-width columns)
@@ -135,7 +141,7 @@ public class CombatantBarComponent
             var colW = ImGui.CalcTextSize("100%").X;
             rightX -= colW;
             drawList.AddText(new Vector2(rightX + colW - ImGui.CalcTextSize(cdhStr).X, textY), valColor, cdhStr);
-            rightX -= 6.0f;
+            rightX -= colSpacing;
         }
 
         if (config.ShowCritOnBar)
@@ -144,7 +150,7 @@ public class CombatantBarComponent
             var colW = ImGui.CalcTextSize("100%").X;
             rightX -= colW;
             drawList.AddText(new Vector2(rightX + colW - ImGui.CalcTextSize(critStr).X, textY), valColor, critStr);
-            rightX -= 6.0f;
+            rightX -= colSpacing;
         }
 
         if (config.ShowDirectHitOnBar)
@@ -153,7 +159,7 @@ public class CombatantBarComponent
             var colW = ImGui.CalcTextSize("100%").X;
             rightX -= colW;
             drawList.AddText(new Vector2(rightX + colW - ImGui.CalcTextSize(dhStr).X, textY), valColor, dhStr);
-            rightX -= 6.0f;
+            rightX -= colSpacing;
         }
 
         // DPS/HPS value (right-aligned)
@@ -164,6 +170,10 @@ public class CombatantBarComponent
             rightX -= valueSize.X;
             drawList.AddText(new Vector2(rightX, textY), valColor, valueStr);
         }
+
+        // Restore font scale
+        ImGui.GetFont().Scale = prevScale;
+        ImGui.PopFont();
 
         // Bar spacing
         if (config.BarSpacing > 0)
