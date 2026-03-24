@@ -119,6 +119,7 @@ public class Configuration : IPluginConfiguration
     public Vector4 NameTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 ValueTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 WindowBackgroundColor { get; set; } = new(0.06f, 0.06f, 0.06f, 0.94f);
+    public float WindowRounding { get; set; } = 0f;
 
     // ===== Customization — Selection Bar =====
 
@@ -138,6 +139,7 @@ public class Configuration : IPluginConfiguration
     public Vector4 HeaderTextColor { get; set; } = new(0.7f, 0.7f, 0.7f, 0.9f);
     public Vector4 HeaderBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
     public float HeaderHeight { get; set; } = 22.0f;
+    public float HeaderFontScale { get; set; } = 1.0f;
     public bool HeaderSeparator { get; set; } = false;
     public Vector4 HeaderSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
@@ -147,6 +149,10 @@ public class Configuration : IPluginConfiguration
     public float BarSpacing { get; set; } = 1.0f;
     public float BarRounding { get; set; } = 0.0f;
     public float IconSize { get; set; } = 16.0f;
+    public float BarFontScale { get; set; } = 1.0f;
+    public float BarLeftPadding { get; set; } = 4.0f;
+    public float BarRightPadding { get; set; } = 6.0f;
+    public float BarColumnSpacing { get; set; } = 6.0f;
 
     // ===== Customization — Bar Info =====
 
@@ -165,6 +171,9 @@ public class Configuration : IPluginConfiguration
 
     // ===== Customization — Detail Panel =====
 
+    public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
+    public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
+    public float DetailIndent { get; set; } = 8.0f;
     public bool DetailShowDamage { get; set; } = true;
     public bool DetailShowCritDhStats { get; set; } = true;
     public bool DetailShowDeaths { get; set; } = true;
@@ -190,6 +199,7 @@ public class Configuration : IPluginConfiguration
 
     public float SkillRowHeight { get; set; } = 14f;
     public float SkillColumnPadding { get; set; } = 6f;
+    public float SkillBarRounding { get; set; } = 0f;
 
     // ===== Customization — Status Bar =====
 
@@ -198,6 +208,7 @@ public class Configuration : IPluginConfiguration
     public bool ShowStatusBarTimer { get; set; } = true;
     public float StatusBarFontScale { get; set; } = 1.0f;
     public float StatusBarHeight { get; set; } = 20f;
+    public float StatusBarPadding { get; set; } = 6f;
     public bool ShowStatusBarSeparator { get; set; } = true;
     public Vector4 StatusBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
     public Vector4 StatusBarBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.9f);

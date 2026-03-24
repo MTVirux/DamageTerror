@@ -23,6 +23,10 @@ public class ThemePreset
     public float BarRounding { get; set; } = 0.0f;
     public float IconSize { get; set; } = 16.0f;
     public float BarAlpha { get; set; } = 0.7f;
+    public float BarFontScale { get; set; } = 1.0f;
+    public float BarLeftPadding { get; set; } = 4.0f;
+    public float BarRightPadding { get; set; } = 6.0f;
+    public float BarColumnSpacing { get; set; } = 6.0f;
 
     // ===== Role Colors =====
 
@@ -44,6 +48,7 @@ public class ThemePreset
     public Vector4 NameTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 ValueTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 WindowBackgroundColor { get; set; } = new(0.06f, 0.06f, 0.06f, 0.94f);
+    public float WindowRounding { get; set; } = 0f;
 
     // ===== Selection Bar =====
 
@@ -62,6 +67,7 @@ public class ThemePreset
     public Vector4 HeaderTextColor { get; set; } = new(0.7f, 0.7f, 0.7f, 0.9f);
     public Vector4 HeaderBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
     public float HeaderHeight { get; set; } = 22.0f;
+    public float HeaderFontScale { get; set; } = 1.0f;
     public bool HeaderSeparator { get; set; }
     public Vector4 HeaderSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
@@ -72,6 +78,7 @@ public class ThemePreset
     public bool ShowStatusBarTimer { get; set; } = true;
     public float StatusBarHeight { get; set; } = 20f;
     public float StatusBarFontScale { get; set; } = 1.0f;
+    public float StatusBarPadding { get; set; } = 6f;
     public bool ShowStatusBarSeparator { get; set; } = true;
     public Vector4 StatusBarBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.9f);
     public Vector4 StatusBarActiveColor { get; set; } = new(1.0f, 0.6f, 0.0f, 1.0f);
@@ -88,6 +95,7 @@ public class ThemePreset
     public Vector4 SkillHeaderTextColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
     public float SkillRowHeight { get; set; } = 14f;
     public float SkillColumnPadding { get; set; } = 6f;
+    public float SkillBarRounding { get; set; } = 0f;
 
     // ===== Display Flags =====
 
@@ -101,6 +109,12 @@ public class ThemePreset
     public bool ShowCritOnBar { get; set; }
     public bool ShowCritDirectHitOnBar { get; set; }
 
+    // ===== Detail Panel =====
+
+    public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
+    public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
+    public float DetailIndent { get; set; } = 8.0f;
+
     /// <summary>
     /// Applies all preset fields onto the given configuration, overwriting appearance settings.
     /// </summary>
@@ -112,6 +126,10 @@ public class ThemePreset
         config.BarRounding = BarRounding;
         config.IconSize = IconSize;
         config.BarAlpha = BarAlpha;
+        config.BarFontScale = BarFontScale;
+        config.BarLeftPadding = BarLeftPadding;
+        config.BarRightPadding = BarRightPadding;
+        config.BarColumnSpacing = BarColumnSpacing;
 
         // Role colors
         config.UsePerJobColors = UsePerJobColors;
@@ -130,6 +148,7 @@ public class ThemePreset
         config.NameTextColor = NameTextColor;
         config.ValueTextColor = ValueTextColor;
         config.WindowBackgroundColor = WindowBackgroundColor;
+        config.WindowRounding = WindowRounding;
 
         // Selection bar
         config.ShowSelectionBar = ShowSelectionBar;
@@ -146,6 +165,7 @@ public class ThemePreset
         config.HeaderTextColor = HeaderTextColor;
         config.HeaderBackgroundColor = HeaderBackgroundColor;
         config.HeaderHeight = HeaderHeight;
+        config.HeaderFontScale = HeaderFontScale;
         config.HeaderSeparator = HeaderSeparator;
         config.HeaderSeparatorColor = HeaderSeparatorColor;
 
@@ -155,6 +175,7 @@ public class ThemePreset
         config.ShowStatusBarTimer = ShowStatusBarTimer;
         config.StatusBarHeight = StatusBarHeight;
         config.StatusBarFontScale = StatusBarFontScale;
+        config.StatusBarPadding = StatusBarPadding;
         config.ShowStatusBarSeparator = ShowStatusBarSeparator;
         config.StatusBarBackgroundColor = StatusBarBackgroundColor;
         config.StatusBarActiveColor = StatusBarActiveColor;
@@ -170,6 +191,7 @@ public class ThemePreset
         config.SkillHeaderTextColor = SkillHeaderTextColor;
         config.SkillRowHeight = SkillRowHeight;
         config.SkillColumnPadding = SkillColumnPadding;
+        config.SkillBarRounding = SkillBarRounding;
 
         // Display flags
         config.ShowJobIcons = ShowJobIcons;
@@ -181,6 +203,11 @@ public class ThemePreset
         config.ShowDirectHitOnBar = ShowDirectHitOnBar;
         config.ShowCritOnBar = ShowCritOnBar;
         config.ShowCritDirectHitOnBar = ShowCritDirectHitOnBar;
+
+        // Detail panel
+        config.DetailLabelColor = DetailLabelColor;
+        config.DetailDeathColor = DetailDeathColor;
+        config.DetailIndent = DetailIndent;
     }
 
     /// <summary>
@@ -199,6 +226,10 @@ public class ThemePreset
             BarRounding = config.BarRounding,
             IconSize = config.IconSize,
             BarAlpha = config.BarAlpha,
+            BarFontScale = config.BarFontScale,
+            BarLeftPadding = config.BarLeftPadding,
+            BarRightPadding = config.BarRightPadding,
+            BarColumnSpacing = config.BarColumnSpacing,
 
             // Role colors
             UsePerJobColors = config.UsePerJobColors,
@@ -219,6 +250,7 @@ public class ThemePreset
             NameTextColor = config.NameTextColor,
             ValueTextColor = config.ValueTextColor,
             WindowBackgroundColor = config.WindowBackgroundColor,
+            WindowRounding = config.WindowRounding,
 
             // Selection bar
             ShowSelectionBar = config.ShowSelectionBar,
@@ -235,6 +267,7 @@ public class ThemePreset
             HeaderTextColor = config.HeaderTextColor,
             HeaderBackgroundColor = config.HeaderBackgroundColor,
             HeaderHeight = config.HeaderHeight,
+            HeaderFontScale = config.HeaderFontScale,
             HeaderSeparator = config.HeaderSeparator,
             HeaderSeparatorColor = config.HeaderSeparatorColor,
 
@@ -244,6 +277,7 @@ public class ThemePreset
             ShowStatusBarTimer = config.ShowStatusBarTimer,
             StatusBarHeight = config.StatusBarHeight,
             StatusBarFontScale = config.StatusBarFontScale,
+            StatusBarPadding = config.StatusBarPadding,
             ShowStatusBarSeparator = config.ShowStatusBarSeparator,
             StatusBarBackgroundColor = config.StatusBarBackgroundColor,
             StatusBarActiveColor = config.StatusBarActiveColor,
@@ -259,6 +293,7 @@ public class ThemePreset
             SkillHeaderTextColor = config.SkillHeaderTextColor,
             SkillRowHeight = config.SkillRowHeight,
             SkillColumnPadding = config.SkillColumnPadding,
+            SkillBarRounding = config.SkillBarRounding,
 
             // Display flags
             ShowJobIcons = config.ShowJobIcons,
@@ -270,6 +305,11 @@ public class ThemePreset
             ShowDirectHitOnBar = config.ShowDirectHitOnBar,
             ShowCritOnBar = config.ShowCritOnBar,
             ShowCritDirectHitOnBar = config.ShowCritDirectHitOnBar,
+
+            // Detail panel
+            DetailLabelColor = config.DetailLabelColor,
+            DetailDeathColor = config.DetailDeathColor,
+            DetailIndent = config.DetailIndent,
         };
     }
 }
