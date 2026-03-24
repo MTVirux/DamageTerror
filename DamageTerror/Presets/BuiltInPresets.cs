@@ -34,6 +34,10 @@ public static class BuiltInPresets
         BarRounding = 0f,
         IconSize = 14f,
         BarAlpha = 0.75f,
+        BarFontScale = 0.92f,
+        BarLeftPadding = 3f,
+        BarRightPadding = 4f,
+        BarColumnSpacing = 5f,
 
         // Role colors — Kagerou's distinctive palette
         UsePerJobColors = false,
@@ -49,6 +53,7 @@ public static class BuiltInPresets
         NameTextColor = new(1f, 1f, 1f, 1f),
         ValueTextColor = new(1f, 1f, 1f, 1f),
         WindowBackgroundColor = new(0.055f, 0.055f, 0.055f, 0.95f),
+        WindowRounding = 0f,
 
         // Selection bar
         ShowSelectionBar = true,
@@ -65,6 +70,7 @@ public static class BuiltInPresets
         HeaderTextColor = new(0.6f, 0.6f, 0.6f, 0.8f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
         HeaderHeight = 18f,
+        HeaderFontScale = 0.88f,
         HeaderSeparator = true,
         HeaderSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.4f),
 
@@ -74,6 +80,7 @@ public static class BuiltInPresets
         ShowStatusBarTimer = true,
         StatusBarHeight = 18f,
         StatusBarFontScale = 0.9f,
+        StatusBarPadding = 4f,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.9f),
         StatusBarActiveColor = new(1.0f, 0.6f, 0.0f, 1.0f),
@@ -89,6 +96,7 @@ public static class BuiltInPresets
         SkillHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.9f),
         SkillRowHeight = 13f,
         SkillColumnPadding = 5f,
+        SkillBarRounding = 0f,
 
         // Display flags — Kagerou shows name, value, %, rank; hides DH/Crit columns
         ShowJobIcons = true,
@@ -116,6 +124,10 @@ public static class BuiltInPresets
         BarRounding = 3f,
         IconSize = 14f,
         BarAlpha = 0.80f,
+        BarFontScale = 0.95f,
+        BarLeftPadding = 5f,
+        BarRightPadding = 6f,
+        BarColumnSpacing = 6f,
 
         UsePerJobColors = false,
         TankColor = new(0.28f, 0.44f, 0.82f, 1.0f),
@@ -129,6 +141,7 @@ public static class BuiltInPresets
         NameTextColor = new(1f, 1f, 1f, 1f),
         ValueTextColor = new(1f, 1f, 1f, 0.95f),
         WindowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.92f),
+        WindowRounding = 3f,
 
         ShowSelectionBar = true,
         SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f),
@@ -143,6 +156,7 @@ public static class BuiltInPresets
         HeaderTextColor = new(0.65f, 0.65f, 0.65f, 0.85f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
         HeaderHeight = 20f,
+        HeaderFontScale = 0.92f,
         HeaderSeparator = false,
         HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.5f),
 
@@ -151,6 +165,7 @@ public static class BuiltInPresets
         ShowStatusBarTimer = true,
         StatusBarHeight = 20f,
         StatusBarFontScale = 0.95f,
+        StatusBarPadding = 6f,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.85f),
         StatusBarActiveColor = new(1.0f, 0.55f, 0.10f, 1.0f),
@@ -165,6 +180,7 @@ public static class BuiltInPresets
         SkillHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f),
         SkillRowHeight = 14f,
         SkillColumnPadding = 6f,
+        SkillBarRounding = 3f,
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
@@ -192,6 +208,10 @@ public static class BuiltInPresets
         BarRounding = 8f,
         IconSize = 12f,
         BarAlpha = 0.60f,
+        BarFontScale = 0.85f,
+        BarLeftPadding = 6f,
+        BarRightPadding = 6f,
+        BarColumnSpacing = 4f,
 
         UsePerJobColors = false,
         TankColor = new(0.30f, 0.45f, 0.75f, 1.0f),
@@ -205,6 +225,7 @@ public static class BuiltInPresets
         NameTextColor = new(1f, 1f, 1f, 0.90f),
         ValueTextColor = new(1f, 1f, 1f, 0.90f),
         WindowBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.70f),
+        WindowRounding = 8f,
 
         // Minimal selection bar
         ShowSelectionBar = true,
@@ -221,6 +242,7 @@ public static class BuiltInPresets
         HeaderTextColor = new(0.6f, 0.6f, 0.6f, 0.8f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
         HeaderHeight = 18f,
+        HeaderFontScale = 0.85f,
         HeaderSeparator = false,
         HeaderSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f),
 
@@ -230,6 +252,7 @@ public static class BuiltInPresets
         ShowStatusBarTimer = true,
         StatusBarHeight = 18f,
         StatusBarFontScale = 0.9f,
+        StatusBarPadding = 4f,
         ShowStatusBarSeparator = false,
         StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.7f),
         StatusBarActiveColor = new(0.9f, 0.6f, 0.1f, 1.0f),
@@ -244,6 +267,7 @@ public static class BuiltInPresets
         SkillHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f),
         SkillRowHeight = 12f,
         SkillColumnPadding = 4f,
+        SkillBarRounding = 6f,
 
         // Only name + value
         ShowJobIcons = true,
@@ -271,6 +295,10 @@ public static class BuiltInPresets
         BarRounding = 6f,
         IconSize = 16f,
         BarAlpha = 0.85f,
+        BarFontScale = 1.0f,
+        BarLeftPadding = 5f,
+        BarRightPadding = 6f,
+        BarColumnSpacing = 6f,
 
         // Per-job colors — vibrant, saturated
         UsePerJobColors = true,
@@ -315,6 +343,7 @@ public static class BuiltInPresets
         NameTextColor = new(1f, 1f, 1f, 1f),
         ValueTextColor = new(1f, 1f, 1f, 1f),
         WindowBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.92f),
+        WindowRounding = 6f,
 
         ShowSelectionBar = true,
         SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f),
@@ -329,6 +358,7 @@ public static class BuiltInPresets
         HeaderTextColor = new(0.65f, 0.65f, 0.70f, 0.9f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
         HeaderHeight = 20f,
+        HeaderFontScale = 1.0f,
         HeaderSeparator = false,
         HeaderSeparatorColor = new(0.4f, 0.4f, 0.4f, 0.4f),
 
@@ -337,6 +367,7 @@ public static class BuiltInPresets
         ShowStatusBarTimer = true,
         StatusBarHeight = 20f,
         StatusBarFontScale = 1.0f,
+        StatusBarPadding = 6f,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.9f),
         StatusBarActiveColor = new(1.0f, 0.55f, 0.15f, 1.0f),
@@ -351,6 +382,7 @@ public static class BuiltInPresets
         SkillHeaderTextColor = new(0.60f, 0.60f, 0.65f, 0.9f),
         SkillRowHeight = 14f,
         SkillColumnPadding = 6f,
+        SkillBarRounding = 4f,
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
@@ -377,6 +409,10 @@ public static class BuiltInPresets
         BarRounding = 0f,
         IconSize = 14f,
         BarAlpha = 0.50f,
+        BarFontScale = 0.88f,
+        BarLeftPadding = 2f,
+        BarRightPadding = 3f,
+        BarColumnSpacing = 4f,
 
         UsePerJobColors = false,
         TankColor = new(0.25f, 0.38f, 0.72f, 1.0f),
@@ -390,6 +426,7 @@ public static class BuiltInPresets
         NameTextColor = new(1f, 1f, 1f, 0.95f),
         ValueTextColor = new(1f, 1f, 1f, 0.95f),
         WindowBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
+        WindowRounding = 0f,
 
         ShowSelectionBar = true,
         SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 1f),
@@ -405,6 +442,7 @@ public static class BuiltInPresets
         HeaderTextColor = new(0.75f, 0.75f, 0.75f, 0.95f),
         HeaderBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.7f),
         HeaderHeight = 18f,
+        HeaderFontScale = 0.85f,
         HeaderSeparator = true,
         HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f),
 
@@ -413,6 +451,7 @@ public static class BuiltInPresets
         ShowStatusBarTimer = true,
         StatusBarHeight = 18f,
         StatusBarFontScale = 0.85f,
+        StatusBarPadding = 3f,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.9f),
         StatusBarActiveColor = new(0.95f, 0.60f, 0.10f, 1.0f),
@@ -427,6 +466,7 @@ public static class BuiltInPresets
         SkillHeaderTextColor = new(0.60f, 0.60f, 0.60f, 0.9f),
         SkillRowHeight = 13f,
         SkillColumnPadding = 5f,
+        SkillBarRounding = 0f,
 
         // ALL stats visible — the defining feature of Ikegami
         ShowJobIcons = true,
@@ -454,6 +494,10 @@ public static class BuiltInPresets
         BarRounding = 2f,
         IconSize = 16f,
         BarAlpha = 0.72f,
+        BarFontScale = 0.95f,
+        BarLeftPadding = 4f,
+        BarRightPadding = 5f,
+        BarColumnSpacing = 5f,
 
         // Desaturated per-job colors to match the game's HUD aesthetic
         UsePerJobColors = true,
@@ -498,6 +542,7 @@ public static class BuiltInPresets
         NameTextColor = new(0.95f, 0.95f, 0.95f, 1f),
         ValueTextColor = new(0.95f, 0.95f, 0.95f, 1f),
         WindowBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.92f),
+        WindowRounding = 2f,
 
         ShowSelectionBar = true,
         SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f),
@@ -512,6 +557,7 @@ public static class BuiltInPresets
         HeaderTextColor = new(0.65f, 0.65f, 0.65f, 0.85f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
         HeaderHeight = 20f,
+        HeaderFontScale = 0.92f,
         HeaderSeparator = true,
         HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.45f),
 
@@ -520,6 +566,7 @@ public static class BuiltInPresets
         ShowStatusBarTimer = true,
         StatusBarHeight = 20f,
         StatusBarFontScale = 0.95f,
+        StatusBarPadding = 5f,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.88f),
         StatusBarActiveColor = new(0.90f, 0.60f, 0.15f, 1.0f),
@@ -534,6 +581,7 @@ public static class BuiltInPresets
         SkillHeaderTextColor = new(0.58f, 0.58f, 0.58f, 0.88f),
         SkillRowHeight = 14f,
         SkillColumnPadding = 6f,
+        SkillBarRounding = 2f,
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
