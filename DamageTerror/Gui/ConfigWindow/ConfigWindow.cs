@@ -16,13 +16,13 @@ public class ConfigWindow : Window, IDisposable
     private readonly AppearanceTab appearanceTab;
     private readonly EncounterHistoryTab historyTab;
 
-    public ConfigWindow(DamageTerrorPlugin plugin)
+    public ConfigWindow(DamageTerrorPlugin plugin, PresetManager presetManager)
         : base("Damage Terror — Settings")
     {
         this.plugin = plugin;
         this.generalTab = new GeneralTab(plugin);
         this.displayTab = new DisplayTab();
-        this.appearanceTab = new AppearanceTab();
+        this.appearanceTab = new AppearanceTab(presetManager);
         this.historyTab = new EncounterHistoryTab(plugin);
         this.SizeConstraints = new WindowSizeConstraints()
         {

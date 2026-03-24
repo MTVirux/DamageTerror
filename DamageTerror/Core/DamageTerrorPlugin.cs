@@ -60,9 +60,13 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         // Initialize data service (connects to IINACT)
         this.DataService = new DataService(pluginInterface, pluginLog, this.Config);
 
+        // Initialize preset manager
+        var presetManager = new PresetManager(
+            pluginInterface.ConfigDirectory.FullName, pluginLog);
+
         // Create UI windows
         this.mainWindow = new Gui.MainWindow.MainWindow(this, textureProvider);
-        this.configWindow = new Gui.ConfigWindow.ConfigWindow(this);
+        this.configWindow = new Gui.ConfigWindow.ConfigWindow(this, presetManager);
 
         this.windowSystem.AddWindow(this.mainWindow);
         this.windowSystem.AddWindow(this.configWindow);

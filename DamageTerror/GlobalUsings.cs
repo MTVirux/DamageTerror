@@ -11,6 +11,7 @@ global using DamageTerror.Core;
 global using DamageTerror.Enums;
 global using DamageTerror.Helpers;
 global using DamageTerror.Models;
+global using DamageTerror.Presets;
 global using DamageTerror.Services;
 
 // ECommons for reliable player/game state access
