@@ -154,13 +154,3 @@ public static class JobColorHelper
         return new Vector4(c.X * 0.8f, c.Y * 0.8f, c.Z * 0.8f, alpha);
     }
 }
-
-public enum JobRole
-{
-    Tank,
-    Healer,
-    MeleeDps,
-    RangedDps,
-    CasterDps,
-    Default,
-}
