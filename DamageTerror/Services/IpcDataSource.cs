@@ -71,32 +71,7 @@ public class IpcDataSource : IDataSource
     {
         try
         {
-            var type = data["type"]?.ToString();
-
-            switch (type)
-            {
-                case "CombatData":
-                    var snapshot = CombatDataParser.Parse(data);
-                    if (snapshot != null)
-                        OnCombatData?.Invoke(snapshot);
-                    break;
-
-                case "ChangePrimaryPlayer":
-                    var charName = data["charName"]?.ToString() ?? string.Empty;
-                    var charId = data["charID"]?.ToObject<uint>() ?? 0;
-                    if (!string.IsNullOrEmpty(charName))
-                        OnPrimaryPlayerChanged?.Invoke(charName, charId);
-                    break;
-
-                case "LogLine":
-                    var lineArray = data["line"] as Newtonsoft.Json.Linq.JArray;
-                    if (lineArray != null)
-                    {
-                        var fields = lineArray.Select(t => t.ToString()).ToArray();
-                        OnLogLine?.Invoke(fields);
-                    }
-                    break;
-            }
+            DataSourceDispatcher.Dispatch(data, OnCombatData, OnPrimaryPlayerChanged, OnLogLine);
         }
         catch (Exception ex)
         {
