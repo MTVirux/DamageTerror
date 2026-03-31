@@ -118,121 +118,112 @@ public class EncounterHeaderComponent : IUIComponent
             ? ImGui.GetContentRegionAvail().X - sortComboWidth - ImGui.GetStyle().ItemSpacing.X
             : ImGui.GetContentRegionAvail().X;
 
-        if (!dataService.Config.ShowEncounterPicker)
-            goto SkipEncounterPicker;
-
-        ImGui.SetNextItemWidth(comboWidth);
-        if (ImGui.BeginCombo("##enc_combo", previewLabel))
-        {
-            // Reset search filter when combo first opens
-            if (!comboWasOpen)
-            {
-                searchFilter = string.Empty;
-                comboWasOpen = true;
-            }
-
-            // Search input at the top of the dropdown
-            ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextWithHint("##enc_search", "Search by zone, title, player, or job...", ref searchFilter, 256);
-
-            var history = dataService.Store.History;
-            var active = dataService.Store.ActiveEncounter;
-            var filter = searchFilter.Trim();
-
-            // History entries (oldest first)
-            for (var i = 0; i < history.Count; i++)
-            {
-                var h = history[i];
-                var hEnc = h.Encounter;
-                if (filter.Length > 0
-                    && !hEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                    && !(hEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
-                    && !h.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                        || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
-                    continue;
-                var hValue = dataService.Config.ShowHps
-                    ? $"{hEnc.EncHps:F1} rHPS"
-                    : $"{hEnc.EncDps:F1} rDPS";
-                var hTitle = !string.IsNullOrEmpty(hEnc.Title) ? $" — {hEnc.Title}" : "";
-                var hIcon = hEnc.IsActive ? "●" : "○";
-                var label = $"{hIcon} {hEnc.ZoneName}{hTitle}  |  {hEnc.Duration}  |  {hValue}##{i}";
-                if (ImGui.Selectable(label, selectedIndex == i))
-                    selectedIndex = i;
-
-                if (ImGui.BeginPopupContextItem($"##enc_remove_{i}"))
-                {
-                    if (ImGui.Selectable("Remove"))
-                    {
-                        dataService.Store.RemoveHistory(i);
-                        if (selectedIndex == i)
-                            selectedIndex = -1;
-                        else if (selectedIndex > i)
-                            selectedIndex--;
-                    }
-                    ImGui.EndPopup();
-                }
-            }
-
-            // Active encounter
-            if (active != null)
-            {
-                var aEnc = active.Encounter;
-                if (filter.Length == 0
-                    || aEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                    || (aEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
-                    || active.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                        || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
-                {
-                    var aValue = dataService.Config.ShowHps
-                        ? $"{aEnc.EncHps:F1} rHPS"
-                        : $"{aEnc.EncDps:F1} rDPS";
-                    var aTitle = !string.IsNullOrEmpty(aEnc.Title) ? $" — {aEnc.Title}" : "";
-                    var aIcon = aEnc.IsActive ? "●" : "○";
-                    var activeLabel = $"{aIcon} {aEnc.ZoneName}{aTitle}  |  {aEnc.Duration}  |  {aValue}##active";
-                    if (ImGui.Selectable(activeLabel, selectedIndex == -1))
-                        selectedIndex = -1;
-                }
-            }
-
-            ImGui.EndCombo();
-        }
-        else
-        {
-            comboWasOpen = false;
-        }
-
-SkipEncounterPicker:
-
-        // Sort dropdown
-        if (!dataService.Config.ShowSortDropdown)
-            goto SkipSortDropdown;
-
         if (dataService.Config.ShowEncounterPicker)
-            ImGui.SameLine();
-        ImGui.SetNextItemWidth(sortComboWidth);
-        if (ImGui.BeginCombo("##sort_combo", sortPreview))
         {
-            foreach (var (field, label) in SortOptions)
+            ImGui.SetNextItemWidth(comboWidth);
+            if (ImGui.BeginCombo("##enc_combo", previewLabel))
             {
-                var isSelected = currentSort == field;
-                if (ImGui.Selectable(label, isSelected))
+                if (!comboWasOpen)
                 {
-                    if (isSelected)
-                    {
-                        dataService.Config.SortDescending = !dataService.Config.SortDescending;
-                    }
-                    else
-                    {
-                        dataService.Config.SortBy = field;
-                        dataService.Config.SortDescending = true;
-                    }
-                    saveConfig();
+                    searchFilter = string.Empty;
+                    comboWasOpen = true;
                 }
+
+                ImGui.SetNextItemWidth(-1);
+                ImGui.InputTextWithHint("##enc_search", "Search by zone, title, player, or job...", ref searchFilter, 256);
+
+                var history = dataService.Store.History;
+                var active = dataService.Store.ActiveEncounter;
+                var filter = searchFilter.Trim();
+
+                for (var i = 0; i < history.Count; i++)
+                {
+                    var h = history[i];
+                    var hEnc = h.Encounter;
+                    if (filter.Length > 0
+                        && !hEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                        && !(hEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
+                        && !h.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                            || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                    var hValue = dataService.Config.ShowHps
+                        ? $"{hEnc.EncHps:F1} rHPS"
+                        : $"{hEnc.EncDps:F1} rDPS";
+                    var hTitle = !string.IsNullOrEmpty(hEnc.Title) ? $" — {hEnc.Title}" : "";
+                    var hIcon = hEnc.IsActive ? "●" : "○";
+                    var label = $"{hIcon} {hEnc.ZoneName}{hTitle}  |  {hEnc.Duration}  |  {hValue}##{i}";
+                    if (ImGui.Selectable(label, selectedIndex == i))
+                        selectedIndex = i;
+
+                    if (ImGui.BeginPopupContextItem($"##enc_remove_{i}"))
+                    {
+                        if (ImGui.Selectable("Remove"))
+                        {
+                            dataService.Store.RemoveHistory(i);
+                            if (selectedIndex == i)
+                                selectedIndex = -1;
+                            else if (selectedIndex > i)
+                                selectedIndex--;
+                        }
+                        ImGui.EndPopup();
+                    }
+                }
+
+                if (active != null)
+                {
+                    var aEnc = active.Encounter;
+                    if (filter.Length == 0
+                        || aEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                        || (aEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
+                        || active.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                            || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var aValue = dataService.Config.ShowHps
+                            ? $"{aEnc.EncHps:F1} rHPS"
+                            : $"{aEnc.EncDps:F1} rDPS";
+                        var aTitle = !string.IsNullOrEmpty(aEnc.Title) ? $" — {aEnc.Title}" : "";
+                        var aIcon = aEnc.IsActive ? "●" : "○";
+                        var activeLabel = $"{aIcon} {aEnc.ZoneName}{aTitle}  |  {aEnc.Duration}  |  {aValue}##active";
+                        if (ImGui.Selectable(activeLabel, selectedIndex == -1))
+                            selectedIndex = -1;
+                    }
+                }
+
+                ImGui.EndCombo();
             }
-            ImGui.EndCombo();
+            else
+            {
+                comboWasOpen = false;
+            }
         }
 
-SkipSortDropdown:
+        if (dataService.Config.ShowSortDropdown)
+        {
+            if (dataService.Config.ShowEncounterPicker)
+                ImGui.SameLine();
+            ImGui.SetNextItemWidth(sortComboWidth);
+            if (ImGui.BeginCombo("##sort_combo", sortPreview))
+            {
+                foreach (var (field, label) in SortOptions)
+                {
+                    var isSelected = currentSort == field;
+                    if (ImGui.Selectable(label, isSelected))
+                    {
+                        if (isSelected)
+                        {
+                            dataService.Config.SortDescending = !dataService.Config.SortDescending;
+                        }
+                        else
+                        {
+                            dataService.Config.SortBy = field;
+                            dataService.Config.SortDescending = true;
+                        }
+                        saveConfig();
+                    }
+                }
+                ImGui.EndCombo();
+            }
+        }
 
         // Right-click context menu on the combo
         if (ImGui.BeginPopupContextItem("##enc_context"))
