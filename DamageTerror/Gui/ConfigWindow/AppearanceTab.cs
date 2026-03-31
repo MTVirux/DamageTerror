@@ -1,5 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using DamageTerror.Helpers;
+using DamageTerror.Services;
+using Dalamud.Interface;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
@@ -22,7 +24,7 @@ public class AppearanceTab
         this.presetManager = presetManager;
     }
 
-    public bool Draw(Configuration config)
+    public bool Draw(Configuration config, FontService? fontService = null, IUiBuilder? uiBuilder = null)
     {
         var changed = false;
 
@@ -73,6 +75,12 @@ public class AppearanceTab
             if (ImGui.BeginTabItem("Details"))
             {
                 changed |= DrawDetailsTab(config);
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem("Font"))
+            {
+                changed |= DrawFontTab(config, fontService, uiBuilder);
                 ImGui.EndTabItem();
             }
 
@@ -351,6 +359,61 @@ public class AppearanceTab
             changed = true;
         }
 
+        var iconTextPad = config.IconTextPadding;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Icon-text padding", ref iconTextPad, 0.0f, 12.0f, "%.0f px"))
+        {
+            config.IconTextPadding = iconTextPad;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        ImGui.TextDisabled("Value Formatting");
+
+        var formatIdx = (int)config.ValueDisplayFormat;
+        var formatLabels = new[] { "Abbreviated (12.3K)", "Commas (12,345)", "Raw (12345.6)" };
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.Combo("Number format", ref formatIdx, formatLabels, formatLabels.Length))
+        {
+            config.ValueDisplayFormat = (ValueDisplayFormat)formatIdx;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        ImGui.TextDisabled("Self Highlighting");
+
+        var selfHighlight = config.SelfBarHighlight;
+        if (ImGui.Checkbox("Highlight local player bar", ref selfHighlight))
+        {
+            config.SelfBarHighlight = selfHighlight;
+            changed = true;
+        }
+
+        if (config.SelfBarHighlight)
+        {
+            ImGui.Indent();
+            changed |= ConfigHelpers.ColorEditProp("Accent color", config.SelfBarHighlightColor, v => config.SelfBarHighlightColor = v);
+            ImGui.Unindent();
+        }
+
+        var useSelfNameColor = config.UseSelfNameColor;
+        if (ImGui.Checkbox("Custom name color for local player", ref useSelfNameColor))
+        {
+            config.UseSelfNameColor = useSelfNameColor;
+            changed = true;
+        }
+
+        if (config.UseSelfNameColor)
+        {
+            ImGui.Indent();
+            changed |= ConfigHelpers.ColorEditProp("Self name color", config.SelfNameColor, v => config.SelfNameColor = v);
+            ImGui.Unindent();
+        }
+
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.Spacing();
@@ -615,6 +678,20 @@ public class AppearanceTab
                 changed = true;
             }
 
+            var showPersonalDps = config.ShowStatusBarPersonalDps;
+            if (ImGui.Checkbox("Show personal DPS", ref showPersonalDps))
+            {
+                config.ShowStatusBarPersonalDps = showPersonalDps;
+                changed = true;
+            }
+
+            var showRaidDps = config.ShowStatusBarRaidDps;
+            if (ImGui.Checkbox("Show raid DPS", ref showRaidDps))
+            {
+                config.ShowStatusBarRaidDps = showRaidDps;
+                changed = true;
+            }
+
             var showSep = config.ShowStatusBarSeparator;
             if (ImGui.Checkbox("Show separator line", ref showSep))
             {
@@ -776,6 +853,144 @@ public class AppearanceTab
             config.DetailLabelColor = new Vector4(0.7f, 0.7f, 0.7f, 1f);
             config.DetailDeathColor = new Vector4(1f, 0.3f, 0.3f, 1f);
             config.DetailIndent = 8.0f;
+            config.DetailFontScale = 1.0f;
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    private static bool DrawFontTab(Configuration config, FontService? fontService, IUiBuilder? uiBuilder)
+    {
+        var changed = false;
+
+        // ===== Feature Toggle =====
+        ImGui.Spacing();
+        var enableFont = config.EnableCustomFont;
+        if (ImGui.Checkbox("Enable custom font", ref enableFont))
+        {
+            config.EnableCustomFont = enableFont;
+            changed = true;
+            if (enableFont && fontService != null && uiBuilder != null && !fontService.IsInitialized)
+            {
+                try { fontService.Initialize(uiBuilder); }
+                catch { }
+            }
+        }
+
+        ImGui.TextWrapped("When enabled, allows loading a custom system font. Disable if you experience crashes.");
+
+        // ===== Font Selection =====
+        ImGui.Spacing();
+        ImGui.TextDisabled("Font Selection");
+
+        if (!config.EnableCustomFont)
+        {
+            ImGui.TextDisabled("Enable custom font above to use font selection.");
+        }
+        else
+        {
+            var fontName = config.CustomFontDisplayName ?? "Dalamud Default";
+            ImGui.Text($"Current: {fontName}");
+
+            if (config.CustomFontPath != null)
+            {
+                ImGui.SameLine();
+                ImGui.TextDisabled($"({config.CustomFontSizePt:F0}pt)");
+            }
+
+            if (fontService != null)
+            {
+                if (ImGui.Button("Choose Font..."))
+                {
+                    fontService.OpenFontChooser();
+                }
+
+                ImGui.SameLine();
+
+                if (config.CustomFontPath != null && ImGui.Button("Reset to Default"))
+                {
+                    fontService.ClearCustomFont();
+                    changed = true;
+                }
+
+                // Draw the chooser dialog (if open)
+                if (fontService.DrawFontChooser())
+                    changed = true;
+            }
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        // ===== Global Scale =====
+        ImGui.TextDisabled("Scale");
+        ImGui.TextWrapped("Master scale applied to all text. Individual scales below are multiplied by this value.");
+
+        var globalScale = config.GlobalFontScale;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Global font scale", ref globalScale, 0.5f, 3.0f, "%.2f"))
+        {
+            config.GlobalFontScale = globalScale;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        ImGui.TextDisabled("Per-Component Scales");
+
+        var barFont = config.BarFontScale;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Bar text", ref barFont, 0.5f, 2.0f, "%.2f"))
+        {
+            config.BarFontScale = barFont;
+            changed = true;
+        }
+
+        var headerFont = config.HeaderFontScale;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Header text", ref headerFont, 0.5f, 2.0f, "%.2f"))
+        {
+            config.HeaderFontScale = headerFont;
+            changed = true;
+        }
+
+        var statusFont = config.StatusBarFontScale;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Status bar text", ref statusFont, 0.5f, 2.0f, "%.2f"))
+        {
+            config.StatusBarFontScale = statusFont;
+            changed = true;
+        }
+
+        var detailFont = config.DetailFontScale;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Detail panel text", ref detailFont, 0.5f, 2.0f, "%.2f"))
+        {
+            config.DetailFontScale = detailFont;
+            changed = true;
+        }
+
+        var skillFont = config.SkillFontScale;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Skill breakdown text", ref skillFont, 0.5f, 2.0f, "%.2f"))
+        {
+            config.SkillFontScale = skillFont;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.Button("Reset Scales"))
+        {
+            config.GlobalFontScale = 1.0f;
+            config.BarFontScale = 1.0f;
+            config.HeaderFontScale = 1.0f;
+            config.StatusBarFontScale = 1.0f;
+            config.DetailFontScale = 1.0f;
+            config.SkillFontScale = 1.0f;
             changed = true;
         }
 

@@ -13,8 +13,6 @@ namespace DamageTerror.Gui.MainWindow;
 /// </summary>
 public class CombatantBarComponent
 {
-    private const float IconPadding = 4.0f;
-
     private readonly Configuration config;
     private readonly ITextureProvider textureProvider;
 
@@ -60,12 +58,23 @@ public class CombatantBarComponent
                 config.BarRounding);
         }
 
+        // Self-highlight accent strip
+        if (config.SelfBarHighlight && combatant.IsLocalPlayer)
+        {
+            var stripWidth = 3f;
+            var highlightColor = ImGui.ColorConvertFloat4ToU32(config.SelfBarHighlightColor);
+            drawList.AddRectFilled(
+                cursorPos,
+                new Vector2(cursorPos.X + stripWidth, cursorPos.Y + barHeight),
+                highlightColor);
+        }
+
         // Make the bar area interactive
         var clicked = ImGui.InvisibleButton($"##combatant_{index}", new Vector2(windowWidth, barHeight));
 
         // Apply font scale
         var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.BarFontScale;
+        ImGui.GetFont().Scale = config.BarFontScale * config.GlobalFontScale;
         ImGui.PushFont(ImGui.GetFont());
 
         // Draw content on top of the bar
@@ -95,7 +104,7 @@ public class CombatantBarComponent
                         iconWrap.Handle,
                         new Vector2(textStartX, iconY),
                         new Vector2(textStartX + iconSize, iconY + iconSize));
-                    textStartX += iconSize + IconPadding;
+                    textStartX += iconSize + config.IconTextPadding;
                 }
             }
         }
@@ -115,7 +124,10 @@ public class CombatantBarComponent
             var displayName = combatant.IsLocalPlayer && config.ShowYouOnBar ? "YOU" : combatant.Name;
             var fmt = combatant.IsLocalPlayer ? config.SelfNameFormat : config.OthersNameFormat;
             displayName = FormatName(displayName, combatant.Job, fmt);
-            var nameColor = ImGui.ColorConvertFloat4ToU32(config.NameTextColor);
+            var nameCol = (combatant.IsLocalPlayer && config.UseSelfNameColor)
+                ? config.SelfNameColor
+                : config.NameTextColor;
+            var nameColor = ImGui.ColorConvertFloat4ToU32(nameCol);
             drawList.AddText(new Vector2(textStartX, textY), nameColor, displayName);
         }
 
@@ -165,7 +177,7 @@ public class CombatantBarComponent
         // DPS/HPS value (right-aligned)
         if (config.ShowValueOnBar)
         {
-            var valueStr = FormatValue(value);
+            var valueStr = FormatValue(value, config.ValueDisplayFormat);
             var valueSize = ImGui.CalcTextSize(valueStr);
             rightX -= valueSize.X;
             drawList.AddText(new Vector2(rightX, textY), valColor, valueStr);
@@ -195,13 +207,21 @@ public class CombatantBarComponent
         _ => c.EncDps,
     };
 
-    private static string FormatValue(double value)
+    private static string FormatValue(double value, ValueDisplayFormat format)
     {
-        if (value >= 1_000_000)
-            return $"{value / 1_000_000:F2}M";
-        if (value >= 10_000)
-            return $"{value / 1_000:F1}K";
-        return $"{value:F1}";
+        switch (format)
+        {
+            case ValueDisplayFormat.Commas:
+                return ((long)Math.Round(value)).ToString("N0");
+            case ValueDisplayFormat.Raw:
+                return $"{value:F1}";
+            default: // Abbreviated
+                if (value >= 1_000_000)
+                    return $"{value / 1_000_000:F2}M";
+                if (value >= 10_000)
+                    return $"{value / 1_000:F1}K";
+                return $"{value:F1}";
+        }
     }
 
     private static string FormatName(string name, string job, NameDisplayFormat fmt)

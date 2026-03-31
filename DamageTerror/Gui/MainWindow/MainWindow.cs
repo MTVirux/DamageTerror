@@ -195,6 +195,9 @@ public class MainWindow : Window, IDisposable
         if (lockButton != null)
             lockButton.Icon = this.plugin.Config.PinMainWindow ? FontAwesomeIcon.Lock : FontAwesomeIcon.LockOpen;
 
+        // Disable outer-window scrolling; inner child retains its own scrollbars
+        Flags |= ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
+
         ImGui.PushStyleColor(ImGuiCol.WindowBg, this.plugin.Config.WindowBackgroundColor);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, this.plugin.Config.WindowRounding);
     }
@@ -207,6 +210,9 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
+        // Push custom font for entire window (auto-pops via using)
+        using var fontScope = plugin.Config.EnableCustomFont ? plugin.FontService?.PushFont() : null;
+
         // Encounter header with navigation
         headerComponent.Render();
 
@@ -238,9 +244,10 @@ public class MainWindow : Window, IDisposable
         if (plugin.Config.StatusBarAbove)
             statusBarComponent.Render(encounter);
 
-        // Reserve space for status bar at bottom if below
+        // Reserve space for status bar at bottom if below — clamp to avoid negative child heights
         var statusBarHeight = !plugin.Config.StatusBarAbove ? statusBarComponent.GetHeight() : 0f;
-        var childHeight = statusBarHeight > 0 ? ImGui.GetContentRegionAvail().Y - statusBarHeight : 0;
+        var availY = ImGui.GetContentRegionAvail().Y;
+        var childHeight = statusBarHeight > 0 ? Math.Max(0f, availY - statusBarHeight) : 0f;
 
         // Render bars in a scrollable child region
         if (ImGui.BeginChild("##combatants", new Vector2(0, childHeight), false))
@@ -266,7 +273,7 @@ public class MainWindow : Window, IDisposable
 
                 // Apply header font scale
                 var prevHdrScale = ImGui.GetFont().Scale;
-                ImGui.GetFont().Scale = plugin.Config.HeaderFontScale;
+                ImGui.GetFont().Scale = plugin.Config.HeaderFontScale * plugin.Config.GlobalFontScale;
                 ImGui.PushFont(ImGui.GetFont());
 
                 var textY = cursorPos.Y + (headerHeight - ImGui.GetTextLineHeight()) * 0.5f;
@@ -279,7 +286,7 @@ public class MainWindow : Window, IDisposable
                 }
 
                 if (plugin.Config.ShowJobIcons)
-                    textStartX += plugin.Config.IconSize + 4.0f;
+                    textStartX += plugin.Config.IconSize + plugin.Config.IconTextPadding;
 
                 if (plugin.Config.ShowJobAbbrevOnBar)
                 {

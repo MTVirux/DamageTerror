@@ -38,6 +38,16 @@ public static class BuiltInPresets
         BarLeftPadding = 3f,
         BarRightPadding = 4f,
         BarColumnSpacing = 5f,
+        IconTextPadding = 3f,
+
+        // Self highlighting — Kagerou highlights self with a blue accent
+        SelfBarHighlight = true,
+        SelfBarHighlightColor = new(0.35f, 0.55f, 0.95f, 0.9f),
+        UseSelfNameColor = false,
+        SelfNameColor = new(1.0f, 0.9f, 0.4f, 1.0f),
+
+        // Value formatting — Kagerou uses comma-separated values
+        ValueDisplayFormat = ValueDisplayFormat.Commas,
 
         // Role colors — Kagerou's distinctive palette
         UsePerJobColors = false,
@@ -97,6 +107,8 @@ public static class BuiltInPresets
         SkillRowHeight = 13f,
         SkillColumnPadding = 5f,
         SkillBarRounding = 0f,
+        SkillFontScale = 0.85f,
+        DetailFontScale = 0.88f,
 
         // Display flags — Kagerou shows name, value, %, rank; hides DH/Crit columns
         ShowJobIcons = true,
@@ -128,14 +140,16 @@ public static class BuiltInPresets
         BarLeftPadding = 5f,
         BarRightPadding = 6f,
         BarColumnSpacing = 6f,
+        IconTextPadding = 4f,
 
-        UsePerJobColors = false,
-        TankColor = new(0.28f, 0.44f, 0.82f, 1.0f),
-        HealerColor = new(0.25f, 0.70f, 0.35f, 1.0f),
-        MeleeDpsColor = new(0.85f, 0.28f, 0.22f, 1.0f),
-        RangedDpsColor = new(0.95f, 0.55f, 0.15f, 1.0f),
-        CasterDpsColor = new(0.55f, 0.30f, 0.78f, 1.0f),
-        DefaultJobColor = new(0.50f, 0.50f, 0.50f, 1.0f),
+        // Self highlighting — Ember uses a warm glow accent
+        SelfBarHighlight = true,
+        SelfBarHighlightColor = new(1.0f, 0.55f, 0.15f, 0.85f),
+        UseSelfNameColor = false,
+        SelfNameColor = new(1.0f, 0.85f, 0.3f, 1.0f),
+
+        // Value formatting
+        ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
 
         BarBackgroundColor = new(0.12f, 0.12f, 0.12f, 0.90f),
         NameTextColor = new(1f, 1f, 1f, 1f),
@@ -166,6 +180,8 @@ public static class BuiltInPresets
         StatusBarHeight = 20f,
         StatusBarFontScale = 0.95f,
         StatusBarPadding = 6f,
+        ShowStatusBarPersonalDps = true,
+        ShowStatusBarRaidDps = true,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.85f),
         StatusBarActiveColor = new(1.0f, 0.55f, 0.10f, 1.0f),
@@ -181,6 +197,8 @@ public static class BuiltInPresets
         SkillRowHeight = 14f,
         SkillColumnPadding = 6f,
         SkillBarRounding = 3f,
+        SkillFontScale = 0.90f,
+        DetailFontScale = 0.92f,
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
@@ -212,6 +230,16 @@ public static class BuiltInPresets
         BarLeftPadding = 6f,
         BarRightPadding = 6f,
         BarColumnSpacing = 4f,
+        IconTextPadding = 3f,
+
+        // Self highlighting — disabled for minimal look
+        SelfBarHighlight = false,
+        SelfBarHighlightColor = new(0.9f, 0.6f, 0.1f, 0.8f),
+        UseSelfNameColor = true,
+        SelfNameColor = new(0.95f, 0.85f, 0.5f, 1.0f),
+
+        // Value formatting
+        ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
 
         UsePerJobColors = false,
         TankColor = new(0.30f, 0.45f, 0.75f, 1.0f),
@@ -253,6 +281,8 @@ public static class BuiltInPresets
         StatusBarHeight = 18f,
         StatusBarFontScale = 0.9f,
         StatusBarPadding = 4f,
+        ShowStatusBarPersonalDps = true,
+        ShowStatusBarRaidDps = false,
         ShowStatusBarSeparator = false,
         StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.7f),
         StatusBarActiveColor = new(0.9f, 0.6f, 0.1f, 1.0f),
@@ -268,6 +298,8 @@ public static class BuiltInPresets
         SkillRowHeight = 12f,
         SkillColumnPadding = 4f,
         SkillBarRounding = 6f,
+        SkillFontScale = 0.80f,
+        DetailFontScale = 0.82f,
 
         // Only name + value
         ShowJobIcons = true,
@@ -299,6 +331,16 @@ public static class BuiltInPresets
         BarLeftPadding = 5f,
         BarRightPadding = 6f,
         BarColumnSpacing = 6f,
+        IconTextPadding = 4f,
+
+        // Self highlighting — MopiMopi uses a bright accent
+        SelfBarHighlight = true,
+        SelfBarHighlightColor = new(1.0f, 0.85f, 0.3f, 0.9f),
+        UseSelfNameColor = true,
+        SelfNameColor = new(1.0f, 0.95f, 0.6f, 1.0f),
+
+        // Value formatting
+        ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
 
         // Per-job colors — vibrant, saturated
         UsePerJobColors = true,
@@ -368,6 +410,8 @@ public static class BuiltInPresets
         StatusBarHeight = 20f,
         StatusBarFontScale = 1.0f,
         StatusBarPadding = 6f,
+        ShowStatusBarPersonalDps = true,
+        ShowStatusBarRaidDps = true,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.9f),
         StatusBarActiveColor = new(1.0f, 0.55f, 0.15f, 1.0f),
@@ -383,6 +427,8 @@ public static class BuiltInPresets
         SkillRowHeight = 14f,
         SkillColumnPadding = 6f,
         SkillBarRounding = 4f,
+        SkillFontScale = 0.92f,
+        DetailFontScale = 0.95f,
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
@@ -413,6 +459,16 @@ public static class BuiltInPresets
         BarLeftPadding = 2f,
         BarRightPadding = 3f,
         BarColumnSpacing = 4f,
+        IconTextPadding = 3f,
+
+        // Self highlighting — Ikegami uses a subtle highlight
+        SelfBarHighlight = true,
+        SelfBarHighlightColor = new(0.95f, 0.75f, 0.15f, 0.7f),
+        UseSelfNameColor = false,
+        SelfNameColor = new(1.0f, 0.9f, 0.4f, 1.0f),
+
+        // Value formatting — Ikegami uses comma-separated for data density
+        ValueDisplayFormat = ValueDisplayFormat.Commas,
 
         UsePerJobColors = false,
         TankColor = new(0.25f, 0.38f, 0.72f, 1.0f),
@@ -452,6 +508,8 @@ public static class BuiltInPresets
         StatusBarHeight = 18f,
         StatusBarFontScale = 0.85f,
         StatusBarPadding = 3f,
+        ShowStatusBarPersonalDps = true,
+        ShowStatusBarRaidDps = true,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.9f),
         StatusBarActiveColor = new(0.95f, 0.60f, 0.10f, 1.0f),
@@ -467,6 +525,8 @@ public static class BuiltInPresets
         SkillRowHeight = 13f,
         SkillColumnPadding = 5f,
         SkillBarRounding = 0f,
+        SkillFontScale = 0.82f,
+        DetailFontScale = 0.85f,
 
         // ALL stats visible — the defining feature of Ikegami
         ShowJobIcons = true,
@@ -498,6 +558,16 @@ public static class BuiltInPresets
         BarLeftPadding = 4f,
         BarRightPadding = 5f,
         BarColumnSpacing = 5f,
+        IconTextPadding = 4f,
+
+        // Self highlighting — Next UI uses a desaturated accent
+        SelfBarHighlight = true,
+        SelfBarHighlightColor = new(0.7f, 0.55f, 0.25f, 0.75f),
+        UseSelfNameColor = false,
+        SelfNameColor = new(0.95f, 0.9f, 0.5f, 1.0f),
+
+        // Value formatting
+        ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
 
         // Desaturated per-job colors to match the game's HUD aesthetic
         UsePerJobColors = true,
@@ -567,6 +637,8 @@ public static class BuiltInPresets
         StatusBarHeight = 20f,
         StatusBarFontScale = 0.95f,
         StatusBarPadding = 5f,
+        ShowStatusBarPersonalDps = true,
+        ShowStatusBarRaidDps = true,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.88f),
         StatusBarActiveColor = new(0.90f, 0.60f, 0.15f, 1.0f),
@@ -582,6 +654,8 @@ public static class BuiltInPresets
         SkillRowHeight = 14f,
         SkillColumnPadding = 6f,
         SkillBarRounding = 2f,
+        SkillFontScale = 0.90f,
+        DetailFontScale = 0.92f,
 
         ShowJobIcons = true,
         ShowNameOnBar = true,

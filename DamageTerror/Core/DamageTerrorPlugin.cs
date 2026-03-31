@@ -20,6 +20,8 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public DataService DataService { get; private set; } = null!;
 
+    public FontService FontService { get; private set; } = null!;
+
     private readonly WindowSystem windowSystem = new(typeof(DamageTerrorPlugin).AssemblyQualifiedName);
     private readonly Gui.MainWindow.MainWindow mainWindow;
     private readonly Gui.ConfigWindow.ConfigWindow configWindow;
@@ -59,6 +61,11 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         // Initialize data service (connects to IINACT)
         this.DataService = new DataService(pluginInterface, pluginLog, this.Config);
+
+        // Initialize font service (only if enabled)
+        this.FontService = new FontService(this.Config, pluginLog);
+        if (this.Config.EnableCustomFont)
+            this.FontService.Initialize(pluginInterface.UiBuilder);
 
         // Initialize preset manager
         var presetManager = new PresetManager(
@@ -124,6 +131,9 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
             // Tear down data service
             this.DataService.Dispose();
+
+            // Tear down font service
+            this.FontService.Dispose();
 
             // Tear down UI
             this.windowSystem.RemoveAllWindows();

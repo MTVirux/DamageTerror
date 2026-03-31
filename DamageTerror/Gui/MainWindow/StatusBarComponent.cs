@@ -57,7 +57,7 @@ public class StatusBarComponent
 
         // Apply font scale
         var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.StatusBarFontScale;
+        ImGui.GetFont().Scale = config.StatusBarFontScale * config.GlobalFontScale;
         ImGui.PushFont(ImGui.GetFont());
 
         // Color based on encounter active state
@@ -78,24 +78,36 @@ public class StatusBarComponent
         // Layout: {DPS} DPS / {RDPS} RDPS ({pct}%)    [timer]
         var x = cursorPos.X + padding;
 
-        // Personal DPS value
-        var dpsText = FormatWithCommas(personalDps);
-        drawList.AddText(new Vector2(x, textY), textColor, dpsText);
-        x += ImGui.CalcTextSize(dpsText).X;
+        if (config.ShowStatusBarPersonalDps)
+        {
+            // Personal DPS value
+            var dpsText = FormatValue(personalDps, config.ValueDisplayFormat);
+            drawList.AddText(new Vector2(x, textY), textColor, dpsText);
+            x += ImGui.CalcTextSize(dpsText).X;
 
-        // " DPS / "
-        var sep1 = " DPS / ";
-        drawList.AddText(new Vector2(x, textY), labelColor, sep1);
-        x += ImGui.CalcTextSize(sep1).X;
+            var dpsLabel = " DPS";
+            drawList.AddText(new Vector2(x, textY), labelColor, dpsLabel);
+            x += ImGui.CalcTextSize(dpsLabel).X;
+        }
 
-        // Raid DPS value
-        var rdpsText = FormatWithCommas(raidDps);
-        drawList.AddText(new Vector2(x, textY), textColor, rdpsText);
-        x += ImGui.CalcTextSize(rdpsText).X;
+        if (config.ShowStatusBarPersonalDps && config.ShowStatusBarRaidDps)
+        {
+            var sep = " / ";
+            drawList.AddText(new Vector2(x, textY), labelColor, sep);
+            x += ImGui.CalcTextSize(sep).X;
+        }
 
-        // " RDPS (pct%)"
-        var pctText = $" RDPS ({pct:F0}%)";
-        drawList.AddText(new Vector2(x, textY), labelColor, pctText);
+        if (config.ShowStatusBarRaidDps)
+        {
+            // Raid DPS value
+            var rdpsText = FormatValue(raidDps, config.ValueDisplayFormat);
+            drawList.AddText(new Vector2(x, textY), textColor, rdpsText);
+            x += ImGui.CalcTextSize(rdpsText).X;
+
+            // " RDPS (pct%)"
+            var pctText = $" RDPS ({pct:F0}%)";
+            drawList.AddText(new Vector2(x, textY), labelColor, pctText);
+        }
 
         // Combat timer — right-aligned
         if (config.ShowStatusBarTimer)
@@ -114,8 +126,20 @@ public class StatusBarComponent
         ImGui.PopFont();
     }
 
-    private static string FormatWithCommas(double value)
+    private static string FormatValue(double value, ValueDisplayFormat format)
     {
-        return ((long)Math.Round(value)).ToString("N0");
+        switch (format)
+        {
+            case ValueDisplayFormat.Commas:
+                return ((long)Math.Round(value)).ToString("N0");
+            case ValueDisplayFormat.Raw:
+                return $"{value:F1}";
+            default: // Abbreviated
+                if (value >= 1_000_000)
+                    return $"{value / 1_000_000:F2}M";
+                if (value >= 10_000)
+                    return $"{value / 1_000:F1}K";
+                return $"{value:F1}";
+        }
     }
 }

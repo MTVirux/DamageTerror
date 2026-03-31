@@ -145,11 +145,29 @@ public class Configuration : IPluginConfiguration
 
     // ===== Customization — Font Settings =====
 
+    /// <summary>Enable custom font loading. Disabled by default for stability.</summary>
+    public bool EnableCustomFont { get; set; } = false;
+
     /// <summary>
     /// Master font scale multiplier applied to all UI elements.
     /// Individual component scales are multiplied by this value.
     /// </summary>
     public float GlobalFontScale { get; set; } = 1.0f;
+
+    /// <summary>Path to the custom font file (.ttf/.otf). Null = Dalamud default.</summary>
+    public string? CustomFontPath { get; set; }
+
+    /// <summary>Font index within a collection file (.ttc).</summary>
+    public int CustomFontIndex { get; set; }
+
+    /// <summary>Custom font size in points.</summary>
+    public float CustomFontSizePt { get; set; } = 14f;
+
+    /// <summary>Display name of the selected font (for UI only).</summary>
+    public string? CustomFontDisplayName { get; set; }
+
+    /// <summary>Serialized SingleFontSpec JSON. Used to rebuild the font handle for any font type.</summary>
+    public string? CustomFontSpecJson { get; set; }
 
     // ===== Customization — Bar Appearance =====
 

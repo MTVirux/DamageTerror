@@ -41,6 +41,11 @@ public class CombatantDetailPanel
         var labelColor = config.DetailLabelColor;
         ImGui.Indent(config.DetailIndent);
 
+        // Apply detail font scale
+        var prevScale = ImGui.GetFont().Scale;
+        ImGui.GetFont().Scale = config.DetailFontScale * config.GlobalFontScale;
+        ImGui.PushFont(ImGui.GetFont());
+
         // Row 1: Damage stats
         if (config.DetailShowDamage)
         {
@@ -122,6 +127,10 @@ public class CombatantDetailPanel
             }
         }
 
+        // Restore detail font scale
+        ImGui.GetFont().Scale = prevScale;
+        ImGui.PopFont();
+
         ImGui.Unindent(config.DetailIndent);
         ImGui.Spacing();
     }
@@ -136,6 +145,11 @@ public class CombatantDetailPanel
         var fillColor = ImGui.ColorConvertFloat4ToU32(fillColorVec);
         var textColor = ImGui.ColorConvertFloat4ToU32(config.SkillTextColor);
         var skillRounding = config.SkillBarRounding;
+
+        // Apply skill font scale
+        var prevSkillScale = ImGui.GetFont().Scale;
+        ImGui.GetFont().Scale = config.SkillFontScale * config.GlobalFontScale;
+        ImGui.PushFont(ImGui.GetFont());
 
         var topSkills = config.MaxSkillBreakdownCount > 0 ? skills.Take(config.MaxSkillBreakdownCount).ToList() : skills;
         var headerColor = ImGui.ColorConvertFloat4ToU32(config.SkillHeaderTextColor);
@@ -202,6 +216,10 @@ public class CombatantDetailPanel
 
             skillIdx++;
         }
+
+        // Restore skill font scale
+        ImGui.GetFont().Scale = prevSkillScale;
+        ImGui.PopFont();
     }
 
     /// <summary>

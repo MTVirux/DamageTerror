@@ -54,7 +54,7 @@ public class ConfigWindow : Window, IDisposable
 
             if (ImGui.BeginTabItem("Appearance"))
             {
-                changed |= appearanceTab.Draw(config);
+                changed |= appearanceTab.Draw(config, plugin.FontService, plugin.PluginInterface.UiBuilder);
                 ImGui.EndTabItem();
             }
 

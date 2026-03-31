@@ -27,6 +27,7 @@ public class IpcDataSource : IDataSource
     public event Action<EncounterSnapshot>? OnCombatData;
     public event Action<string, uint>? OnPrimaryPlayerChanged;
     public event Action<string[]>? OnLogLine;
+    public event Action? OnConnected;
 
     public bool IsConnected => connected;
 
@@ -61,6 +62,7 @@ public class IpcDataSource : IDataSource
             {
                 sender.InvokeFunc(subscribeMsg);
                 connected = true;
+                    OnConnected?.Invoke();
                 log.Information("[DamageTerror] IPC connected to IINACT");
             }
             catch (Exception ex)

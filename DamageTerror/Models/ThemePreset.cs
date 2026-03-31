@@ -27,6 +27,18 @@ public class ThemePreset
     public float BarLeftPadding { get; set; } = 4.0f;
     public float BarRightPadding { get; set; } = 6.0f;
     public float BarColumnSpacing { get; set; } = 6.0f;
+    public float IconTextPadding { get; set; } = 4.0f;
+
+    // ===== Self Highlighting =====
+
+    public bool SelfBarHighlight { get; set; }
+    public Vector4 SelfBarHighlightColor { get; set; } = new(1.0f, 0.85f, 0.3f, 0.9f);
+    public bool UseSelfNameColor { get; set; }
+    public Vector4 SelfNameColor { get; set; } = new(1.0f, 0.9f, 0.4f, 1.0f);
+
+    // ===== Value Formatting =====
+
+    public ValueDisplayFormat ValueDisplayFormat { get; set; } = ValueDisplayFormat.Abbreviated;
 
     // ===== Role Colors =====
 
@@ -71,11 +83,22 @@ public class ThemePreset
     public bool HeaderSeparator { get; set; }
     public Vector4 HeaderSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
+    // ===== Font Settings =====
+
+    public bool EnableCustomFont { get; set; } = false;
+    public float GlobalFontScale { get; set; } = 1.0f;
+    public string? CustomFontPath { get; set; }
+    public int CustomFontIndex { get; set; }
+    public float CustomFontSizePt { get; set; } = 14f;
+    public string? CustomFontDisplayName { get; set; }
+
     // ===== Status Bar =====
 
     public bool ShowStatusBar { get; set; } = true;
     public bool StatusBarAbove { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
+    public bool ShowStatusBarPersonalDps { get; set; } = true;
+    public bool ShowStatusBarRaidDps { get; set; } = true;
     public float StatusBarHeight { get; set; } = 20f;
     public float StatusBarFontScale { get; set; } = 1.0f;
     public float StatusBarPadding { get; set; } = 6f;
@@ -96,6 +119,7 @@ public class ThemePreset
     public float SkillRowHeight { get; set; } = 14f;
     public float SkillColumnPadding { get; set; } = 6f;
     public float SkillBarRounding { get; set; } = 0f;
+    public float SkillFontScale { get; set; } = 1.0f;
 
     // ===== Display Flags =====
 
@@ -114,6 +138,7 @@ public class ThemePreset
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
+    public float DetailFontScale { get; set; } = 1.0f;
 
     /// <summary>
     /// Applies all preset fields onto the given configuration, overwriting appearance settings.
@@ -130,6 +155,16 @@ public class ThemePreset
         config.BarLeftPadding = BarLeftPadding;
         config.BarRightPadding = BarRightPadding;
         config.BarColumnSpacing = BarColumnSpacing;
+        config.IconTextPadding = IconTextPadding;
+
+        // Self highlighting
+        config.SelfBarHighlight = SelfBarHighlight;
+        config.SelfBarHighlightColor = SelfBarHighlightColor;
+        config.UseSelfNameColor = UseSelfNameColor;
+        config.SelfNameColor = SelfNameColor;
+
+        // Value formatting
+        config.ValueDisplayFormat = ValueDisplayFormat;
 
         // Role colors
         config.UsePerJobColors = UsePerJobColors;
@@ -169,10 +204,20 @@ public class ThemePreset
         config.HeaderSeparator = HeaderSeparator;
         config.HeaderSeparatorColor = HeaderSeparatorColor;
 
+        // Font settings
+        config.EnableCustomFont = EnableCustomFont;
+        config.GlobalFontScale = GlobalFontScale;
+        config.CustomFontPath = CustomFontPath;
+        config.CustomFontIndex = CustomFontIndex;
+        config.CustomFontSizePt = CustomFontSizePt;
+        config.CustomFontDisplayName = CustomFontDisplayName;
+
         // Status bar
         config.ShowStatusBar = ShowStatusBar;
         config.StatusBarAbove = StatusBarAbove;
         config.ShowStatusBarTimer = ShowStatusBarTimer;
+        config.ShowStatusBarPersonalDps = ShowStatusBarPersonalDps;
+        config.ShowStatusBarRaidDps = ShowStatusBarRaidDps;
         config.StatusBarHeight = StatusBarHeight;
         config.StatusBarFontScale = StatusBarFontScale;
         config.StatusBarPadding = StatusBarPadding;
@@ -192,6 +237,7 @@ public class ThemePreset
         config.SkillRowHeight = SkillRowHeight;
         config.SkillColumnPadding = SkillColumnPadding;
         config.SkillBarRounding = SkillBarRounding;
+        config.SkillFontScale = SkillFontScale;
 
         // Display flags
         config.ShowJobIcons = ShowJobIcons;
@@ -208,6 +254,7 @@ public class ThemePreset
         config.DetailLabelColor = DetailLabelColor;
         config.DetailDeathColor = DetailDeathColor;
         config.DetailIndent = DetailIndent;
+        config.DetailFontScale = DetailFontScale;
     }
 
     /// <summary>
@@ -230,6 +277,16 @@ public class ThemePreset
             BarLeftPadding = config.BarLeftPadding,
             BarRightPadding = config.BarRightPadding,
             BarColumnSpacing = config.BarColumnSpacing,
+            IconTextPadding = config.IconTextPadding,
+
+            // Self highlighting
+            SelfBarHighlight = config.SelfBarHighlight,
+            SelfBarHighlightColor = config.SelfBarHighlightColor,
+            UseSelfNameColor = config.UseSelfNameColor,
+            SelfNameColor = config.SelfNameColor,
+
+            // Value formatting
+            ValueDisplayFormat = config.ValueDisplayFormat,
 
             // Role colors
             UsePerJobColors = config.UsePerJobColors,
@@ -271,10 +328,20 @@ public class ThemePreset
             HeaderSeparator = config.HeaderSeparator,
             HeaderSeparatorColor = config.HeaderSeparatorColor,
 
+            // Font settings
+            EnableCustomFont = config.EnableCustomFont,
+            GlobalFontScale = config.GlobalFontScale,
+            CustomFontPath = config.CustomFontPath,
+            CustomFontIndex = config.CustomFontIndex,
+            CustomFontSizePt = config.CustomFontSizePt,
+            CustomFontDisplayName = config.CustomFontDisplayName,
+
             // Status bar
             ShowStatusBar = config.ShowStatusBar,
             StatusBarAbove = config.StatusBarAbove,
             ShowStatusBarTimer = config.ShowStatusBarTimer,
+            ShowStatusBarPersonalDps = config.ShowStatusBarPersonalDps,
+            ShowStatusBarRaidDps = config.ShowStatusBarRaidDps,
             StatusBarHeight = config.StatusBarHeight,
             StatusBarFontScale = config.StatusBarFontScale,
             StatusBarPadding = config.StatusBarPadding,
@@ -294,6 +361,7 @@ public class ThemePreset
             SkillRowHeight = config.SkillRowHeight,
             SkillColumnPadding = config.SkillColumnPadding,
             SkillBarRounding = config.SkillBarRounding,
+            SkillFontScale = config.SkillFontScale,
 
             // Display flags
             ShowJobIcons = config.ShowJobIcons,
@@ -310,6 +378,7 @@ public class ThemePreset
             DetailLabelColor = config.DetailLabelColor,
             DetailDeathColor = config.DetailDeathColor,
             DetailIndent = config.DetailIndent,
+            DetailFontScale = config.DetailFontScale,
         };
     }
 }

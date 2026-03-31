@@ -82,17 +82,31 @@ public class DataService : IDisposable
             ipc.OnCombatData += OnCombatData;
             ipc.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
             ipc.OnLogLine += OnLogLine;
+
+            // Subscribe to an explicit connected event as a reliable signal
+            void ConnectedHandler()
+            {
+                activeSource = ipc;
+                ConnectionStatus = "Connected (IPC)";
+                log.Information("[DamageTerror] Using IPC data source");
+            }
+
+            ipc.OnConnected += ConnectedHandler;
+
             await ipc.ConnectAsync(cts.Token).ConfigureAwait(false);
 
+            // If connect completed synchronously, ensure we handle it immediately
             if (ipc.IsConnected)
             {
+                ipc.OnConnected -= ConnectedHandler;
                 activeSource = ipc;
                 ConnectionStatus = "Connected (IPC)";
                 log.Information("[DamageTerror] Using IPC data source");
                 return;
             }
 
-            // IPC failed, clean up and fall through to WebSocket
+            // IPC failed or not connected yet — clean up subscriptions and fallthrough
+            ipc.OnConnected -= ConnectedHandler;
             ipc.OnCombatData -= OnCombatData;
             ipc.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
             ipc.OnLogLine -= OnLogLine;
