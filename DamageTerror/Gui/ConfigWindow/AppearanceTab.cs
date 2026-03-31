@@ -144,7 +144,7 @@ public class AppearanceTab
             {
                 var preset = ThemePreset.CreateFromConfig(config, savePresetName.Trim(), savePresetDesc.Trim());
                 presetManager.SaveCustomPreset(preset);
-                selectedPresetIndex = -1; // reset selection since list changed
+                selectedPresetIndex = -1;
                 ImGui.CloseCurrentPopup();
             }
             if (!canSave) ImGui.EndDisabled();
@@ -519,11 +519,11 @@ public class AppearanceTab
         }
         else
         {
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Tanks", new[] { "Pld", "War", "Drk", "Gnb" }, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Healers", new[] { "Whm", "Sch", "Ast", "Sge" }, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Melee DPS", new[] { "Mnk", "Drg", "Nin", "Sam", "Rpr", "Vpr" }, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Phys Ranged DPS", new[] { "Brd", "Mch", "Dnc" }, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Caster DPS", new[] { "Blm", "Smn", "Rdm", "Pct", "Blu" }, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Tanks", JobColorHelper.TankJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Healers", JobColorHelper.HealerJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Melee DPS", JobColorHelper.MeleeDpsJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Phys Ranged DPS", JobColorHelper.RangedDpsJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Caster DPS", JobColorHelper.CasterDpsJobs, config);
             changed |= ConfigHelpers.ColorEditProp("Limit Break", config.LimitBreakColor, v => config.LimitBreakColor = v);
             changed |= ConfigHelpers.ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
 
@@ -804,7 +804,6 @@ public class AppearanceTab
                     changed = true;
                 }
 
-                // Draw the chooser dialog (if open)
                 if (fontService.DrawFontChooser())
                     changed = true;
             }

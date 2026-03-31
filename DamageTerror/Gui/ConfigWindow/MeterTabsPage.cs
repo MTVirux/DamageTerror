@@ -48,14 +48,12 @@ public static class MeterTabsPage
 
         var panelStartY = ImGui.GetCursorPosY();
 
-        // Ensure at least one tab exists
         if (config.MeterTabs.Count == 0)
         {
             config.MeterTabs.Add(new MeterTab("DPS"));
             changed = true;
         }
 
-        // Left: tab list + buttons; Right: selected tab settings
         var avail = ImGui.GetContentRegionAvail();
         var listWidth = 160f;
 
@@ -74,7 +72,6 @@ public static class MeterTabsPage
         }
         ImGui.EndChild();
 
-        // Buttons under the list
         if (ImGui.Button("+##addTab"))
         {
             config.MeterTabs.Add(new MeterTab($"Tab {config.MeterTabs.Count + 1}"));
@@ -123,7 +120,6 @@ public static class MeterTabsPage
         }
         if (!canMoveDown) ImGui.EndDisabled();
 
-        // Right panel: selected tab details
         ImGui.SameLine();
         var rightStart = ImGui.GetCursorPosX();
         ImGui.SetCursorPos(new Vector2(listWidth + ImGui.GetStyle().ItemSpacing.X, panelStartY));
@@ -214,11 +210,11 @@ public static class MeterTabsPage
         ImGui.TextDisabled("Select which jobs to include:");
         ImGui.Indent();
 
-        DrawJobGroup("Tanks", new[] { "Pld", "War", "Drk", "Gnb" }, tab, ref changed);
-        DrawJobGroup("Healers", new[] { "Whm", "Sch", "Ast", "Sge" }, tab, ref changed);
-        DrawJobGroup("Melee DPS", new[] { "Mnk", "Drg", "Nin", "Sam", "Rpr", "Vpr" }, tab, ref changed);
-        DrawJobGroup("Ranged DPS", new[] { "Brd", "Mch", "Dnc" }, tab, ref changed);
-        DrawJobGroup("Caster DPS", new[] { "Blm", "Smn", "Rdm", "Pct", "Blu" }, tab, ref changed);
+        DrawJobGroup("Tanks", JobColorHelper.TankJobs, tab, ref changed);
+        DrawJobGroup("Healers", JobColorHelper.HealerJobs, tab, ref changed);
+        DrawJobGroup("Melee DPS", JobColorHelper.MeleeDpsJobs, tab, ref changed);
+        DrawJobGroup("Ranged DPS", JobColorHelper.RangedDpsJobs, tab, ref changed);
+        DrawJobGroup("Caster DPS", JobColorHelper.CasterDpsJobs, tab, ref changed);
 
         ImGui.Unindent();
         return changed;

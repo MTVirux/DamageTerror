@@ -34,14 +34,14 @@ public static class JobColorHelper
         "Lmb", "Limit Break",
     };
 
+    public static readonly string[] TankJobs = { "Pld", "War", "Drk", "Gnb" };
+    public static readonly string[] HealerJobs = { "Whm", "Sch", "Ast", "Sge" };
+    public static readonly string[] MeleeDpsJobs = { "Mnk", "Drg", "Nin", "Sam", "Rpr", "Vpr" };
+    public static readonly string[] RangedDpsJobs = { "Brd", "Mch", "Dnc" };
+    public static readonly string[] CasterDpsJobs = { "Blm", "Smn", "Rdm", "Pct", "Blu" };
+
     public static readonly string[] AllJobAbbreviations =
-    {
-        "Pld", "War", "Drk", "Gnb",
-        "Whm", "Sch", "Ast", "Sge",
-        "Mnk", "Drg", "Nin", "Sam", "Rpr", "Vpr",
-        "Brd", "Mch", "Dnc",
-        "Blm", "Smn", "Rdm", "Pct", "Blu",
-    };
+        TankJobs.Concat(HealerJobs).Concat(MeleeDpsJobs).Concat(RangedDpsJobs).Concat(CasterDpsJobs).ToArray();
 
     private static readonly Dictionary<string, Vector4> DefaultPerJobColors = new(StringComparer.OrdinalIgnoreCase)
     {
