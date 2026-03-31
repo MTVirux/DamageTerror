@@ -20,27 +20,6 @@ public class DisplayTab
     {
         var changed = false;
 
-        if (ImGui.CollapsingHeader("Sorting", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            var sortOptions = Enum.GetNames(typeof(SortField));
-            var currentSort = (int)config.SortBy;
-            ImGui.SetNextItemWidth(150);
-            if (ImGui.Combo("Sort by", ref currentSort, sortOptions, sortOptions.Length))
-            {
-                config.SortBy = (SortField)currentSort;
-                changed = true;
-            }
-
-            var sortDesc = config.SortDescending;
-            if (ImGui.Checkbox("Descending (highest first)", ref sortDesc))
-            {
-                config.SortDescending = sortDesc;
-                changed = true;
-            }
-        }
-
-        ImGui.Spacing();
-
         if (ImGui.CollapsingHeader("Bar Content", ImGuiTreeNodeFlags.DefaultOpen))
         {
             ImGui.TextDisabled("Choose what to display on each combatant bar.");

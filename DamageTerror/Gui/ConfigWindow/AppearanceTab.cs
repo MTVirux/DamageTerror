@@ -20,71 +20,18 @@ public class AppearanceTab
         this.presetManager = presetManager;
     }
 
-    public bool Draw(Configuration config, FontService? fontService = null, IUiBuilder? uiBuilder = null)
+    public bool DrawPresetsPage(Configuration config)
     {
-        var changed = false;
-
-        changed |= DrawPresetSection(config);
-
-        ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
-
-        if (ImGui.BeginTabBar("##appearanceTabs"))
-        {
-            if (ImGui.BeginTabItem("Bars"))
-            {
-                changed |= DrawBarsTab(config);
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem("Selection Bar"))
-            {
-                changed |= DrawSelectionBarTab(config);
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem("Header"))
-            {
-                changed |= DrawHeaderTab(config);
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem("Colors"))
-            {
-                changed |= DrawColorsTab(config);
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem("Status Bar"))
-            {
-                changed |= DrawStatusBarTab(config);
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem("Skills"))
-            {
-                changed |= DrawSkillsTab(config);
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem("Details"))
-            {
-                changed |= DrawDetailsTab(config);
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem("Font"))
-            {
-                changed |= DrawFontTab(config, fontService, uiBuilder);
-                ImGui.EndTabItem();
-            }
-
-            ImGui.EndTabBar();
-        }
-
-        return changed;
+        return DrawPresetSection(config);
     }
+
+    public static bool DrawBarsPage(Configuration config) => DrawBarsTab(config);
+    public static bool DrawSelectionBarPage(Configuration config) => DrawSelectionBarTab(config);
+    public static bool DrawColorsPage(Configuration config) => DrawColorsTab(config);
+    public static bool DrawStatusBarPage(Configuration config) => DrawStatusBarTab(config);
+    public static bool DrawDetailsPage(Configuration config) => DrawDetailsTab(config);
+    public static bool DrawFontPage(Configuration config, FontService? fontService, IUiBuilder? uiBuilder)
+        => DrawFontTab(config, fontService, uiBuilder);
 
     private bool DrawPresetSection(Configuration config)
     {
@@ -313,11 +260,11 @@ public class AppearanceTab
             changed = true;
         }
 
-        var barFontScale = config.BarFontScale;
+        var barFontSize = config.BarFontSize;
         ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar font scale", ref barFontScale, 0.5f, 2.0f, "%.2f"))
+        if (ImGui.SliderFloat("Bar font size", ref barFontSize, 6f, 40f, "%.1fpt"))
         {
-            config.BarFontScale = barFontScale;
+            config.BarFontSize = barFontSize;
             changed = true;
         }
 
@@ -421,33 +368,70 @@ public class AppearanceTab
             changed = true;
         }
 
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        ImGui.TextDisabled("Header Row");
+
+        var showHeader = config.ShowMeterHeader;
+        if (ImGui.Checkbox("Show header row", ref showHeader))
+        {
+            config.ShowMeterHeader = showHeader;
+            changed = true;
+        }
+
+        changed |= ConfigHelpers.ColorEditProp("Header text color", config.HeaderTextColor, v => config.HeaderTextColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Header background", config.HeaderBackgroundColor, v => config.HeaderBackgroundColor = v);
+
+        var headerHeight = config.HeaderHeight;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Header height", ref headerHeight, 14.0f, 40.0f, "%.0f px"))
+        {
+            config.HeaderHeight = headerHeight;
+            changed = true;
+        }
+
+        var headerFontSize = config.HeaderFontSize;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Header font size", ref headerFontSize, 6f, 40f, "%.1fpt"))
+        {
+            config.HeaderFontSize = headerFontSize;
+            changed = true;
+        }
+
+        var headerSep = config.HeaderSeparator;
+        if (ImGui.Checkbox("Show separator line##header", ref headerSep))
+        {
+            config.HeaderSeparator = headerSep;
+            changed = true;
+        }
+
+        if (config.HeaderSeparator)
+        {
+            ImGui.Indent();
+            changed |= ConfigHelpers.ColorEditProp("Separator color##header", config.HeaderSeparatorColor, v => config.HeaderSeparatorColor = v);
+            ImGui.Unindent();
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.Button("Reset Header"))
+        {
+            config.HeaderTextColor = new Vector4(0.7f, 0.7f, 0.7f, 0.9f);
+            config.HeaderBackgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+            config.HeaderHeight = 22.0f;
+            config.HeaderFontSize = 14f;
+            config.HeaderSeparator = false;
+            config.HeaderSeparatorColor = new Vector4(0.4f, 0.4f, 0.4f, 0.5f);
+            changed = true;
+        }
+
         return changed;
     }
 
     private static bool DrawSelectionBarTab(Configuration config)
     {
         var changed = false;
-
-        ImGui.Spacing();
-
-        var hideWhenPinned = config.HideSelectionBarWhenPinned;
-        if (ImGui.Checkbox("Hide when window is pinned", ref hideWhenPinned))
-        {
-            config.HideSelectionBarWhenPinned = hideWhenPinned;
-            changed = true;
-        }
-
-        if (config.HideSelectionBarWhenPinned)
-        {
-            ImGui.Indent();
-            var showOnCtrlShift = config.SelectionBarShowOnCtrlShift;
-            if (ImGui.Checkbox("Show if Ctrl + Shift is held", ref showOnCtrlShift))
-            {
-                config.SelectionBarShowOnCtrlShift = showOnCtrlShift;
-                changed = true;
-            }
-            ImGui.Unindent();
-        }
 
         ImGui.Spacing();
 
@@ -462,13 +446,6 @@ public class AppearanceTab
         if (ImGui.Checkbox("Show encounter picker", ref showEncPicker))
         {
             config.ShowEncounterPicker = showEncPicker;
-            changed = true;
-        }
-
-        var showSortDd = config.ShowSortDropdown;
-        if (ImGui.Checkbox("Show sort dropdown", ref showSortDd))
-        {
-            config.ShowSortDropdown = showSortDd;
             changed = true;
         }
 
@@ -507,73 +484,8 @@ public class AppearanceTab
             config.SelectionBarBackgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
             config.SelectionBarHeight = 0.0f;
             config.ShowEncounterPicker = true;
-            config.ShowSortDropdown = true;
             config.ShowSelectionBarSeparator = true;
             config.SelectionBarSeparatorColor = new Vector4(0.4f, 0.4f, 0.4f, 0.5f);
-            config.HideSelectionBarWhenPinned = false;
-            config.SelectionBarShowOnCtrlShift = true;
-            changed = true;
-        }
-
-        return changed;
-    }
-
-    private static bool DrawHeaderTab(Configuration config)
-    {
-        var changed = false;
-
-        ImGui.Spacing();
-
-        var showHeader = config.ShowMeterHeader;
-        if (ImGui.Checkbox("Show header row", ref showHeader))
-        {
-            config.ShowMeterHeader = showHeader;
-            changed = true;
-        }
-
-        changed |= ConfigHelpers.ColorEditProp("Header text color", config.HeaderTextColor, v => config.HeaderTextColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Header background", config.HeaderBackgroundColor, v => config.HeaderBackgroundColor = v);
-
-        var headerHeight = config.HeaderHeight;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Header height", ref headerHeight, 14.0f, 40.0f, "%.0f px"))
-        {
-            config.HeaderHeight = headerHeight;
-            changed = true;
-        }
-
-        var headerFontScale = config.HeaderFontScale;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Header font scale", ref headerFontScale, 0.5f, 2.0f, "%.2f"))
-        {
-            config.HeaderFontScale = headerFontScale;
-            changed = true;
-        }
-
-        var headerSep = config.HeaderSeparator;
-        if (ImGui.Checkbox("Show separator line", ref headerSep))
-        {
-            config.HeaderSeparator = headerSep;
-            changed = true;
-        }
-
-        if (config.HeaderSeparator)
-        {
-            ImGui.Indent();
-            changed |= ConfigHelpers.ColorEditProp("Separator color", config.HeaderSeparatorColor, v => config.HeaderSeparatorColor = v);
-            ImGui.Unindent();
-        }
-
-        ImGui.Spacing();
-
-        if (ImGui.Button("Reset Header"))
-        {
-            config.HeaderTextColor = new Vector4(0.7f, 0.7f, 0.7f, 0.9f);
-            config.HeaderBackgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-            config.HeaderHeight = 22.0f;
-            config.HeaderFontScale = 1.0f;
-            config.HeaderSeparator = false;
-            config.HeaderSeparatorColor = new Vector4(0.4f, 0.4f, 0.4f, 0.5f);
             changed = true;
         }
 
@@ -602,6 +514,7 @@ public class AppearanceTab
             changed |= ConfigHelpers.ColorEditProp("Melee DPS", config.MeleeDpsColor, v => config.MeleeDpsColor = v);
             changed |= ConfigHelpers.ColorEditProp("Phys Ranged DPS", config.RangedDpsColor, v => config.RangedDpsColor = v);
             changed |= ConfigHelpers.ColorEditProp("Caster DPS", config.CasterDpsColor, v => config.CasterDpsColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Limit Break", config.LimitBreakColor, v => config.LimitBreakColor = v);
             changed |= ConfigHelpers.ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
         }
         else
@@ -611,6 +524,7 @@ public class AppearanceTab
             changed |= ConfigHelpers.DrawPerJobColorGroup("Melee DPS", new[] { "Mnk", "Drg", "Nin", "Sam", "Rpr", "Vpr" }, config);
             changed |= ConfigHelpers.DrawPerJobColorGroup("Phys Ranged DPS", new[] { "Brd", "Mch", "Dnc" }, config);
             changed |= ConfigHelpers.DrawPerJobColorGroup("Caster DPS", new[] { "Blm", "Smn", "Rdm", "Pct", "Blu" }, config);
+            changed |= ConfigHelpers.ColorEditProp("Limit Break", config.LimitBreakColor, v => config.LimitBreakColor = v);
             changed |= ConfigHelpers.ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
 
             if (ImGui.Button("Reset Per-Job Colors"))
@@ -629,6 +543,7 @@ public class AppearanceTab
             config.MeleeDpsColor = new Vector4(0.8f, 0.2f, 0.2f, 1.0f);
             config.RangedDpsColor = new Vector4(0.9f, 0.5f, 0.2f, 1.0f);
             config.CasterDpsColor = new Vector4(0.6f, 0.3f, 0.8f, 1.0f);
+            config.LimitBreakColor = new Vector4(1.0f, 0.5f, 0.0f, 1.0f);
             config.DefaultJobColor = new Vector4(0.5f, 0.5f, 0.5f, 1.0f);
             config.JobColors.Clear();
             config.UsePerJobColors = false;
@@ -653,13 +568,6 @@ public class AppearanceTab
 
         if (config.ShowStatusBar)
         {
-            var above = config.StatusBarAbove;
-            if (ImGui.Checkbox("Position above bars (uncheck for below)", ref above))
-            {
-                config.StatusBarAbove = above;
-                changed = true;
-            }
-
             var showTimer = config.ShowStatusBarTimer;
             if (ImGui.Checkbox("Show combat timer", ref showTimer))
             {
@@ -696,11 +604,11 @@ public class AppearanceTab
                 changed = true;
             }
 
-            var fontScale = config.StatusBarFontScale;
+            var fontSizeSb = config.StatusBarFontSize;
             ImGui.SetNextItemWidth(150);
-            if (ImGui.SliderFloat("Font size##statusbar", ref fontScale, 0.5f, 2.0f, "%.2f"))
+            if (ImGui.SliderFloat("Font size##statusbar", ref fontSizeSb, 6f, 40f, "%.1fpt"))
             {
-                config.StatusBarFontScale = fontScale;
+                config.StatusBarFontSize = fontSizeSb;
                 changed = true;
             }
 
@@ -757,63 +665,6 @@ public class AppearanceTab
         return changed;
     }
 
-    private static bool DrawSkillsTab(Configuration config)
-    {
-        var changed = false;
-
-        ImGui.Spacing();
-        ImGui.TextDisabled("Appearance");
-
-        var skillRowHeight = config.SkillRowHeight;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Row height", ref skillRowHeight, 10.0f, 30.0f, "%.0f px"))
-        {
-            config.SkillRowHeight = skillRowHeight;
-            changed = true;
-        }
-
-        var skillColPad = config.SkillColumnPadding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Column padding", ref skillColPad, 0.0f, 16.0f, "%.0f px"))
-        {
-            config.SkillColumnPadding = skillColPad;
-            changed = true;
-        }
-
-        var skillRounding = config.SkillBarRounding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar rounding##skills", ref skillRounding, 0.0f, 12.0f, "%.1f"))
-        {
-            config.SkillBarRounding = skillRounding;
-            changed = true;
-        }
-
-        ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
-        ImGui.TextDisabled("Colors");
-
-        changed |= ConfigHelpers.ColorEditProp("Damage fill", config.SkillDamageFillColor, v => config.SkillDamageFillColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Healing fill", config.SkillHealingFillColor, v => config.SkillHealingFillColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Row background", config.SkillRowBackgroundColor, v => config.SkillRowBackgroundColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Skill text", config.SkillTextColor, v => config.SkillTextColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Header text", config.SkillHeaderTextColor, v => config.SkillHeaderTextColor = v);
-
-        ImGui.Spacing();
-
-        if (ImGui.Button("Reset Skill Colors"))
-        {
-            config.SkillDamageFillColor = new Vector4(0.35f, 0.35f, 0.55f, 0.7f);
-            config.SkillHealingFillColor = new Vector4(0.25f, 0.50f, 0.30f, 0.7f);
-            config.SkillRowBackgroundColor = new Vector4(0.12f, 0.12f, 0.12f, 0.6f);
-            config.SkillTextColor = new Vector4(1f, 1f, 1f, 0.9f);
-            config.SkillHeaderTextColor = new Vector4(0.6f, 0.6f, 0.6f, 0.9f);
-            changed = true;
-        }
-
-        return changed;
-    }
-
     private static bool DrawDetailsTab(Configuration config)
     {
         var changed = false;
@@ -842,7 +693,59 @@ public class AppearanceTab
             config.DetailLabelColor = new Vector4(0.7f, 0.7f, 0.7f, 1f);
             config.DetailDeathColor = new Vector4(1f, 0.3f, 0.3f, 1f);
             config.DetailIndent = 8.0f;
-            config.DetailFontScale = 1.0f;
+            config.DetailFontSize = 14f;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        ImGui.TextDisabled("Skill Breakdown — Appearance");
+
+        var skillRowHeight = config.SkillRowHeight;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Row height", ref skillRowHeight, 10.0f, 30.0f, "%.0f px"))
+        {
+            config.SkillRowHeight = skillRowHeight;
+            changed = true;
+        }
+
+        var skillColPad = config.SkillColumnPadding;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Column padding", ref skillColPad, 0.0f, 16.0f, "%.0f px"))
+        {
+            config.SkillColumnPadding = skillColPad;
+            changed = true;
+        }
+
+        var skillRounding = config.SkillBarRounding;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Bar rounding##skills", ref skillRounding, 0.0f, 12.0f, "%.1f"))
+        {
+            config.SkillBarRounding = skillRounding;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        ImGui.TextDisabled("Skill Breakdown — Colors");
+
+        changed |= ConfigHelpers.ColorEditProp("Damage fill", config.SkillDamageFillColor, v => config.SkillDamageFillColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Healing fill", config.SkillHealingFillColor, v => config.SkillHealingFillColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Row background", config.SkillRowBackgroundColor, v => config.SkillRowBackgroundColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Skill text", config.SkillTextColor, v => config.SkillTextColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Header text", config.SkillHeaderTextColor, v => config.SkillHeaderTextColor = v);
+
+        ImGui.Spacing();
+
+        if (ImGui.Button("Reset Skill Colors"))
+        {
+            config.SkillDamageFillColor = new Vector4(0.35f, 0.35f, 0.55f, 0.7f);
+            config.SkillHealingFillColor = new Vector4(0.25f, 0.50f, 0.30f, 0.7f);
+            config.SkillRowBackgroundColor = new Vector4(0.12f, 0.12f, 0.12f, 0.6f);
+            config.SkillTextColor = new Vector4(1f, 1f, 1f, 0.9f);
+            config.SkillHeaderTextColor = new Vector4(0.6f, 0.6f, 0.6f, 0.9f);
             changed = true;
         }
 
@@ -880,7 +783,7 @@ public class AppearanceTab
             var fontName = config.CustomFontDisplayName ?? "Dalamud Default";
             ImGui.Text($"Current: {fontName}");
 
-            if (config.CustomFontPath != null)
+            if (config.CustomFontSpecJson != null)
             {
                 ImGui.SameLine();
                 ImGui.TextDisabled($"({config.CustomFontSizePt:F0}pt)");
@@ -895,7 +798,7 @@ public class AppearanceTab
 
                 ImGui.SameLine();
 
-                if (config.CustomFontPath != null && ImGui.Button("Reset to Default"))
+                if (config.CustomFontSpecJson != null && ImGui.Button("Reset to Default"))
                 {
                     fontService.ClearCustomFont();
                     changed = true;
@@ -911,72 +814,58 @@ public class AppearanceTab
         ImGui.Separator();
         ImGui.Spacing();
 
-        ImGui.TextDisabled("Scale");
-        ImGui.TextWrapped("Master scale applied to all text. Individual scales below are multiplied by this value.");
+        ImGui.TextDisabled("Font Sizes (pt)");
+        ImGui.TextWrapped("Set the font size for each component independently.");
 
-        var globalScale = config.GlobalFontScale;
+        var barFont = config.BarFontSize;
         ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Global font scale", ref globalScale, 0.5f, 3.0f, "%.2f"))
+        if (ImGui.SliderFloat("Bar text", ref barFont, 6f, 40f, "%.1fpt"))
         {
-            config.GlobalFontScale = globalScale;
+            config.BarFontSize = barFont;
             changed = true;
         }
 
-        ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
-        ImGui.TextDisabled("Per-Component Scales");
-
-        var barFont = config.BarFontScale;
+        var headerFont = config.HeaderFontSize;
         ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar text", ref barFont, 0.5f, 2.0f, "%.2f"))
+        if (ImGui.SliderFloat("Header text", ref headerFont, 6f, 40f, "%.1fpt"))
         {
-            config.BarFontScale = barFont;
+            config.HeaderFontSize = headerFont;
             changed = true;
         }
 
-        var headerFont = config.HeaderFontScale;
+        var statusFont = config.StatusBarFontSize;
         ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Header text", ref headerFont, 0.5f, 2.0f, "%.2f"))
+        if (ImGui.SliderFloat("Status bar text", ref statusFont, 6f, 40f, "%.1fpt"))
         {
-            config.HeaderFontScale = headerFont;
+            config.StatusBarFontSize = statusFont;
             changed = true;
         }
 
-        var statusFont = config.StatusBarFontScale;
+        var detailFont = config.DetailFontSize;
         ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Status bar text", ref statusFont, 0.5f, 2.0f, "%.2f"))
+        if (ImGui.SliderFloat("Detail panel text", ref detailFont, 6f, 40f, "%.1fpt"))
         {
-            config.StatusBarFontScale = statusFont;
+            config.DetailFontSize = detailFont;
             changed = true;
         }
 
-        var detailFont = config.DetailFontScale;
+        var skillFont = config.SkillFontSize;
         ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Detail panel text", ref detailFont, 0.5f, 2.0f, "%.2f"))
+        if (ImGui.SliderFloat("Skill breakdown text", ref skillFont, 6f, 40f, "%.1fpt"))
         {
-            config.DetailFontScale = detailFont;
-            changed = true;
-        }
-
-        var skillFont = config.SkillFontScale;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Skill breakdown text", ref skillFont, 0.5f, 2.0f, "%.2f"))
-        {
-            config.SkillFontScale = skillFont;
+            config.SkillFontSize = skillFont;
             changed = true;
         }
 
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset Scales"))
+        if (ImGui.Button("Reset Sizes"))
         {
-            config.GlobalFontScale = 1.0f;
-            config.BarFontScale = 1.0f;
-            config.HeaderFontScale = 1.0f;
-            config.StatusBarFontScale = 1.0f;
-            config.DetailFontScale = 1.0f;
-            config.SkillFontScale = 1.0f;
+            config.BarFontSize = 14f;
+            config.HeaderFontSize = 14f;
+            config.StatusBarFontSize = 14f;
+            config.DetailFontSize = 14f;
+            config.SkillFontSize = 14f;
             changed = true;
         }
 
