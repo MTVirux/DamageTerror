@@ -235,10 +235,10 @@ public class DataService : IDisposable
                 c.IsLocalPlayer = true;
         }
 
-        Store.Update(snapshot);
+        var archived = Store.Update(snapshot);
 
-        // Persist history when an encounter is archived
-        Store.Save();
+        if (archived)
+            Store.Save();
     }
 
     private void OnLogLine(string[] line)

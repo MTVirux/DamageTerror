@@ -72,23 +72,26 @@ public class EncounterStore
     /// Update the store with a new CombatData snapshot.
     /// Handles encounter boundary detection (active → inactive transitions).
     /// </summary>
-    public void Update(EncounterSnapshot snapshot)
+    public bool Update(EncounterSnapshot snapshot)
     {
         lock (syncLock)
         {
+            var archived = false;
+
             if (snapshot.Encounter.IsActive && !wasActive && active != null)
             {
-                // New encounter started — archive the previous encounter
                 history.Add(active);
                 dirty = true;
+                archived = true;
 
-                // Trim history if needed
                 while (history.Count > maxHistory)
                     history.RemoveAt(0);
             }
 
             active = snapshot;
             wasActive = snapshot.Encounter.IsActive;
+
+            return archived;
         }
     }
 
