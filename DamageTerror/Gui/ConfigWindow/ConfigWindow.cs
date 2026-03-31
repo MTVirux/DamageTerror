@@ -74,7 +74,6 @@ public class ConfigWindow : Window, IDisposable
         var sidebarWidth = 170f * ImGui.GetIO().FontGlobalScale;
         var avail = ImGui.GetContentRegionAvail();
 
-        // Left sidebar
         if (ImGui.BeginChild("##sidebar", new Vector2(sidebarWidth, avail.Y), true))
         {
             DrawSidebar();
@@ -83,7 +82,6 @@ public class ConfigWindow : Window, IDisposable
 
         ImGui.SameLine();
 
-        // Right content panel
         if (ImGui.BeginChild("##content", new Vector2(0, avail.Y), true))
         {
             changed |= DrawContentPage(config);
@@ -103,7 +101,6 @@ public class ConfigWindow : Window, IDisposable
 
         foreach (var (page, label, group, icon) in PageEntries)
         {
-            // Draw group header when the group changes
             if (group != lastGroup)
             {
                 if (lastGroup != null)
@@ -123,7 +120,6 @@ public class ConfigWindow : Window, IDisposable
                 lastGroup = group;
             }
 
-            // Draw icon
             ImGui.PushFont(UiBuilder.IconFont);
             var iconStr = icon.ToIconString();
             var iconTextSize = ImGui.CalcTextSize(iconStr);
@@ -138,7 +134,6 @@ public class ConfigWindow : Window, IDisposable
                 selectedPage = page;
             }
 
-            // Overlay icon + label on the selectable
             var afterCursor = ImGui.GetCursorPos();
             ImGui.SetCursorPos(new Vector2(cursorPos.X + 4f, cursorPos.Y + (ImGui.GetFrameHeight() - iconTextSize.Y) * 0.5f));
             ImGui.PushFont(UiBuilder.IconFont);
