@@ -2,21 +2,13 @@ using Newtonsoft.Json;
 
 namespace DamageTerror.Models;
 
-/// <summary>
-/// A serializable snapshot of all appearance-related configuration fields.
-/// Can be applied to a <see cref="Configuration"/> to instantly restyle the meter.
-/// </summary>
 public class ThemePreset
 {
-    // ===== Metadata =====
-
     public string Name { get; set; } = "Untitled";
     public string Description { get; set; } = string.Empty;
 
     [JsonIgnore]
     public bool IsBuiltIn { get; set; }
-
-    // ===== Bar Geometry =====
 
     public float BarHeight { get; set; } = 22.0f;
     public float BarSpacing { get; set; } = 1.0f;
@@ -29,18 +21,12 @@ public class ThemePreset
     public float BarColumnSpacing { get; set; } = 6.0f;
     public float IconTextPadding { get; set; } = 4.0f;
 
-    // ===== Self Highlighting =====
-
     public bool SelfBarHighlight { get; set; }
     public Vector4 SelfBarHighlightColor { get; set; } = new(1.0f, 0.85f, 0.3f, 0.9f);
     public bool UseSelfNameColor { get; set; }
     public Vector4 SelfNameColor { get; set; } = new(1.0f, 0.9f, 0.4f, 1.0f);
 
-    // ===== Value Formatting =====
-
     public ValueDisplayFormat ValueDisplayFormat { get; set; } = ValueDisplayFormat.Abbreviated;
-
-    // ===== Role Colors =====
 
     public bool UsePerJobColors { get; set; }
     public Vector4 TankColor { get; set; } = new(0.2f, 0.4f, 0.8f, 1.0f);
@@ -50,19 +36,14 @@ public class ThemePreset
     public Vector4 CasterDpsColor { get; set; } = new(0.6f, 0.3f, 0.8f, 1.0f);
     public Vector4 DefaultJobColor { get; set; } = new(0.5f, 0.5f, 0.5f, 1.0f);
 
-    // ===== Per-Job Colors (nullable — only present when UsePerJobColors) =====
 
     public Dictionary<string, Vector4>? JobColors { get; set; }
-
-    // ===== UI Colors =====
 
     public Vector4 BarBackgroundColor { get; set; } = new(0.15f, 0.15f, 0.15f, 1.0f);
     public Vector4 NameTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 ValueTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 WindowBackgroundColor { get; set; } = new(0.06f, 0.06f, 0.06f, 0.94f);
     public float WindowRounding { get; set; } = 0f;
-
-    // ===== Selection Bar =====
 
     public bool ShowSelectionBar { get; set; } = true;
     public Vector4 SelectionBarTextColor { get; set; } = new(1f, 1f, 1f, 1f);
@@ -73,8 +54,6 @@ public class ThemePreset
     public bool ShowSelectionBarSeparator { get; set; } = true;
     public Vector4 SelectionBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
-    // ===== Header =====
-
     public bool ShowMeterHeader { get; set; } = true;
     public Vector4 HeaderTextColor { get; set; } = new(0.7f, 0.7f, 0.7f, 0.9f);
     public Vector4 HeaderBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
@@ -83,16 +62,12 @@ public class ThemePreset
     public bool HeaderSeparator { get; set; }
     public Vector4 HeaderSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
-    // ===== Font Settings =====
-
     public bool EnableCustomFont { get; set; } = false;
     public float GlobalFontScale { get; set; } = 1.0f;
     public string? CustomFontPath { get; set; }
     public int CustomFontIndex { get; set; }
     public float CustomFontSizePt { get; set; } = 14f;
     public string? CustomFontDisplayName { get; set; }
-
-    // ===== Status Bar =====
 
     public bool ShowStatusBar { get; set; } = true;
     public bool StatusBarAbove { get; set; } = true;
@@ -109,8 +84,6 @@ public class ThemePreset
     public Vector4 StatusBarLabelColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
     public Vector4 StatusBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
-    // ===== Skill Breakdown =====
-
     public Vector4 SkillDamageFillColor { get; set; } = new(0.35f, 0.35f, 0.55f, 0.7f);
     public Vector4 SkillHealingFillColor { get; set; } = new(0.25f, 0.50f, 0.30f, 0.7f);
     public Vector4 SkillRowBackgroundColor { get; set; } = new(0.12f, 0.12f, 0.12f, 0.6f);
@@ -120,8 +93,6 @@ public class ThemePreset
     public float SkillColumnPadding { get; set; } = 6f;
     public float SkillBarRounding { get; set; } = 0f;
     public float SkillFontScale { get; set; } = 1.0f;
-
-    // ===== Display Flags =====
 
     public bool ShowJobIcons { get; set; } = true;
     public bool ShowNameOnBar { get; set; } = true;
@@ -133,19 +104,13 @@ public class ThemePreset
     public bool ShowCritOnBar { get; set; }
     public bool ShowCritDirectHitOnBar { get; set; }
 
-    // ===== Detail Panel =====
-
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
     public float DetailFontScale { get; set; } = 1.0f;
 
-    /// <summary>
-    /// Applies all preset fields onto the given configuration, overwriting appearance settings.
-    /// </summary>
     public void ApplyTo(Configuration config)
     {
-        // Bar geometry
         config.BarHeight = BarHeight;
         config.BarSpacing = BarSpacing;
         config.BarRounding = BarRounding;
@@ -157,16 +122,13 @@ public class ThemePreset
         config.BarColumnSpacing = BarColumnSpacing;
         config.IconTextPadding = IconTextPadding;
 
-        // Self highlighting
         config.SelfBarHighlight = SelfBarHighlight;
         config.SelfBarHighlightColor = SelfBarHighlightColor;
         config.UseSelfNameColor = UseSelfNameColor;
         config.SelfNameColor = SelfNameColor;
 
-        // Value formatting
         config.ValueDisplayFormat = ValueDisplayFormat;
 
-        // Role colors
         config.UsePerJobColors = UsePerJobColors;
         config.TankColor = TankColor;
         config.HealerColor = HealerColor;
@@ -175,17 +137,14 @@ public class ThemePreset
         config.CasterDpsColor = CasterDpsColor;
         config.DefaultJobColor = DefaultJobColor;
 
-        // Per-job colors
         config.JobColors = JobColors != null ? new Dictionary<string, Vector4>(JobColors) : new();
 
-        // UI colors
         config.BarBackgroundColor = BarBackgroundColor;
         config.NameTextColor = NameTextColor;
         config.ValueTextColor = ValueTextColor;
         config.WindowBackgroundColor = WindowBackgroundColor;
         config.WindowRounding = WindowRounding;
 
-        // Selection bar
         config.ShowSelectionBar = ShowSelectionBar;
         config.SelectionBarTextColor = SelectionBarTextColor;
         config.SelectionBarBackgroundColor = SelectionBarBackgroundColor;
@@ -195,7 +154,6 @@ public class ThemePreset
         config.ShowSelectionBarSeparator = ShowSelectionBarSeparator;
         config.SelectionBarSeparatorColor = SelectionBarSeparatorColor;
 
-        // Header
         config.ShowMeterHeader = ShowMeterHeader;
         config.HeaderTextColor = HeaderTextColor;
         config.HeaderBackgroundColor = HeaderBackgroundColor;
@@ -204,7 +162,6 @@ public class ThemePreset
         config.HeaderSeparator = HeaderSeparator;
         config.HeaderSeparatorColor = HeaderSeparatorColor;
 
-        // Font settings
         config.EnableCustomFont = EnableCustomFont;
         config.GlobalFontScale = GlobalFontScale;
         config.CustomFontPath = CustomFontPath;
@@ -212,7 +169,6 @@ public class ThemePreset
         config.CustomFontSizePt = CustomFontSizePt;
         config.CustomFontDisplayName = CustomFontDisplayName;
 
-        // Status bar
         config.ShowStatusBar = ShowStatusBar;
         config.StatusBarAbove = StatusBarAbove;
         config.ShowStatusBarTimer = ShowStatusBarTimer;
@@ -228,7 +184,6 @@ public class ThemePreset
         config.StatusBarLabelColor = StatusBarLabelColor;
         config.StatusBarSeparatorColor = StatusBarSeparatorColor;
 
-        // Skill breakdown
         config.SkillDamageFillColor = SkillDamageFillColor;
         config.SkillHealingFillColor = SkillHealingFillColor;
         config.SkillRowBackgroundColor = SkillRowBackgroundColor;
@@ -239,7 +194,6 @@ public class ThemePreset
         config.SkillBarRounding = SkillBarRounding;
         config.SkillFontScale = SkillFontScale;
 
-        // Display flags
         config.ShowJobIcons = ShowJobIcons;
         config.ShowNameOnBar = ShowNameOnBar;
         config.ShowValueOnBar = ShowValueOnBar;
@@ -250,16 +204,12 @@ public class ThemePreset
         config.ShowCritOnBar = ShowCritOnBar;
         config.ShowCritDirectHitOnBar = ShowCritDirectHitOnBar;
 
-        // Detail panel
         config.DetailLabelColor = DetailLabelColor;
         config.DetailDeathColor = DetailDeathColor;
         config.DetailIndent = DetailIndent;
         config.DetailFontScale = DetailFontScale;
     }
 
-    /// <summary>
-    /// Creates a new preset from the current configuration state.
-    /// </summary>
     public static ThemePreset CreateFromConfig(Configuration config, string name, string description = "")
     {
         return new ThemePreset
@@ -267,7 +217,6 @@ public class ThemePreset
             Name = name,
             Description = description,
 
-            // Bar geometry
             BarHeight = config.BarHeight,
             BarSpacing = config.BarSpacing,
             BarRounding = config.BarRounding,
@@ -279,16 +228,13 @@ public class ThemePreset
             BarColumnSpacing = config.BarColumnSpacing,
             IconTextPadding = config.IconTextPadding,
 
-            // Self highlighting
             SelfBarHighlight = config.SelfBarHighlight,
             SelfBarHighlightColor = config.SelfBarHighlightColor,
             UseSelfNameColor = config.UseSelfNameColor,
             SelfNameColor = config.SelfNameColor,
 
-            // Value formatting
             ValueDisplayFormat = config.ValueDisplayFormat,
 
-            // Role colors
             UsePerJobColors = config.UsePerJobColors,
             TankColor = config.TankColor,
             HealerColor = config.HealerColor,
@@ -297,19 +243,16 @@ public class ThemePreset
             CasterDpsColor = config.CasterDpsColor,
             DefaultJobColor = config.DefaultJobColor,
 
-            // Per-job colors
             JobColors = config.JobColors.Count > 0
                 ? new Dictionary<string, Vector4>(config.JobColors)
                 : null,
 
-            // UI colors
             BarBackgroundColor = config.BarBackgroundColor,
             NameTextColor = config.NameTextColor,
             ValueTextColor = config.ValueTextColor,
             WindowBackgroundColor = config.WindowBackgroundColor,
             WindowRounding = config.WindowRounding,
 
-            // Selection bar
             ShowSelectionBar = config.ShowSelectionBar,
             SelectionBarTextColor = config.SelectionBarTextColor,
             SelectionBarBackgroundColor = config.SelectionBarBackgroundColor,
@@ -319,7 +262,6 @@ public class ThemePreset
             ShowSelectionBarSeparator = config.ShowSelectionBarSeparator,
             SelectionBarSeparatorColor = config.SelectionBarSeparatorColor,
 
-            // Header
             ShowMeterHeader = config.ShowMeterHeader,
             HeaderTextColor = config.HeaderTextColor,
             HeaderBackgroundColor = config.HeaderBackgroundColor,
@@ -328,7 +270,6 @@ public class ThemePreset
             HeaderSeparator = config.HeaderSeparator,
             HeaderSeparatorColor = config.HeaderSeparatorColor,
 
-            // Font settings
             EnableCustomFont = config.EnableCustomFont,
             GlobalFontScale = config.GlobalFontScale,
             CustomFontPath = config.CustomFontPath,
@@ -336,7 +277,6 @@ public class ThemePreset
             CustomFontSizePt = config.CustomFontSizePt,
             CustomFontDisplayName = config.CustomFontDisplayName,
 
-            // Status bar
             ShowStatusBar = config.ShowStatusBar,
             StatusBarAbove = config.StatusBarAbove,
             ShowStatusBarTimer = config.ShowStatusBarTimer,
@@ -352,7 +292,6 @@ public class ThemePreset
             StatusBarLabelColor = config.StatusBarLabelColor,
             StatusBarSeparatorColor = config.StatusBarSeparatorColor,
 
-            // Skill breakdown
             SkillDamageFillColor = config.SkillDamageFillColor,
             SkillHealingFillColor = config.SkillHealingFillColor,
             SkillRowBackgroundColor = config.SkillRowBackgroundColor,
@@ -363,7 +302,6 @@ public class ThemePreset
             SkillBarRounding = config.SkillBarRounding,
             SkillFontScale = config.SkillFontScale,
 
-            // Display flags
             ShowJobIcons = config.ShowJobIcons,
             ShowNameOnBar = config.ShowNameOnBar,
             ShowValueOnBar = config.ShowValueOnBar,
@@ -374,7 +312,6 @@ public class ThemePreset
             ShowCritOnBar = config.ShowCritOnBar,
             ShowCritDirectHitOnBar = config.ShowCritDirectHitOnBar,
 
-            // Detail panel
             DetailLabelColor = config.DetailLabelColor,
             DetailDeathColor = config.DetailDeathColor,
             DetailIndent = config.DetailIndent,

@@ -5,16 +5,6 @@ using Newtonsoft.Json.Linq;
 
 namespace DamageTerror.Services;
 
-/// <summary>
-/// Connects to IINACT via Dalamud IPC (inter-plugin communication).
-/// Uses the OverlayPlugin IPC naming convention:
-///   - Provider (receive): IINACT.IpcProvider.DamageTerror
-///   - Subscriber (send): DamageTerror
-///
-/// Note: This requires IINACT to register our IPC handler via
-/// IpcHandlerController.CreateSubscriber("DamageTerror").
-/// If IINACT doesn't expose a public API for registration, we fall back to WebSocket.
-/// </summary>
 public class IpcDataSource : IDataSource
 {
     private readonly IDalamudPluginInterface pluginInterface;
@@ -44,14 +34,11 @@ public class IpcDataSource : IDataSource
 
         try
         {
-            // Register our IPC provider (IINACT sends data to us via this)
             receiver = pluginInterface.GetIpcProvider<JObject, bool>("IINACT.IpcProvider.DamageTerror");
             receiver.RegisterFunc(OnDataReceived);
 
-            // Get the subscriber (we send messages to IINACT via this)
             sender = pluginInterface.GetIpcSubscriber<JObject, bool>("DamageTerror");
 
-            // Send subscribe message to IINACT
             var subscribeMsg = JObject.FromObject(new
             {
                 call = "subscribe",

@@ -3,9 +3,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-/// <summary>
-/// General tab: connection, behavior, duty filters.
-/// </summary>
 public class GeneralTab
 {
     private readonly DamageTerrorPlugin plugin;
@@ -21,7 +18,6 @@ public class GeneralTab
     {
         var changed = false;
 
-        // ===== Connection =====
         if (ImGui.CollapsingHeader("Connection", ImGuiTreeNodeFlags.DefaultOpen))
         {
             var preferIpc = config.PreferIpc;
@@ -48,7 +44,6 @@ public class GeneralTab
 
         ImGui.Spacing();
 
-        // ===== Behavior =====
         if (ImGui.CollapsingHeader("Behavior", ImGuiTreeNodeFlags.DefaultOpen))
         {
             var showOnStart = config.ShowOnStart;
@@ -105,7 +100,6 @@ public class GeneralTab
 
         ImGui.Spacing();
 
-        // ===== Duty Filters =====
         if (ImGui.CollapsingHeader("Duty Filters", ImGuiTreeNodeFlags.DefaultOpen))
         {
             ImGui.TextDisabled("Choose which content types show the meter.");

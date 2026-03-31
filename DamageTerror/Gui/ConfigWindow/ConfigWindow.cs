@@ -4,10 +4,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-/// <summary>
-/// Configuration window for the DamageTerror plugin.
-/// Routes to per-tab components: General, Display, Appearance, History.
-/// </summary>
 public class ConfigWindow : Window, IDisposable
 {
     private readonly DamageTerrorPlugin plugin;

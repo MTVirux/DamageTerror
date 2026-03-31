@@ -3,9 +3,6 @@ using Dalamud.Plugin.Services;
 
 namespace DamageTerror.Services;
 
-/// <summary>
-/// Orchestrates data sources (IPC primary, WebSocket fallback) and maintains the encounter store.
-/// </summary>
 public class DataService : IDisposable
 {
     private readonly IDalamudPluginInterface pluginInterface;
@@ -16,39 +13,12 @@ public class DataService : IDisposable
     private bool disposed;
     private bool wasActive;
 
-    /// <summary>
-    /// Tracks per-skill damage from LogLine events.
-    /// </summary>
     public SkillTracker SkillTracker { get; } = new();
-
-    /// <summary>
-    /// The encounter store containing active and historical encounters.
-    /// </summary>
     public EncounterStore Store { get; }
-
-    /// <summary>
-    /// The resolved primary player name (replaces "YOU" in combat data).
-    /// </summary>
     public string PlayerName { get; private set; } = string.Empty;
-
-    /// <summary>
-    /// The primary player's actor ID.
-    /// </summary>
     public uint PlayerId { get; private set; }
-
-    /// <summary>
-    /// Whether the data service is currently connected to a data source.
-    /// </summary>
     public bool IsConnected => activeSource?.IsConnected ?? false;
-
-    /// <summary>
-    /// A human-readable status string for the UI.
-    /// </summary>
     public string ConnectionStatus { get; private set; } = "Not connected";
-
-    /// <summary>
-    /// The plugin configuration.
-    /// </summary>
     public Configuration Config => config;
 
     public DataService(IDalamudPluginInterface pluginInterface, IPluginLog log, Configuration config)
@@ -58,7 +28,6 @@ public class DataService : IDisposable
         this.config = config;
         Store = new EncounterStore(config.MaxEncounterHistory);
 
-        // Set up persistence
         var configDir = pluginInterface.GetPluginConfigDirectory();
         var savePath = System.IO.Path.Combine(configDir, "encounters.json");
         Store.SetSavePath(savePath);
@@ -66,9 +35,6 @@ public class DataService : IDisposable
         log.Debug($"[DamageTerror] Encounter history loaded from {savePath}");
     }
 
-    /// <summary>
-    /// Start the data service. Tries IPC first (if preferred), then falls back to WebSocket.
-    /// </summary>
     public async Task StartAsync()
     {
         if (disposed) return;
@@ -83,7 +49,6 @@ public class DataService : IDisposable
             ipc.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
             ipc.OnLogLine += OnLogLine;
 
-            // Subscribe to an explicit connected event as a reliable signal
             void ConnectedHandler()
             {
                 activeSource = ipc;
@@ -95,7 +60,6 @@ public class DataService : IDisposable
 
             await ipc.ConnectAsync(cts.Token).ConfigureAwait(false);
 
-            // If connect completed synchronously, ensure we handle it immediately
             if (ipc.IsConnected)
             {
                 ipc.OnConnected -= ConnectedHandler;
@@ -105,7 +69,6 @@ public class DataService : IDisposable
                 return;
             }
 
-            // IPC failed or not connected yet — clean up subscriptions and fallthrough
             ipc.OnConnected -= ConnectedHandler;
             ipc.OnCombatData -= OnCombatData;
             ipc.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
@@ -114,7 +77,6 @@ public class DataService : IDisposable
             log.Information("[DamageTerror] IPC unavailable, falling back to WebSocket");
         }
 
-        // WebSocket fallback
         await ConnectWebSocketAsync().ConfigureAwait(false);
     }
 
@@ -147,18 +109,12 @@ public class DataService : IDisposable
         }
     }
 
-    /// <summary>
-    /// Attempt to reconnect to the data source.
-    /// </summary>
     public async Task ReconnectAsync()
     {
         Stop();
         await StartAsync().ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Stop the data service and disconnect.
-    /// </summary>
     public void Stop()
     {
         cts?.Cancel();
@@ -179,7 +135,6 @@ public class DataService : IDisposable
 
     private void OnCombatData(EncounterSnapshot snapshot)
     {
-        // Resolve player name from Dalamud if not yet known
         if (string.IsNullOrEmpty(PlayerName))
         {
             try
@@ -198,7 +153,6 @@ public class DataService : IDisposable
             catch { /* IPlayerState may not be available yet */ }
         }
 
-        // Replace "YOU" with actual player name if known
         if (!string.IsNullOrEmpty(PlayerName))
         {
             foreach (var c in snapshot.Combatants)
@@ -226,7 +180,6 @@ public class DataService : IDisposable
         }
         wasActive = snapshot.Encounter.IsActive;
 
-        // Attach current skill data and mark the local player
         foreach (var c in snapshot.Combatants)
         {
             c.Skills = SkillTracker.GetSkills(c.Name);

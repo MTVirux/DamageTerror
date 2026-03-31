@@ -1,8 +1,5 @@
 namespace DamageTerror.Enums;
 
-/// <summary>
-/// Fields available for sorting the combatant list.
-/// </summary>
 public enum SortField
 {
     EncDps,

@@ -1,8 +1,5 @@
 namespace DamageTerror.Models;
 
-/// <summary>
-/// Damage data for a single skill/ability used by a combatant.
-/// </summary>
 public class SkillEntry
 {
     public string Name { get; set; } = string.Empty;

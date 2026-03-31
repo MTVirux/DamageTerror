@@ -3,9 +3,6 @@ using Dalamud.Plugin.Services;
 
 namespace DamageTerror.Services;
 
-/// <summary>
-/// Simple static service locator for sharing Dalamud services across the plugin.
-/// </summary>
 public static class ServiceManager
 {
     public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;

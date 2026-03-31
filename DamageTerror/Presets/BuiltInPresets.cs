@@ -1,16 +1,9 @@
 namespace DamageTerror.Presets;
 
-/// <summary>
-/// Ships the built-in theme presets that simulate popular FFXIV overlays.
-/// </summary>
 public static class BuiltInPresets
 {
-    /// <summary>All built-in presets, in display order.</summary>
     public static ThemePreset[] All { get; } = { Default(), Kagerou(), Ember(), Horizoverlay(), MopiMopi(), Ikegami(), NextUI() };
 
-    // ================================================================
-    // Default — stock DamageTerror settings (factory reset)
-    // ================================================================
     public static ThemePreset Default() => new()
     {
         Name = "Default",
@@ -18,17 +11,13 @@ public static class BuiltInPresets
         IsBuiltIn = true,
     };
 
-    // ================================================================
-    // Kagerou — classic MiniParse overlay
-    // Sharp bars, role-based colors, compact dark theme
-    // ================================================================
+
     public static ThemePreset Kagerou() => new()
     {
         Name = "Kagerou",
         Description = "Classic MiniParse style — sharp bars, dark background, compact layout.",
         IsBuiltIn = true,
 
-        // Bar geometry
         BarHeight = 20f,
         BarSpacing = 1f,
         BarRounding = 0f,
@@ -40,16 +29,16 @@ public static class BuiltInPresets
         BarColumnSpacing = 5f,
         IconTextPadding = 3f,
 
-        // Self highlighting — Kagerou highlights self with a blue accent
+
         SelfBarHighlight = true,
         SelfBarHighlightColor = new(0.35f, 0.55f, 0.95f, 0.9f),
         UseSelfNameColor = false,
         SelfNameColor = new(1.0f, 0.9f, 0.4f, 1.0f),
 
-        // Value formatting — Kagerou uses comma-separated values
+
         ValueDisplayFormat = ValueDisplayFormat.Commas,
 
-        // Role colors — Kagerou's distinctive palette
+
         UsePerJobColors = false,
         TankColor = new(0.24f, 0.32f, 0.71f, 1.0f),
         HealerColor = new(0.30f, 0.64f, 0.31f, 1.0f),
@@ -58,14 +47,12 @@ public static class BuiltInPresets
         CasterDpsColor = new(0.49f, 0.34f, 0.76f, 1.0f),
         DefaultJobColor = new(0.46f, 0.46f, 0.46f, 1.0f),
 
-        // UI colors
         BarBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.85f),
         NameTextColor = new(1f, 1f, 1f, 1f),
         ValueTextColor = new(1f, 1f, 1f, 1f),
         WindowBackgroundColor = new(0.055f, 0.055f, 0.055f, 0.95f),
         WindowRounding = 0f,
 
-        // Selection bar
         ShowSelectionBar = true,
         SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f),
         SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.6f),
@@ -75,7 +62,7 @@ public static class BuiltInPresets
         ShowSelectionBarSeparator = true,
         SelectionBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.5f),
 
-        // Header — compact
+
         ShowMeterHeader = true,
         HeaderTextColor = new(0.6f, 0.6f, 0.6f, 0.8f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
@@ -84,7 +71,7 @@ public static class BuiltInPresets
         HeaderSeparator = true,
         HeaderSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.4f),
 
-        // Status bar — minimal
+
         ShowStatusBar = true,
         StatusBarAbove = false,
         ShowStatusBarTimer = true,
@@ -98,7 +85,6 @@ public static class BuiltInPresets
         StatusBarLabelColor = new(0.5f, 0.5f, 0.5f, 0.8f),
         StatusBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.4f),
 
-        // Skills
         SkillDamageFillColor = new(0.30f, 0.30f, 0.50f, 0.7f),
         SkillHealingFillColor = new(0.20f, 0.45f, 0.25f, 0.7f),
         SkillRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f),
@@ -110,7 +96,7 @@ public static class BuiltInPresets
         SkillFontScale = 0.85f,
         DetailFontScale = 0.88f,
 
-        // Display flags — Kagerou shows name, value, %, rank; hides DH/Crit columns
+
         ShowJobIcons = true,
         ShowNameOnBar = true,
         ShowValueOnBar = true,
@@ -122,9 +108,7 @@ public static class BuiltInPresets
         ShowCritDirectHitOnBar = false,
     };
 
-    // ================================================================
-    // Ember Overlay — modern, compact with slight rounding
-    // ================================================================
+
     public static ThemePreset Ember() => new()
     {
         Name = "Ember Overlay",
@@ -142,13 +126,11 @@ public static class BuiltInPresets
         BarColumnSpacing = 6f,
         IconTextPadding = 4f,
 
-        // Self highlighting — Ember uses a warm glow accent
         SelfBarHighlight = true,
         SelfBarHighlightColor = new(1.0f, 0.55f, 0.15f, 0.85f),
         UseSelfNameColor = false,
         SelfNameColor = new(1.0f, 0.85f, 0.3f, 1.0f),
 
-        // Value formatting
         ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
 
         BarBackgroundColor = new(0.12f, 0.12f, 0.12f, 0.90f),
@@ -211,10 +193,7 @@ public static class BuiltInPresets
         ShowCritDirectHitOnBar = false,
     };
 
-    // ================================================================
-    // Horizoverlay — minimal horizontal bar style
-    // Thin, rounded, transparent, name+value only
-    // ================================================================
+
     public static ThemePreset Horizoverlay() => new()
     {
         Name = "Horizoverlay",
@@ -232,13 +211,11 @@ public static class BuiltInPresets
         BarColumnSpacing = 4f,
         IconTextPadding = 3f,
 
-        // Self highlighting — disabled for minimal look
         SelfBarHighlight = false,
         SelfBarHighlightColor = new(0.9f, 0.6f, 0.1f, 0.8f),
         UseSelfNameColor = true,
         SelfNameColor = new(0.95f, 0.85f, 0.5f, 1.0f),
 
-        // Value formatting
         ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
 
         UsePerJobColors = false,
@@ -255,7 +232,6 @@ public static class BuiltInPresets
         WindowBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.70f),
         WindowRounding = 8f,
 
-        // Minimal selection bar
         ShowSelectionBar = true,
         SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 0.9f),
         SelectionBarBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
@@ -265,7 +241,6 @@ public static class BuiltInPresets
         ShowSelectionBarSeparator = false,
         SelectionBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f),
 
-        // No header
         ShowMeterHeader = false,
         HeaderTextColor = new(0.6f, 0.6f, 0.6f, 0.8f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
@@ -274,7 +249,6 @@ public static class BuiltInPresets
         HeaderSeparator = false,
         HeaderSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f),
 
-        // No status bar
         ShowStatusBar = false,
         StatusBarAbove = true,
         ShowStatusBarTimer = true,
@@ -301,7 +275,6 @@ public static class BuiltInPresets
         SkillFontScale = 0.80f,
         DetailFontScale = 0.82f,
 
-        // Only name + value
         ShowJobIcons = true,
         ShowNameOnBar = true,
         ShowValueOnBar = true,
@@ -313,9 +286,7 @@ public static class BuiltInPresets
         ShowCritDirectHitOnBar = false,
     };
 
-    // ================================================================
-    // MopiMopi — colorful, rounded, per-job colors
-    // ================================================================
+
     public static ThemePreset MopiMopi() => new()
     {
         Name = "MopiMopi",
@@ -333,16 +304,13 @@ public static class BuiltInPresets
         BarColumnSpacing = 6f,
         IconTextPadding = 4f,
 
-        // Self highlighting — MopiMopi uses a bright accent
         SelfBarHighlight = true,
         SelfBarHighlightColor = new(1.0f, 0.85f, 0.3f, 0.9f),
         UseSelfNameColor = true,
         SelfNameColor = new(1.0f, 0.95f, 0.6f, 1.0f),
 
-        // Value formatting
         ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
 
-        // Per-job colors — vibrant, saturated
         UsePerJobColors = true,
         TankColor = new(0.25f, 0.40f, 0.80f, 1.0f),
         HealerColor = new(0.25f, 0.70f, 0.35f, 1.0f),
@@ -352,28 +320,23 @@ public static class BuiltInPresets
         DefaultJobColor = new(0.50f, 0.50f, 0.50f, 1.0f),
         JobColors = new Dictionary<string, Vector4>
         {
-            // Tanks — vivid blues and purples
             { "Pld", new(0.45f, 0.60f, 0.95f, 1.0f) },
             { "War", new(0.75f, 0.20f, 0.20f, 1.0f) },
             { "Drk", new(0.55f, 0.20f, 0.65f, 1.0f) },
             { "Gnb", new(0.30f, 0.50f, 0.70f, 1.0f) },
-            // Healers — greens, golds, cyans
             { "Whm", new(0.90f, 0.90f, 0.75f, 1.0f) },
             { "Sch", new(0.35f, 0.50f, 0.90f, 1.0f) },
             { "Ast", new(0.95f, 0.80f, 0.35f, 1.0f) },
             { "Sge", new(0.40f, 0.70f, 0.80f, 1.0f) },
-            // Melee DPS — warm reds, oranges
             { "Mnk", new(0.90f, 0.70f, 0.20f, 1.0f) },
             { "Drg", new(0.30f, 0.45f, 0.90f, 1.0f) },
             { "Nin", new(0.75f, 0.25f, 0.40f, 1.0f) },
             { "Sam", new(0.95f, 0.60f, 0.25f, 1.0f) },
             { "Rpr", new(0.65f, 0.25f, 0.45f, 1.0f) },
             { "Vpr", new(0.50f, 0.75f, 0.35f, 1.0f) },
-            // Ranged Physical DPS
             { "Brd", new(0.60f, 0.85f, 0.35f, 1.0f) },
             { "Mch", new(0.50f, 0.80f, 0.85f, 1.0f) },
             { "Dnc", new(0.90f, 0.60f, 0.70f, 1.0f) },
-            // Casters
             { "Blm", new(0.65f, 0.50f, 0.90f, 1.0f) },
             { "Smn", new(0.35f, 0.75f, 0.45f, 1.0f) },
             { "Rdm", new(0.90f, 0.40f, 0.50f, 1.0f) },
@@ -441,9 +404,7 @@ public static class BuiltInPresets
         ShowCritDirectHitOnBar = false,
     };
 
-    // ================================================================
-    // Ikegami — data-dense table style: all stats visible
-    // ================================================================
+
     public static ThemePreset Ikegami() => new()
     {
         Name = "Ikegami",
@@ -461,13 +422,11 @@ public static class BuiltInPresets
         BarColumnSpacing = 4f,
         IconTextPadding = 3f,
 
-        // Self highlighting — Ikegami uses a subtle highlight
         SelfBarHighlight = true,
         SelfBarHighlightColor = new(0.95f, 0.75f, 0.15f, 0.7f),
         UseSelfNameColor = false,
         SelfNameColor = new(1.0f, 0.9f, 0.4f, 1.0f),
 
-        // Value formatting — Ikegami uses comma-separated for data density
         ValueDisplayFormat = ValueDisplayFormat.Commas,
 
         UsePerJobColors = false,
@@ -493,7 +452,6 @@ public static class BuiltInPresets
         ShowSelectionBarSeparator = true,
         SelectionBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f),
 
-        // Prominent header for column labels
         ShowMeterHeader = true,
         HeaderTextColor = new(0.75f, 0.75f, 0.75f, 0.95f),
         HeaderBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.7f),
@@ -528,7 +486,6 @@ public static class BuiltInPresets
         SkillFontScale = 0.82f,
         DetailFontScale = 0.85f,
 
-        // ALL stats visible — the defining feature of Ikegami
         ShowJobIcons = true,
         ShowNameOnBar = true,
         ShowValueOnBar = true,
@@ -540,9 +497,7 @@ public static class BuiltInPresets
         ShowCritDirectHitOnBar = true,
     };
 
-    // ================================================================
-    // Next UI — game-integrated feel, desaturated per-job colors
-    // ================================================================
+
     public static ThemePreset NextUI() => new()
     {
         Name = "Next UI",
@@ -560,16 +515,13 @@ public static class BuiltInPresets
         BarColumnSpacing = 5f,
         IconTextPadding = 4f,
 
-        // Self highlighting — Next UI uses a desaturated accent
         SelfBarHighlight = true,
         SelfBarHighlightColor = new(0.7f, 0.55f, 0.25f, 0.75f),
         UseSelfNameColor = false,
         SelfNameColor = new(0.95f, 0.9f, 0.5f, 1.0f),
 
-        // Value formatting
         ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
 
-        // Desaturated per-job colors to match the game's HUD aesthetic
         UsePerJobColors = true,
         TankColor = new(0.25f, 0.40f, 0.72f, 1.0f),
         HealerColor = new(0.28f, 0.60f, 0.35f, 1.0f),
@@ -579,28 +531,23 @@ public static class BuiltInPresets
         DefaultJobColor = new(0.45f, 0.45f, 0.45f, 1.0f),
         JobColors = new Dictionary<string, Vector4>
         {
-            // Tanks — muted blues
             { "Pld", new(0.38f, 0.52f, 0.82f, 1.0f) },
             { "War", new(0.55f, 0.22f, 0.22f, 1.0f) },
             { "Drk", new(0.45f, 0.22f, 0.52f, 1.0f) },
             { "Gnb", new(0.28f, 0.42f, 0.58f, 1.0f) },
-            // Healers — muted greens/golds
             { "Whm", new(0.78f, 0.78f, 0.65f, 1.0f) },
             { "Sch", new(0.32f, 0.42f, 0.75f, 1.0f) },
             { "Ast", new(0.80f, 0.68f, 0.32f, 1.0f) },
             { "Sge", new(0.35f, 0.58f, 0.68f, 1.0f) },
-            // Melee — muted warms
             { "Mnk", new(0.78f, 0.60f, 0.18f, 1.0f) },
             { "Drg", new(0.28f, 0.38f, 0.78f, 1.0f) },
             { "Nin", new(0.62f, 0.22f, 0.35f, 1.0f) },
             { "Sam", new(0.82f, 0.50f, 0.22f, 1.0f) },
             { "Rpr", new(0.55f, 0.25f, 0.38f, 1.0f) },
             { "Vpr", new(0.42f, 0.62f, 0.30f, 1.0f) },
-            // Ranged Physical
             { "Brd", new(0.52f, 0.72f, 0.30f, 1.0f) },
             { "Mch", new(0.42f, 0.68f, 0.72f, 1.0f) },
             { "Dnc", new(0.78f, 0.52f, 0.60f, 1.0f) },
-            // Casters
             { "Blm", new(0.55f, 0.42f, 0.78f, 1.0f) },
             { "Smn", new(0.32f, 0.62f, 0.38f, 1.0f) },
             { "Rdm", new(0.78f, 0.35f, 0.42f, 1.0f) },

@@ -6,9 +6,6 @@ using Dalamud.Bindings.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-/// <summary>
-/// Renders the encounter header bar: zone name, duration, rDPS, and history navigation.
-/// </summary>
 public class EncounterHeaderComponent : IUIComponent
 {
     private readonly DataService dataService;
@@ -33,10 +30,6 @@ public class EncounterHeaderComponent : IUIComponent
         this.saveConfig = saveConfig;
     }
 
-    /// <summary>
-    /// The currently selected encounter snapshot to display.
-    /// Returns null if no data is available.
-    /// </summary>
     public EncounterSnapshot? SelectedEncounter
     {
         get
@@ -67,7 +60,6 @@ public class EncounterHeaderComponent : IUIComponent
         var totalCount = dataService.Store.TotalCount;
         var encounter = SelectedEncounter;
 
-        // Build the preview label for the combo box
         string previewLabel;
         if (encounter != null)
         {
@@ -84,7 +76,6 @@ public class EncounterHeaderComponent : IUIComponent
             previewLabel = dataService.ConnectionStatus;
         }
 
-        // Apply selection bar styling
         var selBarBg = dataService.Config.SelectionBarBackgroundColor;
         var selBarPad = dataService.Config.SelectionBarHeight;
         var selBarTextCol = dataService.Config.SelectionBarTextColor;
@@ -104,7 +95,6 @@ public class EncounterHeaderComponent : IUIComponent
 
         ImGui.PushStyleColor(ImGuiCol.Text, selBarTextCol);
 
-        // Sort dropdown width
         var currentSort = dataService.Config.SortBy;
         var sortLabel = SortOptions.FirstOrDefault(o => o.Field == currentSort).Label ?? "DPS";
         var sortArrow = dataService.Config.SortDescending ? "\u25BC" : "\u25B2";
@@ -113,7 +103,6 @@ public class EncounterHeaderComponent : IUIComponent
             ? ImGui.CalcTextSize("Damage \u25BC").X + ImGui.GetStyle().FramePadding.X * 2 + 20
             : 0f;
 
-        // Encounter combo box (right-click for context menu)
         var comboWidth = dataService.Config.ShowSortDropdown
             ? ImGui.GetContentRegionAvail().X - sortComboWidth - ImGui.GetStyle().ItemSpacing.X
             : ImGui.GetContentRegionAvail().X;
@@ -225,7 +214,6 @@ public class EncounterHeaderComponent : IUIComponent
             }
         }
 
-        // Right-click context menu on the combo
         if (ImGui.BeginPopupContextItem("##enc_context"))
         {
             var scissorsIcon = FontAwesomeIcon.Cut.ToIconString();
@@ -260,9 +248,6 @@ public class EncounterHeaderComponent : IUIComponent
         }
     }
 
-    /// <summary>
-    /// Reset selection to follow the active encounter.
-    /// </summary>
     public void ResetSelection()
     {
         selectedIndex = -1;

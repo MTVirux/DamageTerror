@@ -4,10 +4,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-/// <summary>
-/// Display tab: sorting, bar content, detail panel, skill breakdown.
-/// Controls what information is shown — not how it looks.
-/// </summary>
 public class DisplayTab
 {
     private static readonly string[] NameFormatLabels = new[]
@@ -24,7 +20,6 @@ public class DisplayTab
     {
         var changed = false;
 
-        // ===== Sorting =====
         if (ImGui.CollapsingHeader("Sorting", ImGuiTreeNodeFlags.DefaultOpen))
         {
             var sortOptions = Enum.GetNames(typeof(SortField));
@@ -46,7 +41,6 @@ public class DisplayTab
 
         ImGui.Spacing();
 
-        // ===== Bar Content =====
         if (ImGui.CollapsingHeader("Bar Content", ImGuiTreeNodeFlags.DefaultOpen))
         {
             ImGui.TextDisabled("Choose what to display on each combatant bar.");
@@ -159,7 +153,6 @@ public class DisplayTab
 
         ImGui.Spacing();
 
-        // ===== Detail Panel =====
         if (ImGui.CollapsingHeader("Detail Panel"))
         {
             ImGui.TextDisabled("Choose what to show in the expanded detail view.");
@@ -209,7 +202,6 @@ public class DisplayTab
 
         ImGui.Spacing();
 
-        // ===== Skill Breakdown =====
         if (ImGui.CollapsingHeader("Skill Breakdown"))
         {
             var showSkills = config.DetailShowSkillBreakdown;

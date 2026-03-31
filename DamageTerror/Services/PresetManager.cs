@@ -6,11 +6,6 @@ using Newtonsoft.Json;
 
 namespace DamageTerror.Services;
 
-/// <summary>
-/// Manages built-in and user-created theme presets.
-/// Custom presets are stored as individual JSON files in a <c>presets/</c> subdirectory
-/// of the plugin's config folder.
-/// </summary>
 public class PresetManager
 {
     private readonly string presetsDir;
@@ -31,21 +26,17 @@ public class PresetManager
         ReloadCustomPresets();
     }
 
-    /// <summary>Returns all built-in presets.</summary>
     public IReadOnlyList<ThemePreset> BuiltInPresets => BuiltInPresets_All;
     private static readonly ThemePreset[] BuiltInPresets_All = Presets.BuiltInPresets.All;
 
-    /// <summary>Returns all custom (user-saved) presets.</summary>
     public IReadOnlyList<ThemePreset> CustomPresets => customPresets;
 
-    /// <summary>Returns all presets: built-in first, then custom.</summary>
     public IEnumerable<ThemePreset> GetAllPresets()
     {
         foreach (var p in BuiltInPresets_All) yield return p;
         foreach (var p in customPresets) yield return p;
     }
 
-    /// <summary>Saves a custom preset to disk. Overwrites if a preset with the same name already exists.</summary>
     public void SaveCustomPreset(ThemePreset preset)
     {
         preset.IsBuiltIn = false;
@@ -55,7 +46,6 @@ public class PresetManager
         ReloadCustomPresets();
     }
 
-    /// <summary>Deletes a custom preset by name. Returns true if deleted.</summary>
     public bool DeleteCustomPreset(string name)
     {
         var path = GetPresetPath(name);
@@ -65,15 +55,11 @@ public class PresetManager
         return true;
     }
 
-    /// <summary>Serializes a preset to JSON for clipboard export.</summary>
     public string ExportPreset(ThemePreset preset)
     {
         return JsonConvert.SerializeObject(preset, JsonSettings);
     }
 
-    /// <summary>
-    /// Deserializes a preset from JSON. Returns the preset on success, or null with an error message on failure.
-    /// </summary>
     public ThemePreset? ImportPreset(string json, out string? error)
     {
         error = null;
@@ -140,7 +126,6 @@ public class PresetManager
 
     private static string SanitizeFileName(string name)
     {
-        // Remove invalid filesystem characters, collapse whitespace
         var invalid = new string(Path.GetInvalidFileNameChars());
         var cleaned = Regex.Replace(name, $"[{Regex.Escape(invalid)}]", "");
         cleaned = Regex.Replace(cleaned.Trim(), @"\s+", "_");

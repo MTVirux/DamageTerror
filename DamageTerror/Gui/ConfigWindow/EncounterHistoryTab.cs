@@ -3,9 +3,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-/// <summary>
-/// Encounter History tab: search, browse, and manage past encounters.
-/// </summary>
 public class EncounterHistoryTab
 {
     private readonly DamageTerrorPlugin plugin;
@@ -36,7 +33,6 @@ public class EncounterHistoryTab
         ImGui.InputTextWithHint("##historySearch", "Search by zone, title, player, or job...", ref historySearchFilter, 256);
         ImGui.Spacing();
 
-        // Clear all button
         if (ImGui.Button("Clear All History"))
         {
             ImGui.OpenPopup("##confirmClearHistory");
@@ -73,11 +69,10 @@ public class EncounterHistoryTab
             var encounter = enc.Encounter;
             var label = $"{encounter.ZoneName}";
             if (!string.IsNullOrEmpty(encounter.Title) && encounter.Title != encounter.ZoneName)
-                label = $"{encounter.Title} — {encounter.ZoneName}";
+                label = $"{encounter.Title} \u2014 {encounter.ZoneName}";
             if (string.IsNullOrEmpty(label))
                 label = "Unknown";
 
-            // Apply search filter
             if (filter.Length > 0
                 && !encounter.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
                 && !(encounter.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)

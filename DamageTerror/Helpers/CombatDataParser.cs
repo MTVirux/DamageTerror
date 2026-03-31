@@ -2,15 +2,8 @@ using Newtonsoft.Json.Linq;
 
 namespace DamageTerror.Helpers;
 
-/// <summary>
-/// Parses IINACT CombatData JSON events into strongly-typed models.
-/// </summary>
 public static class CombatDataParser
 {
-    /// <summary>
-    /// Parse a CombatData JObject into an EncounterSnapshot.
-    /// Returns null if the data is invalid.
-    /// </summary>
     public static EncounterSnapshot? Parse(JObject data)
     {
         if (data["type"]?.ToString() != "CombatData")
@@ -101,7 +94,6 @@ public static class CombatDataParser
         if (string.IsNullOrEmpty(str) || str == "---" || str == "∞")
             return 0;
 
-        // Remove commas and percentage signs for parsing
         str = str.Replace(",", "").Replace("%", "").Trim();
         return double.TryParse(str, System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out var val) ? val : 0;

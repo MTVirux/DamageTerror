@@ -4,9 +4,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-/// <summary>
-/// Shared helper methods for config window drawing.
-/// </summary>
 public static class ConfigHelpers
 {
     public static bool ColorEditProp(string label, Vector4 color, Action<Vector4> setter)

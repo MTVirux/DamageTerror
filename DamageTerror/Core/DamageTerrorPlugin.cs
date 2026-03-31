@@ -6,10 +6,6 @@ using ECommons;
 
 namespace DamageTerror.Core;
 
-/// <summary>
-/// Entry point for the DamageTerror Dalamud plugin.
-/// Native ImGui damage meter overlay powered by IINACT.
-/// </summary>
 public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 {
     public static DamageTerrorPlugin Instance { get; private set; } = null!;
@@ -43,13 +39,9 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.commandManager = commandManager;
         this.pluginLog = pluginLog;
 
-        // Initialize ECommons
         ECommonsMain.Init(pluginInterface, this);
-
-        // Initialize service locator
         ServiceManager.Initialize(pluginInterface, playerState, dataManager, pluginLog, textureProvider);
 
-        // Load configuration
         var cfg = this.PluginInterface.GetPluginConfig() as Configuration;
         if (cfg == null)
         {
@@ -59,40 +51,32 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         this.Config = cfg;
 
-        // Initialize data service (connects to IINACT)
         this.DataService = new DataService(pluginInterface, pluginLog, this.Config);
 
-        // Initialize font service (only if enabled)
         this.FontService = new FontService(this.Config, pluginLog);
         if (this.Config.EnableCustomFont)
             this.FontService.Initialize(pluginInterface.UiBuilder);
 
-        // Initialize preset manager
         var presetManager = new PresetManager(
             pluginInterface.ConfigDirectory.FullName, pluginLog);
 
-        // Create UI windows
         this.mainWindow = new Gui.MainWindow.MainWindow(this, textureProvider);
         this.configWindow = new Gui.ConfigWindow.ConfigWindow(this, presetManager);
 
         this.windowSystem.AddWindow(this.mainWindow);
         this.windowSystem.AddWindow(this.configWindow);
 
-        // Register UI callbacks
         this.PluginInterface.UiBuilder.Draw += this.DrawUi;
         this.PluginInterface.UiBuilder.OpenConfigUi += this.OpenConfigUi;
         this.PluginInterface.UiBuilder.OpenMainUi += this.OpenMainUi;
 
-        // Register slash command
         this.commandManager.AddHandler("/dt", new CommandInfo(this.OnCommand)
         {
             HelpMessage = "Toggle the Damage Terror meter window.",
         });
 
-        // Open main window on start if configured
         this.mainWindow.IsOpen = this.Config.ShowOnStart;
 
-        // Start data service (async, fire-and-forget with logging)
         Task.Run(async () =>
         {
             try
@@ -126,16 +110,10 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         if (disposing)
         {
-            // Save config
             this.PluginInterface.SavePluginConfig(this.Config);
-
-            // Tear down data service
             this.DataService.Dispose();
-
-            // Tear down font service
             this.FontService.Dispose();
 
-            // Tear down UI
             this.windowSystem.RemoveAllWindows();
             this.mainWindow.Dispose();
             this.configWindow.Dispose();
@@ -146,7 +124,6 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
             this.commandManager.RemoveHandler("/dt");
 
-            // Dispose ECommons
             ECommonsMain.Dispose();
         }
 

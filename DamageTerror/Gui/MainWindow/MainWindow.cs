@@ -7,9 +7,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-/// <summary>
-/// The main damage meter window. Displays encounter header + sorted combatant bars.
-/// </summary>
 public class MainWindow : Window, IDisposable
 {
     private static string GetTitleWithVersion()
@@ -60,7 +57,6 @@ public class MainWindow : Window, IDisposable
         this.detailPanel = new CombatantDetailPanel(plugin.Config);
         this.statusBarComponent = new StatusBarComponent(plugin.Config);
 
-        // Settings button
         TitleBarButtons.Add(new TitleBarButton
         {
             Click = (m) => { if (m == ImGuiMouseButton.Left) plugin.OpenConfigUi(); },
@@ -69,7 +65,6 @@ public class MainWindow : Window, IDisposable
             ShowTooltip = () => ImGui.SetTooltip("Open settings"),
         });
 
-        // DPS/HPS toggle button
         TitleBarButtons.Add(new TitleBarButton
         {
             Click = (m) =>
@@ -85,7 +80,6 @@ public class MainWindow : Window, IDisposable
             ShowTooltip = () => ImGui.SetTooltip(plugin.Config.ShowHps ? "Showing HPS — click for DPS" : "Showing DPS — click for HPS"),
         });
 
-        // Lock/pin button
         lockButton = new TitleBarButton
         {
             Icon = plugin.Config.PinMainWindow ? FontAwesomeIcon.Lock : FontAwesomeIcon.LockOpen,
@@ -119,7 +113,6 @@ public class MainWindow : Window, IDisposable
         if (!Svc.ClientState.IsLoggedIn)
             return false;
 
-        // Duty type filter
         if (!IsDutyTypeEnabled())
             return false;
 
@@ -135,7 +128,6 @@ public class MainWindow : Window, IDisposable
             return true;
         }
 
-        // Player is out of combat — apply delay
         combatEndTime ??= DateTime.UtcNow;
         var elapsed = (DateTime.UtcNow - combatEndTime.Value).TotalSeconds;
         return elapsed < this.plugin.Config.HideOutOfCombatDelay;
@@ -195,7 +187,6 @@ public class MainWindow : Window, IDisposable
         if (lockButton != null)
             lockButton.Icon = this.plugin.Config.PinMainWindow ? FontAwesomeIcon.Lock : FontAwesomeIcon.LockOpen;
 
-        // Disable outer-window scrolling; inner child retains its own scrollbars
         Flags |= ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
 
         ImGui.PushStyleColor(ImGuiCol.WindowBg, this.plugin.Config.WindowBackgroundColor);
@@ -210,10 +201,8 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        // Push custom font for entire window (auto-pops via using)
         using var fontScope = plugin.Config.EnableCustomFont ? plugin.FontService?.PushFont() : null;
 
-        // Encounter header with navigation
         headerComponent.Render();
 
         var encounter = headerComponent.SelectedEncounter;
@@ -227,7 +216,6 @@ public class MainWindow : Window, IDisposable
             return;
         }
 
-        // Get sorted combatants
         var combatants = GetSortedCombatants(encounter);
         if (combatants.Count == 0)
         {
@@ -235,24 +223,19 @@ public class MainWindow : Window, IDisposable
             return;
         }
 
-        // Determine max value for bar scaling
         var showHps = plugin.Config.ShowHps;
         var sortBy = plugin.Config.SortBy;
         var maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
 
-        // Status bar (above)
         if (plugin.Config.StatusBarAbove)
             statusBarComponent.Render(encounter);
 
-        // Reserve space for status bar at bottom if below — clamp to avoid negative child heights
         var statusBarHeight = !plugin.Config.StatusBarAbove ? statusBarComponent.GetHeight() : 0f;
         var availY = ImGui.GetContentRegionAvail().Y;
         var childHeight = statusBarHeight > 0 ? Math.Max(0f, availY - statusBarHeight) : 0f;
 
-        // Render bars in a scrollable child region
         if (ImGui.BeginChild("##combatants", new Vector2(0, childHeight), false))
         {
-            // Header row
             if (plugin.Config.ShowMeterHeader)
             {
                 var headerHeight = plugin.Config.HeaderHeight;
@@ -261,7 +244,6 @@ public class MainWindow : Window, IDisposable
                 var drawList = ImGui.GetWindowDrawList();
                 var headerColor = ImGui.ColorConvertFloat4ToU32(plugin.Config.HeaderTextColor);
 
-                // Header background
                 var headerBg = plugin.Config.HeaderBackgroundColor;
                 if (headerBg.W > 0f)
                 {
@@ -271,7 +253,6 @@ public class MainWindow : Window, IDisposable
                         ImGui.ColorConvertFloat4ToU32(headerBg));
                 }
 
-                // Apply header font scale
                 var prevHdrScale = ImGui.GetFont().Scale;
                 ImGui.GetFont().Scale = plugin.Config.HeaderFontScale * plugin.Config.GlobalFontScale;
                 ImGui.PushFont(ImGui.GetFont());
@@ -352,11 +333,9 @@ public class MainWindow : Window, IDisposable
                     drawList.AddText(new Vector2(rightX - labelWidth, textY), headerColor, valLabel);
                 }
 
-                // Restore header font scale
                 ImGui.GetFont().Scale = prevHdrScale;
                 ImGui.PopFont();
 
-                // Header separator line
                 if (plugin.Config.HeaderSeparator)
                 {
                     var sepY = cursorPos.Y + headerHeight;
@@ -377,13 +356,11 @@ public class MainWindow : Window, IDisposable
                     detailPanel.Toggle(i);
                 }
 
-                // Render expanded detail panel if this combatant is selected
                 detailPanel.Render(combatant, i);
             }
         }
         ImGui.EndChild();
 
-        // Status bar (below)
         if (!plugin.Config.StatusBarAbove)
             statusBarComponent.Render(encounter);
     }

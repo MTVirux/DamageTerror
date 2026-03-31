@@ -3,10 +3,6 @@ using Newtonsoft.Json;
 
 namespace DamageTerror.Services;
 
-/// <summary>
-/// Stores the active encounter and a history of past encounters.
-/// Thread-safe: data arrives from background/IPC threads, UI reads on main thread.
-/// </summary>
 public class EncounterStore
 {
     private readonly object syncLock = new();
@@ -22,17 +18,11 @@ public class EncounterStore
         this.maxHistory = maxHistory;
     }
 
-    /// <summary>
-    /// The currently active encounter, or null if no data yet.
-    /// </summary>
     public EncounterSnapshot? ActiveEncounter
     {
         get { lock (syncLock) return active; }
     }
 
-    /// <summary>
-    /// Past encounters in chronological order (oldest first).
-    /// </summary>
     public List<EncounterSnapshot> History
     {
         get
@@ -42,9 +32,6 @@ public class EncounterStore
         }
     }
 
-    /// <summary>
-    /// Total number of encounters available (history + active if present).
-    /// </summary>
     public int TotalCount
     {
         get
@@ -54,9 +41,6 @@ public class EncounterStore
         }
     }
 
-    /// <summary>
-    /// Gets an encounter by index (0 = oldest history, last = active).
-    /// </summary>
     public EncounterSnapshot? GetByIndex(int index)
     {
         lock (syncLock)
@@ -68,10 +52,6 @@ public class EncounterStore
         }
     }
 
-    /// <summary>
-    /// Update the store with a new CombatData snapshot.
-    /// Handles encounter boundary detection (active → inactive transitions).
-    /// </summary>
     public bool Update(EncounterSnapshot snapshot)
     {
         lock (syncLock)
@@ -95,9 +75,6 @@ public class EncounterStore
         }
     }
 
-    /// <summary>
-    /// Remove a history encounter by index.
-    /// </summary>
     public void RemoveHistory(int index)
     {
         lock (syncLock)
@@ -110,9 +87,6 @@ public class EncounterStore
         }
     }
 
-    /// <summary>
-    /// Clear all stored data.
-    /// </summary>
     public void Clear()
     {
         lock (syncLock)
@@ -124,17 +98,11 @@ public class EncounterStore
         }
     }
 
-    /// <summary>
-    /// Set the file path used for persisting encounter history.
-    /// </summary>
     public void SetSavePath(string path)
     {
         savePath = path;
     }
 
-    /// <summary>
-    /// Load encounter history from disk. Should be called once at startup.
-    /// </summary>
     public void Load()
     {
         if (string.IsNullOrEmpty(savePath) || !System.IO.File.Exists(savePath))
@@ -151,7 +119,6 @@ public class EncounterStore
                     history.Clear();
                     history.AddRange(loaded);
 
-                    // Trim to limit
                     while (history.Count > maxHistory)
                         history.RemoveAt(0);
                 }
@@ -163,9 +130,6 @@ public class EncounterStore
         }
     }
 
-    /// <summary>
-    /// Save encounter history to disk. Only writes if data has changed.
-    /// </summary>
     public void Save(bool force = false)
     {
         if (string.IsNullOrEmpty(savePath))

@@ -3,9 +3,6 @@ using Dalamud.Bindings.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-/// <summary>
-/// Renders a bottom status bar showing personal DPS, party rDPS, and combat duration.
-/// </summary>
 public class StatusBarComponent
 {
     private readonly Configuration config;
@@ -15,9 +12,6 @@ public class StatusBarComponent
         this.config = config;
     }
 
-    /// <summary>
-    /// Returns the total height the status bar will occupy (including separator), or 0 if hidden.
-    /// </summary>
     public float GetHeight()
     {
         if (!config.ShowStatusBar)
@@ -35,7 +29,6 @@ public class StatusBarComponent
         var drawList = ImGui.GetWindowDrawList();
         var height = config.StatusBarHeight;
 
-        // Separator line above the status bar
         if (config.ShowStatusBarSeparator)
         {
             drawList.AddLine(
@@ -45,7 +38,6 @@ public class StatusBarComponent
             cursorPos.Y += 1f;
         }
 
-        // Background
         var bgColor = config.StatusBarBackgroundColor;
         if (bgColor.W > 0f)
         {
@@ -55,24 +47,20 @@ public class StatusBarComponent
                 ImGui.ColorConvertFloat4ToU32(bgColor));
         }
 
-        // Apply font scale
         var prevScale = ImGui.GetFont().Scale;
         ImGui.GetFont().Scale = config.StatusBarFontScale * config.GlobalFontScale;
         ImGui.PushFont(ImGui.GetFont());
 
-        // Color based on encounter active state
         var isActive = encounter.Encounter.IsActive;
         var textColor = ImGui.ColorConvertFloat4ToU32(isActive ? config.StatusBarActiveColor : config.StatusBarInactiveColor);
         var labelColor = ImGui.ColorConvertFloat4ToU32(config.StatusBarLabelColor);
         var textY = cursorPos.Y + (height - ImGui.GetTextLineHeight()) * 0.5f;
         var padding = config.StatusBarPadding;
 
-        // Find local player
         var localPlayer = encounter.Combatants.FirstOrDefault(c => c.IsLocalPlayer);
         var personalDps = localPlayer?.EncDps ?? 0.0;
         var raidDps = encounter.Encounter.EncDps;
 
-        // Compute percentage of personal DPS vs raid DPS
         var pct = raidDps > 0 ? (personalDps / raidDps) * 100.0 : 0.0;
 
         // Layout: {DPS} DPS / {RDPS} RDPS ({pct}%)    [timer]
@@ -80,7 +68,6 @@ public class StatusBarComponent
 
         if (config.ShowStatusBarPersonalDps)
         {
-            // Personal DPS value
             var dpsText = FormatValue(personalDps, config.ValueDisplayFormat);
             drawList.AddText(new Vector2(x, textY), textColor, dpsText);
             x += ImGui.CalcTextSize(dpsText).X;
@@ -99,17 +86,14 @@ public class StatusBarComponent
 
         if (config.ShowStatusBarRaidDps)
         {
-            // Raid DPS value
             var rdpsText = FormatValue(raidDps, config.ValueDisplayFormat);
             drawList.AddText(new Vector2(x, textY), textColor, rdpsText);
             x += ImGui.CalcTextSize(rdpsText).X;
 
-            // " RDPS (pct%)"
             var pctText = $" RDPS ({pct:F0}%)";
             drawList.AddText(new Vector2(x, textY), labelColor, pctText);
         }
 
-        // Combat timer — right-aligned
         if (config.ShowStatusBarTimer)
         {
             var timerText = encounter.Encounter.Duration;
@@ -118,10 +102,8 @@ public class StatusBarComponent
             drawList.AddText(new Vector2(rightX, textY), textColor, timerText);
         }
 
-        // Advance cursor past the status bar
         ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + height));
 
-        // Restore font scale
         ImGui.GetFont().Scale = prevScale;
         ImGui.PopFont();
     }

@@ -6,10 +6,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-/// <summary>
-/// Appearance tab: visual styling grouped into child tabs.
-/// Bars, Selection Bar, Header, Colors, Status Bar, Skills.
-/// </summary>
 public class AppearanceTab
 {
     private readonly PresetManager presetManager;
@@ -97,7 +93,6 @@ public class AppearanceTab
 
         ImGui.TextDisabled("Theme Preset");
 
-        // ---- Preset combo dropdown ----
         var previewLabel = selectedPresetIndex >= 0 && selectedPresetIndex < allPresets.Count
             ? allPresets[selectedPresetIndex].Name
             : "Select a preset...";
@@ -105,7 +100,6 @@ public class AppearanceTab
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 220);
         if (ImGui.BeginCombo("##presetCombo", previewLabel))
         {
-            // Built-in group
             ImGui.TextDisabled("Built-in");
             for (var i = 0; i < allPresets.Count; i++)
             {
@@ -121,7 +115,6 @@ public class AppearanceTab
                 }
             }
 
-            // Custom group (if any exist)
             var hasCustom = allPresets.Any(p => !p.IsBuiltIn);
             if (hasCustom)
             {
@@ -139,7 +132,6 @@ public class AppearanceTab
                         if (!string.IsNullOrEmpty(preset.Description) && ImGui.IsItemHovered())
                             ImGui.SetTooltip(preset.Description);
 
-                        // Right-click context menu for custom presets
                         if (ImGui.BeginPopupContextItem($"##presetCtx{i}"))
                         {
                             if (ImGui.MenuItem("Export to Clipboard"))
@@ -163,7 +155,6 @@ public class AppearanceTab
             ImGui.EndCombo();
         }
 
-        // ---- Action buttons (same line) ----
         ImGui.SameLine();
         if (ImGui.Button("Apply") && selectedPresetIndex >= 0 && selectedPresetIndex < allPresets.Count)
         {
@@ -187,7 +178,6 @@ public class AppearanceTab
             ImGui.OpenPopup("##importPresetPopup");
         }
 
-        // ---- Save popup ----
         if (ImGui.BeginPopup("##savePresetPopup"))
         {
             ImGui.Text("Save current settings as a custom preset:");
@@ -219,7 +209,6 @@ public class AppearanceTab
             ImGui.EndPopup();
         }
 
-        // ---- Import popup ----
         if (ImGui.BeginPopup("##importPresetPopup"))
         {
             ImGui.Text("Paste preset JSON from clipboard:");
@@ -864,7 +853,6 @@ public class AppearanceTab
     {
         var changed = false;
 
-        // ===== Feature Toggle =====
         ImGui.Spacing();
         var enableFont = config.EnableCustomFont;
         if (ImGui.Checkbox("Enable custom font", ref enableFont))
@@ -880,7 +868,6 @@ public class AppearanceTab
 
         ImGui.TextWrapped("When enabled, allows loading a custom system font. Disable if you experience crashes.");
 
-        // ===== Font Selection =====
         ImGui.Spacing();
         ImGui.TextDisabled("Font Selection");
 
@@ -924,7 +911,6 @@ public class AppearanceTab
         ImGui.Separator();
         ImGui.Spacing();
 
-        // ===== Global Scale =====
         ImGui.TextDisabled("Scale");
         ImGui.TextWrapped("Master scale applied to all text. Individual scales below are multiplied by this value.");
 

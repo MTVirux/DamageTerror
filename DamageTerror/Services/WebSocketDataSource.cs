@@ -6,11 +6,6 @@ using Newtonsoft.Json.Linq;
 
 namespace DamageTerror.Services;
 
-/// <summary>
-/// Connects to IINACT's OverlayPlugin WebSocket server and receives CombatData events.
-/// Default endpoint: ws://127.0.0.1:10501/ws
-/// Protocol: Send {"call":"subscribe","events":["CombatData","ChangePrimaryPlayer"]} to subscribe.
-/// </summary>
 public class WebSocketDataSource : IDataSource
 {
     private readonly IPluginLog log;
@@ -45,7 +40,6 @@ public class WebSocketDataSource : IDataSource
             await ws.ConnectAsync(new Uri(url), cts.Token).ConfigureAwait(false);
             log.Information($"[DamageTerror] WebSocket connected to {url}");
 
-            // Subscribe to events
             var subscribeMsg = JsonConvert.SerializeObject(new
             {
                 call = "subscribe",
@@ -56,7 +50,6 @@ public class WebSocketDataSource : IDataSource
                 .ConfigureAwait(false);
             log.Debug("[DamageTerror] Subscribed to CombatData and ChangePrimaryPlayer events");
 
-            // Start receive loop
             receiveTask = Task.Run(() => ReceiveLoopAsync(cts.Token), cts.Token);
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
@@ -67,7 +60,7 @@ public class WebSocketDataSource : IDataSource
 
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
-        var buffer = new byte[64 * 1024]; // 64KB buffer
+        var buffer = new byte[64 * 1024];
         var messageBuilder = new StringBuilder();
 
         while (!ct.IsCancellationRequested && ws?.State == WebSocketState.Open)

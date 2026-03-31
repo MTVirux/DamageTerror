@@ -7,9 +7,6 @@ using Newtonsoft.Json;
 
 namespace DamageTerror.Services;
 
-/// <summary>
-/// Manages custom font loading, font atlas lifecycle, and the font chooser dialog.
-/// </summary>
 public sealed class FontService : IDisposable
 {
     private readonly Configuration config;
@@ -20,17 +17,12 @@ public sealed class FontService : IDisposable
     private SingleFontChooserDialog? fontChooserDialog;
     private bool disposed;
 
-    // The deserialized font spec used to build the current handle
     private SingleFontSpec? activeSpec;
 
     // Deferred rebuild: flag set when config changes, applied next frame before push
     private bool rebuildPending;
 
-    /// <summary>
-    /// Whether the service has been initialized with an UiBuilder.
-    /// </summary>
     public bool IsInitialized => uiBuilder != null;
-    /// <summary>Whether a custom font is loaded and ready to use.</summary>
     public bool HasCustomFont => customFontHandle is { Available: true };
 
     public FontService(Configuration config, IPluginLog pluginLog)
@@ -39,9 +31,6 @@ public sealed class FontService : IDisposable
         this.pluginLog = pluginLog;
     }
 
-    /// <summary>
-    /// Initialize the font atlas. Must be called after UiBuilder is available.
-    /// </summary>
     public void Initialize(IUiBuilder uiBuilder)
     {
         this.uiBuilder = uiBuilder;
@@ -62,10 +51,6 @@ public sealed class FontService : IDisposable
             rebuildPending = true;
     }
 
-    /// <summary>
-    /// Rebuild the custom font handle from current config.
-    /// Must NOT be called while the font handle is pushed (mid-frame).
-    /// </summary>
     private void RebuildFont()
     {
         if (atlas == null) return;
@@ -106,14 +91,8 @@ public sealed class FontService : IDisposable
         }
     }
 
-    /// <summary>
-    /// Push the custom font onto the ImGui font stack.
-    /// Returns an IDisposable that pops the font when disposed, or null if no custom font.
-    /// Call once at the top of Draw(). Do NOT call RebuildFont or ClearCustomFont while pushed.
-    /// </summary>
     public IDisposable? PushFont()
     {
-        // Apply any deferred rebuild before pushing
         if (rebuildPending)
         {
             rebuildPending = false;
@@ -135,9 +114,6 @@ public sealed class FontService : IDisposable
         return null;
     }
 
-    /// <summary>
-    /// Open the Dalamud font chooser dialog.
-    /// </summary>
     public void OpenFontChooser()
     {
         if (uiBuilder is not UiBuilder concreteUiBuilder) return;
@@ -149,10 +125,6 @@ public sealed class FontService : IDisposable
         };
     }
 
-    /// <summary>
-    /// Draw the font chooser dialog (if open). Call from the config window draw loop.
-    /// Returns true if a font was selected this frame.
-    /// </summary>
     public bool DrawFontChooser()
     {
         if (fontChooserDialog == null) return false;
@@ -184,10 +156,7 @@ public sealed class FontService : IDisposable
         return false;
     }
 
-    /// <summary>
-    /// Apply a selected font spec to config and schedule a deferred rebuild.
-    /// Does NOT rebuild immediately — safe to call mid-frame.
-    /// </summary>
+
     private void ApplyFontSpec(SingleFontSpec spec)
     {
         config.CustomFontSizePt = spec.SizePt;
@@ -210,10 +179,6 @@ public sealed class FontService : IDisposable
         rebuildPending = true;
     }
 
-    /// <summary>
-    /// Clear the custom font selection and revert to Dalamud default.
-    /// Defers the actual handle disposal to next frame.
-    /// </summary>
     public void ClearCustomFont()
     {
         config.CustomFontPath = null;

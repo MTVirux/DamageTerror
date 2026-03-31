@@ -2,10 +2,6 @@ using System.Globalization;
 
 namespace DamageTerror.Services;
 
-/// <summary>
-/// Tracks per-skill damage from LogLine events (network ability types 21/22).
-/// Thread-safe: LogLine events arrive from background threads, UI reads skills on main thread.
-/// </summary>
 public class SkillTracker
 {
     private readonly object syncLock = new();
@@ -23,10 +19,6 @@ public class SkillTracker
         public int CritDirectHits;
     }
 
-    /// <summary>
-    /// Process a parsed LogLine event. Only handles type 21 (NetworkAbility)
-    /// and type 22 (NetworkAOEAbility) for damage and healing tracking.
-    /// </summary>
     public void ProcessLogLine(string[] line)
     {
         if (line.Length < 10)
@@ -117,25 +109,16 @@ public class SkillTracker
         skills[skillName] = existing;
     }
 
-    /// <summary>
-    /// Get the accumulated damage skill data for a combatant, sorted by damage descending.
-    /// </summary>
     public List<SkillEntry> GetSkills(string combatantName)
     {
         return BuildSkillList(damageData, combatantName);
     }
 
-    /// <summary>
-    /// Get the accumulated healing skill data for a combatant, sorted by healing descending.
-    /// </summary>
     public List<SkillEntry> GetHealSkills(string combatantName)
     {
         return BuildSkillList(healData, combatantName);
     }
 
-    /// <summary>
-    /// Clear all accumulated skill data (called on new encounter boundary).
-    /// </summary>
     public void Reset()
     {
         lock (syncLock)
@@ -181,11 +164,8 @@ public class SkillTracker
         }
     }
 
-    /// <summary>
     /// Decode an ability effect from FFXIV network log line fields.
-    /// Returns the amount (damage or healing), severity byte, and effect type.
     /// See: https://github.com/OverlayPlugin/cactbot/blob/main/docs/LogGuide.md#ability-damage
-    /// </summary>
     private static (long Amount, byte Severity, byte EffectType) DecodeEffect(string flagsHex, string valueHex)
     {
         if (string.IsNullOrEmpty(flagsHex) || string.IsNullOrEmpty(valueHex))

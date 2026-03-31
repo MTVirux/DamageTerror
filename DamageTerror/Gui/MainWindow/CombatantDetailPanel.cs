@@ -3,10 +3,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-/// <summary>
-/// Renders expanded detail stats for a combatant when their bar is clicked.
-/// Shows: Crit%, DirectHit%, CritDH%, Deaths, Overheal%, MaxHit, Last10/30/60 DPS.
-/// </summary>
 public class CombatantDetailPanel
 {
     private readonly Configuration config;
@@ -17,22 +13,13 @@ public class CombatantDetailPanel
         this.config = config;
     }
 
-    /// <summary>
-    /// Toggle expansion of a combatant's detail panel.
-    /// </summary>
     public void Toggle(int index)
     {
         expandedIndex = expandedIndex == index ? -1 : index;
     }
 
-    /// <summary>
-    /// Returns true if the given combatant index is currently expanded.
-    /// </summary>
     public bool IsExpanded(int index) => expandedIndex == index;
 
-    /// <summary>
-    /// Render the detail panel for a combatant if it's expanded.
-    /// </summary>
     public void Render(CombatantEntry combatant, int index)
     {
         if (expandedIndex != index)
@@ -41,12 +28,10 @@ public class CombatantDetailPanel
         var labelColor = config.DetailLabelColor;
         ImGui.Indent(config.DetailIndent);
 
-        // Apply detail font scale
         var prevScale = ImGui.GetFont().Scale;
         ImGui.GetFont().Scale = config.DetailFontScale * config.GlobalFontScale;
         ImGui.PushFont(ImGui.GetFont());
 
-        // Row 1: Damage stats
         if (config.DetailShowDamage)
         {
             ImGui.TextColored(labelColor, "Damage:");
@@ -54,7 +39,6 @@ public class CombatantDetailPanel
             ImGui.TextUnformatted($"{combatant.Damage:N0}  ({combatant.DamagePercent})");
         }
 
-        // Row 2: Crit/DH stats
         if (config.DetailShowCritDhStats)
         {
             ImGui.TextColored(labelColor, "Crit:");
@@ -70,7 +54,6 @@ public class CombatantDetailPanel
             ImGui.TextUnformatted($"{combatant.CritDirectHitPct:F1}%");
         }
 
-        // Row 3: Deaths and Overheal
         if (config.DetailShowDeaths)
         {
             ImGui.TextColored(labelColor, "Deaths:");
@@ -89,7 +72,6 @@ public class CombatantDetailPanel
             ImGui.TextUnformatted($"{combatant.OverhealPct:F1}%");
         }
 
-        // Row 4: Max Hit
         if (config.DetailShowMaxHit && !string.IsNullOrEmpty(combatant.MaxHit))
         {
             ImGui.TextColored(labelColor, "Max Hit:");
@@ -97,7 +79,6 @@ public class CombatantDetailPanel
             ImGui.TextUnformatted($"{combatant.MaxHit} ({combatant.MaxHitDamage:N0})");
         }
 
-        // Row 5: DPS trend
         if (config.DetailShowDpsTrend && (combatant.Last10Dps > 0 || combatant.Last30Dps > 0 || combatant.Last60Dps > 0))
         {
             ImGui.TextColored(labelColor, "DPS 10s/30s/60s:");
@@ -105,7 +86,6 @@ public class CombatantDetailPanel
             ImGui.TextUnformatted($"{combatant.Last10Dps:F1} / {combatant.Last30Dps:F1} / {combatant.Last60Dps:F1}");
         }
 
-        // Row 6: Skill Breakdown (Damage)
         if (config.DetailShowSkillBreakdown && combatant.Skills.Count > 0)
         {
             ImGui.Spacing();
@@ -116,7 +96,6 @@ public class CombatantDetailPanel
             }
         }
 
-        // Row 7: Skill Breakdown (Healing)
         if (config.DetailShowSkillBreakdown && combatant.HealingSkills.Count > 0)
         {
             ImGui.Spacing();
@@ -127,7 +106,6 @@ public class CombatantDetailPanel
             }
         }
 
-        // Restore detail font scale
         ImGui.GetFont().Scale = prevScale;
         ImGui.PopFont();
 
@@ -146,7 +124,6 @@ public class CombatantDetailPanel
         var textColor = ImGui.ColorConvertFloat4ToU32(config.SkillTextColor);
         var skillRounding = config.SkillBarRounding;
 
-        // Apply skill font scale
         var prevSkillScale = ImGui.GetFont().Scale;
         ImGui.GetFont().Scale = config.SkillFontScale * config.GlobalFontScale;
         ImGui.PushFont(ImGui.GetFont());
@@ -155,7 +132,6 @@ public class CombatantDetailPanel
         var headerColor = ImGui.ColorConvertFloat4ToU32(config.SkillHeaderTextColor);
         var colPad = config.SkillColumnPadding;
 
-        // Measure widest text per column across all skills
         float colValW = ImGui.CalcTextSize("Amount").X;
         float colPctW = ImGui.CalcTextSize("%").X;
         float colHitsW = ImGui.CalcTextSize("Hits").X;
@@ -217,14 +193,10 @@ public class CombatantDetailPanel
             skillIdx++;
         }
 
-        // Restore skill font scale
         ImGui.GetFont().Scale = prevSkillScale;
         ImGui.PopFont();
     }
 
-    /// <summary>
-    /// Collapse any expanded detail panel.
-    /// </summary>
     public void CollapseAll()
     {
         expandedIndex = -1;

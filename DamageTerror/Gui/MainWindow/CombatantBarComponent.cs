@@ -7,10 +7,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-/// <summary>
-/// Renders a single combatant bar row in the damage meter.
-/// Shows: colored bar (proportional to top DPS), job icon, name, DPS/HPS value.
-/// </summary>
 public class CombatantBarComponent
 {
     private readonly Configuration config;
@@ -22,9 +18,6 @@ public class CombatantBarComponent
         this.textureProvider = textureProvider;
     }
 
-    /// <summary>
-    /// Render a combatant bar. Returns true if the bar is clicked (for detail expansion).
-    /// </summary>
     public bool Render(CombatantEntry combatant, double maxValue, int index)
     {
         var barHeight = config.BarHeight;
@@ -37,7 +30,6 @@ public class CombatantBarComponent
         var cursorPos = ImGui.GetCursorScreenPos();
         var drawList = ImGui.GetWindowDrawList();
 
-        // Bar background
         var bgColor = config.BarBackgroundColor;
         var barBgColor = ImGui.ColorConvertFloat4ToU32(bgColor);
         drawList.AddRectFilled(
@@ -46,7 +38,6 @@ public class CombatantBarComponent
             barBgColor,
             config.BarRounding);
 
-        // Colored bar (proportional width)
         if (fraction > 0)
         {
             var barColor = JobColorHelper.GetBarColor(combatant.Job, config.BarAlpha, config);
@@ -58,7 +49,6 @@ public class CombatantBarComponent
                 config.BarRounding);
         }
 
-        // Self-highlight accent strip
         if (config.SelfBarHighlight && combatant.IsLocalPlayer)
         {
             var stripWidth = 3f;
@@ -69,19 +59,15 @@ public class CombatantBarComponent
                 highlightColor);
         }
 
-        // Make the bar area interactive
         var clicked = ImGui.InvisibleButton($"##combatant_{index}", new Vector2(windowWidth, barHeight));
 
-        // Apply font scale
         var prevScale = ImGui.GetFont().Scale;
         ImGui.GetFont().Scale = config.BarFontScale * config.GlobalFontScale;
         ImGui.PushFont(ImGui.GetFont());
 
-        // Draw content on top of the bar
         var textY = cursorPos.Y + (barHeight - ImGui.GetTextLineHeight()) * 0.5f;
         var textStartX = cursorPos.X + config.BarLeftPadding;
 
-        // Rank number
         if (config.ShowRankNumber)
         {
             var rankStr = $"{index + 1}. ";
@@ -90,7 +76,6 @@ public class CombatantBarComponent
             textStartX += ImGui.CalcTextSize(rankStr).X;
         }
 
-        // Job icon
         if (config.ShowJobIcons)
         {
             var iconId = JobIconHelper.GetIconId(combatant.Job);
@@ -109,7 +94,6 @@ public class CombatantBarComponent
             }
         }
 
-        // Job abbreviation text (when icons are off, or alongside icons)
         if (config.ShowJobAbbrevOnBar && !string.IsNullOrEmpty(combatant.Job))
         {
             var jobStr = $"[{combatant.Job.ToUpperInvariant()}] ";
@@ -118,7 +102,6 @@ public class CombatantBarComponent
             textStartX += ImGui.CalcTextSize(jobStr).X;
         }
 
-        // Player name
         if (config.ShowNameOnBar)
         {
             var displayName = combatant.IsLocalPlayer && config.ShowYouOnBar ? "YOU" : combatant.Name;
@@ -131,22 +114,19 @@ public class CombatantBarComponent
             drawList.AddText(new Vector2(textStartX, textY), nameColor, displayName);
         }
 
-        // Right-side values
         var rightX = cursorPos.X + windowWidth - config.BarRightPadding;
         var valColor = ImGui.ColorConvertFloat4ToU32(config.ValueTextColor);
         var colSpacing = config.BarColumnSpacing;
 
-        // Damage percent (rightmost if shown alongside value)
         if (config.ShowDamagePercentOnBar && !string.IsNullOrEmpty(combatant.DamagePercent))
         {
             var pctStr = combatant.DamagePercent;
             var colW = ImGui.CalcTextSize("00.0%").X;
             rightX -= colW;
             drawList.AddText(new Vector2(rightX + colW - ImGui.CalcTextSize(pctStr).X, textY), valColor, pctStr);
-            rightX -= colSpacing; // spacing
+            rightX -= colSpacing;
         }
 
-        // Crit/DH stats (right-aligned within fixed-width columns)
         if (config.ShowCritDirectHitOnBar)
         {
             var cdhStr = $"{combatant.CritDirectHitPct:F0}%";
@@ -174,7 +154,6 @@ public class CombatantBarComponent
             rightX -= colSpacing;
         }
 
-        // DPS/HPS value (right-aligned)
         if (config.ShowValueOnBar)
         {
             var valueStr = FormatValue(value, config.ValueDisplayFormat);
@@ -183,11 +162,9 @@ public class CombatantBarComponent
             drawList.AddText(new Vector2(rightX, textY), valColor, valueStr);
         }
 
-        // Restore font scale
         ImGui.GetFont().Scale = prevScale;
         ImGui.PopFont();
 
-        // Bar spacing
         if (config.BarSpacing > 0)
         {
             ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + barHeight + config.BarSpacing));

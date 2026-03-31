@@ -1,8 +1,5 @@
 namespace DamageTerror.Models;
 
-/// <summary>
-/// Parsed encounter-level data from the IINACT CombatData event.
-/// </summary>
 public class CombatEncounter
 {
     public string Title { get; set; } = string.Empty;
