@@ -156,7 +156,7 @@ public class CombatantBarComponent
 
         if (config.ShowValueOnBar)
         {
-            var valueStr = FormatValue(value, config.ValueDisplayFormat);
+            var valueStr = ValueFormatter.Format(value, config.ValueDisplayFormat);
             var valueSize = ImGui.CalcTextSize(valueStr);
             rightX -= valueSize.X;
             drawList.AddText(new Vector2(rightX, textY), valColor, valueStr);
@@ -184,22 +184,7 @@ public class CombatantBarComponent
         _ => c.EncDps,
     };
 
-    private static string FormatValue(double value, ValueDisplayFormat format)
-    {
-        switch (format)
-        {
-            case ValueDisplayFormat.Commas:
-                return ((long)Math.Round(value)).ToString("N0");
-            case ValueDisplayFormat.Raw:
-                return $"{value:F1}";
-            default: // Abbreviated
-                if (value >= 1_000_000)
-                    return $"{value / 1_000_000:F2}M";
-                if (value >= 10_000)
-                    return $"{value / 1_000:F1}K";
-                return $"{value:F1}";
-        }
-    }
+
 
     private static string FormatName(string name, string job, NameDisplayFormat fmt)
     {
