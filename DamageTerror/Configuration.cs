@@ -143,6 +143,14 @@ public class Configuration : IPluginConfiguration
     public bool HeaderSeparator { get; set; } = false;
     public Vector4 HeaderSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
+    // ===== Customization — Font Settings =====
+
+    /// <summary>
+    /// Master font scale multiplier applied to all UI elements.
+    /// Individual component scales are multiplied by this value.
+    /// </summary>
+    public float GlobalFontScale { get; set; } = 1.0f;
+
     // ===== Customization — Bar Appearance =====
 
     public float BarHeight { get; set; } = 22.0f;
@@ -153,6 +161,36 @@ public class Configuration : IPluginConfiguration
     public float BarLeftPadding { get; set; } = 4.0f;
     public float BarRightPadding { get; set; } = 6.0f;
     public float BarColumnSpacing { get; set; } = 6.0f;
+    public float IconTextPadding { get; set; } = 4.0f;
+
+    // ===== Customization — Self Highlighting =====
+
+    /// <summary>
+    /// If true, draw an accent strip on the local player's bar for visibility.
+    /// </summary>
+    public bool SelfBarHighlight { get; set; } = false;
+
+    /// <summary>
+    /// Color of the self-highlight accent strip drawn on the left edge of the player's bar.
+    /// </summary>
+    public Vector4 SelfBarHighlightColor { get; set; } = new(1.0f, 0.85f, 0.3f, 0.9f);
+
+    /// <summary>
+    /// If true, use a distinct color for the local player's name text.
+    /// </summary>
+    public bool UseSelfNameColor { get; set; } = false;
+
+    /// <summary>
+    /// Override color for the local player's name. Only used when <see cref="UseSelfNameColor"/> is true.
+    /// </summary>
+    public Vector4 SelfNameColor { get; set; } = new(1.0f, 0.9f, 0.4f, 1.0f);
+
+    // ===== Customization — Value Formatting =====
+
+    /// <summary>
+    /// Controls how DPS/HPS/damage numbers are formatted on bars and the status bar.
+    /// </summary>
+    public ValueDisplayFormat ValueDisplayFormat { get; set; } = ValueDisplayFormat.Abbreviated;
 
     // ===== Customization — Bar Info =====
 
@@ -174,6 +212,7 @@ public class Configuration : IPluginConfiguration
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
+    public float DetailFontScale { get; set; } = 1.0f;
     public bool DetailShowDamage { get; set; } = true;
     public bool DetailShowCritDhStats { get; set; } = true;
     public bool DetailShowDeaths { get; set; } = true;
@@ -200,12 +239,15 @@ public class Configuration : IPluginConfiguration
     public float SkillRowHeight { get; set; } = 14f;
     public float SkillColumnPadding { get; set; } = 6f;
     public float SkillBarRounding { get; set; } = 0f;
+    public float SkillFontScale { get; set; } = 1.0f;
 
     // ===== Customization — Status Bar =====
 
     public bool ShowStatusBar { get; set; } = true;
     public bool StatusBarAbove { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
+    public bool ShowStatusBarPersonalDps { get; set; } = true;
+    public bool ShowStatusBarRaidDps { get; set; } = true;
     public float StatusBarFontScale { get; set; } = 1.0f;
     public float StatusBarHeight { get; set; } = 20f;
     public float StatusBarPadding { get; set; } = 6f;
