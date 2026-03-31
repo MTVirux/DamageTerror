@@ -15,7 +15,7 @@ public class ThemePreset
     public float BarRounding { get; set; } = 0.0f;
     public float IconSize { get; set; } = 16.0f;
     public float BarAlpha { get; set; } = 0.7f;
-    public float BarFontScale { get; set; } = 1.0f;
+    public float BarFontSize { get; set; } = 14f;
     public float BarLeftPadding { get; set; } = 4.0f;
     public float BarRightPadding { get; set; } = 6.0f;
     public float BarColumnSpacing { get; set; } = 6.0f;
@@ -50,7 +50,6 @@ public class ThemePreset
     public Vector4 SelectionBarBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
     public float SelectionBarHeight { get; set; }
     public bool ShowEncounterPicker { get; set; } = true;
-    public bool ShowSortDropdown { get; set; } = true;
     public bool ShowSelectionBarSeparator { get; set; } = true;
     public Vector4 SelectionBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
@@ -58,24 +57,22 @@ public class ThemePreset
     public Vector4 HeaderTextColor { get; set; } = new(0.7f, 0.7f, 0.7f, 0.9f);
     public Vector4 HeaderBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
     public float HeaderHeight { get; set; } = 22.0f;
-    public float HeaderFontScale { get; set; } = 1.0f;
+    public float HeaderFontSize { get; set; } = 14f;
     public bool HeaderSeparator { get; set; }
     public Vector4 HeaderSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
     public bool EnableCustomFont { get; set; } = false;
-    public float GlobalFontScale { get; set; } = 1.0f;
     public string? CustomFontPath { get; set; }
     public int CustomFontIndex { get; set; }
     public float CustomFontSizePt { get; set; } = 14f;
     public string? CustomFontDisplayName { get; set; }
 
     public bool ShowStatusBar { get; set; } = true;
-    public bool StatusBarAbove { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
     public bool ShowStatusBarPersonalDps { get; set; } = true;
     public bool ShowStatusBarRaidDps { get; set; } = true;
     public float StatusBarHeight { get; set; } = 20f;
-    public float StatusBarFontScale { get; set; } = 1.0f;
+    public float StatusBarFontSize { get; set; } = 14f;
     public float StatusBarPadding { get; set; } = 6f;
     public bool ShowStatusBarSeparator { get; set; } = true;
     public Vector4 StatusBarBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.9f);
@@ -92,7 +89,7 @@ public class ThemePreset
     public float SkillRowHeight { get; set; } = 14f;
     public float SkillColumnPadding { get; set; } = 6f;
     public float SkillBarRounding { get; set; } = 0f;
-    public float SkillFontScale { get; set; } = 1.0f;
+    public float SkillFontSize { get; set; } = 14f;
 
     public bool ShowJobIcons { get; set; } = true;
     public bool ShowNameOnBar { get; set; } = true;
@@ -107,7 +104,7 @@ public class ThemePreset
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
-    public float DetailFontScale { get; set; } = 1.0f;
+    public float DetailFontSize { get; set; } = 14f;
 
     public void ApplyTo(Configuration config)
     {
@@ -116,7 +113,7 @@ public class ThemePreset
         config.BarRounding = BarRounding;
         config.IconSize = IconSize;
         config.BarAlpha = BarAlpha;
-        config.BarFontScale = BarFontScale;
+        config.BarFontSize = BarFontSize;
         config.BarLeftPadding = BarLeftPadding;
         config.BarRightPadding = BarRightPadding;
         config.BarColumnSpacing = BarColumnSpacing;
@@ -150,7 +147,6 @@ public class ThemePreset
         config.SelectionBarBackgroundColor = SelectionBarBackgroundColor;
         config.SelectionBarHeight = SelectionBarHeight;
         config.ShowEncounterPicker = ShowEncounterPicker;
-        config.ShowSortDropdown = ShowSortDropdown;
         config.ShowSelectionBarSeparator = ShowSelectionBarSeparator;
         config.SelectionBarSeparatorColor = SelectionBarSeparatorColor;
 
@@ -158,24 +154,22 @@ public class ThemePreset
         config.HeaderTextColor = HeaderTextColor;
         config.HeaderBackgroundColor = HeaderBackgroundColor;
         config.HeaderHeight = HeaderHeight;
-        config.HeaderFontScale = HeaderFontScale;
+        config.HeaderFontSize = HeaderFontSize;
         config.HeaderSeparator = HeaderSeparator;
         config.HeaderSeparatorColor = HeaderSeparatorColor;
 
         config.EnableCustomFont = EnableCustomFont;
-        config.GlobalFontScale = GlobalFontScale;
         config.CustomFontPath = CustomFontPath;
         config.CustomFontIndex = CustomFontIndex;
         config.CustomFontSizePt = CustomFontSizePt;
         config.CustomFontDisplayName = CustomFontDisplayName;
 
         config.ShowStatusBar = ShowStatusBar;
-        config.StatusBarAbove = StatusBarAbove;
         config.ShowStatusBarTimer = ShowStatusBarTimer;
         config.ShowStatusBarPersonalDps = ShowStatusBarPersonalDps;
         config.ShowStatusBarRaidDps = ShowStatusBarRaidDps;
         config.StatusBarHeight = StatusBarHeight;
-        config.StatusBarFontScale = StatusBarFontScale;
+        config.StatusBarFontSize = StatusBarFontSize;
         config.StatusBarPadding = StatusBarPadding;
         config.ShowStatusBarSeparator = ShowStatusBarSeparator;
         config.StatusBarBackgroundColor = StatusBarBackgroundColor;
@@ -192,7 +186,7 @@ public class ThemePreset
         config.SkillRowHeight = SkillRowHeight;
         config.SkillColumnPadding = SkillColumnPadding;
         config.SkillBarRounding = SkillBarRounding;
-        config.SkillFontScale = SkillFontScale;
+        config.SkillFontSize = SkillFontSize;
 
         config.ShowJobIcons = ShowJobIcons;
         config.ShowNameOnBar = ShowNameOnBar;
@@ -207,7 +201,7 @@ public class ThemePreset
         config.DetailLabelColor = DetailLabelColor;
         config.DetailDeathColor = DetailDeathColor;
         config.DetailIndent = DetailIndent;
-        config.DetailFontScale = DetailFontScale;
+        config.DetailFontSize = DetailFontSize;
     }
 
     public static ThemePreset CreateFromConfig(Configuration config, string name, string description = "")
@@ -222,7 +216,7 @@ public class ThemePreset
             BarRounding = config.BarRounding,
             IconSize = config.IconSize,
             BarAlpha = config.BarAlpha,
-            BarFontScale = config.BarFontScale,
+            BarFontSize = config.BarFontSize,
             BarLeftPadding = config.BarLeftPadding,
             BarRightPadding = config.BarRightPadding,
             BarColumnSpacing = config.BarColumnSpacing,
@@ -258,7 +252,6 @@ public class ThemePreset
             SelectionBarBackgroundColor = config.SelectionBarBackgroundColor,
             SelectionBarHeight = config.SelectionBarHeight,
             ShowEncounterPicker = config.ShowEncounterPicker,
-            ShowSortDropdown = config.ShowSortDropdown,
             ShowSelectionBarSeparator = config.ShowSelectionBarSeparator,
             SelectionBarSeparatorColor = config.SelectionBarSeparatorColor,
 
@@ -266,24 +259,22 @@ public class ThemePreset
             HeaderTextColor = config.HeaderTextColor,
             HeaderBackgroundColor = config.HeaderBackgroundColor,
             HeaderHeight = config.HeaderHeight,
-            HeaderFontScale = config.HeaderFontScale,
+            HeaderFontSize = config.HeaderFontSize,
             HeaderSeparator = config.HeaderSeparator,
             HeaderSeparatorColor = config.HeaderSeparatorColor,
 
             EnableCustomFont = config.EnableCustomFont,
-            GlobalFontScale = config.GlobalFontScale,
             CustomFontPath = config.CustomFontPath,
             CustomFontIndex = config.CustomFontIndex,
             CustomFontSizePt = config.CustomFontSizePt,
             CustomFontDisplayName = config.CustomFontDisplayName,
 
             ShowStatusBar = config.ShowStatusBar,
-            StatusBarAbove = config.StatusBarAbove,
             ShowStatusBarTimer = config.ShowStatusBarTimer,
             ShowStatusBarPersonalDps = config.ShowStatusBarPersonalDps,
             ShowStatusBarRaidDps = config.ShowStatusBarRaidDps,
             StatusBarHeight = config.StatusBarHeight,
-            StatusBarFontScale = config.StatusBarFontScale,
+            StatusBarFontSize = config.StatusBarFontSize,
             StatusBarPadding = config.StatusBarPadding,
             ShowStatusBarSeparator = config.ShowStatusBarSeparator,
             StatusBarBackgroundColor = config.StatusBarBackgroundColor,
@@ -300,7 +291,7 @@ public class ThemePreset
             SkillRowHeight = config.SkillRowHeight,
             SkillColumnPadding = config.SkillColumnPadding,
             SkillBarRounding = config.SkillBarRounding,
-            SkillFontScale = config.SkillFontScale,
+            SkillFontSize = config.SkillFontSize,
 
             ShowJobIcons = config.ShowJobIcons,
             ShowNameOnBar = config.ShowNameOnBar,
@@ -315,7 +306,7 @@ public class ThemePreset
             DetailLabelColor = config.DetailLabelColor,
             DetailDeathColor = config.DetailDeathColor,
             DetailIndent = config.DetailIndent,
-            DetailFontScale = config.DetailFontScale,
+            DetailFontSize = config.DetailFontSize,
         };
     }
 }
