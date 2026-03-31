@@ -29,6 +29,11 @@ public static class JobColorHelper
         "blackmage", "summoner", "redmage", "pictomancer", "bluemage",
     };
 
+    private static readonly HashSet<string> LimitBreak = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Lmb", "Limit Break",
+    };
+
     public static readonly string[] AllJobAbbreviations =
     {
         "Pld", "War", "Drk", "Gnb",
@@ -87,6 +92,7 @@ public static class JobColorHelper
         if (MeleeDps.Contains(job)) return JobRole.MeleeDps;
         if (RangedDps.Contains(job)) return JobRole.RangedDps;
         if (CasterDps.Contains(job)) return JobRole.CasterDps;
+        if (LimitBreak.Contains(job)) return JobRole.LimitBreak;
         return JobRole.Default;
     }
 
@@ -108,6 +114,7 @@ public static class JobColorHelper
             JobRole.MeleeDps => config.MeleeDpsColor,
             JobRole.RangedDps => config.RangedDpsColor,
             JobRole.CasterDps => config.CasterDpsColor,
+            JobRole.LimitBreak => config.LimitBreakColor,
             _ => config.DefaultJobColor,
         };
     }

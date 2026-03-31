@@ -7,5 +7,6 @@ public enum JobRole
     MeleeDps,
     RangedDps,
     CasterDps,
+    LimitBreak,
     Default,
 }
