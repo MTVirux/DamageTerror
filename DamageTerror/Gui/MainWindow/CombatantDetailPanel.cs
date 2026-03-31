@@ -29,7 +29,7 @@ public class CombatantDetailPanel
         ImGui.Indent(config.DetailIndent);
 
         var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.DetailFontScale * config.GlobalFontScale;
+        ImGui.GetFont().Scale = config.GetFontScale(config.DetailFontSize);
         ImGui.PushFont(ImGui.GetFont());
 
         if (config.DetailShowDamage)
@@ -125,7 +125,7 @@ public class CombatantDetailPanel
         var skillRounding = config.SkillBarRounding;
 
         var prevSkillScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.SkillFontScale * config.GlobalFontScale;
+        ImGui.GetFont().Scale = config.GetFontScale(config.SkillFontSize);
         ImGui.PushFont(ImGui.GetFont());
 
         var topSkills = config.MaxSkillBreakdownCount > 0 ? skills.Take(config.MaxSkillBreakdownCount).ToList() : skills;

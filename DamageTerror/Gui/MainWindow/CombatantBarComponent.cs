@@ -62,7 +62,7 @@ public class CombatantBarComponent
         var clicked = ImGui.InvisibleButton($"##combatant_{index}", new Vector2(windowWidth, barHeight));
 
         var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.BarFontScale * config.GlobalFontScale;
+        ImGui.GetFont().Scale = config.GetFontScale(config.BarFontSize);
         ImGui.PushFont(ImGui.GetFont());
 
         var textY = cursorPos.Y + (barHeight - ImGui.GetTextLineHeight()) * 0.5f;

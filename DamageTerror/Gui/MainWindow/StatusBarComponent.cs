@@ -48,7 +48,7 @@ public class StatusBarComponent
         }
 
         var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.StatusBarFontScale * config.GlobalFontScale;
+        ImGui.GetFont().Scale = config.GetFontScale(config.StatusBarFontSize);
         ImGui.PushFont(ImGui.GetFont());
 
         var isActive = encounter.Encounter.IsActive;

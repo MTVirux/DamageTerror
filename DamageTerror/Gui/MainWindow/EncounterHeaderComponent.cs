@@ -14,15 +14,7 @@ public class EncounterHeaderComponent : IUIComponent
     private string searchFilter = string.Empty;
     private bool comboWasOpen;
 
-    private static readonly (SortField Field, string Label)[] SortOptions =
-    [
-        (SortField.EncDps, "DPS"),
-        (SortField.EncHps, "HPS"),
-        (SortField.Damage, "Damage"),
-        (SortField.Healed, "Healed"),
-        (SortField.CritPct, "Crit%"),
-        (SortField.Deaths, "Deaths"),
-    ];
+
 
     public EncounterHeaderComponent(DataService dataService, Action saveConfig)
     {
@@ -41,21 +33,21 @@ public class EncounterHeaderComponent : IUIComponent
         }
     }
 
+    public float GetHeight()
+    {
+        if (!dataService.Config.ShowSelectionBar)
+            return 0f;
+
+        var pad = dataService.Config.SelectionBarHeight;
+        var frameH = ImGui.GetFrameHeight() + pad * 2;
+        var sepH = dataService.Config.ShowSelectionBarSeparator ? ImGui.GetStyle().ItemSpacing.Y + 1f : 0f;
+        return frameH + sepH;
+    }
+
     public void Render()
     {
         if (!dataService.Config.ShowSelectionBar)
             return;
-
-        // Hide when pinned (optionally show with Ctrl+Shift)
-        if (dataService.Config.HideSelectionBarWhenPinned && dataService.Config.PinMainWindow)
-        {
-            if (!dataService.Config.SelectionBarShowOnCtrlShift)
-                return;
-
-            var io = ImGui.GetIO();
-            if (!(io.KeyCtrl && io.KeyShift))
-                return;
-        }
 
         var totalCount = dataService.Store.TotalCount;
         var encounter = SelectedEncounter;
@@ -95,17 +87,7 @@ public class EncounterHeaderComponent : IUIComponent
 
         ImGui.PushStyleColor(ImGuiCol.Text, selBarTextCol);
 
-        var currentSort = dataService.Config.SortBy;
-        var sortLabel = SortOptions.FirstOrDefault(o => o.Field == currentSort).Label ?? "DPS";
-        var sortArrow = dataService.Config.SortDescending ? "\u25BC" : "\u25B2";
-        var sortPreview = $"{sortLabel} {sortArrow}";
-        var sortComboWidth = dataService.Config.ShowSortDropdown
-            ? ImGui.CalcTextSize("Damage \u25BC").X + ImGui.GetStyle().FramePadding.X * 2 + 20
-            : 0f;
-
-        var comboWidth = dataService.Config.ShowSortDropdown
-            ? ImGui.GetContentRegionAvail().X - sortComboWidth - ImGui.GetStyle().ItemSpacing.X
-            : ImGui.GetContentRegionAvail().X;
+        var comboWidth = ImGui.GetContentRegionAvail().X;
 
         if (dataService.Config.ShowEncounterPicker)
         {
@@ -183,34 +165,6 @@ public class EncounterHeaderComponent : IUIComponent
             else
             {
                 comboWasOpen = false;
-            }
-        }
-
-        if (dataService.Config.ShowSortDropdown)
-        {
-            if (dataService.Config.ShowEncounterPicker)
-                ImGui.SameLine();
-            ImGui.SetNextItemWidth(sortComboWidth);
-            if (ImGui.BeginCombo("##sort_combo", sortPreview))
-            {
-                foreach (var (field, label) in SortOptions)
-                {
-                    var isSelected = currentSort == field;
-                    if (ImGui.Selectable(label, isSelected))
-                    {
-                        if (isSelected)
-                        {
-                            dataService.Config.SortDescending = !dataService.Config.SortDescending;
-                        }
-                        else
-                        {
-                            dataService.Config.SortBy = field;
-                            dataService.Config.SortDescending = true;
-                        }
-                        saveConfig();
-                    }
-                }
-                ImGui.EndCombo();
             }
         }
 

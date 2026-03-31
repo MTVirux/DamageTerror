@@ -40,6 +40,7 @@ public class MainWindow : Window, IDisposable
     private readonly StatusBarComponent statusBarComponent;
     private TitleBarButton? lockButton;
     private DateTime? combatEndTime;
+    private int selectedMeterTab;
 
     public MainWindow(DamageTerrorPlugin plugin, ITextureProvider textureProvider)
         : base(GetTitleWithVersion())
@@ -203,149 +204,207 @@ public class MainWindow : Window, IDisposable
     {
         using var fontScope = plugin.Config.EnableCustomFont ? plugin.FontService?.PushFont() : null;
 
-        headerComponent.Render();
+        var config = plugin.Config;
 
+        // --- Data resolution (always runs regardless of layout order) ---
         var encounter = headerComponent.SelectedEncounter;
-        if (encounter == null)
+
+        // Resolve active tab (needs encounter to exist for filtering)
+        var useTabBar = config.ShowTabBar && config.MeterTabs.Count > 0;
+        MeterTab? activeTab = null;
+
+        if (useTabBar && encounter != null)
         {
-            ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-            if (ImGui.Button("Reconnect"))
+            if (selectedMeterTab >= config.MeterTabs.Count)
+                selectedMeterTab = 0;
+            activeTab = config.MeterTabs[selectedMeterTab];
+        }
+
+        var sortBy = activeTab?.SortBy ?? config.SortBy;
+        var sortDesc = activeTab?.SortDescending ?? config.SortDescending;
+        var showHps = activeTab?.ShowHps ?? config.ShowHps;
+
+        List<CombatantEntry>? combatants = null;
+        double maxVal = 0;
+
+        if (encounter != null)
+        {
+            combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab);
+            if (combatants.Count > 0)
+                maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
+        }
+
+        // Calculate height reserved for elements rendered after CombatantBars
+        float afterBarsHeight = 0f;
+        bool passedBars = false;
+        var ctrlShiftHeldForHeight = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
+        foreach (var el in config.Layout)
+        {
+            if (config.CtrlShiftOnlyElements.Contains(el) && !ctrlShiftHeldForHeight)
+                continue;
+            if (passedBars)
             {
-                Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+                switch (el)
+                {
+                    case LayoutElement.StatusBar when encounter != null:
+                        afterBarsHeight += statusBarComponent.GetHeight();
+                        break;
+                    case LayoutElement.EncounterSelect:
+                        afterBarsHeight += headerComponent.GetHeight();
+                        break;
+                    case LayoutElement.MeterTabs when useTabBar && encounter != null:
+                        afterBarsHeight += config.TabButtonHeight + ImGui.GetStyle().ItemSpacing.Y;
+                        break;
+                }
             }
-            return;
+            else if (el == LayoutElement.CombatantBars)
+            {
+                passedBars = true;
+            }
         }
 
-        var combatants = GetSortedCombatants(encounter);
-        if (combatants.Count == 0)
+        // --- Render components in configured layout order ---
+        var ctrlShiftHeld = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
+        foreach (var element in config.Layout)
         {
-            ImGui.TextDisabled("No combatant data.");
-            return;
+            if (config.CtrlShiftOnlyElements.Contains(element) && !ctrlShiftHeld)
+                continue;
+            switch (element)
+            {
+                case LayoutElement.EncounterSelect:
+                    headerComponent.Render();
+                    if (encounter == null)
+                    {
+                        ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
+                        if (ImGui.Button("Reconnect"))
+                            Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+                        return;
+                    }
+                    break;
+
+                case LayoutElement.MeterTabs:
+                    if (encounter == null) break;
+                    if (useTabBar)
+                    {
+                        DrawMeterTabButtons(config);
+
+                        // Re-resolve if tab changed
+                        var newTab = config.MeterTabs[selectedMeterTab];
+                        if (newTab != activeTab)
+                        {
+                            activeTab = newTab;
+                            sortBy = activeTab.SortBy;
+                            sortDesc = activeTab.SortDescending;
+                            showHps = activeTab.ShowHps;
+                            combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab);
+                            maxVal = combatants.Count > 0
+                                ? combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy))
+                                : 0;
+                        }
+                    }
+                    break;
+
+                case LayoutElement.StatusBar:
+                    if (encounter != null)
+                        statusBarComponent.Render(encounter);
+                    break;
+
+                case LayoutElement.CombatantBars:
+                    if (encounter == null) break;
+                    if (combatants == null || combatants.Count == 0)
+                    {
+                        ImGui.TextDisabled(useTabBar ? "No combatants match this tab's filter." : "No combatant data.");
+                        break;
+                    }
+                    DrawCombatantBars(combatants, maxVal, sortBy, showHps, afterBarsHeight);
+                    break;
+            }
+        }
+    }
+
+    private void DrawMeterTabButtons(Configuration config)
+    {
+        var tabCount = config.MeterTabs.Count;
+        if (tabCount == 0) return;
+
+        var regionWidth = ImGui.GetContentRegionAvail().X;
+        var spacing = config.TabButtonSpacing;
+        var buttonHeight = config.TabButtonHeight;
+        var rounding = config.TabButtonRounding;
+
+        float buttonWidth;
+        if (config.TabButtonStretchToFit)
+        {
+            buttonWidth = (regionWidth - spacing * (tabCount - 1)) / tabCount;
+        }
+        else
+        {
+            buttonWidth = config.TabButtonWidth;
         }
 
-        var showHps = plugin.Config.ShowHps;
-        var sortBy = plugin.Config.SortBy;
-        var maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
+        var drawList = ImGui.GetWindowDrawList();
+        var cursor = ImGui.GetCursorScreenPos();
 
-        if (plugin.Config.StatusBarAbove)
-            statusBarComponent.Render(encounter);
+        var prevScale = ImGui.GetFont().Scale;
+        ImGui.GetFont().Scale = config.GetFontScale(config.TabButtonFontSize);
+        ImGui.PushFont(ImGui.GetFont());
 
-        var statusBarHeight = !plugin.Config.StatusBarAbove ? statusBarComponent.GetHeight() : 0f;
+        for (var i = 0; i < tabCount; i++)
+        {
+            var tab = config.MeterTabs[i];
+            var isActive = selectedMeterTab == i;
+
+            var bgColor = isActive ? config.TabButtonActiveColor : config.TabButtonColor;
+            var textColor = isActive ? config.TabButtonActiveTextColor : config.TabButtonTextColor;
+
+            var textSize = ImGui.CalcTextSize(tab.Name);
+            var w = buttonWidth > 0
+                ? buttonWidth
+                : textSize.X + ImGui.GetStyle().FramePadding.X * 2;
+
+            var btnMin = cursor;
+            var btnMax = new Vector2(cursor.X + w, cursor.Y + buttonHeight);
+
+            // Hit test
+            ImGui.SetCursorScreenPos(cursor);
+            ImGui.InvisibleButton($"##mtBtn{i}", new Vector2(w, buttonHeight));
+
+            if (ImGui.IsItemHovered())
+                bgColor = isActive ? config.TabButtonActiveColor : config.TabButtonHoveredColor;
+
+            if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+                selectedMeterTab = i;
+
+            // Draw background
+            drawList.AddRectFilled(btnMin, btnMax, ImGui.ColorConvertFloat4ToU32(bgColor), rounding);
+
+            // Draw text centered
+            var textPos = new Vector2(
+                btnMin.X + (w - textSize.X) * 0.5f,
+                btnMin.Y + (buttonHeight - textSize.Y) * 0.5f);
+            drawList.AddText(ImGui.GetFont(), ImGui.GetFontSize(), textPos, ImGui.ColorConvertFloat4ToU32(textColor), tab.Name);
+
+            // Advance cursor for next button
+            cursor = new Vector2(cursor.X + w + spacing, cursor.Y);
+        }
+
+        ImGui.GetFont().Scale = prevScale;
+        ImGui.PopFont();
+
+        // Move ImGui cursor past the button row
+        ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().X, cursor.Y + buttonHeight));
+    }
+
+    private void DrawCombatantBars(List<CombatantEntry> combatants, double maxVal, SortField sortBy, bool showHps, float reservedHeight)
+    {
         var availY = ImGui.GetContentRegionAvail().Y;
-        var childHeight = statusBarHeight > 0 ? Math.Max(0f, availY - statusBarHeight) : 0f;
+        var childHeight = reservedHeight > 0 ? Math.Max(0f, availY - reservedHeight) : 0f;
 
         if (ImGui.BeginChild("##combatants", new Vector2(0, childHeight), false))
         {
             if (plugin.Config.ShowMeterHeader)
             {
-                var headerHeight = plugin.Config.HeaderHeight;
-                var windowWidth = ImGui.GetContentRegionAvail().X;
-                var cursorPos = ImGui.GetCursorScreenPos();
-                var drawList = ImGui.GetWindowDrawList();
-                var headerColor = ImGui.ColorConvertFloat4ToU32(plugin.Config.HeaderTextColor);
-
-                var headerBg = plugin.Config.HeaderBackgroundColor;
-                if (headerBg.W > 0f)
-                {
-                    drawList.AddRectFilled(
-                        cursorPos,
-                        new Vector2(cursorPos.X + windowWidth, cursorPos.Y + headerHeight),
-                        ImGui.ColorConvertFloat4ToU32(headerBg));
-                }
-
-                var prevHdrScale = ImGui.GetFont().Scale;
-                ImGui.GetFont().Scale = plugin.Config.HeaderFontScale * plugin.Config.GlobalFontScale;
-                ImGui.PushFont(ImGui.GetFont());
-
-                var textY = cursorPos.Y + (headerHeight - ImGui.GetTextLineHeight()) * 0.5f;
-                var textStartX = cursorPos.X + plugin.Config.BarLeftPadding;
-
-                if (plugin.Config.ShowRankNumber)
-                {
-                    drawList.AddText(new Vector2(textStartX, textY), headerColor, "#");
-                    textStartX += ImGui.CalcTextSize("#. ").X;
-                }
-
-                if (plugin.Config.ShowJobIcons)
-                    textStartX += plugin.Config.IconSize + plugin.Config.IconTextPadding;
-
-                if (plugin.Config.ShowJobAbbrevOnBar)
-                {
-                    drawList.AddText(new Vector2(textStartX, textY), headerColor, "Job");
-                    textStartX += ImGui.CalcTextSize("[WHM] ").X;
-                }
-
-                if (plugin.Config.ShowNameOnBar)
-                    drawList.AddText(new Vector2(textStartX, textY), headerColor, "Name");
-
-                var rightX = cursorPos.X + windowWidth - plugin.Config.BarRightPadding;
-                var colSpacing = plugin.Config.BarColumnSpacing;
-
-                if (plugin.Config.ShowDamagePercentOnBar)
-                {
-                    var colW = ImGui.CalcTextSize("00.0%").X;
-                    var labelWidth = ImGui.CalcTextSize("%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "%");
-                    rightX -= colSpacing;
-                }
-
-                if (plugin.Config.ShowCritDirectHitOnBar)
-                {
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    var labelWidth = ImGui.CalcTextSize("!!!").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!!!");
-                    rightX -= colSpacing;
-                }
-
-                if (plugin.Config.ShowCritOnBar)
-                {
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    var labelWidth = ImGui.CalcTextSize("!!").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!!");
-                    rightX -= colSpacing;
-                }
-
-                if (plugin.Config.ShowDirectHitOnBar)
-                {
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    var labelWidth = ImGui.CalcTextSize("!").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!");
-                    rightX -= colSpacing;
-                }
-
-                if (plugin.Config.ShowValueOnBar)
-                {
-                    var valLabel = sortBy switch
-                    {
-                        SortField.EncDps => "DPS",
-                        SortField.EncHps => "HPS",
-                        SortField.Damage => "Dmg",
-                        SortField.Healed => "Heal",
-                        SortField.CritPct => "Crit%",
-                        SortField.Deaths => "Deaths",
-                        _ => showHps ? "HPS" : "DPS",
-                    };
-                    var labelWidth = ImGui.CalcTextSize(valLabel).X;
-                    drawList.AddText(new Vector2(rightX - labelWidth, textY), headerColor, valLabel);
-                }
-
-                ImGui.GetFont().Scale = prevHdrScale;
-                ImGui.PopFont();
-
-                if (plugin.Config.HeaderSeparator)
-                {
-                    var sepY = cursorPos.Y + headerHeight;
-                    drawList.AddLine(
-                        new Vector2(cursorPos.X, sepY),
-                        new Vector2(cursorPos.X + windowWidth, sepY),
-                        ImGui.ColorConvertFloat4ToU32(plugin.Config.HeaderSeparatorColor));
-                }
-
-                ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + headerHeight + plugin.Config.BarSpacing));
+                DrawMeterHeader(sortBy, showHps);
             }
 
             for (int i = 0; i < combatants.Count; i++)
@@ -360,16 +419,127 @@ public class MainWindow : Window, IDisposable
             }
         }
         ImGui.EndChild();
-
-        if (!plugin.Config.StatusBarAbove)
-            statusBarComponent.Render(encounter);
     }
 
-    private List<CombatantEntry> GetSortedCombatants(EncounterSnapshot encounter)
+    private void DrawMeterHeader(SortField sortBy, bool showHps)
+    {
+        var headerHeight = plugin.Config.HeaderHeight;
+        var windowWidth = ImGui.GetContentRegionAvail().X;
+        var cursorPos = ImGui.GetCursorScreenPos();
+        var drawList = ImGui.GetWindowDrawList();
+        var headerColor = ImGui.ColorConvertFloat4ToU32(plugin.Config.HeaderTextColor);
+
+        var headerBg = plugin.Config.HeaderBackgroundColor;
+        if (headerBg.W > 0f)
+        {
+            drawList.AddRectFilled(
+                cursorPos,
+                new Vector2(cursorPos.X + windowWidth, cursorPos.Y + headerHeight),
+                ImGui.ColorConvertFloat4ToU32(headerBg));
+        }
+
+        var prevHdrScale = ImGui.GetFont().Scale;
+        ImGui.GetFont().Scale = plugin.Config.GetFontScale(plugin.Config.HeaderFontSize);
+        ImGui.PushFont(ImGui.GetFont());
+
+        var textY = cursorPos.Y + (headerHeight - ImGui.GetTextLineHeight()) * 0.5f;
+        var textStartX = cursorPos.X + plugin.Config.BarLeftPadding;
+
+        if (plugin.Config.ShowRankNumber)
+        {
+            drawList.AddText(new Vector2(textStartX, textY), headerColor, "#");
+            textStartX += ImGui.CalcTextSize("#. ").X;
+        }
+
+        if (plugin.Config.ShowJobIcons)
+            textStartX += plugin.Config.IconSize + plugin.Config.IconTextPadding;
+
+        if (plugin.Config.ShowJobAbbrevOnBar)
+        {
+            drawList.AddText(new Vector2(textStartX, textY), headerColor, "Job");
+            textStartX += ImGui.CalcTextSize("[WHM] ").X;
+        }
+
+        if (plugin.Config.ShowNameOnBar)
+            drawList.AddText(new Vector2(textStartX, textY), headerColor, "Name");
+
+        var rightX = cursorPos.X + windowWidth - plugin.Config.BarRightPadding;
+        var colSpacing = plugin.Config.BarColumnSpacing;
+
+        if (plugin.Config.ShowDamagePercentOnBar)
+        {
+            var colW = ImGui.CalcTextSize("00.0%").X;
+            var labelWidth = ImGui.CalcTextSize("%").X;
+            rightX -= colW;
+            drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "%");
+            rightX -= colSpacing;
+        }
+
+        if (plugin.Config.ShowCritDirectHitOnBar)
+        {
+            var colW = ImGui.CalcTextSize("100%").X;
+            var labelWidth = ImGui.CalcTextSize("!!!").X;
+            rightX -= colW;
+            drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!!!");
+            rightX -= colSpacing;
+        }
+
+        if (plugin.Config.ShowCritOnBar)
+        {
+            var colW = ImGui.CalcTextSize("100%").X;
+            var labelWidth = ImGui.CalcTextSize("!!").X;
+            rightX -= colW;
+            drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!!");
+            rightX -= colSpacing;
+        }
+
+        if (plugin.Config.ShowDirectHitOnBar)
+        {
+            var colW = ImGui.CalcTextSize("100%").X;
+            var labelWidth = ImGui.CalcTextSize("!").X;
+            rightX -= colW;
+            drawList.AddText(new Vector2(rightX + (colW - labelWidth) * 0.5f, textY), headerColor, "!");
+            rightX -= colSpacing;
+        }
+
+        if (plugin.Config.ShowValueOnBar)
+        {
+            var valLabel = sortBy switch
+            {
+                SortField.EncDps => "DPS",
+                SortField.EncHps => "HPS",
+                SortField.Damage => "Dmg",
+                SortField.Healed => "Heal",
+                SortField.CritPct => "Crit%",
+                SortField.Deaths => "Deaths",
+                _ => showHps ? "HPS" : "DPS",
+            };
+            var labelWidth = ImGui.CalcTextSize(valLabel).X;
+            drawList.AddText(new Vector2(rightX - labelWidth, textY), headerColor, valLabel);
+        }
+
+        ImGui.GetFont().Scale = prevHdrScale;
+        ImGui.PopFont();
+
+        if (plugin.Config.HeaderSeparator)
+        {
+            var sepY = cursorPos.Y + headerHeight;
+            drawList.AddLine(
+                new Vector2(cursorPos.X, sepY),
+                new Vector2(cursorPos.X + windowWidth, sepY),
+                ImGui.ColorConvertFloat4ToU32(plugin.Config.HeaderSeparatorColor));
+        }
+
+        ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + headerHeight + plugin.Config.BarSpacing));
+    }
+
+    private List<CombatantEntry> GetSortedCombatants(EncounterSnapshot encounter,
+        SortField sortBy, bool desc, MeterTab? activeTab)
     {
         var combatants = new List<CombatantEntry>(encounter.Combatants);
-        var sortBy = plugin.Config.SortBy;
-        var desc = plugin.Config.SortDescending;
+
+        if (activeTab != null)
+            combatants.RemoveAll(c => !activeTab.PassesFilter(c));
 
         combatants.Sort((a, b) =>
         {
