@@ -50,6 +50,7 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         }
 
         this.Config = cfg;
+        Gui.ConfigWindow.LayoutPage.EnsureLayoutComplete(cfg);
 
         this.DataService = new DataService(pluginInterface, pluginLog, this.Config);
 

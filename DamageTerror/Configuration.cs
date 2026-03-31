@@ -1,6 +1,13 @@
 using Dalamud.Configuration;
+using Newtonsoft.Json;
 
 namespace DamageTerror;
+
+/// <summary>Default base font size in pt, used as reference when no custom font is loaded.</summary>
+file static class FontDefaults
+{
+    public const float BaseSizePt = 14f;
+}
 
 public class Configuration : IPluginConfiguration
 {
@@ -29,6 +36,37 @@ public class Configuration : IPluginConfiguration
     public bool SortDescending { get; set; } = true;
     public bool ShowJobIcons { get; set; } = true;
     public bool ShowHps { get; set; } = false;
+
+    // Meter Tabs
+    public bool ShowTabBar { get; set; } = false;
+    public List<MeterTab> MeterTabs { get; set; } = new();
+
+    // Meter Tab Button Appearance
+    public Vector4 TabButtonColor { get; set; } = new(0.20f, 0.22f, 0.27f, 1.0f);
+    public Vector4 TabButtonHoveredColor { get; set; } = new(0.28f, 0.30f, 0.36f, 1.0f);
+    public Vector4 TabButtonActiveColor { get; set; } = new(0.38f, 0.44f, 0.64f, 1.0f);
+    public Vector4 TabButtonTextColor { get; set; } = new(0.85f, 0.85f, 0.85f, 1.0f);
+    public Vector4 TabButtonActiveTextColor { get; set; } = new(1.0f, 1.0f, 1.0f, 1.0f);
+    public float TabButtonHeight { get; set; } = 24f;
+    public float TabButtonSpacing { get; set; } = 2f;
+    public float TabButtonRounding { get; set; } = 4f;
+    public float TabButtonWidth { get; set; } = 80f;
+    public float TabButtonFontSize { get; set; } = FontDefaults.BaseSizePt;
+    public bool TabButtonStretchToFit { get; set; } = true;
+
+    // Layout Order
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<LayoutElement> Layout { get; set; } = new()
+    {
+        LayoutElement.EncounterSelect,
+        LayoutElement.MeterTabs,
+        LayoutElement.StatusBar,
+        LayoutElement.CombatantBars,
+    };
+
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public HashSet<LayoutElement> CtrlShiftOnlyElements { get; set; } = new();
+
     public bool HideOutOfCombat { get; set; } = false;
     public float HideOutOfCombatDelay { get; set; } = 5f;
     public bool IgnoreEscClose { get; set; } = true;
@@ -42,6 +80,7 @@ public class Configuration : IPluginConfiguration
     public Vector4 MeleeDpsColor { get; set; } = new(0.8f, 0.2f, 0.2f, 1.0f);
     public Vector4 RangedDpsColor { get; set; } = new(0.9f, 0.5f, 0.2f, 1.0f);
     public Vector4 CasterDpsColor { get; set; } = new(0.6f, 0.3f, 0.8f, 1.0f);
+    public Vector4 LimitBreakColor { get; set; } = new(1.0f, 0.5f, 0.0f, 1.0f);
     public Vector4 DefaultJobColor { get; set; } = new(0.5f, 0.5f, 0.5f, 1.0f);
 
     public bool UsePerJobColors { get; set; } = false;
@@ -58,23 +97,19 @@ public class Configuration : IPluginConfiguration
     public Vector4 SelectionBarBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
     public float SelectionBarHeight { get; set; } = 0.0f;
     public bool ShowEncounterPicker { get; set; } = true;
-    public bool ShowSortDropdown { get; set; } = true;
     public bool ShowSelectionBarSeparator { get; set; } = true;
     public Vector4 SelectionBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
-    public bool HideSelectionBarWhenPinned { get; set; } = false;
-    public bool SelectionBarShowOnCtrlShift { get; set; } = true;
 
     // Header Row
     public Vector4 HeaderTextColor { get; set; } = new(0.7f, 0.7f, 0.7f, 0.9f);
     public Vector4 HeaderBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
     public float HeaderHeight { get; set; } = 22.0f;
-    public float HeaderFontScale { get; set; } = 1.0f;
+    public float HeaderFontSize { get; set; } = FontDefaults.BaseSizePt;
     public bool HeaderSeparator { get; set; } = false;
     public Vector4 HeaderSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
     // Font Settings
     public bool EnableCustomFont { get; set; } = false;
-    public float GlobalFontScale { get; set; } = 1.0f;
     public string? CustomFontPath { get; set; }
     public int CustomFontIndex { get; set; }
     public float CustomFontSizePt { get; set; } = 14f;
@@ -87,7 +122,7 @@ public class Configuration : IPluginConfiguration
     public float BarSpacing { get; set; } = 1.0f;
     public float BarRounding { get; set; } = 0.0f;
     public float IconSize { get; set; } = 16.0f;
-    public float BarFontScale { get; set; } = 1.0f;
+    public float BarFontSize { get; set; } = FontDefaults.BaseSizePt;
     public float BarLeftPadding { get; set; } = 4.0f;
     public float BarRightPadding { get; set; } = 6.0f;
     public float BarColumnSpacing { get; set; } = 6.0f;
@@ -120,7 +155,7 @@ public class Configuration : IPluginConfiguration
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
-    public float DetailFontScale { get; set; } = 1.0f;
+    public float DetailFontSize { get; set; } = FontDefaults.BaseSizePt;
     public bool DetailShowDamage { get; set; } = true;
     public bool DetailShowCritDhStats { get; set; } = true;
     public bool DetailShowDeaths { get; set; } = true;
@@ -141,15 +176,14 @@ public class Configuration : IPluginConfiguration
     public float SkillRowHeight { get; set; } = 14f;
     public float SkillColumnPadding { get; set; } = 6f;
     public float SkillBarRounding { get; set; } = 0f;
-    public float SkillFontScale { get; set; } = 1.0f;
+    public float SkillFontSize { get; set; } = FontDefaults.BaseSizePt;
 
     // Status Bar
     public bool ShowStatusBar { get; set; } = true;
-    public bool StatusBarAbove { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
     public bool ShowStatusBarPersonalDps { get; set; } = true;
     public bool ShowStatusBarRaidDps { get; set; } = true;
-    public float StatusBarFontScale { get; set; } = 1.0f;
+    public float StatusBarFontSize { get; set; } = FontDefaults.BaseSizePt;
     public float StatusBarHeight { get; set; } = 20f;
     public float StatusBarPadding { get; set; } = 6f;
     public bool ShowStatusBarSeparator { get; set; } = true;
@@ -166,4 +200,10 @@ public class Configuration : IPluginConfiguration
     public bool PinConfigWindow { get; set; } = false;
     public Vector2 ConfigWindowPos { get; set; } = new Vector2(100, 100);
     public Vector2 ConfigWindowSize { get; set; } = new Vector2(400, 350);
+
+    // Helpers
+    [JsonIgnore]
+    public float BaseFontSizePt => EnableCustomFont && CustomFontSizePt > 0 ? CustomFontSizePt : FontDefaults.BaseSizePt;
+
+    public float GetFontScale(float desiredSizePt) => desiredSizePt / BaseFontSizePt;
 }
