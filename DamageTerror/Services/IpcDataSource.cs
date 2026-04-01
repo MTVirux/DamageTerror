@@ -50,17 +50,17 @@ public class IpcDataSource : IDataSource
                 sender.InvokeFunc(subscribeMsg);
                 connected = true;
                     OnConnected?.Invoke();
-                log.Information("[DamageTerror] IPC connected to IINACT");
+                log.Information("IPC connected to IINACT");
             }
             catch (Exception ex)
             {
-                log.Debug($"[DamageTerror] IPC subscribe call failed (IINACT may not be running): {ex.Message}");
+                log.Debug($"IPC subscribe call failed (IINACT may not be running): {ex.Message}");
                 connected = false;
             }
         }
         catch (Exception ex)
         {
-            log.Debug($"[DamageTerror] IPC registration failed: {ex.Message}");
+            log.Debug($"IPC registration failed: {ex.Message}");
             connected = false;
         }
 
@@ -75,7 +75,7 @@ public class IpcDataSource : IDataSource
         }
         catch (Exception ex)
         {
-            log.Debug($"[DamageTerror] IPC message processing failed: {ex.Message}");
+            log.Debug($"IPC message processing failed: {ex.Message}");
         }
 
         return true;

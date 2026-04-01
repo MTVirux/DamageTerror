@@ -86,7 +86,7 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             }
             catch (Exception ex)
             {
-                pluginLog.Error($"[DamageTerror] Failed to start data service: {ex.Message}");
+                pluginLog.Error($"Failed to start data service: {ex.Message}");
             }
         });
     }

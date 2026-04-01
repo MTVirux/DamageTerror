@@ -38,7 +38,7 @@ public class WebSocketDataSource : IDataSource
         {
             ws = new ClientWebSocket();
             await ws.ConnectAsync(new Uri(url), cts.Token).ConfigureAwait(false);
-            log.Information($"[DamageTerror] WebSocket connected to {url}");
+            log.Information($"WebSocket connected to {url}");
 
             var subscribeMsg = JsonConvert.SerializeObject(new
             {
@@ -48,13 +48,13 @@ public class WebSocketDataSource : IDataSource
             var bytes = Encoding.UTF8.GetBytes(subscribeMsg);
             await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cts.Token)
                 .ConfigureAwait(false);
-            log.Debug("[DamageTerror] Subscribed to CombatData and ChangePrimaryPlayer events");
+            log.Debug("Subscribed to CombatData and ChangePrimaryPlayer events");
 
             receiveTask = Task.Run(() => ReceiveLoopAsync(cts.Token), cts.Token);
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
         {
-            log.Warning($"[DamageTerror] WebSocket connection failed: {ex.Message}");
+            log.Warning($"WebSocket connection failed: {ex.Message}");
         }
     }
 
@@ -76,7 +76,7 @@ public class WebSocketDataSource : IDataSource
 
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        log.Information("[DamageTerror] WebSocket server closed connection");
+                        log.Information("WebSocket server closed connection");
                         return;
                     }
 
@@ -93,7 +93,7 @@ public class WebSocketDataSource : IDataSource
             }
             catch (WebSocketException ex)
             {
-                log.Warning($"[DamageTerror] WebSocket error: {ex.Message}");
+                log.Warning($"WebSocket error: {ex.Message}");
                 break;
             }
         }
@@ -108,7 +108,7 @@ public class WebSocketDataSource : IDataSource
         }
         catch (JsonException ex)
         {
-            log.Debug($"[DamageTerror] Failed to parse WebSocket message: {ex.Message}");
+            log.Debug($"Failed to parse WebSocket message: {ex.Message}");
         }
     }
 

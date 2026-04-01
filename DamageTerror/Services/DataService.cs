@@ -32,7 +32,7 @@ public class DataService : IDisposable
         var savePath = System.IO.Path.Combine(configDir, "encounters.json");
         Store.SetSavePath(savePath);
         Store.Load();
-        log.Debug($"[DamageTerror] Encounter history loaded from {savePath}");
+        log.Debug($"Encounter history loaded from {savePath}");
     }
 
     public async Task StartAsync()
@@ -53,7 +53,7 @@ public class DataService : IDisposable
             {
                 activeSource = ipc;
                 ConnectionStatus = "Connected (IPC)";
-                log.Information("[DamageTerror] Using IPC data source");
+                log.Information("Using IPC data source");
             }
 
             ipc.OnConnected += ConnectedHandler;
@@ -65,7 +65,7 @@ public class DataService : IDisposable
                 ipc.OnConnected -= ConnectedHandler;
                 activeSource = ipc;
                 ConnectionStatus = "Connected (IPC)";
-                log.Information("[DamageTerror] Using IPC data source");
+                log.Information("Using IPC data source");
                 return;
             }
 
@@ -74,7 +74,7 @@ public class DataService : IDisposable
             ipc.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
             ipc.OnLogLine -= OnLogLine;
             ipc.Dispose();
-            log.Information("[DamageTerror] IPC unavailable, falling back to WebSocket");
+            log.Information("IPC unavailable, falling back to WebSocket");
         }
 
         await ConnectWebSocketAsync().ConfigureAwait(false);
@@ -96,7 +96,7 @@ public class DataService : IDisposable
         {
             activeSource = ws;
             ConnectionStatus = "Connected (WebSocket)";
-            log.Information("[DamageTerror] Using WebSocket data source");
+            log.Information("Using WebSocket data source");
         }
         else
         {
@@ -105,7 +105,7 @@ public class DataService : IDisposable
             ws.OnLogLine -= OnLogLine;
             ws.Dispose();
             ConnectionStatus = "Not connected — IINACT not running?";
-            log.Warning("[DamageTerror] Failed to connect to any data source");
+            log.Warning("Failed to connect to any data source");
         }
     }
 
@@ -146,7 +146,7 @@ public class DataService : IDisposable
                     if (!string.IsNullOrEmpty(name))
                     {
                         PlayerName = name;
-                        log.Debug($"[DamageTerror] Player name from IPlayerState: {name}");
+                        log.Debug($"Player name from IPlayerState: {name}");
                     }
                 }
             }
@@ -208,7 +208,7 @@ public class DataService : IDisposable
             {
                 PlayerName = line[3];
                 PlayerId = id;
-                log.Debug($"[DamageTerror] Player name from LogLine: {line[3]} (ID: {id})");
+                log.Debug($"Player name from LogLine: {line[3]} (ID: {id})");
             }
         }
     }
@@ -217,7 +217,7 @@ public class DataService : IDisposable
     {
         PlayerName = name;
         PlayerId = id;
-        log.Debug($"[DamageTerror] Primary player set: {name} (ID: {id})");
+        log.Debug($"Primary player set: {name} (ID: {id})");
     }
 
     public void Dispose()
