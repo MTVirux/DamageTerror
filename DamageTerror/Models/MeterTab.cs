@@ -17,12 +17,39 @@ public class MeterTab
     public bool ShowDamageOnBar { get; set; } = false;
     public bool ShowHealedOnBar { get; set; } = false;
     public bool ShowDamagePercentOnBar { get; set; } = false;
+    public bool ShowHealPercentOnBar { get; set; } = false;
     public bool ShowDirectHitOnBar { get; set; } = false;
     public bool ShowCritOnBar { get; set; } = false;
     public bool ShowCritDirectHitOnBar { get; set; } = false;
     public bool ShowDeathsOnBar { get; set; } = false;
     public bool ShowDamageTakenOnBar { get; set; } = false;
+    public bool ShowDamageTakenPercentOnBar { get; set; } = false;
     public bool ShowOverhealOnBar { get; set; } = false;
+    public bool ShowOverhealAmountOnBar { get; set; } = false;
+    public bool ShowMaxHitOnBar { get; set; } = false;
+    public bool ShowPeakDpsOnBar { get; set; } = false;
+    public bool ShowMaxHealOnBar { get; set; } = false;
+    public bool ShowSwingsOnBar { get; set; } = false;
+    public bool ShowHitsOnBar { get; set; } = false;
+    public bool ShowMissesOnBar { get; set; } = false;
+    public bool ShowHitRateOnBar { get; set; } = false;
+    public bool ShowCritHitCountOnBar { get; set; } = false;
+    public bool ShowDirectHitCountOnBar { get; set; } = false;
+    public bool ShowCritDirectHitCountOnBar { get; set; } = false;
+    public bool ShowBlockPctOnBar { get; set; } = false;
+    public bool ShowParryPctOnBar { get; set; } = false;
+    public bool ShowHealsTakenOnBar { get; set; } = false;
+    public bool ShowAbsorbHealOnBar { get; set; } = false;
+    public bool ShowKillsOnBar { get; set; } = false;
+    public bool ShowInstantDpsOnBar { get; set; } = false;
+    public bool ShowInstantHpsOnBar { get; set; } = false;
+    public bool ShowCritHealPctOnBar { get; set; } = false;
+    public bool ShowHealCountOnBar { get; set; } = false;
+    public bool ShowCombatantDurationOnBar { get; set; } = false;
+    public bool ShowDamageShieldOnBar { get; set; } = false;
+    public bool ShowMaxHealWardOnBar { get; set; } = false;
+    public bool ShowPowerDrainOnBar { get; set; } = false;
+    public bool ShowPowerHealOnBar { get; set; } = false;
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<BarColumn> ColumnOrder { get; set; } = new()
@@ -40,6 +67,9 @@ public class MeterTab
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public Dictionary<BarColumn, string> ColumnHeaderLabels { get; set; } = new();
+
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<BarColumn, ColumnFormatOverride> ColumnFormatOverrides { get; set; } = new();
 
     public string GetHeaderLabel(BarColumn col)
     {
@@ -74,14 +104,42 @@ public class MeterTab
             ShowDamageOnBar = ShowDamageOnBar,
             ShowHealedOnBar = ShowHealedOnBar,
             ShowDamagePercentOnBar = ShowDamagePercentOnBar,
+            ShowHealPercentOnBar = ShowHealPercentOnBar,
             ShowDirectHitOnBar = ShowDirectHitOnBar,
             ShowCritOnBar = ShowCritOnBar,
             ShowCritDirectHitOnBar = ShowCritDirectHitOnBar,
             ShowDeathsOnBar = ShowDeathsOnBar,
             ShowDamageTakenOnBar = ShowDamageTakenOnBar,
+            ShowDamageTakenPercentOnBar = ShowDamageTakenPercentOnBar,
             ShowOverhealOnBar = ShowOverhealOnBar,
+            ShowOverhealAmountOnBar = ShowOverhealAmountOnBar,
+            ShowMaxHitOnBar = ShowMaxHitOnBar,
+            ShowPeakDpsOnBar = ShowPeakDpsOnBar,
+            ShowMaxHealOnBar = ShowMaxHealOnBar,
+            ShowSwingsOnBar = ShowSwingsOnBar,
+            ShowHitsOnBar = ShowHitsOnBar,
+            ShowMissesOnBar = ShowMissesOnBar,
+            ShowHitRateOnBar = ShowHitRateOnBar,
+            ShowCritHitCountOnBar = ShowCritHitCountOnBar,
+            ShowDirectHitCountOnBar = ShowDirectHitCountOnBar,
+            ShowCritDirectHitCountOnBar = ShowCritDirectHitCountOnBar,
+            ShowBlockPctOnBar = ShowBlockPctOnBar,
+            ShowParryPctOnBar = ShowParryPctOnBar,
+            ShowHealsTakenOnBar = ShowHealsTakenOnBar,
+            ShowAbsorbHealOnBar = ShowAbsorbHealOnBar,
+            ShowKillsOnBar = ShowKillsOnBar,
+            ShowInstantDpsOnBar = ShowInstantDpsOnBar,
+            ShowInstantHpsOnBar = ShowInstantHpsOnBar,
+            ShowCritHealPctOnBar = ShowCritHealPctOnBar,
+            ShowHealCountOnBar = ShowHealCountOnBar,
+            ShowCombatantDurationOnBar = ShowCombatantDurationOnBar,
+            ShowDamageShieldOnBar = ShowDamageShieldOnBar,
+            ShowMaxHealWardOnBar = ShowMaxHealWardOnBar,
+            ShowPowerDrainOnBar = ShowPowerDrainOnBar,
+            ShowPowerHealOnBar = ShowPowerHealOnBar,
             ColumnOrder = new List<BarColumn>(ColumnOrder),
             ColumnHeaderLabels = new Dictionary<BarColumn, string>(ColumnHeaderLabels),
+            ColumnFormatOverrides = ColumnFormatOverrides.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()),
             CustomJobFilter = new List<string>(CustomJobFilter),
         };
     }

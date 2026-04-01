@@ -10,6 +10,9 @@ file static class FontDefaults
 
 public class Configuration : IPluginConfiguration
 {
+    [JsonIgnore]
+    public Action? Save { get; set; }
+
     public int Version { get; set; } = 1;
 
     public string WebSocketUrl { get; set; } = "ws://127.0.0.1:10501/ws";
@@ -38,6 +41,7 @@ public class Configuration : IPluginConfiguration
 
     // Meter Tabs
     public bool ShowTabBar { get; set; } = true;
+    public int SelectedMeterTab { get; set; } = 0;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<MeterTab> MeterTabs { get; set; } = new()
     {
@@ -143,6 +147,11 @@ public class Configuration : IPluginConfiguration
     public Vector4 SelfNameColor { get; set; } = new(1.0f, 0.9f, 0.4f, 1.0f);
 
     public ValueDisplayFormat ValueDisplayFormat { get; set; } = ValueDisplayFormat.Abbreviated;
+    public int AbbreviatedDecimalPlaces { get; set; } = 1;
+    public int RawDecimalPlaces { get; set; } = 1;
+    public int PercentDecimalPlaces { get; set; } = 0;
+    public double AbbreviatedKThreshold { get; set; } = 10_000;
+    public double AbbreviatedMThreshold { get; set; } = 1_000_000;
 
     // Bar Info
     public bool ShowMeterHeader { get; set; } = true;
@@ -159,13 +168,40 @@ public class Configuration : IPluginConfiguration
         { BarColumn.Hps, "HPS" },
         { BarColumn.Damage, "Dmg" },
         { BarColumn.Healed, "Heal" },
-        { BarColumn.DamagePercent, "%" },
+        { BarColumn.DamagePercent, "D%" },
+        { BarColumn.HealPercent, "H%" },
         { BarColumn.DirectHit, "!" },
         { BarColumn.Crit, "!!" },
         { BarColumn.CritDirectHit, "!!!" },
         { BarColumn.Deaths, "D" },
         { BarColumn.DamageTaken, "Taken" },
+        { BarColumn.DamageTakenPercent, "T%" },
         { BarColumn.Overheal, "OH%" },
+        { BarColumn.OverhealAmount, "OH" },
+        { BarColumn.MaxHit, "Max" },
+        { BarColumn.PeakDps, "Peak" },
+        { BarColumn.MaxHeal, "MH" },
+        { BarColumn.Swings, "Sw" },
+        { BarColumn.Hits, "Hits" },
+        { BarColumn.Misses, "Miss" },
+        { BarColumn.HitRate, "Acc" },
+        { BarColumn.CritHitCount, "C#" },
+        { BarColumn.DirectHitCount, "D#" },
+        { BarColumn.CritDirectHitCount, "CD#" },
+        { BarColumn.BlockPct, "Blk" },
+        { BarColumn.ParryPct, "Par" },
+        { BarColumn.HealsTaken, "HT" },
+        { BarColumn.AbsorbHeal, "Abs" },
+        { BarColumn.Kills, "K" },
+        { BarColumn.InstantDps, "iDPS" },
+        { BarColumn.InstantHps, "iHPS" },
+        { BarColumn.CritHealPct, "CH%" },
+        { BarColumn.HealCount, "HC" },
+        { BarColumn.CombatantDuration, "Dur" },
+        { BarColumn.DamageShield, "Shld" },
+        { BarColumn.MaxHealWard, "MHW" },
+        { BarColumn.PowerDrain, "MPD" },
+        { BarColumn.PowerHeal, "PwH" },
     };
 
     // Detail Panel
@@ -173,14 +209,26 @@ public class Configuration : IPluginConfiguration
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
     public float DetailFontSize { get; set; } = FontDefaults.BaseSizePt;
-    public bool DetailShowDamage { get; set; } = true;
-    public bool DetailShowCritDhStats { get; set; } = true;
-    public bool DetailShowDeaths { get; set; } = true;
-    public bool DetailShowOverheal { get; set; } = true;
-    public bool DetailShowMaxHit { get; set; } = true;
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public HashSet<BarColumn> DetailVisibleColumns { get; set; } = new(Enum.GetValues<BarColumn>());
     public bool DetailShowDpsTrend { get; set; } = true;
     public bool DetailShowSkillBreakdown { get; set; } = true;
     public int MaxSkillBreakdownCount { get; set; } = 0;
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public HashSet<string> DetailExpandedSections { get; set; } = new();
+
+    // Graph
+    public float GraphHeight { get; set; } = 120f;
+    public float GraphLineThickness { get; set; } = 2f;
+    public Vector4 GraphDpsColor { get; set; } = new(0.9f, 0.4f, 0.4f, 1f);
+    public Vector4 GraphHpsColor { get; set; } = new(0.4f, 0.85f, 0.4f, 1f);
+    public Vector4 GraphDtpsColor { get; set; } = new(0.4f, 0.55f, 0.9f, 1f);
+    public Vector4 GraphBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
+    public Vector4 GraphGridColor { get; set; } = new(0.3f, 0.3f, 0.3f, 0.3f);
+    public bool GraphShowDps { get; set; } = true;
+    public bool GraphShowHps { get; set; } = true;
+    public bool GraphShowDtps { get; set; } = true;
+    public float GraphSmoothingWindow { get; set; } = 5f;
 
     // Skill Breakdown Colors
     public Vector4 SkillDamageFillColor { get; set; } = new(0.35f, 0.35f, 0.55f, 0.7f);

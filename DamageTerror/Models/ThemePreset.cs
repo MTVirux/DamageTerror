@@ -27,6 +27,11 @@ public class ThemePreset
     public Vector4 SelfNameColor { get; set; } = new(1.0f, 0.9f, 0.4f, 1.0f);
 
     public ValueDisplayFormat ValueDisplayFormat { get; set; } = ValueDisplayFormat.Abbreviated;
+    public int AbbreviatedDecimalPlaces { get; set; } = 1;
+    public int RawDecimalPlaces { get; set; } = 1;
+    public int PercentDecimalPlaces { get; set; } = 0;
+    public double AbbreviatedKThreshold { get; set; } = 10_000;
+    public double AbbreviatedMThreshold { get; set; } = 1_000_000;
 
     public bool UsePerJobColors { get; set; }
     public Vector4 TankColor { get; set; } = new(0.2f, 0.4f, 0.8f, 1.0f);
@@ -162,6 +167,11 @@ public class ThemePreset
         config.SelfNameColor = SelfNameColor;
 
         config.ValueDisplayFormat = ValueDisplayFormat;
+        config.AbbreviatedDecimalPlaces = AbbreviatedDecimalPlaces;
+        config.RawDecimalPlaces = RawDecimalPlaces;
+        config.PercentDecimalPlaces = PercentDecimalPlaces;
+        config.AbbreviatedKThreshold = AbbreviatedKThreshold;
+        config.AbbreviatedMThreshold = AbbreviatedMThreshold;
 
         config.UsePerJobColors = UsePerJobColors;
         config.TankColor = TankColor;
@@ -300,6 +310,11 @@ public class ThemePreset
             SelfNameColor = config.SelfNameColor,
 
             ValueDisplayFormat = config.ValueDisplayFormat,
+            AbbreviatedDecimalPlaces = config.AbbreviatedDecimalPlaces,
+            RawDecimalPlaces = config.RawDecimalPlaces,
+            PercentDecimalPlaces = config.PercentDecimalPlaces,
+            AbbreviatedKThreshold = config.AbbreviatedKThreshold,
+            AbbreviatedMThreshold = config.AbbreviatedMThreshold,
 
             UsePerJobColors = config.UsePerJobColors,
             TankColor = config.TankColor,
