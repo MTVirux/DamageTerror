@@ -11,18 +11,21 @@ public struct ColumnVisibility
 {
     public bool ShowDps, ShowHps, ShowDamage, ShowHealed, ShowDamagePercent;
     public bool ShowDirectHit, ShowCrit, ShowCritDirectHit, ShowDeaths;
+    public bool ShowDamageTaken, ShowOverheal;
 
     public static ColumnVisibility Resolve(Configuration config, MeterTab? activeTab) => new()
     {
-        ShowDps = activeTab?.ShowDpsOnBar ?? config.ShowDpsOnBar,
-        ShowHps = activeTab?.ShowHpsOnBar ?? config.ShowHpsOnBar,
-        ShowDamage = activeTab?.ShowDamageOnBar ?? config.ShowDamageOnBar,
-        ShowHealed = activeTab?.ShowHealedOnBar ?? config.ShowHealedOnBar,
-        ShowDamagePercent = activeTab?.ShowDamagePercentOnBar ?? config.ShowDamagePercentOnBar,
-        ShowDirectHit = activeTab?.ShowDirectHitOnBar ?? config.ShowDirectHitOnBar,
-        ShowCrit = activeTab?.ShowCritOnBar ?? config.ShowCritOnBar,
-        ShowCritDirectHit = activeTab?.ShowCritDirectHitOnBar ?? config.ShowCritDirectHitOnBar,
-        ShowDeaths = activeTab?.ShowDeathsOnBar ?? config.ShowDeathsOnBar,
+        ShowDps = activeTab?.ShowDpsOnBar ?? true,
+        ShowHps = activeTab?.ShowHpsOnBar ?? false,
+        ShowDamage = activeTab?.ShowDamageOnBar ?? false,
+        ShowHealed = activeTab?.ShowHealedOnBar ?? false,
+        ShowDamagePercent = activeTab?.ShowDamagePercentOnBar ?? false,
+        ShowDirectHit = activeTab?.ShowDirectHitOnBar ?? false,
+        ShowCrit = activeTab?.ShowCritOnBar ?? false,
+        ShowCritDirectHit = activeTab?.ShowCritDirectHitOnBar ?? false,
+        ShowDeaths = activeTab?.ShowDeathsOnBar ?? false,
+        ShowDamageTaken = activeTab?.ShowDamageTakenOnBar ?? false,
+        ShowOverheal = activeTab?.ShowOverhealOnBar ?? false,
     };
 
     public bool IsVisible(BarColumn col) => col switch
@@ -36,6 +39,8 @@ public struct ColumnVisibility
         BarColumn.Crit => ShowCrit,
         BarColumn.CritDirectHit => ShowCritDirectHit,
         BarColumn.Deaths => ShowDeaths,
+        BarColumn.DamageTaken => ShowDamageTaken,
+        BarColumn.Overheal => ShowOverheal,
         _ => false,
     };
 }
@@ -51,11 +56,13 @@ public class CombatantBarComponent
         this.textureProvider = textureProvider;
     }
 
-    public bool Render(CombatantEntry combatant, double maxValue, int index, SortField sortBy, MeterTab? activeTab)
+    public bool Render(CombatantEntry combatant, double maxValue, int index, SortField sortBy, MeterTab? activeTab, string currentPlayerName = "")
     {
         var barHeight = config.BarHeight;
         var iconSize = config.IconSize;
         var value = GetSortValue(combatant, sortBy);
+        var isLocalPlayer = !string.IsNullOrEmpty(currentPlayerName)
+            && string.Equals(combatant.Name, currentPlayerName, StringComparison.OrdinalIgnoreCase);
 
         if (value <= 0)
             return false;
@@ -87,7 +94,7 @@ public class CombatantBarComponent
                 config.BarRounding);
         }
 
-        if (config.SelfBarHighlight && combatant.IsLocalPlayer)
+        if (config.SelfBarHighlight && isLocalPlayer)
         {
             var stripWidth = 3f;
             var highlightColor = ImGui.ColorConvertFloat4ToU32(config.SelfBarHighlightColor);
@@ -142,10 +149,10 @@ public class CombatantBarComponent
 
         if (config.ShowNameOnBar)
         {
-            var displayName = combatant.IsLocalPlayer && config.ShowYouOnBar ? "YOU" : combatant.Name;
-            var fmt = combatant.IsLocalPlayer ? config.SelfNameFormat : config.OthersNameFormat;
+            var displayName = isLocalPlayer && config.ShowYouOnBar ? "YOU" : combatant.Name;
+            var fmt = isLocalPlayer ? config.SelfNameFormat : config.OthersNameFormat;
             displayName = FormatName(displayName, combatant.Job, fmt);
-            var nameCol = (combatant.IsLocalPlayer && config.UseSelfNameColor)
+            var nameCol = (isLocalPlayer && config.UseSelfNameColor)
                 ? config.SelfNameColor
                 : config.NameTextColor;
             var nameColor = ImGui.ColorConvertFloat4ToU32(nameCol);
@@ -156,7 +163,7 @@ public class CombatantBarComponent
         var valColor = ImGui.ColorConvertFloat4ToU32(config.ValueTextColor);
         var colSpacing = config.BarColumnSpacing;
 
-        var columnOrder = activeTab?.ColumnOrder ?? config.ColumnOrder;
+        var columnOrder = activeTab?.ColumnOrder ?? new List<BarColumn>();
         EnsureColumnOrderComplete(columnOrder);
 
         for (var ci = columnOrder.Count - 1; ci >= 0; ci--)
@@ -206,6 +213,24 @@ public class CombatantBarComponent
                     var deathW = ImGui.CalcTextSize("00").X;
                     rightX -= deathW;
                     drawList.AddText(new Vector2(rightX + (deathW - ImGui.CalcTextSize(deathStr).X) * 0.5f, textY), valColor, deathStr);
+                    rightX -= colSpacing;
+                    break;
+                }
+                case BarColumn.DamageTaken when vis.ShowDamageTaken:
+                {
+                    var takenStr = ValueFormatter.Format(combatant.DamageTaken, config.ValueDisplayFormat);
+                    var colW = ImGui.CalcTextSize("000.0K").X;
+                    rightX -= colW;
+                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(takenStr).X) * 0.5f, textY), valColor, takenStr);
+                    rightX -= colSpacing;
+                    break;
+                }
+                case BarColumn.Overheal when vis.ShowOverheal:
+                {
+                    var ohStr = $"{combatant.OverhealPct:F0}%";
+                    var colW = ImGui.CalcTextSize("100%").X;
+                    rightX -= colW;
+                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(ohStr).X) * 0.5f, textY), valColor, ohStr);
                     rightX -= colSpacing;
                     break;
                 }

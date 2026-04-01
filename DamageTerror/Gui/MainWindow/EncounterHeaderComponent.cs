@@ -22,11 +22,12 @@ public class EncounterHeaderComponent : IUIComponent
         this.saveConfig = saveConfig;
     }
 
-    private static string FormatEncounterLabel(CombatEncounter enc, string suffix = "")
+    private static string FormatEncounterLabel(CombatEncounter enc, string playerName = "", string suffix = "")
     {
         var icon = enc.IsActive ? "●" : "○";
         var title = !string.IsNullOrEmpty(enc.Title) ? $" — {enc.Title}" : "";
-        return $"{icon} {enc.ZoneName}{title}  |  {enc.Duration}  |  {enc.EncDps:F1} rDPS{suffix}";
+        var player = !string.IsNullOrEmpty(playerName) ? $"  ({playerName})" : "";
+        return $"{icon} {enc.ZoneName}{title}  |  {enc.Duration}  |  {enc.EncDps:F1} rDPS{player}{suffix}";
     }
 
     public EncounterSnapshot? SelectedEncounter
@@ -63,7 +64,7 @@ public class EncounterHeaderComponent : IUIComponent
         if (encounter != null)
         {
             var enc = encounter.Encounter;
-            previewLabel = FormatEncounterLabel(enc);
+            previewLabel = FormatEncounterLabel(enc, encounter.PlayerName);
         }
         else
         {
@@ -107,17 +108,34 @@ public class EncounterHeaderComponent : IUIComponent
                 var active = dataService.Store.ActiveEncounter;
                 var filter = searchFilter.Trim();
 
-                for (var i = 0; i < history.Count; i++)
+                if (active != null)
+                {
+                    var aEnc = active.Encounter;
+                    if (filter.Length == 0
+                        || aEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                        || (aEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
+                        || (active.PlayerName?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
+                        || active.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                            || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var activeLabel = FormatEncounterLabel(aEnc, active.PlayerName ?? "", "##active");
+                        if (ImGui.Selectable(activeLabel, selectedIndex == -1))
+                            selectedIndex = -1;
+                    }
+                }
+
+                for (var i = history.Count - 1; i >= 0; i--)
                 {
                     var h = history[i];
                     var hEnc = h.Encounter;
                     if (filter.Length > 0
                         && !hEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
                         && !(hEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
+                        && !(h.PlayerName?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
                         && !h.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
                             || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                         continue;
-                    var label = FormatEncounterLabel(hEnc, $"##{i}");
+                    var label = FormatEncounterLabel(hEnc, h.PlayerName ?? "", $"##{i}");
                     if (ImGui.Selectable(label, selectedIndex == i))
                         selectedIndex = i;
 
@@ -132,21 +150,6 @@ public class EncounterHeaderComponent : IUIComponent
                                 selectedIndex--;
                         }
                         ImGui.EndPopup();
-                    }
-                }
-
-                if (active != null)
-                {
-                    var aEnc = active.Encounter;
-                    if (filter.Length == 0
-                        || aEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                        || (aEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
-                        || active.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                            || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        var activeLabel = FormatEncounterLabel(aEnc, "##active");
-                        if (ImGui.Selectable(activeLabel, selectedIndex == -1))
-                            selectedIndex = -1;
                     }
                 }
 

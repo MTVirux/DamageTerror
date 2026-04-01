@@ -19,7 +19,7 @@ public class StatusBarComponent
         return config.StatusBarHeight + (config.ShowStatusBarSeparator ? 1f : 0f);
     }
 
-    public void Render(EncounterSnapshot? encounter)
+    public void Render(EncounterSnapshot? encounter, string currentPlayerName = "")
     {
         if (!config.ShowStatusBar || encounter == null)
             return;
@@ -57,7 +57,9 @@ public class StatusBarComponent
         var textY = cursorPos.Y + (height - ImGui.GetTextLineHeight()) * 0.5f;
         var padding = config.StatusBarPadding;
 
-        var localPlayer = encounter.Combatants.FirstOrDefault(c => c.IsLocalPlayer);
+        var localPlayer = !string.IsNullOrEmpty(currentPlayerName)
+            ? encounter.Combatants.FirstOrDefault(c => string.Equals(c.Name, currentPlayerName, StringComparison.OrdinalIgnoreCase))
+            : null;
         var personalDps = localPlayer?.EncDps ?? 0.0;
         var raidDps = encounter.Encounter.EncDps;
 

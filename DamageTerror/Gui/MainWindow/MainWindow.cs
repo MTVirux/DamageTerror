@@ -193,6 +193,9 @@ public class MainWindow : Window, IDisposable
 
         // --- Data resolution (always runs regardless of layout order) ---
         var encounter = headerComponent.SelectedEncounter;
+        var currentPlayerName = !string.IsNullOrEmpty(encounter?.PlayerName)
+            ? encounter.PlayerName
+            : plugin.DataService.PlayerName;
 
         // Resolve active tab (needs encounter to exist for filtering)
         var useTabBar = config.ShowTabBar && config.MeterTabs.Count > 0;
@@ -205,8 +208,8 @@ public class MainWindow : Window, IDisposable
             activeTab = config.MeterTabs[selectedMeterTab];
         }
 
-        var sortBy = activeTab?.SortBy ?? config.SortBy;
-        var sortDesc = activeTab?.SortDescending ?? config.SortDescending;
+        var sortBy = activeTab?.SortBy ?? SortField.EncDps;
+        var sortDesc = activeTab?.SortDescending ?? true;
 
         List<CombatantEntry>? combatants = null;
         double maxVal = 0;
@@ -289,7 +292,7 @@ public class MainWindow : Window, IDisposable
 
                 case LayoutElement.StatusBar:
                     if (encounter != null)
-                        statusBarComponent.Render(encounter);
+                        statusBarComponent.Render(encounter, currentPlayerName);
                     break;
 
                 case LayoutElement.CombatantBars:
@@ -299,7 +302,7 @@ public class MainWindow : Window, IDisposable
                         ImGui.TextDisabled(useTabBar ? "No combatants match this tab's filter." : "No combatant data.");
                         break;
                     }
-                    DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, activeTab);
+                    DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, activeTab, currentPlayerName);
                     break;
             }
         }
@@ -378,7 +381,7 @@ public class MainWindow : Window, IDisposable
         ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().X, cursor.Y + buttonHeight));
     }
 
-    private void DrawCombatantBars(List<CombatantEntry> combatants, double maxVal, SortField sortBy, float reservedHeight, MeterTab? activeTab)
+    private void DrawCombatantBars(List<CombatantEntry> combatants, double maxVal, SortField sortBy, float reservedHeight, MeterTab? activeTab, string currentPlayerName)
     {
         var availY = ImGui.GetContentRegionAvail().Y;
         var childHeight = reservedHeight > 0 ? Math.Max(0f, availY - reservedHeight) : 0f;
@@ -393,7 +396,7 @@ public class MainWindow : Window, IDisposable
             for (int i = 0; i < combatants.Count; i++)
             {
                 var combatant = combatants[i];
-                if (barComponent.Render(combatant, maxVal, i, sortBy, activeTab))
+                if (barComponent.Render(combatant, maxVal, i, sortBy, activeTab, currentPlayerName))
                 {
                     detailPanel.Toggle(i);
                 }
@@ -452,7 +455,7 @@ public class MainWindow : Window, IDisposable
         var rightX = cursorPos.X + windowWidth - config.BarRightPadding;
         var colSpacing = config.BarColumnSpacing;
 
-        var columnOrder = activeTab?.ColumnOrder ?? config.ColumnOrder;
+        var columnOrder = activeTab?.ColumnOrder ?? new List<BarColumn>();
         CombatantBarComponent.EnsureColumnOrderComplete(columnOrder);
 
         // Measure column widths at bar font scale for exact alignment
@@ -485,7 +488,7 @@ public class MainWindow : Window, IDisposable
             var col = columnOrder[ci];
             if (!vis.IsVisible(col)) continue;
 
-            var headerLabel = activeTab?.GetHeaderLabel(col) ?? config.GetHeaderLabel(col);
+            var headerLabel = activeTab?.GetHeaderLabel(col) ?? Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
             var colW = colWidths[col];
             var lw = ImGui.CalcTextSize(headerLabel).X;
             rightX -= colW;

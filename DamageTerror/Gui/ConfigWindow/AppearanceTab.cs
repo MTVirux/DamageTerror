@@ -47,25 +47,9 @@ public class AppearanceTab
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 220);
         if (ImGui.BeginCombo("##presetCombo", previewLabel))
         {
-            ImGui.TextDisabled("Built-in");
-            for (var i = 0; i < allPresets.Count; i++)
-            {
-                var preset = allPresets[i];
-                if (preset.IsBuiltIn)
-                {
-                    var isSelected = selectedPresetIndex == i;
-                    if (ImGui.Selectable($"  {preset.Name}##preset{i}", isSelected))
-                        selectedPresetIndex = i;
-
-                    if (!string.IsNullOrEmpty(preset.Description) && ImGui.IsItemHovered())
-                        ImGui.SetTooltip(preset.Description);
-                }
-            }
-
             var hasCustom = allPresets.Any(p => !p.IsBuiltIn);
             if (hasCustom)
             {
-                ImGui.Spacing();
                 ImGui.TextDisabled("Custom");
                 for (var i = 0; i < allPresets.Count; i++)
                 {
@@ -96,6 +80,23 @@ public class AppearanceTab
                             ImGui.EndPopup();
                         }
                     }
+                }
+
+                ImGui.Spacing();
+            }
+
+            ImGui.TextDisabled("Built-in");
+            for (var i = 0; i < allPresets.Count; i++)
+            {
+                var preset = allPresets[i];
+                if (preset.IsBuiltIn)
+                {
+                    var isSelected = selectedPresetIndex == i;
+                    if (ImGui.Selectable($"  {preset.Name}##preset{i}", isSelected))
+                        selectedPresetIndex = i;
+
+                    if (!string.IsNullOrEmpty(preset.Description) && ImGui.IsItemHovered())
+                        ImGui.SetTooltip(preset.Description);
                 }
             }
 
@@ -211,7 +212,227 @@ public class AppearanceTab
             ImGui.EndPopup();
         }
 
+        if (selectedPresetIndex >= 0 && selectedPresetIndex < allPresets.Count)
+        {
+            var preset = allPresets[selectedPresetIndex];
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+            ImGui.TextDisabled($"Preview — {preset.Name}");
+            if (!string.IsNullOrEmpty(preset.Description))
+                ImGui.TextWrapped(preset.Description);
+            ImGui.Spacing();
+
+            DrawPresetBreakdown(preset);
+        }
+
         return changed;
+    }
+
+    private static void DrawPresetBreakdown(ThemePreset preset)
+    {
+        var dimColor = new Vector4(0.6f, 0.6f, 0.6f, 1f);
+
+        if (ImGui.CollapsingHeader("Bars##presetBars", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.Indent();
+            PresetRow("Bar Height", $"{preset.BarHeight:0}px");
+            PresetRow("Bar Spacing", $"{preset.BarSpacing:0}px");
+            PresetRow("Bar Rounding", $"{preset.BarRounding:0.#}");
+            PresetRow("Bar Opacity", $"{preset.BarAlpha:P0}");
+            PresetRow("Bar Font Size", $"{preset.BarFontSize:0.#}pt");
+            PresetRow("Icon Size", $"{preset.IconSize:0}px");
+            PresetRow("Left Padding", $"{preset.BarLeftPadding:0}px");
+            PresetRow("Right Padding", $"{preset.BarRightPadding:0}px");
+            PresetRow("Column Spacing", $"{preset.BarColumnSpacing:0}px");
+            PresetRow("Icon-Text Padding", $"{preset.IconTextPadding:0}px");
+            PresetRow("Window Rounding", $"{preset.WindowRounding:0.#}");
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Value Format##presetFmt"))
+        {
+            ImGui.Indent();
+            var fmtLabel = preset.ValueDisplayFormat switch
+            {
+                ValueDisplayFormat.Abbreviated => "Abbreviated (12.3K)",
+                ValueDisplayFormat.Commas => "Commas (12,345)",
+                ValueDisplayFormat.Raw => "Raw (12345.6)",
+                _ => preset.ValueDisplayFormat.ToString()
+            };
+            PresetRow("Number Format", fmtLabel);
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Visible Columns##presetCols"))
+        {
+            ImGui.Indent();
+            PresetToggle("Job Icons", preset.ShowJobIcons);
+            PresetToggle("Name", preset.ShowNameOnBar);
+            PresetToggle("Job Abbreviation", preset.ShowJobAbbrevOnBar);
+            PresetToggle("Rank Number", preset.ShowRankNumber);
+            PresetToggle("DPS", preset.ShowDpsOnBar);
+            PresetToggle("HPS", preset.ShowHpsOnBar);
+            PresetToggle("Damage", preset.ShowDamageOnBar);
+            PresetToggle("Healed", preset.ShowHealedOnBar);
+            PresetToggle("Damage %", preset.ShowDamagePercentOnBar);
+            PresetToggle("Direct Hit %", preset.ShowDirectHitOnBar);
+            PresetToggle("Crit %", preset.ShowCritOnBar);
+            PresetToggle("Crit+DH %", preset.ShowCritDirectHitOnBar);
+            PresetToggle("Deaths", preset.ShowDeathsOnBar);
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Self Highlighting##presetSelf"))
+        {
+            ImGui.Indent();
+            PresetToggle("Highlight Player Bar", preset.SelfBarHighlight);
+            if (preset.SelfBarHighlight)
+                PresetColor("Accent Color", preset.SelfBarHighlightColor);
+            PresetToggle("Custom Name Color", preset.UseSelfNameColor);
+            if (preset.UseSelfNameColor)
+                PresetColor("Name Color", preset.SelfNameColor);
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Role Colors##presetRoleColors"))
+        {
+            ImGui.Indent();
+            PresetToggle("Per-Job Colors", preset.UsePerJobColors);
+            PresetColor("Tank", preset.TankColor);
+            PresetColor("Healer", preset.HealerColor);
+            PresetColor("Melee DPS", preset.MeleeDpsColor);
+            PresetColor("Ranged DPS", preset.RangedDpsColor);
+            PresetColor("Caster DPS", preset.CasterDpsColor);
+            PresetColor("Default", preset.DefaultJobColor);
+            if (preset.UsePerJobColors && preset.JobColors is { Count: > 0 })
+                PresetRow("Custom Job Colors", $"{preset.JobColors.Count} jobs");
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Text & Background Colors##presetTxtBg"))
+        {
+            ImGui.Indent();
+            PresetColor("Name Text", preset.NameTextColor);
+            PresetColor("Value Text", preset.ValueTextColor);
+            PresetColor("Bar Background", preset.BarBackgroundColor);
+            PresetColor("Window Background", preset.WindowBackgroundColor);
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Selection Bar##presetSelBar"))
+        {
+            ImGui.Indent();
+            PresetToggle("Encounter Picker", preset.ShowEncounterPicker);
+            if (preset.SelectionBarHeight > 0)
+                PresetRow("Height", $"{preset.SelectionBarHeight:0}px");
+            PresetColor("Text Color", preset.SelectionBarTextColor);
+            PresetColor("Background", preset.SelectionBarBackgroundColor);
+            PresetToggle("Separator", preset.ShowSelectionBarSeparator);
+            if (preset.ShowSelectionBarSeparator)
+                PresetColor("Separator Color", preset.SelectionBarSeparatorColor);
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Header Row##presetHdr"))
+        {
+            ImGui.Indent();
+            PresetToggle("Show Header", preset.ShowMeterHeader);
+            PresetRow("Height", $"{preset.HeaderHeight:0}px");
+            PresetRow("Font Size", $"{preset.HeaderFontSize:0.#}pt");
+            PresetColor("Text Color", preset.HeaderTextColor);
+            PresetColor("Background", preset.HeaderBackgroundColor);
+            PresetToggle("Separator", preset.HeaderSeparator);
+            if (preset.HeaderSeparator)
+                PresetColor("Separator Color", preset.HeaderSeparatorColor);
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Status Bar##presetStatus"))
+        {
+            ImGui.Indent();
+            PresetToggle("Show Status Bar", preset.ShowStatusBar);
+            PresetToggle("Timer", preset.ShowStatusBarTimer);
+            PresetToggle("Personal DPS", preset.ShowStatusBarPersonalDps);
+            PresetToggle("Raid DPS", preset.ShowStatusBarRaidDps);
+            PresetRow("Height", $"{preset.StatusBarHeight:0}px");
+            PresetRow("Font Size", $"{preset.StatusBarFontSize:0.#}pt");
+            PresetRow("Padding", $"{preset.StatusBarPadding:0}px");
+            PresetColor("Background", preset.StatusBarBackgroundColor);
+            PresetColor("Active", preset.StatusBarActiveColor);
+            PresetColor("Inactive", preset.StatusBarInactiveColor);
+            PresetColor("Labels", preset.StatusBarLabelColor);
+            PresetToggle("Separator", preset.ShowStatusBarSeparator);
+            if (preset.ShowStatusBarSeparator)
+                PresetColor("Separator Color", preset.StatusBarSeparatorColor);
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Font##presetFont"))
+        {
+            ImGui.Indent();
+            PresetToggle("Custom Font", preset.EnableCustomFont);
+            if (preset.EnableCustomFont && !string.IsNullOrEmpty(preset.CustomFontDisplayName))
+                PresetRow("Font", preset.CustomFontDisplayName);
+            if (preset.EnableCustomFont)
+                PresetRow("Size", $"{preset.CustomFontSizePt:0.#}pt");
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Skill Breakdown##presetSkill"))
+        {
+            ImGui.Indent();
+            PresetRow("Row Height", $"{preset.SkillRowHeight:0}px");
+            PresetRow("Column Padding", $"{preset.SkillColumnPadding:0}px");
+            PresetRow("Bar Rounding", $"{preset.SkillBarRounding:0.#}");
+            PresetRow("Font Size", $"{preset.SkillFontSize:0.#}pt");
+            PresetColor("Damage Fill", preset.SkillDamageFillColor);
+            PresetColor("Physical Fill", preset.SkillPhysicalFillColor);
+            PresetColor("Magic Fill", preset.SkillMagicFillColor);
+            PresetColor("Healing Fill", preset.SkillHealingFillColor);
+            PresetColor("Row Background", preset.SkillRowBackgroundColor);
+            PresetColor("Text", preset.SkillTextColor);
+            PresetColor("Header Text", preset.SkillHeaderTextColor);
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Detail Panel##presetDetail"))
+        {
+            ImGui.Indent();
+            PresetRow("Font Size", $"{preset.DetailFontSize:0.#}pt");
+            PresetRow("Indent", $"{preset.DetailIndent:0}px");
+            PresetColor("Label Color", preset.DetailLabelColor);
+            PresetColor("Death Color", preset.DetailDeathColor);
+            ImGui.Unindent();
+        }
+    }
+
+    private static void PresetRow(string label, string value)
+    {
+        ImGui.TextColored(new Vector4(0.6f, 0.6f, 0.6f, 1f), label + ":");
+        ImGui.SameLine();
+        ImGui.Text(value);
+    }
+
+    private static void PresetToggle(string label, bool enabled)
+    {
+        var icon = enabled ? "+" : "-";
+        var color = enabled
+            ? new Vector4(0.4f, 0.8f, 0.4f, 1f)
+            : new Vector4(0.5f, 0.5f, 0.5f, 0.6f);
+        ImGui.TextColored(color, icon);
+        ImGui.SameLine();
+        if (!enabled)
+            ImGui.TextColored(new Vector4(0.5f, 0.5f, 0.5f, 0.6f), label);
+        else
+            ImGui.Text(label);
+    }
+
+    private static void PresetColor(string label, Vector4 color)
+    {
+        ImGui.ColorButton($"##prev_{label}", color, ImGuiColorEditFlags.NoTooltip | ImGuiColorEditFlags.NoPicker, new Vector2(12, 12));
+        ImGui.SameLine();
+        ImGui.TextColored(new Vector4(0.6f, 0.6f, 0.6f, 1f), label);
     }
 
     private static bool DrawBarsTab(Configuration config)
