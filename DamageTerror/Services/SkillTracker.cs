@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Globalization;
+using Dalamud.Plugin.Services;
 
 namespace DamageTerror.Services;
 
@@ -10,6 +12,15 @@ public class SkillTracker
     private Dictionary<string, Dictionary<string, SkillAccum>> damageData = new();
     private Dictionary<string, Dictionary<string, SkillAccum>> healData = new();
 
+    // Cache action ID -> damage type to avoid repeated Lumina lookups
+    private readonly ConcurrentDictionary<uint, SkillDamageType> damageTypeCache = new();
+    private readonly IDataManager dataManager;
+
+    public SkillTracker(IDataManager dataManager)
+    {
+        this.dataManager = dataManager;
+    }
+
     private struct SkillAccum
     {
         public long Amount;
@@ -17,6 +28,7 @@ public class SkillTracker
         public int Crits;
         public int DirectHits;
         public int CritDirectHits;
+        public SkillDamageType DamageType;
     }
 
     public void ProcessLogLine(string[] line)
@@ -33,6 +45,11 @@ public class SkillTracker
 
         if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(skillName))
             return;
+
+        // Resolve damage type from action ID via Lumina
+        var damageType = SkillDamageType.Unknown;
+        if (line.Length > 4 && uint.TryParse(line[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var actionId))
+            damageType = LookupDamageType(actionId);
 
         // Scan all 8 effect pairs (fields 8-23).
         // A single ability can have both damage and healing in different pairs
@@ -75,14 +92,14 @@ public class SkillTracker
         lock (syncLock)
         {
             if (dmgAmount > 0)
-                AccumulateSkill(damageData, sourceName, skillName, dmgAmount, dmgSeverity);
+                AccumulateSkill(damageData, sourceName, skillName, dmgAmount, dmgSeverity, damageType);
             if (healAmount > 0)
-                AccumulateSkill(healData, sourceName, skillName, healAmount, healSeverity);
+                AccumulateSkill(healData, sourceName, skillName, healAmount, healSeverity, damageType);
         }
     }
 
     private void AccumulateSkill(Dictionary<string, Dictionary<string, SkillAccum>> store,
-        string sourceName, string skillName, long amount, byte severity)
+        string sourceName, string skillName, long amount, byte severity, SkillDamageType damageType)
     {
         bool isCrit = (severity & 0x20) != 0;
         bool isDirectHit = (severity & 0x40) != 0;
@@ -106,7 +123,46 @@ public class SkillTracker
         else if (isDirectHit)
             existing.DirectHits++;
 
+        // Keep the first resolved damage type
+        if (existing.DamageType == SkillDamageType.Unknown && damageType != SkillDamageType.Unknown)
+            existing.DamageType = damageType;
+
         skills[skillName] = existing;
+    }
+
+    private SkillDamageType LookupDamageType(uint actionId)
+    {
+        if (damageTypeCache.TryGetValue(actionId, out var cached))
+            return cached;
+
+        var result = SkillDamageType.Unknown;
+        try
+        {
+            var sheet = dataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>();
+            if (sheet != null)
+            {
+                var row = sheet.GetRowOrDefault(actionId);
+                if (row.HasValue)
+                {
+                    // AttackType: 0=None, 1=Slashing, 2=Piercing, 3=Blunt,
+                    // 4=Shooting, 5=Magic, 6+=other physical types
+                    var attackType = row.Value.AttackType.RowId;
+                    result = attackType switch
+                    {
+                        0 => SkillDamageType.Unknown,
+                        5 => SkillDamageType.Magic,
+                        _ => SkillDamageType.Physical,
+                    };
+                }
+            }
+        }
+        catch
+        {
+            // Lumina lookup failure — leave as Unknown
+        }
+
+        damageTypeCache[actionId] = result;
+        return result;
     }
 
     public List<SkillEntry> GetSkills(string combatantName)
@@ -125,6 +181,7 @@ public class SkillTracker
         {
             damageData.Clear();
             healData.Clear();
+            damageTypeCache.Clear();
         }
     }
 
@@ -143,6 +200,7 @@ public class SkillTracker
                     Name = kv.Key,
                     TotalDamage = a.Amount,
                     HitCount = a.Hits,
+                    DamageType = a.DamageType,
                 };
                 if (a.Hits > 0)
                 {

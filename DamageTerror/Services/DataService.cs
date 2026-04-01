@@ -13,7 +13,7 @@ public class DataService : IDisposable
     private bool disposed;
     private bool wasActive;
 
-    public SkillTracker SkillTracker { get; } = new();
+    public SkillTracker SkillTracker { get; } = new(ServiceManager.DataManager);
     public EncounterStore Store { get; }
     public string PlayerName { get; private set; } = string.Empty;
     public uint PlayerId { get; private set; }
