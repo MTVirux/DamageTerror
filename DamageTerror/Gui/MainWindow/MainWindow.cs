@@ -53,7 +53,7 @@ public class MainWindow : Window, IDisposable
             MaximumSize = new Vector2(2000, 2000),
         };
 
-        this.headerComponent = new EncounterHeaderComponent(plugin.DataService, plugin.SaveConfig);
+        this.headerComponent = new EncounterHeaderComponent(plugin.DataService, plugin.Config);
         this.barComponent = new CombatantBarComponent(plugin.Config, textureProvider);
         this.detailPanel = new CombatantDetailPanel(plugin.Config);
         this.statusBarComponent = new StatusBarComponent(plugin.Config);

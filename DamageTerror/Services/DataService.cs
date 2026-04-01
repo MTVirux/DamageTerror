@@ -20,7 +20,6 @@ public class DataService : IDisposable
     public uint PlayerId { get; private set; }
     public bool IsConnected => activeSource?.IsConnected ?? false;
     public string ConnectionStatus { get; private set; } = "Not connected";
-    public Configuration Config => config;
 
     public DataService(IDalamudPluginInterface pluginInterface, IPluginLog log, Configuration config)
     {

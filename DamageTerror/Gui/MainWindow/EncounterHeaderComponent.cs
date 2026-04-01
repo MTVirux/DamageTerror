@@ -9,17 +9,15 @@ namespace DamageTerror.Gui.MainWindow;
 public class EncounterHeaderComponent : IUIComponent
 {
     private readonly DataService dataService;
-    private readonly Action saveConfig;
-    private int selectedIndex = -1; // -1 = active encounter (latest)
+    private readonly Configuration config;
+    private int selectedIndex = -1;
     private string searchFilter = string.Empty;
     private bool comboWasOpen;
 
-
-
-    public EncounterHeaderComponent(DataService dataService, Action saveConfig)
+    public EncounterHeaderComponent(DataService dataService, Configuration config)
     {
         this.dataService = dataService;
-        this.saveConfig = saveConfig;
+        this.config = config;
     }
 
     private static string FormatEncounterLabel(CombatEncounter enc, string playerName = "", string suffix = "")
@@ -43,18 +41,18 @@ public class EncounterHeaderComponent : IUIComponent
 
     public float GetHeight()
     {
-        if (!dataService.Config.ShowEncounterPicker)
+        if (!config.ShowEncounterPicker)
             return 0f;
 
-        var pad = dataService.Config.SelectionBarHeight;
+        var pad = config.SelectionBarHeight;
         var frameH = ImGui.GetFrameHeight() + pad * 2;
-        var sepH = dataService.Config.ShowSelectionBarSeparator ? ImGui.GetStyle().ItemSpacing.Y + 1f : 0f;
+        var sepH = config.ShowSelectionBarSeparator ? ImGui.GetStyle().ItemSpacing.Y + 1f : 0f;
         return frameH + sepH;
     }
 
     public void Render()
     {
-        if (!dataService.Config.ShowEncounterPicker)
+        if (!config.ShowEncounterPicker)
             return;
 
         var totalCount = dataService.Store.TotalCount;
@@ -71,9 +69,9 @@ public class EncounterHeaderComponent : IUIComponent
             previewLabel = dataService.ConnectionStatus;
         }
 
-        var selBarBg = dataService.Config.SelectionBarBackgroundColor;
-        var selBarPad = dataService.Config.SelectionBarHeight;
-        var selBarTextCol = dataService.Config.SelectionBarTextColor;
+        var selBarBg = config.SelectionBarBackgroundColor;
+        var selBarPad = config.SelectionBarHeight;
+        var selBarTextCol = config.SelectionBarTextColor;
         var hasSelBarBg = selBarBg.W > 0f;
 
         if (hasSelBarBg)
@@ -184,12 +182,12 @@ public class EncounterHeaderComponent : IUIComponent
 
         ImGui.PopStyleColor();
 
-        if (dataService.Config.ShowSelectionBarSeparator)
+        if (config.ShowSelectionBarSeparator)
         {
             var drawList = ImGui.GetWindowDrawList();
             var sepPos = ImGui.GetCursorScreenPos();
             var sepW = ImGui.GetContentRegionAvail().X;
-            drawList.AddLine(sepPos, new Vector2(sepPos.X + sepW, sepPos.Y), ImGui.ColorConvertFloat4ToU32(dataService.Config.SelectionBarSeparatorColor));
+            drawList.AddLine(sepPos, new Vector2(sepPos.X + sepW, sepPos.Y), ImGui.ColorConvertFloat4ToU32(config.SelectionBarSeparatorColor));
             ImGui.Spacing();
         }
     }
