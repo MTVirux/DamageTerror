@@ -40,7 +40,6 @@ public static class LayoutPage
 
             ImGui.PushID(i);
 
-            // Move up button
             var canUp = i > 0;
             if (!canUp) ImGui.BeginDisabled();
             if (ImGui.ArrowButton("##up", ImGuiDir.Up))
@@ -52,7 +51,6 @@ public static class LayoutPage
 
             ImGui.SameLine();
 
-            // Move down button
             var canDown = i < config.Layout.Count - 1;
             if (!canDown) ImGui.BeginDisabled();
             if (ImGui.ArrowButton("##down", ImGuiDir.Down))
@@ -64,7 +62,6 @@ public static class LayoutPage
 
             ImGui.SameLine();
 
-            // Ctrl+Shift only checkbox
             var ctrlShiftOnly = config.CtrlShiftOnlyElements.Contains(element);
             if (ImGui.Checkbox($"##ctrlShift{i}", ref ctrlShiftOnly))
             {
@@ -79,10 +76,8 @@ public static class LayoutPage
 
             ImGui.SameLine();
 
-            // Label
             ImGui.Text($"{i + 1}.  {label}");
 
-            // Description tooltip
             if (ImGui.IsItemHovered() && ElementDescriptions.TryGetValue(element, out var desc))
                 ImGui.SetTooltip(desc);
 
@@ -113,14 +108,12 @@ public static class LayoutPage
     {
         var allElements = Enum.GetValues<LayoutElement>();
 
-        // Add any missing elements at the end
         foreach (var el in allElements)
         {
             if (!config.Layout.Contains(el))
                 config.Layout.Add(el);
         }
 
-        // Remove duplicates (keep first occurrence)
         var seen = new HashSet<LayoutElement>();
         config.Layout.RemoveAll(el => !seen.Add(el));
     }

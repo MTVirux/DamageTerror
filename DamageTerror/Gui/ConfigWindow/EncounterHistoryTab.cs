@@ -28,7 +28,6 @@ public class EncounterHistoryTab
             return;
         }
 
-        // Search bar
         ImGui.SetNextItemWidth(-1);
         ImGui.InputTextWithHint("##historySearch", "Search by zone, title, player, or job...", ref historySearchFilter, 256);
         ImGui.Spacing();

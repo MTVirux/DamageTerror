@@ -46,7 +46,6 @@ public class SkillTracker
         if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(skillName))
             return;
 
-        // Resolve damage type from action ID via Lumina
         var damageType = SkillDamageType.Unknown;
         if (line.Length > 4 && uint.TryParse(line[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var actionId))
             damageType = LookupDamageType(actionId);
@@ -123,7 +122,6 @@ public class SkillTracker
         else if (isDirectHit)
             existing.DirectHits++;
 
-        // Keep the first resolved damage type
         if (existing.DamageType == SkillDamageType.Unknown && damageType != SkillDamageType.Unknown)
             existing.DamageType = damageType;
 

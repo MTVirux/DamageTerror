@@ -112,7 +112,6 @@ public class DisplayTab
                             changed = true;
                         }
 
-                        // Show a small preview of the icon
                         if (idInt > 0)
                         {
                             ImGui.SameLine();

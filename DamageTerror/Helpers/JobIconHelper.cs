@@ -5,7 +5,6 @@ namespace DamageTerror.Helpers;
 
 public static class JobIconHelper
 {
-    // Maps job name/abbreviation → classJobId
     private static readonly Dictionary<string, uint> ClassJobIdMap = new(StringComparer.OrdinalIgnoreCase)
     {
         { "Pld", 19 }, { "paladin", 19 },
@@ -53,7 +52,6 @@ public static class JobIconHelper
         { "Min", 16 }, { "Btn", 17 }, { "Fsh", 18 },
     };
 
-    // Fixed icon IDs for entries that don't map to a classJobId
     private static readonly Dictionary<string, uint> FixedIconMap = new(StringComparer.OrdinalIgnoreCase)
     {
         { "Lmb", 103 }, { "Limit Break", 103 },
@@ -71,7 +69,6 @@ public static class JobIconHelper
         if (string.IsNullOrEmpty(job))
             return null;
 
-        // Custom per-job overrides take priority
         if (style == JobIconStyle.Custom
             && customIcons != null
             && customIcons.TryGetValue(job, out var customId)

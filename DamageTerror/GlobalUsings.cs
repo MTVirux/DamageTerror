@@ -5,7 +5,6 @@ global using System.Numerics;
 global using System.Threading;
 global using System.Threading.Tasks;
 
-// Project namespaces
 global using DamageTerror;
 global using DamageTerror.Core;
 global using DamageTerror.Enums;

@@ -275,7 +275,6 @@ public class MainWindow : Window, IDisposable
                     {
                         DrawMeterTabButtons(config);
 
-                        // Re-resolve if tab changed
                         var newTab = config.MeterTabs[selectedMeterTab];
                         if (newTab != activeTab)
                         {
@@ -351,7 +350,6 @@ public class MainWindow : Window, IDisposable
             var btnMin = cursor;
             var btnMax = new Vector2(cursor.X + w, cursor.Y + buttonHeight);
 
-            // Hit test
             ImGui.SetCursorScreenPos(cursor);
             ImGui.InvisibleButton($"##mtBtn{i}", new Vector2(w, buttonHeight));
 
@@ -361,23 +359,19 @@ public class MainWindow : Window, IDisposable
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 selectedMeterTab = i;
 
-            // Draw background
             drawList.AddRectFilled(btnMin, btnMax, ImGui.ColorConvertFloat4ToU32(bgColor), rounding);
 
-            // Draw text centered
             var textPos = new Vector2(
                 btnMin.X + (w - textSize.X) * 0.5f,
                 btnMin.Y + (buttonHeight - textSize.Y) * 0.5f);
             drawList.AddText(ImGui.GetFont(), ImGui.GetFontSize(), textPos, ImGui.ColorConvertFloat4ToU32(textColor), tab.Name);
 
-            // Advance cursor for next button
             cursor = new Vector2(cursor.X + w + spacing, cursor.Y);
         }
 
         ImGui.GetFont().Scale = prevScale;
         ImGui.PopFont();
 
-        // Move ImGui cursor past the button row
         ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().X, cursor.Y + buttonHeight));
     }
 
@@ -495,7 +489,6 @@ public class MainWindow : Window, IDisposable
             var textPos = new Vector2(rightX + (colW - lw) * 0.5f, textY);
             drawList.AddText(textPos, headerColor, headerLabel);
 
-            // Tooltip with original column name on hover
             var hitMin = new Vector2(rightX, textY);
             var hitMax = new Vector2(rightX + colW, textY + ImGui.GetFontSize());
             if (ImGui.IsMouseHoveringRect(hitMin, hitMax))
