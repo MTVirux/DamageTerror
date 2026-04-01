@@ -217,6 +217,32 @@ public class Configuration : IPluginConfiguration
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public HashSet<string> DetailExpandedSections { get; set; } = new();
 
+    // Tooltip
+    public bool ShowTooltip { get; set; } = true;
+    public float TooltipDelay { get; set; } = 0.3f;
+
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<TooltipField> TooltipFields { get; set; } = new()
+    {
+        TooltipField.Name,
+        TooltipField.Job,
+        TooltipField.Dps,
+        TooltipField.Damage,
+        TooltipField.DamagePercent,
+        TooltipField.Crit,
+        TooltipField.DirectHit,
+        TooltipField.CritDirectHit,
+        TooltipField.MaxHit,
+        TooltipField.Deaths,
+    };
+
+    public Vector4 TooltipBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.95f);
+    public Vector4 TooltipTextColor { get; set; } = new(1f, 1f, 1f, 1f);
+    public Vector4 TooltipLabelColor { get; set; } = new(0.6f, 0.6f, 0.6f, 1f);
+    public float TooltipFontSize { get; set; } = FontDefaults.BaseSizePt;
+    public float TooltipRounding { get; set; } = 4f;
+    public float TooltipPadding { get; set; } = 6f;
+
     // Graph
     public float GraphHeight { get; set; } = 120f;
     public float GraphLineThickness { get; set; } = 2f;
