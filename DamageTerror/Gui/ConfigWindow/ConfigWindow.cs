@@ -44,7 +44,7 @@ public class ConfigWindow : Window, IDisposable
         (ConfigPage.SelectionBar, "Encounter Select",       "Appearance",   FontAwesomeIcon.ArrowsAltH),
         (ConfigPage.Colors,       "Job/Role Colors",        "Appearance",   FontAwesomeIcon.FillDrip),
         (ConfigPage.StatusBar,    "Encounter Status Bar",   "Appearance",   FontAwesomeIcon.InfoCircle),
-        (ConfigPage.Details,      "Details",                "Appearance",   FontAwesomeIcon.ChartBar),
+        (ConfigPage.Details,      "Details Panel",          "Appearance",   FontAwesomeIcon.ChartBar),
         (ConfigPage.Font,         "Fonts",                  "Appearance",   FontAwesomeIcon.Font),
         (ConfigPage.History,      "History",                null,           FontAwesomeIcon.History),
     };

@@ -218,8 +218,8 @@ public class AppearanceTab
     {
         var changed = false;
 
-        ImGui.Spacing();
-
+        if (ImGui.CollapsingHeader("Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var barHeight = config.BarHeight;
         ImGui.SetNextItemWidth(200);
         if (ImGui.SliderFloat("Bar height", ref barHeight, 14.0f, 40.0f, "%.0f px"))
@@ -267,10 +267,12 @@ public class AppearanceTab
             config.BarFontSize = barFontSize;
             changed = true;
         }
+        }
 
         ImGui.Spacing();
-        ImGui.TextDisabled("Padding");
 
+        if (ImGui.CollapsingHeader("Padding", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var barLeftPad = config.BarLeftPadding;
         ImGui.SetNextItemWidth(200);
         if (ImGui.SliderFloat("Left padding", ref barLeftPad, 0.0f, 20.0f, "%.0f px"))
@@ -302,12 +304,12 @@ public class AppearanceTab
             config.IconTextPadding = iconTextPad;
             changed = true;
         }
+        }
 
         ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
-        ImGui.TextDisabled("Value Formatting");
 
+        if (ImGui.CollapsingHeader("Value Formatting", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var formatIdx = (int)config.ValueDisplayFormat;
         var formatLabels = new[] { "Abbreviated (12.3K)", "Commas (12,345)", "Raw (12345.6)" };
         ImGui.SetNextItemWidth(200);
@@ -316,12 +318,12 @@ public class AppearanceTab
             config.ValueDisplayFormat = (ValueDisplayFormat)formatIdx;
             changed = true;
         }
+        }
 
         ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
-        ImGui.TextDisabled("Self Highlighting");
 
+        if (ImGui.CollapsingHeader("Self Highlighting", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var selfHighlight = config.SelfBarHighlight;
         if (ImGui.Checkbox("Highlight local player bar", ref selfHighlight))
         {
@@ -349,12 +351,12 @@ public class AppearanceTab
             changed |= ConfigHelpers.ColorEditProp("Self name color", config.SelfNameColor, v => config.SelfNameColor = v);
             ImGui.Unindent();
         }
+        }
 
         ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
-        ImGui.TextDisabled("Colors");
 
+        if (ImGui.CollapsingHeader("Colors", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         changed |= ConfigHelpers.ColorEditProp("Name text", config.NameTextColor, v => config.NameTextColor = v);
         changed |= ConfigHelpers.ColorEditProp("Value text", config.ValueTextColor, v => config.ValueTextColor = v);
         changed |= ConfigHelpers.ColorEditProp("Bar background", config.BarBackgroundColor, v => config.BarBackgroundColor = v);
@@ -367,12 +369,12 @@ public class AppearanceTab
             config.WindowRounding = windowRounding;
             changed = true;
         }
+        }
 
         ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
-        ImGui.TextDisabled("Header Row");
 
+        if (ImGui.CollapsingHeader("Header Row", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var showHeader = config.ShowMeterHeader;
         if (ImGui.Checkbox("Show header row", ref showHeader))
         {
@@ -425,6 +427,7 @@ public class AppearanceTab
             config.HeaderSeparatorColor = new Vector4(0.4f, 0.4f, 0.4f, 0.5f);
             changed = true;
         }
+        }
 
         return changed;
     }
@@ -433,23 +436,8 @@ public class AppearanceTab
     {
         var changed = false;
 
-        ImGui.Spacing();
-
-        var showSelBar = config.ShowSelectionBar;
-        if (ImGui.Checkbox("Show selection bar", ref showSelBar))
+        if (ImGui.CollapsingHeader("Style", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            config.ShowSelectionBar = showSelBar;
-            changed = true;
-        }
-
-        var showEncPicker = config.ShowEncounterPicker;
-        if (ImGui.Checkbox("Show encounter picker", ref showEncPicker))
-        {
-            config.ShowEncounterPicker = showEncPicker;
-            changed = true;
-        }
-
-        ImGui.Spacing();
         changed |= ConfigHelpers.ColorEditProp("Text color", config.SelectionBarTextColor, v => config.SelectionBarTextColor = v);
         changed |= ConfigHelpers.ColorEditProp("Background color", config.SelectionBarBackgroundColor, v => config.SelectionBarBackgroundColor = v);
 
@@ -474,12 +462,12 @@ public class AppearanceTab
             changed |= ConfigHelpers.ColorEditProp("Separator color", config.SelectionBarSeparatorColor, v => config.SelectionBarSeparatorColor = v);
             ImGui.Unindent();
         }
+        }
 
         ImGui.Spacing();
 
         if (ImGui.Button("Reset Selection Bar"))
         {
-            config.ShowSelectionBar = true;
             config.SelectionBarTextColor = new Vector4(1f, 1f, 1f, 1f);
             config.SelectionBarBackgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
             config.SelectionBarHeight = 0.0f;
@@ -496,8 +484,8 @@ public class AppearanceTab
     {
         var changed = false;
 
-        ImGui.Spacing();
-
+        if (ImGui.CollapsingHeader("Job / Role Colors", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var usePerJob = config.UsePerJobColors;
         if (ImGui.Checkbox("Use per-job colors", ref usePerJob))
         {
@@ -524,6 +512,7 @@ public class AppearanceTab
             changed |= ConfigHelpers.DrawPerJobColorGroup("Melee DPS", JobColorHelper.MeleeDpsJobs, config);
             changed |= ConfigHelpers.DrawPerJobColorGroup("Phys Ranged DPS", JobColorHelper.RangedDpsJobs, config);
             changed |= ConfigHelpers.DrawPerJobColorGroup("Caster DPS", JobColorHelper.CasterDpsJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Base Classes", JobColorHelper.BaseClassJobs, config);
             changed |= ConfigHelpers.ColorEditProp("Limit Break", config.LimitBreakColor, v => config.LimitBreakColor = v);
             changed |= ConfigHelpers.ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
 
@@ -549,6 +538,7 @@ public class AppearanceTab
             config.UsePerJobColors = false;
             changed = true;
         }
+        }
 
         return changed;
     }
@@ -557,16 +547,19 @@ public class AppearanceTab
     {
         var changed = false;
 
-        ImGui.Spacing();
-
+        if (ImGui.CollapsingHeader("Visibility##statusbar", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var showStatusBar = config.ShowStatusBar;
         if (ImGui.Checkbox("Show status bar", ref showStatusBar))
         {
             config.ShowStatusBar = showStatusBar;
             changed = true;
         }
+        }
 
         if (config.ShowStatusBar)
+        {
+        if (ImGui.CollapsingHeader("Options##statusbar", ImGuiTreeNodeFlags.DefaultOpen))
         {
             var showTimer = config.ShowStatusBarTimer;
             if (ImGui.Checkbox("Show combat timer", ref showTimer))
@@ -619,10 +612,12 @@ public class AppearanceTab
                 config.StatusBarPadding = statusPad;
                 changed = true;
             }
+        }
 
-            ImGui.Spacing();
-            ImGui.TextDisabled("Colors");
+        ImGui.Spacing();
 
+        if (ImGui.CollapsingHeader("Colors##statusbar", ImGuiTreeNodeFlags.DefaultOpen))
+        {
             var activeColor = config.StatusBarActiveColor;
             if (ImGui.ColorEdit4("In combat##statusbar", ref activeColor))
             {
@@ -661,6 +656,7 @@ public class AppearanceTab
                 }
             }
         }
+        }
 
         return changed;
     }
@@ -669,9 +665,79 @@ public class AppearanceTab
     {
         var changed = false;
 
-        ImGui.Spacing();
-        ImGui.TextDisabled("Layout");
+        if (ImGui.CollapsingHeader("Content", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.TextDisabled("Choose what to show in the expanded detail view.");
 
+            var showDmg = config.DetailShowDamage;
+            if (ImGui.Checkbox("Total damage", ref showDmg))
+            {
+                config.DetailShowDamage = showDmg;
+                changed = true;
+            }
+
+            var showCrit = config.DetailShowCritDhStats;
+            if (ImGui.Checkbox("Crit / DH / CDH stats", ref showCrit))
+            {
+                config.DetailShowCritDhStats = showCrit;
+                changed = true;
+            }
+
+            var showDeaths = config.DetailShowDeaths;
+            if (ImGui.Checkbox("Deaths", ref showDeaths))
+            {
+                config.DetailShowDeaths = showDeaths;
+                changed = true;
+            }
+
+            var showOh = config.DetailShowOverheal;
+            if (ImGui.Checkbox("Overheal %", ref showOh))
+            {
+                config.DetailShowOverheal = showOh;
+                changed = true;
+            }
+
+            var showMax = config.DetailShowMaxHit;
+            if (ImGui.Checkbox("Max hit", ref showMax))
+            {
+                config.DetailShowMaxHit = showMax;
+                changed = true;
+            }
+
+            var showTrend = config.DetailShowDpsTrend;
+            if (ImGui.Checkbox("DPS trend (10s/30s/60s)", ref showTrend))
+            {
+                config.DetailShowDpsTrend = showTrend;
+                changed = true;
+            }
+
+            ImGui.Spacing();
+
+            ImGui.TextDisabled("Skill breakdown");
+
+            var showSkills = config.DetailShowSkillBreakdown;
+            if (ImGui.Checkbox("Show skill breakdown", ref showSkills))
+            {
+                config.DetailShowSkillBreakdown = showSkills;
+                changed = true;
+            }
+
+            if (config.DetailShowSkillBreakdown)
+            {
+                var maxSkills = config.MaxSkillBreakdownCount;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderInt("Max skills shown (0 = all)", ref maxSkills, 0, 30))
+                {
+                    config.MaxSkillBreakdownCount = maxSkills;
+                    changed = true;
+                }
+            }
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Layout", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var detailIndent = config.DetailIndent;
         ImGui.SetNextItemWidth(200);
         if (ImGui.SliderFloat("Indent", ref detailIndent, 0.0f, 24.0f, "%.0f px"))
@@ -679,10 +745,12 @@ public class AppearanceTab
             config.DetailIndent = detailIndent;
             changed = true;
         }
+        }
 
         ImGui.Spacing();
-        ImGui.TextDisabled("Colors");
 
+        if (ImGui.CollapsingHeader("Colors##details", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         changed |= ConfigHelpers.ColorEditProp("Label color", config.DetailLabelColor, v => config.DetailLabelColor = v);
         changed |= ConfigHelpers.ColorEditProp("Death highlight", config.DetailDeathColor, v => config.DetailDeathColor = v);
 
@@ -696,12 +764,12 @@ public class AppearanceTab
             config.DetailFontSize = 14f;
             changed = true;
         }
+        }
 
         ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
-        ImGui.TextDisabled("Skill Breakdown — Appearance");
 
+        if (ImGui.CollapsingHeader("Skill Breakdown — Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var skillRowHeight = config.SkillRowHeight;
         ImGui.SetNextItemWidth(200);
         if (ImGui.SliderFloat("Row height", ref skillRowHeight, 10.0f, 30.0f, "%.0f px"))
@@ -725,14 +793,27 @@ public class AppearanceTab
             config.SkillBarRounding = skillRounding;
             changed = true;
         }
+        }
 
         ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
-        ImGui.TextDisabled("Skill Breakdown — Colors");
 
+        if (ImGui.CollapsingHeader("Skill Breakdown — Colors", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         changed |= ConfigHelpers.ColorEditProp("Damage fill", config.SkillDamageFillColor, v => config.SkillDamageFillColor = v);
         changed |= ConfigHelpers.ColorEditProp("Healing fill", config.SkillHealingFillColor, v => config.SkillHealingFillColor = v);
+
+        ImGui.Spacing();
+        var useDmgTypeColors = config.UseSkillDamageTypeColors;
+        if (ImGui.Checkbox("Use per-damage-type colors", ref useDmgTypeColors))
+        {
+            config.UseSkillDamageTypeColors = useDmgTypeColors;
+            changed = true;
+        }
+        if (config.UseSkillDamageTypeColors)
+        {
+            changed |= ConfigHelpers.ColorEditProp("Physical fill", config.SkillPhysicalFillColor, v => config.SkillPhysicalFillColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Magic fill", config.SkillMagicFillColor, v => config.SkillMagicFillColor = v);
+        }
         changed |= ConfigHelpers.ColorEditProp("Row background", config.SkillRowBackgroundColor, v => config.SkillRowBackgroundColor = v);
         changed |= ConfigHelpers.ColorEditProp("Skill text", config.SkillTextColor, v => config.SkillTextColor = v);
         changed |= ConfigHelpers.ColorEditProp("Header text", config.SkillHeaderTextColor, v => config.SkillHeaderTextColor = v);
@@ -743,10 +824,14 @@ public class AppearanceTab
         {
             config.SkillDamageFillColor = new Vector4(0.35f, 0.35f, 0.55f, 0.7f);
             config.SkillHealingFillColor = new Vector4(0.25f, 0.50f, 0.30f, 0.7f);
+            config.SkillPhysicalFillColor = new Vector4(0.55f, 0.30f, 0.25f, 0.7f);
+            config.SkillMagicFillColor = new Vector4(0.30f, 0.30f, 0.65f, 0.7f);
+            config.UseSkillDamageTypeColors = false;
             config.SkillRowBackgroundColor = new Vector4(0.12f, 0.12f, 0.12f, 0.6f);
             config.SkillTextColor = new Vector4(1f, 1f, 1f, 0.9f);
             config.SkillHeaderTextColor = new Vector4(0.6f, 0.6f, 0.6f, 0.9f);
             changed = true;
+        }
         }
 
         return changed;
@@ -756,7 +841,8 @@ public class AppearanceTab
     {
         var changed = false;
 
-        ImGui.Spacing();
+        if (ImGui.CollapsingHeader("Font Selection", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var enableFont = config.EnableCustomFont;
         if (ImGui.Checkbox("Enable custom font", ref enableFont))
         {
@@ -809,11 +895,12 @@ public class AppearanceTab
             }
         }
 
-        ImGui.Spacing();
-        ImGui.Separator();
+        }
+
         ImGui.Spacing();
 
-        ImGui.TextDisabled("Font Sizes (pt)");
+        if (ImGui.CollapsingHeader("Font Sizes", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         ImGui.TextWrapped("Set the font size for each component independently.");
 
         var barFont = config.BarFontSize;
@@ -866,6 +953,7 @@ public class AppearanceTab
             config.DetailFontSize = 14f;
             config.SkillFontSize = 14f;
             changed = true;
+        }
         }
 
         return changed;

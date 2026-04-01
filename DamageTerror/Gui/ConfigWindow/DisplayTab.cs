@@ -1,5 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using DamageTerror.Enums;
+using DamageTerror.Helpers;
+using DamageTerror.Services;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
@@ -20,21 +22,10 @@ public class DisplayTab
     {
         var changed = false;
 
-        if (ImGui.CollapsingHeader("Bar Content", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Content", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            ImGui.TextDisabled("Choose what to display on each combatant bar.");
+            ImGui.TextDisabled("General bar display options.");
 
-            ImGui.Spacing();
-
-            var showHps = config.ShowHps;
-            if (ImGui.Checkbox("Show HPS instead of DPS", ref showHps))
-            {
-                config.ShowHps = showHps;
-                changed = true;
-            }
-
-            ImGui.Spacing();
-            ImGui.Separator();
             ImGui.Spacing();
 
             var showName = config.ShowNameOnBar;
@@ -70,20 +61,6 @@ public class DisplayTab
 
             ImGui.Spacing();
 
-            var showValue = config.ShowValueOnBar;
-            if (ImGui.Checkbox("DPS/HPS value", ref showValue))
-            {
-                config.ShowValueOnBar = showValue;
-                changed = true;
-            }
-
-            var showPct = config.ShowDamagePercentOnBar;
-            if (ImGui.Checkbox("DPS/HPS percent", ref showPct))
-            {
-                config.ShowDamagePercentOnBar = showPct;
-                changed = true;
-            }
-
             var showJob = config.ShowJobAbbrevOnBar;
             if (ImGui.Checkbox("Job abbreviation text", ref showJob))
             {
@@ -105,103 +82,159 @@ public class DisplayTab
                 changed = true;
             }
 
-            ImGui.Spacing();
-            ImGui.TextDisabled("Hit stats displayed on each bar.");
-
-            var showDh = config.ShowDirectHitOnBar;
-            if (ImGui.Checkbox("! (Direct Hit %%)", ref showDh))
+            if (config.ShowJobIcons)
             {
-                config.ShowDirectHitOnBar = showDh;
-                changed = true;
-            }
-
-            var showCrit = config.ShowCritOnBar;
-            if (ImGui.Checkbox("!! (Critical Hit %%)", ref showCrit))
-            {
-                config.ShowCritOnBar = showCrit;
-                changed = true;
-            }
-
-            var showCdh = config.ShowCritDirectHitOnBar;
-            if (ImGui.Checkbox("!!! (Crit Direct Hit %%)", ref showCdh))
-            {
-                config.ShowCritDirectHitOnBar = showCdh;
-                changed = true;
-            }
-        }
-
-        ImGui.Spacing();
-
-        if (ImGui.CollapsingHeader("Detail Panel"))
-        {
-            ImGui.TextDisabled("Choose what to show in the expanded detail view.");
-
-            var showDmg = config.DetailShowDamage;
-            if (ImGui.Checkbox("Total damage", ref showDmg))
-            {
-                config.DetailShowDamage = showDmg;
-                changed = true;
-            }
-
-            var showCrit = config.DetailShowCritDhStats;
-            if (ImGui.Checkbox("Crit / DH / CDH stats", ref showCrit))
-            {
-                config.DetailShowCritDhStats = showCrit;
-                changed = true;
-            }
-
-            var showDeaths = config.DetailShowDeaths;
-            if (ImGui.Checkbox("Deaths", ref showDeaths))
-            {
-                config.DetailShowDeaths = showDeaths;
-                changed = true;
-            }
-
-            var showOh = config.DetailShowOverheal;
-            if (ImGui.Checkbox("Overheal %", ref showOh))
-            {
-                config.DetailShowOverheal = showOh;
-                changed = true;
-            }
-
-            var showMax = config.DetailShowMaxHit;
-            if (ImGui.Checkbox("Max hit", ref showMax))
-            {
-                config.DetailShowMaxHit = showMax;
-                changed = true;
-            }
-
-            var showTrend = config.DetailShowDpsTrend;
-            if (ImGui.Checkbox("DPS trend (10s/30s/60s)", ref showTrend))
-            {
-                config.DetailShowDpsTrend = showTrend;
-                changed = true;
-            }
-        }
-
-        ImGui.Spacing();
-
-        if (ImGui.CollapsingHeader("Skill Breakdown"))
-        {
-            var showSkills = config.DetailShowSkillBreakdown;
-            if (ImGui.Checkbox("Show skill breakdown", ref showSkills))
-            {
-                config.DetailShowSkillBreakdown = showSkills;
-                changed = true;
-            }
-
-            if (config.DetailShowSkillBreakdown)
-            {
-                var maxSkills = config.MaxSkillBreakdownCount;
-                ImGui.SetNextItemWidth(200);
-                if (ImGui.SliderInt("Max skills shown (0 = all)", ref maxSkills, 0, 30))
+                ImGui.SameLine();
+                var styleIdx = (int)config.JobIconStyle;
+                var styleLabels = new[] { "Framed", "Plain", "Custom" };
+                ImGui.SetNextItemWidth(120);
+                if (ImGui.Combo("Icon style", ref styleIdx, styleLabels, styleLabels.Length))
                 {
-                    config.MaxSkillBreakdownCount = maxSkills;
+                    config.JobIconStyle = (JobIconStyle)styleIdx;
                     changed = true;
                 }
+
+                if (config.JobIconStyle == JobIconStyle.Custom)
+                {
+                    ImGui.Indent();
+                    ImGui.TextDisabled("Set a game icon ID per job (0 = default framed).");
+                    ImGui.Spacing();
+
+                    foreach (var abbr in JobIconHelper.AllJobAbbreviations.OrderBy(a => a))
+                    {
+                        config.CustomJobIcons.TryGetValue(abbr, out var curId);
+                        var idInt = (int)curId;
+                        ImGui.SetNextItemWidth(100);
+                        if (ImGui.InputInt($"{abbr.ToUpperInvariant()}##custicon_{abbr}", ref idInt, 0))
+                        {
+                            if (idInt < 0) idInt = 0;
+                            config.CustomJobIcons[abbr] = (uint)idInt;
+                            changed = true;
+                        }
+
+                        // Show a small preview of the icon
+                        if (idInt > 0)
+                        {
+                            ImGui.SameLine();
+                            var preview = ServiceManager.TextureProvider.GetFromGameIcon(new Dalamud.Interface.Textures.GameIconLookup((uint)idInt));
+                            if (preview.TryGetWrap(out var wrap, out _))
+                            {
+                                ImGui.Image(wrap.Handle, new Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight()));
+                            }
+                        }
+                    }
+
+                    ImGui.Unindent();
+                }
             }
+
         }
 
         return changed;
+    }
+
+    private static readonly Dictionary<BarColumn, string> ColumnLabels = new()
+    {
+        { BarColumn.Dps, "DPS" },
+        { BarColumn.Hps, "HPS" },
+        { BarColumn.Damage, "Damage" },
+        { BarColumn.Healed, "Healed" },
+        { BarColumn.DamagePercent, "Damage/Heal %" },
+        { BarColumn.DirectHit, "Direct Hit %" },
+        { BarColumn.Crit, "Critical Hit %" },
+        { BarColumn.CritDirectHit, "Crit Direct Hit %" },
+        { BarColumn.Deaths, "Deaths" },
+    };
+
+    public static bool DrawBarColumns(List<BarColumn> columnOrder, Func<BarColumn, bool> getEnabled, Action<BarColumn, bool> setEnabled, Dictionary<BarColumn, string> headerLabels)
+    {
+        var changed = false;
+
+        for (var i = 0; i < columnOrder.Count; i++)
+        {
+            var col = columnOrder[i];
+            var label = ColumnLabels.GetValueOrDefault(col, col.ToString());
+
+            ImGui.PushID(i);
+
+            var canUp = i > 0;
+            if (!canUp) ImGui.BeginDisabled();
+            if (ImGui.ArrowButton("##up", ImGuiDir.Up))
+            {
+                (columnOrder[i], columnOrder[i - 1]) = (columnOrder[i - 1], columnOrder[i]);
+                changed = true;
+            }
+            if (!canUp) ImGui.EndDisabled();
+
+            ImGui.SameLine();
+
+            var canDown = i < columnOrder.Count - 1;
+            if (!canDown) ImGui.BeginDisabled();
+            if (ImGui.ArrowButton("##down", ImGuiDir.Down))
+            {
+                (columnOrder[i], columnOrder[i + 1]) = (columnOrder[i + 1], columnOrder[i]);
+                changed = true;
+            }
+            if (!canDown) ImGui.EndDisabled();
+
+            ImGui.SameLine();
+
+            var enabled = getEnabled(col);
+            if (ImGui.Checkbox(label, ref enabled))
+            {
+                setEnabled(col, enabled);
+                changed = true;
+            }
+
+            ImGui.SameLine();
+            var defaultLabel = Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+            headerLabels.TryGetValue(col, out var currentHeader);
+            currentHeader ??= "";
+            ImGui.SetNextItemWidth(60);
+            if (ImGui.InputTextWithHint($"##hdr_{col}", defaultLabel, ref currentHeader, 32))
+            {
+                if (string.IsNullOrEmpty(currentHeader))
+                    headerLabels.Remove(col);
+                else
+                    headerLabels[col] = currentHeader;
+                changed = true;
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(label);
+
+            ImGui.PopID();
+        }
+
+        return changed;
+    }
+
+    public static bool GetTabColumnEnabled(MeterTab tab, BarColumn col) => col switch
+    {
+        BarColumn.Dps => tab.ShowDpsOnBar,
+        BarColumn.Hps => tab.ShowHpsOnBar,
+        BarColumn.Damage => tab.ShowDamageOnBar,
+        BarColumn.Healed => tab.ShowHealedOnBar,
+        BarColumn.DamagePercent => tab.ShowDamagePercentOnBar,
+        BarColumn.DirectHit => tab.ShowDirectHitOnBar,
+        BarColumn.Crit => tab.ShowCritOnBar,
+        BarColumn.CritDirectHit => tab.ShowCritDirectHitOnBar,
+        BarColumn.Deaths => tab.ShowDeathsOnBar,
+        _ => false,
+    };
+
+    public static void SetTabColumnEnabled(MeterTab tab, BarColumn col, bool value)
+    {
+        switch (col)
+        {
+            case BarColumn.Dps: tab.ShowDpsOnBar = value; break;
+            case BarColumn.Hps: tab.ShowHpsOnBar = value; break;
+            case BarColumn.Damage: tab.ShowDamageOnBar = value; break;
+            case BarColumn.Healed: tab.ShowHealedOnBar = value; break;
+            case BarColumn.DamagePercent: tab.ShowDamagePercentOnBar = value; break;
+            case BarColumn.DirectHit: tab.ShowDirectHitOnBar = value; break;
+            case BarColumn.Crit: tab.ShowCritOnBar = value; break;
+            case BarColumn.CritDirectHit: tab.ShowCritDirectHitOnBar = value; break;
+            case BarColumn.Deaths: tab.ShowDeathsOnBar = value; break;
+        }
     }
 }

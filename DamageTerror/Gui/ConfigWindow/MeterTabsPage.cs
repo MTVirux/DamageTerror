@@ -1,4 +1,6 @@
 using Dalamud.Bindings.ImGui;
+using DamageTerror.Enums;
+using DamageTerror.Gui.MainWindow;
 using DamageTerror.Helpers;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
@@ -192,13 +194,16 @@ public static class MeterTabsPage
         }
 
         ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        ImGui.TextDisabled("Bar Content");
 
-        var showHps = tab.ShowHps;
-        if (ImGui.Checkbox("Show HPS instead of DPS values", ref showHps))
-        {
-            tab.ShowHps = showHps;
-            changed = true;
-        }
+        tab.ColumnOrder ??= new List<BarColumn>();
+        CombatantBarComponent.EnsureColumnOrderComplete(tab.ColumnOrder);
+        changed |= DisplayTab.DrawBarColumns(tab.ColumnOrder,
+            col => DisplayTab.GetTabColumnEnabled(tab, col),
+            (col, v) => DisplayTab.SetTabColumnEnabled(tab, col, v),
+            tab.ColumnHeaderLabels);
 
         return changed;
     }
@@ -250,9 +255,8 @@ public static class MeterTabsPage
     {
         var changed = false;
 
-        ImGui.TextDisabled("Customize the appearance of meter tab buttons.");
-        ImGui.Spacing();
-
+        if (ImGui.CollapsingHeader("Colors", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var btnColor = config.TabButtonColor;
         if (ImGui.ColorEdit4("Button Color", ref btnColor, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
         {
@@ -287,11 +291,12 @@ public static class MeterTabsPage
             config.TabButtonActiveTextColor = btnActiveText;
             changed = true;
         }
+        }
 
         ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
 
+        if (ImGui.CollapsingHeader("Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var btnHeight = config.TabButtonHeight;
         ImGui.SetNextItemWidth(150);
         if (ImGui.SliderFloat("Button Height", ref btnHeight, 14f, 48f, "%.0f"))
@@ -345,6 +350,7 @@ public static class MeterTabsPage
 
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Fixed width for each tab button.\nSet to 0 to auto-size based on text.");
+        }
         }
 
         return changed;

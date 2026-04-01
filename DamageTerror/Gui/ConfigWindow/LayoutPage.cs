@@ -25,10 +25,10 @@ public static class LayoutPage
     {
         var changed = false;
 
+        if (ImGui.CollapsingHeader("Element Order", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         ImGui.TextDisabled("Drag the components to change their rendering order in the meter window.");
         ImGui.TextDisabled("Use the arrow buttons to move items up or down.");
-        ImGui.Spacing();
-        ImGui.Separator();
         ImGui.Spacing();
 
         EnsureLayoutComplete(config);
@@ -103,6 +103,7 @@ public static class LayoutPage
                 LayoutElement.CombatantBars,
             };
             changed = true;
+        }
         }
 
         return changed;
