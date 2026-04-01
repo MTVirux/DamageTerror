@@ -31,7 +31,7 @@ public class GraphDataTracker
 
         lock (syncLock)
         {
-            // Reset when a new encounter starts
+            // Reset on new encounter
             if (enc.IsActive && !lastWasActive)
             {
                 perCombatant.Clear();
@@ -43,7 +43,6 @@ public class GraphDataTracker
 
             lastWasActive = enc.IsActive;
 
-            // Only record while the encounter is active
             if (!enc.IsActive)
             {
                 // Trim graph to actual encounter length on first inactive frame
@@ -59,7 +58,6 @@ public class GraphDataTracker
 
             var timeSec = (float)stopwatch.Elapsed.TotalSeconds;
 
-            // Always update latest totals from incoming data
             foreach (var c in snapshot.Combatants)
             {
                 if (string.IsNullOrEmpty(c.Name))
@@ -67,7 +65,6 @@ public class GraphDataTracker
                 latestTotals[c.Name] = (c.Damage, c.Healed, c.DamageTaken);
             }
 
-            // Only emit graph points once per second
             if (timeSec - lastEmitTime < 1f)
                 return;
 
@@ -82,7 +79,6 @@ public class GraphDataTracker
                     perCombatant[name] = list;
                 }
 
-                // Add current snapshot to history
                 if (!recentHistory.TryGetValue(name, out var history))
                 {
                     history = new List<(float, long, long, long)>();
@@ -139,16 +135,13 @@ public class GraphDataTracker
         }
     }
 
-    /// <summary>Remove samples beyond the encounter duration and cap the last sample's time.</summary>
     private void TrimToEncounterLength(float encDuration)
     {
         foreach (var list in perCombatant.Values)
         {
-            // Remove samples that are past the encounter duration
             while (list.Count > 0 && list[^1].TimeSec > encDuration + 0.5f)
                 list.RemoveAt(list.Count - 1);
 
-            // Cap the last sample's time to the encounter duration
             if (list.Count > 0)
             {
                 var last = list[^1];

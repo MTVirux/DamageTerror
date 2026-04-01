@@ -185,7 +185,6 @@ public class DataService : IDisposable
                     c.HealingSkills = SkillTracker.GetHealSkills(c.Name);
                 }
 
-                // Persist graph data with the outgoing encounter
                 CaptureGraphData(outgoing);
             }
 
@@ -270,7 +269,6 @@ public class DataService : IDisposable
             return;
         }
 
-        // Finalize skills on the outgoing encounter before archiving.
         var outgoing = Store.ActiveEncounter;
         if (outgoing != null)
         {

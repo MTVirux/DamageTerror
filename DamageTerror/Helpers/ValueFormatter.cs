@@ -40,7 +40,6 @@ public static class ValueFormatter
         return value.ToString($"F{decimals}") + "%";
     }
 
-    /// <summary>Format a value column, checking for per-column overrides on the active tab.</summary>
     public static string FormatColumn(double value, Configuration config, BarColumn column, MeterTab? activeTab)
     {
         if (activeTab?.ColumnFormatOverrides.TryGetValue(column, out var ov) == true)
@@ -53,7 +52,6 @@ public static class ValueFormatter
         return Format(value, config);
     }
 
-    /// <summary>Format a percent column, checking for per-column overrides on the active tab.</summary>
     public static string FormatPercentColumn(double value, Configuration config, BarColumn column, MeterTab? activeTab)
     {
         if (activeTab?.ColumnFormatOverrides.TryGetValue(column, out var ov) == true)

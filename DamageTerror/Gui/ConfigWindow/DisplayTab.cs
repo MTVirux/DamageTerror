@@ -189,7 +189,6 @@ public class DisplayTab
                 disabledColumns.Add(columnOrder[i]);
         }
 
-        // Sort disabled columns alphabetically by label
         disabledColumns.Sort((a, b) =>
             string.Compare(
                 ColumnLabels.GetValueOrDefault(a, a.ToString()),
@@ -272,13 +271,11 @@ public class DisplayTab
             ImGui.PopID();
         }
 
-        // Separator between enabled and disabled
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.TextDisabled("Disabled");
         ImGui.Spacing();
 
-        // Draw disabled columns in category tabs
         if (disabledColumns.Count > 0 && ImGui.BeginTabBar("##disabledCategories"))
         {
             foreach (var (catName, catColumns) in DisabledCategories)
