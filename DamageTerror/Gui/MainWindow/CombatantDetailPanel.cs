@@ -91,7 +91,7 @@ public class CombatantDetailPanel
             ImGui.Spacing();
             if (ImGui.TreeNodeEx($"Damage Skills##{index}", ImGuiTreeNodeFlags.DefaultOpen))
             {
-                DrawSkillTable(combatant.Skills, index, "dmg", config.SkillDamageFillColor, usePerSkillColor: config.UseSkillDamageTypeColors);
+                DrawSkillTable(combatant.Skills, index, "dmg", config.SkillDamageFillColor);
                 ImGui.TreePop();
             }
         }
@@ -113,7 +113,7 @@ public class CombatantDetailPanel
         ImGui.Spacing();
     }
 
-    private void DrawSkillTable(List<SkillEntry> skills, int index, string idPrefix, Vector4 fillColorVec, bool usePerSkillColor = false)
+    private void DrawSkillTable(List<SkillEntry> skills, int index, string idPrefix, Vector4 fillColorVec)
     {
         var availWidth = ImGui.GetContentRegionAvail().X;
         var skillBarHeight = config.SkillRowHeight;
@@ -121,8 +121,8 @@ public class CombatantDetailPanel
         var drawList = ImGui.GetWindowDrawList();
         var bgColor = ImGui.ColorConvertFloat4ToU32(config.SkillRowBackgroundColor);
         var fillColor = ImGui.ColorConvertFloat4ToU32(fillColorVec);
-        var physFillColor = usePerSkillColor ? ImGui.ColorConvertFloat4ToU32(config.SkillPhysicalFillColor) : fillColor;
-        var magFillColor = usePerSkillColor ? ImGui.ColorConvertFloat4ToU32(config.SkillMagicFillColor) : fillColor;
+        var physFillColor = ImGui.ColorConvertFloat4ToU32(config.SkillPhysicalFillColor);
+        var magFillColor = ImGui.ColorConvertFloat4ToU32(config.SkillMagicFillColor);
         var textColor = ImGui.ColorConvertFloat4ToU32(config.SkillTextColor);
         var skillRounding = config.SkillBarRounding;
 
@@ -175,14 +175,12 @@ public class CombatantDetailPanel
             var max = ImGui.GetItemRectMax();
 
             drawList.AddRectFilled(min, max, bgColor, skillRounding);
-            var barColor = usePerSkillColor
-                ? skill.DamageType switch
+            var barColor = skill.DamageType switch
                 {
                     SkillDamageType.Physical => physFillColor,
                     SkillDamageType.Magic => magFillColor,
                     _ => fillColor,
-                }
-                : fillColor;
+                };
             drawList.AddRectFilled(min, new Vector2(min.X + availWidth * barFraction, max.Y), barColor, skillRounding);
             drawList.AddText(new Vector2(min.X + 3, min.Y), textColor, skill.Name);
 

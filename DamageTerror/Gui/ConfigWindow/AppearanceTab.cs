@@ -799,21 +799,10 @@ public class AppearanceTab
 
         if (ImGui.CollapsingHeader("Skill Breakdown — Colors", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        changed |= ConfigHelpers.ColorEditProp("Damage fill", config.SkillDamageFillColor, v => config.SkillDamageFillColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Unknown damage fill", config.SkillDamageFillColor, v => config.SkillDamageFillColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Physical damage fill", config.SkillPhysicalFillColor, v => config.SkillPhysicalFillColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Magic damage fill", config.SkillMagicFillColor, v => config.SkillMagicFillColor = v);
         changed |= ConfigHelpers.ColorEditProp("Healing fill", config.SkillHealingFillColor, v => config.SkillHealingFillColor = v);
-
-        ImGui.Spacing();
-        var useDmgTypeColors = config.UseSkillDamageTypeColors;
-        if (ImGui.Checkbox("Use per-damage-type colors", ref useDmgTypeColors))
-        {
-            config.UseSkillDamageTypeColors = useDmgTypeColors;
-            changed = true;
-        }
-        if (config.UseSkillDamageTypeColors)
-        {
-            changed |= ConfigHelpers.ColorEditProp("Physical fill", config.SkillPhysicalFillColor, v => config.SkillPhysicalFillColor = v);
-            changed |= ConfigHelpers.ColorEditProp("Magic fill", config.SkillMagicFillColor, v => config.SkillMagicFillColor = v);
-        }
         changed |= ConfigHelpers.ColorEditProp("Row background", config.SkillRowBackgroundColor, v => config.SkillRowBackgroundColor = v);
         changed |= ConfigHelpers.ColorEditProp("Skill text", config.SkillTextColor, v => config.SkillTextColor = v);
         changed |= ConfigHelpers.ColorEditProp("Header text", config.SkillHeaderTextColor, v => config.SkillHeaderTextColor = v);
@@ -826,7 +815,6 @@ public class AppearanceTab
             config.SkillHealingFillColor = new Vector4(0.25f, 0.50f, 0.30f, 0.7f);
             config.SkillPhysicalFillColor = new Vector4(0.55f, 0.30f, 0.25f, 0.7f);
             config.SkillMagicFillColor = new Vector4(0.30f, 0.30f, 0.65f, 0.7f);
-            config.UseSkillDamageTypeColors = false;
             config.SkillRowBackgroundColor = new Vector4(0.12f, 0.12f, 0.12f, 0.6f);
             config.SkillTextColor = new Vector4(1f, 1f, 1f, 0.9f);
             config.SkillHeaderTextColor = new Vector4(0.6f, 0.6f, 0.6f, 0.9f);
