@@ -125,6 +125,15 @@ public static class BuiltInPresets
         TabButtonSpacing = 1f,
         TabButtonRounding = 0f,
         TabButtonFontSize = 12.3f,
+
+        // Tooltip
+        TooltipDelay = 0.3f,
+        TooltipBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.95f),
+        TooltipTextColor = new(1f, 1f, 1f, 1f),
+        TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 1f),
+        TooltipFontSize = 12.3f,
+        TooltipRounding = 0f,
+        TooltipPadding = 4f,
     };
 
 
@@ -224,6 +233,15 @@ public static class BuiltInPresets
         TabButtonSpacing = 2f,
         TabButtonRounding = 3f,
         TabButtonFontSize = 13.3f,
+
+        // Tooltip
+        TooltipDelay = 0.3f,
+        TooltipBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.92f),
+        TooltipTextColor = new(1f, 1f, 1f, 1f),
+        TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 1f),
+        TooltipFontSize = 12.9f,
+        TooltipRounding = 3f,
+        TooltipPadding = 6f,
     };
 
 
@@ -330,6 +348,22 @@ public static class BuiltInPresets
         TabButtonSpacing = 1f,
         TabButtonRounding = 8f,
         TabButtonFontSize = 11.9f,
+
+        // Tooltip
+        TooltipDelay = 0.2f,
+        TooltipFields = new()
+        {
+            TooltipField.Name,
+            TooltipField.Dps,
+            TooltipField.DamagePercent,
+            TooltipField.MaxHit,
+        },
+        TooltipBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.85f),
+        TooltipTextColor = new(1f, 1f, 1f, 0.9f),
+        TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 0.85f),
+        TooltipFontSize = 11.5f,
+        TooltipRounding = 8f,
+        TooltipPadding = 6f,
     };
 
 
@@ -461,6 +495,15 @@ public static class BuiltInPresets
         TabButtonSpacing = 2f,
         TabButtonRounding = 6f,
         TabButtonFontSize = 14f,
+
+        // Tooltip
+        TooltipDelay = 0.3f,
+        TooltipBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.95f),
+        TooltipTextColor = new(1f, 1f, 1f, 1f),
+        TooltipLabelColor = new(0.55f, 0.55f, 0.60f, 1f),
+        TooltipFontSize = 12.9f,
+        TooltipRounding = 6f,
+        TooltipPadding = 6f,
     };
 
 
@@ -586,6 +629,31 @@ public static class BuiltInPresets
         TabButtonSpacing = 0f,
         TabButtonRounding = 0f,
         TabButtonFontSize = 11.9f,
+
+        // Tooltip
+        TooltipDelay = 0.2f,
+        TooltipFields = new()
+        {
+            TooltipField.Name,
+            TooltipField.Job,
+            TooltipField.Dps,
+            TooltipField.Damage,
+            TooltipField.DamagePercent,
+            TooltipField.Crit,
+            TooltipField.DirectHit,
+            TooltipField.CritDirectHit,
+            TooltipField.Deaths,
+            TooltipField.MaxHit,
+            TooltipField.Hps,
+            TooltipField.Healed,
+            TooltipField.Overheal,
+        },
+        TooltipBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
+        TooltipTextColor = new(1f, 1f, 1f, 0.95f),
+        TooltipLabelColor = new(0.60f, 0.60f, 0.60f, 0.9f),
+        TooltipFontSize = 11.5f,
+        TooltipRounding = 0f,
+        TooltipPadding = 4f,
     };
 
 
@@ -717,5 +785,14 @@ public static class BuiltInPresets
         TabButtonSpacing = 1f,
         TabButtonRounding = 2f,
         TabButtonFontSize = 12.9f,
+
+        // Tooltip
+        TooltipDelay = 0.3f,
+        TooltipBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.92f),
+        TooltipTextColor = new(0.95f, 0.95f, 0.95f, 1f),
+        TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 0.88f),
+        TooltipFontSize = 12.6f,
+        TooltipRounding = 2f,
+        TooltipPadding = 5f,
     };
 }
