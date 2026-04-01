@@ -144,6 +144,8 @@ public class DisplayTab
         { BarColumn.Crit, "Critical Hit %" },
         { BarColumn.CritDirectHit, "Crit Direct Hit %" },
         { BarColumn.Deaths, "Deaths" },
+        { BarColumn.DamageTaken, "Damage Taken" },
+        { BarColumn.Overheal, "Overheal %" },
     };
 
     public static bool DrawBarColumns(List<BarColumn> columnOrder, Func<BarColumn, bool> getEnabled, Action<BarColumn, bool> setEnabled, Dictionary<BarColumn, string> headerLabels)
@@ -219,6 +221,8 @@ public class DisplayTab
         BarColumn.Crit => tab.ShowCritOnBar,
         BarColumn.CritDirectHit => tab.ShowCritDirectHitOnBar,
         BarColumn.Deaths => tab.ShowDeathsOnBar,
+        BarColumn.DamageTaken => tab.ShowDamageTakenOnBar,
+        BarColumn.Overheal => tab.ShowOverhealOnBar,
         _ => false,
     };
 
@@ -235,6 +239,8 @@ public class DisplayTab
             case BarColumn.Crit: tab.ShowCritOnBar = value; break;
             case BarColumn.CritDirectHit: tab.ShowCritDirectHitOnBar = value; break;
             case BarColumn.Deaths: tab.ShowDeathsOnBar = value; break;
+            case BarColumn.DamageTaken: tab.ShowDamageTakenOnBar = value; break;
+            case BarColumn.Overheal: tab.ShowOverhealOnBar = value; break;
         }
     }
 }
