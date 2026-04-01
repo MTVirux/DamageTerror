@@ -245,7 +245,11 @@ public class CombatantBarComponent
         }
 
         var clicked = ImGui.InvisibleButton($"##combatant_{index}", new Vector2(windowWidth, barHeight));
-
+        // Tooltip on hover
+        if (config.ShowTooltip && config.TooltipFields.Count > 0 && ImGui.IsItemHovered())
+        {
+            DrawTooltip(combatant, activeTab);
+        }
         var prevScale = ImGui.GetFont().Scale;
         ImGui.GetFont().Scale = config.GetFontScale(config.BarFontSize);
         ImGui.PushFont(ImGui.GetFont());
@@ -385,4 +389,72 @@ public class CombatantBarComponent
                 return name;
         }
     }
+
+    private void DrawTooltip(CombatantEntry combatant, MeterTab? activeTab)
+    {
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, config.TooltipRounding);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(config.TooltipPadding, config.TooltipPadding));
+        ImGui.PushStyleColor(ImGuiCol.PopupBg, config.TooltipBackgroundColor);
+
+        ImGui.BeginTooltip();
+
+        var prevScale = ImGui.GetFont().Scale;
+        ImGui.GetFont().Scale = config.GetFontScale(config.TooltipFontSize);
+        ImGui.PushFont(ImGui.GetFont());
+
+        var labelColor = config.TooltipLabelColor;
+        var textColor = config.TooltipTextColor;
+
+        foreach (var field in config.TooltipFields)
+        {
+            var (label, value) = GetTooltipFieldValue(combatant, field, activeTab);
+            ImGui.TextColored(labelColor, label + ":");
+            ImGui.SameLine();
+            ImGui.TextColored(textColor, value);
+        }
+
+        ImGui.GetFont().Scale = prevScale;
+        ImGui.PopFont();
+
+        ImGui.EndTooltip();
+
+        ImGui.PopStyleColor();
+        ImGui.PopStyleVar(2);
+    }
+
+    private (string Label, string Value) GetTooltipFieldValue(CombatantEntry combatant, TooltipField field, MeterTab? activeTab) => field switch
+    {
+        TooltipField.Name => ("Name", combatant.Name),
+        TooltipField.Job => ("Job", !string.IsNullOrEmpty(combatant.Job) ? JobNameHelper.GetFullName(combatant.Job) : "—"),
+        TooltipField.Dps => ("DPS", GetColumnDisplayValue(combatant, BarColumn.Dps, config, activeTab)),
+        TooltipField.Hps => ("HPS", GetColumnDisplayValue(combatant, BarColumn.Hps, config, activeTab)),
+        TooltipField.Damage => ("Damage", GetColumnDisplayValue(combatant, BarColumn.Damage, config, activeTab)),
+        TooltipField.Healed => ("Healed", GetColumnDisplayValue(combatant, BarColumn.Healed, config, activeTab)),
+        TooltipField.DamagePercent => ("Damage %", combatant.DamagePercent),
+        TooltipField.HealPercent => ("Heal %", combatant.HealedPercent),
+        TooltipField.Crit => ("Crit %", GetColumnDisplayValue(combatant, BarColumn.Crit, config, activeTab)),
+        TooltipField.DirectHit => ("Direct Hit %", GetColumnDisplayValue(combatant, BarColumn.DirectHit, config, activeTab)),
+        TooltipField.CritDirectHit => ("Crit DH %", GetColumnDisplayValue(combatant, BarColumn.CritDirectHit, config, activeTab)),
+        TooltipField.Deaths => ("Deaths", $"{combatant.Deaths}"),
+        TooltipField.DamageTaken => ("Damage Taken", GetColumnDisplayValue(combatant, BarColumn.DamageTaken, config, activeTab)),
+        TooltipField.Overheal => ("Overheal %", GetColumnDisplayValue(combatant, BarColumn.Overheal, config, activeTab)),
+        TooltipField.OverhealAmount => ("Overheal", GetColumnDisplayValue(combatant, BarColumn.OverhealAmount, config, activeTab)),
+        TooltipField.MaxHit => ("Max Hit", $"{combatant.MaxHit} ({GetColumnDisplayValue(combatant, BarColumn.MaxHit, config, activeTab)})"),
+        TooltipField.MaxHeal => ("Max Heal", $"{combatant.MaxHeal} ({GetColumnDisplayValue(combatant, BarColumn.MaxHeal, config, activeTab)})"),
+        TooltipField.PeakDps => ("Peak DPS", GetColumnDisplayValue(combatant, BarColumn.PeakDps, config, activeTab)),
+        TooltipField.Swings => ("Swings", $"{combatant.Swings}"),
+        TooltipField.Hits => ("Hits", $"{combatant.Hits}"),
+        TooltipField.Misses => ("Misses", $"{combatant.Misses}"),
+        TooltipField.HitRate => ("Hit Rate", GetColumnDisplayValue(combatant, BarColumn.HitRate, config, activeTab)),
+        TooltipField.Kills => ("Kills", $"{combatant.Kills}"),
+        TooltipField.CombatantDuration => ("Duration", combatant.CombatantDuration),
+        TooltipField.HealsTaken => ("Heals Taken", GetColumnDisplayValue(combatant, BarColumn.HealsTaken, config, activeTab)),
+        TooltipField.InstantDps => ("Instant DPS", GetColumnDisplayValue(combatant, BarColumn.InstantDps, config, activeTab)),
+        TooltipField.InstantHps => ("Instant HPS", GetColumnDisplayValue(combatant, BarColumn.InstantHps, config, activeTab)),
+        TooltipField.CritHealPct => ("Crit Heal %", GetColumnDisplayValue(combatant, BarColumn.CritHealPct, config, activeTab)),
+        TooltipField.HealCount => ("Heal Count", $"{combatant.HealCount}"),
+        TooltipField.DamageShield => ("Damage Shield", GetColumnDisplayValue(combatant, BarColumn.DamageShield, config, activeTab)),
+        TooltipField.MaxHealWard => ("Max Heal Ward", GetColumnDisplayValue(combatant, BarColumn.MaxHealWard, config, activeTab)),
+        _ => ("", ""),
+    };
 }
