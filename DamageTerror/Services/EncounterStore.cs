@@ -12,6 +12,7 @@ public class EncounterStore
     private bool wasActive;
     private string? savePath;
     private bool dirty;
+    private bool loadedSuccessfully;
 
     public EncounterStore(int maxHistory)
     {
@@ -154,7 +155,10 @@ public class EncounterStore
     public void Load()
     {
         if (string.IsNullOrEmpty(savePath) || !System.IO.File.Exists(savePath))
+        {
+            loadedSuccessfully = true;
             return;
+        }
 
         try
         {
@@ -171,10 +175,14 @@ public class EncounterStore
                         history.RemoveAt(0);
                 }
             }
+
+            loadedSuccessfully = true;
         }
         catch
         {
-            // If the file is corrupt, just start fresh
+            // If the file is corrupt, just start fresh.
+            // loadedSuccessfully stays false so Save won't overwrite the
+            // existing file with an empty list.
         }
     }
 
@@ -186,6 +194,11 @@ public class EncounterStore
         lock (syncLock)
         {
             if (!force && !dirty)
+                return;
+
+            // Don't overwrite the file with empty data when Load failed,
+            // as that would permanently wipe previously saved history.
+            if (!loadedSuccessfully && history.Count == 0)
                 return;
 
             dirty = false;

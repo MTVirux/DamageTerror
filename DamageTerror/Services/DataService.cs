@@ -15,6 +15,7 @@ public class DataService : IDisposable
     private bool playerChanged;
 
     public SkillTracker SkillTracker { get; } = new(ServiceManager.DataManager);
+    public GraphDataTracker GraphTracker { get; } = new();
     public EncounterStore Store { get; }
     public string PlayerName { get; private set; } = string.Empty;
     public uint PlayerId { get; private set; }
@@ -183,10 +184,15 @@ public class DataService : IDisposable
                     c.Skills = SkillTracker.GetSkills(c.Name);
                     c.HealingSkills = SkillTracker.GetHealSkills(c.Name);
                 }
+
+                // Persist graph data with the outgoing encounter
+                CaptureGraphData(outgoing);
             }
 
             SkillTracker.Reset();
+            GraphTracker.Reset();
         }
+
         wasActive = snapshot.Encounter.IsActive;
 
         if (!string.IsNullOrEmpty(PlayerName))
@@ -200,10 +206,42 @@ public class DataService : IDisposable
                 c.IsLocalPlayer = true;
         }
 
+        // Track peak DPS per combatant across snapshots within the same encounter.
+        var prev = Store.ActiveEncounter;
+        if (prev != null)
+        {
+            foreach (var c in snapshot.Combatants)
+            {
+                var prevEntry = prev.Combatants.Find(p =>
+                    string.Equals(p.Name, c.Name, StringComparison.OrdinalIgnoreCase));
+                var prevPeak = prevEntry?.PeakDps ?? 0;
+                c.PeakDps = Math.Max(c.EncDps, prevPeak);
+            }
+        }
+        else
+        {
+            foreach (var c in snapshot.Combatants)
+                c.PeakDps = c.EncDps;
+        }
+
         var archived = Store.Update(snapshot);
+
+        GraphTracker.WindowSeconds = config.GraphSmoothingWindow;
+        GraphTracker.RecordSample(snapshot);
 
         if (archived)
             Store.Save();
+    }
+
+    private void CaptureGraphData(EncounterSnapshot target)
+    {
+        target.GraphData.Clear();
+        foreach (var c in target.Combatants)
+        {
+            var samples = GraphTracker.GetSamples(c.Name);
+            if (samples.Count > 0)
+                target.GraphData[c.Name] = samples;
+        }
     }
 
     private void OnLogLine(string[] line)
@@ -244,6 +282,7 @@ public class DataService : IDisposable
         }
 
         SkillTracker.Reset();
+        GraphTracker.Reset();
 
         if (Store.ArchiveActive())
             Store.Save();
@@ -267,6 +306,7 @@ public class DataService : IDisposable
         if (disposed) return;
         disposed = true;
         Stop();
+        Store.ArchiveActive();
         Store.Save(force: true);
     }
 }

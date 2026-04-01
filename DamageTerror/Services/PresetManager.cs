@@ -39,6 +39,7 @@ public class PresetManager
 
     public void SaveCustomPreset(ThemePreset preset)
     {
+        if (IsBuiltInName(preset.Name)) return;
         preset.IsBuiltIn = false;
         var json = JsonConvert.SerializeObject(preset, JsonSettings);
         var path = GetPresetPath(preset.Name);
@@ -48,6 +49,7 @@ public class PresetManager
 
     public bool DeleteCustomPreset(string name)
     {
+        if (IsBuiltInName(name)) return false;
         var path = GetPresetPath(name);
         if (!File.Exists(path)) return false;
         File.Delete(path);
@@ -116,6 +118,11 @@ public class PresetManager
 
         list.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
         customPresets = list;
+    }
+
+    private bool IsBuiltInName(string name)
+    {
+        return BuiltInPresets_All.Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
     private string GetPresetPath(string name)
