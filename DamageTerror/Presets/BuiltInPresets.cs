@@ -9,6 +9,12 @@ public static class BuiltInPresets
         Name = "Default",
         Description = "Stock DamageTerror appearance. Use this to reset to factory settings.",
         IsBuiltIn = true,
+
+        Tabs = new()
+        {
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsOnBar = false, ShowHpsOnBar = true },
+        },
     };
 
 
@@ -103,6 +109,22 @@ public static class BuiltInPresets
         ShowDirectHitOnBar = false,
         ShowCritOnBar = false,
         ShowCritDirectHitOnBar = false,
+
+        Tabs = new()
+        {
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true, ShowDamagePercentOnBar = true },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsOnBar = false, ShowHpsOnBar = true },
+        },
+
+        TabButtonColor = new(0.10f, 0.10f, 0.10f, 0.85f),
+        TabButtonHoveredColor = new(0.18f, 0.18f, 0.18f, 0.9f),
+        TabButtonActiveColor = new(0.24f, 0.32f, 0.71f, 0.9f),
+        TabButtonTextColor = new(0.6f, 0.6f, 0.6f, 0.8f),
+        TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 1.0f),
+        TabButtonHeight = 18f,
+        TabButtonSpacing = 1f,
+        TabButtonRounding = 0f,
+        TabButtonFontSize = 12.3f,
     };
 
 
@@ -185,6 +207,23 @@ public static class BuiltInPresets
         ShowDirectHitOnBar = false,
         ShowCritOnBar = false,
         ShowCritDirectHitOnBar = false,
+
+        Tabs = new()
+        {
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsOnBar = false, ShowHpsOnBar = true },
+            new MeterTab("Tanking", TabFilterMode.Tanks, SortField.DamageTaken) { ShowDpsOnBar = false, ShowDamageTakenOnBar = true },
+        },
+
+        TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.9f),
+        TabButtonHoveredColor = new(0.20f, 0.18f, 0.15f, 0.95f),
+        TabButtonActiveColor = new(1.0f, 0.55f, 0.10f, 0.85f),
+        TabButtonTextColor = new(0.65f, 0.65f, 0.65f, 0.85f),
+        TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 1.0f),
+        TabButtonHeight = 20f,
+        TabButtonSpacing = 2f,
+        TabButtonRounding = 3f,
+        TabButtonFontSize = 13.3f,
     };
 
 
@@ -275,6 +314,22 @@ public static class BuiltInPresets
         ShowDirectHitOnBar = false,
         ShowCritOnBar = false,
         ShowCritDirectHitOnBar = false,
+
+        ShowTabBar = false,
+        Tabs = new()
+        {
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true },
+        },
+
+        TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.5f),
+        TabButtonHoveredColor = new(0.15f, 0.15f, 0.15f, 0.6f),
+        TabButtonActiveColor = new(0.9f, 0.6f, 0.1f, 0.7f),
+        TabButtonTextColor = new(0.6f, 0.6f, 0.6f, 0.7f),
+        TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 0.9f),
+        TabButtonHeight = 16f,
+        TabButtonSpacing = 1f,
+        TabButtonRounding = 8f,
+        TabButtonFontSize = 11.9f,
     };
 
 
@@ -390,6 +445,22 @@ public static class BuiltInPresets
         ShowDirectHitOnBar = false,
         ShowCritOnBar = false,
         ShowCritDirectHitOnBar = false,
+
+        Tabs = new()
+        {
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsOnBar = false, ShowHpsOnBar = true },
+        },
+
+        TabButtonColor = new(0.10f, 0.10f, 0.12f, 0.85f),
+        TabButtonHoveredColor = new(0.20f, 0.20f, 0.25f, 0.9f),
+        TabButtonActiveColor = new(0.60f, 0.30f, 0.80f, 0.85f),
+        TabButtonTextColor = new(0.65f, 0.65f, 0.70f, 0.9f),
+        TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 1.0f),
+        TabButtonHeight = 22f,
+        TabButtonSpacing = 2f,
+        TabButtonRounding = 6f,
+        TabButtonFontSize = 14f,
     };
 
 
@@ -480,6 +551,41 @@ public static class BuiltInPresets
         ShowDirectHitOnBar = true,
         ShowCritOnBar = true,
         ShowCritDirectHitOnBar = true,
+
+        Tabs = new()
+        {
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps)
+            {
+                ShowDpsOnBar = true,
+                ShowDamagePercentOnBar = true,
+                ShowCritOnBar = true,
+                ShowDirectHitOnBar = true,
+                ShowCritDirectHitOnBar = true,
+                ShowDeathsOnBar = true,
+            },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps)
+            {
+                ShowDpsOnBar = false,
+                ShowHpsOnBar = true,
+                ShowHealedOnBar = true,
+                ShowOverhealOnBar = true,
+            },
+            new MeterTab("Deaths", TabFilterMode.Deaths, SortField.Deaths)
+            {
+                ShowDpsOnBar = true,
+                ShowDeathsOnBar = true,
+            },
+        },
+
+        TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.7f),
+        TabButtonHoveredColor = new(0.15f, 0.15f, 0.15f, 0.8f),
+        TabButtonActiveColor = new(0.25f, 0.38f, 0.72f, 0.85f),
+        TabButtonTextColor = new(0.60f, 0.60f, 0.60f, 0.9f),
+        TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 0.95f),
+        TabButtonHeight = 18f,
+        TabButtonSpacing = 0f,
+        TabButtonRounding = 0f,
+        TabButtonFontSize = 11.9f,
     };
 
 
@@ -595,5 +701,21 @@ public static class BuiltInPresets
         ShowDirectHitOnBar = false,
         ShowCritOnBar = false,
         ShowCritDirectHitOnBar = false,
+
+        Tabs = new()
+        {
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsOnBar = false, ShowHpsOnBar = true },
+        },
+
+        TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.8f),
+        TabButtonHoveredColor = new(0.20f, 0.20f, 0.20f, 0.85f),
+        TabButtonActiveColor = new(0.25f, 0.40f, 0.72f, 0.8f),
+        TabButtonTextColor = new(0.65f, 0.65f, 0.65f, 0.85f),
+        TabButtonActiveTextColor = new(0.95f, 0.95f, 0.95f, 1.0f),
+        TabButtonHeight = 20f,
+        TabButtonSpacing = 1f,
+        TabButtonRounding = 2f,
+        TabButtonFontSize = 12.9f,
     };
 }

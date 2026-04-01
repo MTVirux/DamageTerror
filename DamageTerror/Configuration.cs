@@ -31,16 +31,23 @@ public class Configuration : IPluginConfiguration
     public bool EnableInVariant { get; set; } = true;
     public bool EnableInPvP { get; set; } = true;
 
-    public SortField SortBy { get; set; } = SortField.EncDps;
-    public bool SortDescending { get; set; } = true;
     public bool ShowJobIcons { get; set; } = true;
     public JobIconStyle JobIconStyle { get; set; } = JobIconStyle.Framed;
     public Dictionary<string, uint> CustomJobIcons { get; set; } = new();
 
 
     // Meter Tabs
-    public bool ShowTabBar { get; set; } = false;
-    public List<MeterTab> MeterTabs { get; set; } = new();
+    public bool ShowTabBar { get; set; } = true;
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<MeterTab> MeterTabs { get; set; } = new()
+    {
+        new MeterTab("DPS", TabFilterMode.All, SortField.EncDps, true),
+        new MeterTab("Healing", TabFilterMode.All, SortField.EncHps, true)
+        {
+            ShowDpsOnBar = false,
+            ShowHpsOnBar = true,
+        },
+    };
 
     // Meter Tab Button Appearance
     public Vector4 TabButtonColor { get; set; } = new(0.20f, 0.22f, 0.27f, 1.0f);
@@ -143,36 +150,8 @@ public class Configuration : IPluginConfiguration
     public bool ShowYouOnBar { get; set; } = true;
     public NameDisplayFormat SelfNameFormat { get; set; } = NameDisplayFormat.FullName;
     public NameDisplayFormat OthersNameFormat { get; set; } = NameDisplayFormat.FullName;
-    public bool ShowDpsOnBar { get; set; } = true;
-    public bool ShowHpsOnBar { get; set; } = false;
-    public bool ShowDamageOnBar { get; set; } = false;
-    public bool ShowHealedOnBar { get; set; } = false;
-    public bool ShowDamagePercentOnBar { get; set; } = false;
     public bool ShowJobAbbrevOnBar { get; set; } = false;
     public bool ShowRankNumber { get; set; } = false;
-    public bool ShowDirectHitOnBar { get; set; } = false;
-    public bool ShowCritOnBar { get; set; } = false;
-    public bool ShowCritDirectHitOnBar { get; set; } = false;
-    public bool ShowDeathsOnBar { get; set; } = false;
-
-    // Column Order (left-to-right rendering)
-    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    public List<BarColumn> ColumnOrder { get; set; } = new()
-    {
-        BarColumn.DamagePercent,
-        BarColumn.CritDirectHit,
-        BarColumn.Crit,
-        BarColumn.DirectHit,
-        BarColumn.Deaths,
-        BarColumn.Healed,
-        BarColumn.Damage,
-        BarColumn.Hps,
-        BarColumn.Dps,
-    };
-
-    // Custom column header labels
-    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    public Dictionary<BarColumn, string> ColumnHeaderLabels { get; set; } = new();
 
     public static readonly Dictionary<BarColumn, string> DefaultHeaderLabels = new()
     {
@@ -185,14 +164,9 @@ public class Configuration : IPluginConfiguration
         { BarColumn.Crit, "!!" },
         { BarColumn.CritDirectHit, "!!!" },
         { BarColumn.Deaths, "D" },
+        { BarColumn.DamageTaken, "Taken" },
+        { BarColumn.Overheal, "OH%" },
     };
-
-    public string GetHeaderLabel(BarColumn col)
-    {
-        if (ColumnHeaderLabels.TryGetValue(col, out var custom) && !string.IsNullOrEmpty(custom))
-            return custom;
-        return DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
-    }
 
     // Detail Panel
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);

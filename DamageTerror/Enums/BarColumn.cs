@@ -11,4 +11,6 @@ public enum BarColumn
     Crit,
     CritDirectHit,
     Deaths,
+    DamageTaken,
+    Overheal,
 }

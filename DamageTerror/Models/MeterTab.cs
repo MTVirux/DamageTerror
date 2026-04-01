@@ -21,6 +21,8 @@ public class MeterTab
     public bool ShowCritOnBar { get; set; } = false;
     public bool ShowCritDirectHitOnBar { get; set; } = false;
     public bool ShowDeathsOnBar { get; set; } = false;
+    public bool ShowDamageTakenOnBar { get; set; } = false;
+    public bool ShowOverhealOnBar { get; set; } = false;
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<BarColumn> ColumnOrder { get; set; } = new()
@@ -76,6 +78,8 @@ public class MeterTab
             ShowCritOnBar = ShowCritOnBar,
             ShowCritDirectHitOnBar = ShowCritDirectHitOnBar,
             ShowDeathsOnBar = ShowDeathsOnBar,
+            ShowDamageTakenOnBar = ShowDamageTakenOnBar,
+            ShowOverhealOnBar = ShowOverhealOnBar,
             ColumnOrder = new List<BarColumn>(ColumnOrder),
             ColumnHeaderLabels = new Dictionary<BarColumn, string>(ColumnHeaderLabels),
             CustomJobFilter = new List<string>(CustomJobFilter),

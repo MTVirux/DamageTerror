@@ -105,6 +105,8 @@ public class ThemePreset
     public bool ShowCritOnBar { get; set; }
     public bool ShowCritDirectHitOnBar { get; set; }
     public bool ShowDeathsOnBar { get; set; }
+    public bool ShowDamageTakenOnBar { get; set; }
+    public bool ShowOverhealOnBar { get; set; }
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<BarColumn> ColumnOrder { get; set; } = new()
@@ -124,6 +126,22 @@ public class ThemePreset
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
     public float DetailFontSize { get; set; } = 14f;
+
+    // Tab Definitions — when non-null, applying this preset replaces config tabs entirely
+    public List<MeterTab>? Tabs { get; set; }
+
+    // Tab Button Styling
+    public bool ShowTabBar { get; set; } = true;
+    public Vector4 TabButtonColor { get; set; } = new(0.20f, 0.22f, 0.27f, 1.0f);
+    public Vector4 TabButtonHoveredColor { get; set; } = new(0.28f, 0.30f, 0.36f, 1.0f);
+    public Vector4 TabButtonActiveColor { get; set; } = new(0.38f, 0.44f, 0.64f, 1.0f);
+    public Vector4 TabButtonTextColor { get; set; } = new(0.85f, 0.85f, 0.85f, 1.0f);
+    public Vector4 TabButtonActiveTextColor { get; set; } = new(1.0f, 1.0f, 1.0f, 1.0f);
+    public float TabButtonHeight { get; set; } = 24f;
+    public float TabButtonSpacing { get; set; } = 2f;
+    public float TabButtonRounding { get; set; } = 4f;
+    public float TabButtonFontSize { get; set; } = 14f;
+    public bool TabButtonStretchToFit { get; set; } = true;
 
     public void ApplyTo(Configuration config)
     {
@@ -210,18 +228,46 @@ public class ThemePreset
 
         config.ShowJobIcons = ShowJobIcons;
         config.ShowNameOnBar = ShowNameOnBar;
-        config.ShowDpsOnBar = ShowDpsOnBar;
-        config.ShowHpsOnBar = ShowHpsOnBar;
-        config.ShowDamageOnBar = ShowDamageOnBar;
-        config.ShowHealedOnBar = ShowHealedOnBar;
-        config.ShowDamagePercentOnBar = ShowDamagePercentOnBar;
         config.ShowJobAbbrevOnBar = ShowJobAbbrevOnBar;
         config.ShowRankNumber = ShowRankNumber;
-        config.ShowDirectHitOnBar = ShowDirectHitOnBar;
-        config.ShowCritOnBar = ShowCritOnBar;
-        config.ShowCritDirectHitOnBar = ShowCritDirectHitOnBar;
-        config.ShowDeathsOnBar = ShowDeathsOnBar;
-        config.ColumnOrder = new List<BarColumn>(ColumnOrder);
+
+        // Tab button styling
+        config.ShowTabBar = ShowTabBar;
+        config.TabButtonColor = TabButtonColor;
+        config.TabButtonHoveredColor = TabButtonHoveredColor;
+        config.TabButtonActiveColor = TabButtonActiveColor;
+        config.TabButtonTextColor = TabButtonTextColor;
+        config.TabButtonActiveTextColor = TabButtonActiveTextColor;
+        config.TabButtonHeight = TabButtonHeight;
+        config.TabButtonSpacing = TabButtonSpacing;
+        config.TabButtonRounding = TabButtonRounding;
+        config.TabButtonFontSize = TabButtonFontSize;
+        config.TabButtonStretchToFit = TabButtonStretchToFit;
+
+        // Tab definitions — replace tabs entirely when preset defines them
+        if (Tabs is { Count: > 0 })
+        {
+            config.MeterTabs = Tabs.Select(t => t.Clone()).ToList();
+        }
+        else
+        {
+            // Legacy path: apply column visibility from top-level flags to all existing tabs
+            foreach (var tab in config.MeterTabs)
+            {
+                tab.ShowDpsOnBar = ShowDpsOnBar;
+                tab.ShowHpsOnBar = ShowHpsOnBar;
+                tab.ShowDamageOnBar = ShowDamageOnBar;
+                tab.ShowHealedOnBar = ShowHealedOnBar;
+                tab.ShowDamagePercentOnBar = ShowDamagePercentOnBar;
+                tab.ShowDirectHitOnBar = ShowDirectHitOnBar;
+                tab.ShowCritOnBar = ShowCritOnBar;
+                tab.ShowCritDirectHitOnBar = ShowCritDirectHitOnBar;
+                tab.ShowDeathsOnBar = ShowDeathsOnBar;
+                tab.ShowDamageTakenOnBar = ShowDamageTakenOnBar;
+                tab.ShowOverhealOnBar = ShowOverhealOnBar;
+                tab.ColumnOrder = new List<BarColumn>(ColumnOrder);
+            }
+        }
 
         config.DetailLabelColor = DetailLabelColor;
         config.DetailDeathColor = DetailDeathColor;
@@ -231,6 +277,7 @@ public class ThemePreset
 
     public static ThemePreset CreateFromConfig(Configuration config, string name, string description = "")
     {
+        var firstTab = config.MeterTabs.Count > 0 ? config.MeterTabs[0] : null;
         return new ThemePreset
         {
             Name = name,
@@ -321,18 +368,34 @@ public class ThemePreset
 
             ShowJobIcons = config.ShowJobIcons,
             ShowNameOnBar = config.ShowNameOnBar,
-            ShowDpsOnBar = config.ShowDpsOnBar,
-            ShowHpsOnBar = config.ShowHpsOnBar,
-            ShowDamageOnBar = config.ShowDamageOnBar,
-            ShowHealedOnBar = config.ShowHealedOnBar,
-            ShowDamagePercentOnBar = config.ShowDamagePercentOnBar,
             ShowJobAbbrevOnBar = config.ShowJobAbbrevOnBar,
             ShowRankNumber = config.ShowRankNumber,
-            ShowDirectHitOnBar = config.ShowDirectHitOnBar,
-            ShowCritOnBar = config.ShowCritOnBar,
-            ShowCritDirectHitOnBar = config.ShowCritDirectHitOnBar,
-            ShowDeathsOnBar = config.ShowDeathsOnBar,
-            ColumnOrder = new List<BarColumn>(config.ColumnOrder),
+            ShowDpsOnBar = firstTab?.ShowDpsOnBar ?? true,
+            ShowHpsOnBar = firstTab?.ShowHpsOnBar ?? false,
+            ShowDamageOnBar = firstTab?.ShowDamageOnBar ?? false,
+            ShowHealedOnBar = firstTab?.ShowHealedOnBar ?? false,
+            ShowDamagePercentOnBar = firstTab?.ShowDamagePercentOnBar ?? false,
+            ShowDirectHitOnBar = firstTab?.ShowDirectHitOnBar ?? false,
+            ShowCritOnBar = firstTab?.ShowCritOnBar ?? false,
+            ShowCritDirectHitOnBar = firstTab?.ShowCritDirectHitOnBar ?? false,
+            ShowDeathsOnBar = firstTab?.ShowDeathsOnBar ?? false,
+            ShowDamageTakenOnBar = firstTab?.ShowDamageTakenOnBar ?? false,
+            ShowOverhealOnBar = firstTab?.ShowOverhealOnBar ?? false,
+            ColumnOrder = firstTab != null ? new List<BarColumn>(firstTab.ColumnOrder) : new List<BarColumn>(),
+
+            Tabs = config.MeterTabs.Select(t => t.Clone()).ToList(),
+
+            ShowTabBar = config.ShowTabBar,
+            TabButtonColor = config.TabButtonColor,
+            TabButtonHoveredColor = config.TabButtonHoveredColor,
+            TabButtonActiveColor = config.TabButtonActiveColor,
+            TabButtonTextColor = config.TabButtonTextColor,
+            TabButtonActiveTextColor = config.TabButtonActiveTextColor,
+            TabButtonHeight = config.TabButtonHeight,
+            TabButtonSpacing = config.TabButtonSpacing,
+            TabButtonRounding = config.TabButtonRounding,
+            TabButtonFontSize = config.TabButtonFontSize,
+            TabButtonStretchToFit = config.TabButtonStretchToFit,
 
             DetailLabelColor = config.DetailLabelColor,
             DetailDeathColor = config.DetailDeathColor,
