@@ -34,27 +34,57 @@ public class WebSocketDataSource : IDataSource
 
         cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-        try
-        {
-            ws = new ClientWebSocket();
-            await ws.ConnectAsync(new Uri(url), cts.Token).ConfigureAwait(false);
-            log.Information($"WebSocket connected to {url}");
+        await ConnectOnceAsync(cts.Token).ConfigureAwait(false);
 
-            var subscribeMsg = JsonConvert.SerializeObject(new
+        receiveTask = Task.Run(() => ReceiveAndReconnectLoopAsync(cts.Token), cts.Token);
+    }
+
+    private async Task ConnectOnceAsync(CancellationToken ct)
+    {
+        ws?.Dispose();
+        ws = new ClientWebSocket();
+
+        await ws.ConnectAsync(new Uri(url), ct).ConfigureAwait(false);
+        log.Information($"WebSocket connected to {url}");
+
+        var subscribeMsg = JsonConvert.SerializeObject(new
+        {
+            call = "subscribe",
+            events = new[] { "CombatData", "ChangePrimaryPlayer", "LogLine" },
+        });
+        var bytes = Encoding.UTF8.GetBytes(subscribeMsg);
+        await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct)
+            .ConfigureAwait(false);
+        log.Debug("Subscribed to CombatData and ChangePrimaryPlayer events");
+    }
+
+    private async Task ReceiveAndReconnectLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested && !disposed)
+        {
+            if (ws?.State == WebSocketState.Open)
             {
-                call = "subscribe",
-                events = new[] { "CombatData", "ChangePrimaryPlayer", "LogLine" },
-            });
-            var bytes = Encoding.UTF8.GetBytes(subscribeMsg);
-            await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cts.Token)
-                .ConfigureAwait(false);
-            log.Debug("Subscribed to CombatData and ChangePrimaryPlayer events");
+                await ReceiveLoopAsync(ct).ConfigureAwait(false);
+            }
 
-            receiveTask = Task.Run(() => ReceiveLoopAsync(cts.Token), cts.Token);
-        }
-        catch (Exception ex) when (!ct.IsCancellationRequested)
-        {
-            log.Warning($"WebSocket connection failed: {ex.Message}");
+            if (ct.IsCancellationRequested || disposed)
+                break;
+
+            // Auto-reconnect after disconnect
+            log.Debug("WebSocket disconnected, attempting reconnect...");
+            try
+            {
+                await Task.Delay(100, ct).ConfigureAwait(false);
+                await ConnectOnceAsync(ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"WebSocket reconnect failed: {ex.Message}");
+            }
         }
     }
 
@@ -65,37 +95,25 @@ public class WebSocketDataSource : IDataSource
 
         while (!ct.IsCancellationRequested && ws?.State == WebSocketState.Open)
         {
-            try
-            {
-                messageBuilder.Clear();
-                WebSocketReceiveResult result;
+            messageBuilder.Clear();
+            WebSocketReceiveResult result;
 
-                do
+            do
+            {
+                result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct).ConfigureAwait(false);
+
+                if (result.MessageType == WebSocketMessageType.Close)
                 {
-                    result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct).ConfigureAwait(false);
-
-                    if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        log.Information("WebSocket server closed connection");
-                        return;
-                    }
-
-                    messageBuilder.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+                    log.Information("WebSocket server closed connection");
+                    return;
                 }
-                while (!result.EndOfMessage);
 
-                var message = messageBuilder.ToString();
-                ProcessMessage(message);
+                messageBuilder.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
             }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (WebSocketException ex)
-            {
-                log.Warning($"WebSocket error: {ex.Message}");
-                break;
-            }
+            while (!result.EndOfMessage);
+
+            var message = messageBuilder.ToString();
+            ProcessMessage(message);
         }
     }
 
