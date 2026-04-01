@@ -53,7 +53,6 @@ public static class BuiltInPresets
         WindowBackgroundColor = new(0.055f, 0.055f, 0.055f, 0.95f),
         WindowRounding = 0f,
 
-        ShowSelectionBar = true,
         SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f),
         SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.6f),
         SelectionBarHeight = 0f,
@@ -97,7 +96,7 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowValueOnBar = true,
+        ShowDpsOnBar = true,
         ShowDamagePercentOnBar = true,
         ShowJobAbbrevOnBar = false,
         ShowRankNumber = true,
@@ -137,7 +136,6 @@ public static class BuiltInPresets
         WindowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.92f),
         WindowRounding = 3f,
 
-        ShowSelectionBar = true,
         SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f),
         SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f),
         SelectionBarHeight = 2f,
@@ -180,7 +178,7 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowValueOnBar = true,
+        ShowDpsOnBar = true,
         ShowDamagePercentOnBar = false,
         ShowJobAbbrevOnBar = false,
         ShowRankNumber = true,
@@ -228,7 +226,6 @@ public static class BuiltInPresets
         WindowBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.70f),
         WindowRounding = 8f,
 
-        ShowSelectionBar = true,
         SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 0.9f),
         SelectionBarBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
         SelectionBarHeight = 0f,
@@ -271,7 +268,7 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowValueOnBar = true,
+        ShowDpsOnBar = true,
         ShowDamagePercentOnBar = false,
         ShowJobAbbrevOnBar = false,
         ShowRankNumber = false,
@@ -344,7 +341,6 @@ public static class BuiltInPresets
         WindowBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.92f),
         WindowRounding = 6f,
 
-        ShowSelectionBar = true,
         SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f),
         SelectionBarBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.4f),
         SelectionBarHeight = 2f,
@@ -387,7 +383,7 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowValueOnBar = true,
+        ShowDpsOnBar = true,
         ShowDamagePercentOnBar = false,
         ShowJobAbbrevOnBar = false,
         ShowRankNumber = true,
@@ -435,7 +431,6 @@ public static class BuiltInPresets
         WindowBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
         WindowRounding = 0f,
 
-        ShowSelectionBar = true,
         SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 1f),
         SelectionBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.5f),
         SelectionBarHeight = 0f,
@@ -478,7 +473,7 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowValueOnBar = true,
+        ShowDpsOnBar = true,
         ShowDamagePercentOnBar = true,
         ShowJobAbbrevOnBar = true,
         ShowRankNumber = true,
@@ -551,7 +546,6 @@ public static class BuiltInPresets
         WindowBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.92f),
         WindowRounding = 2f,
 
-        ShowSelectionBar = true,
         SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f),
         SelectionBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.4f),
         SelectionBarHeight = 0f,
@@ -594,7 +588,7 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowValueOnBar = true,
+        ShowDpsOnBar = true,
         ShowDamagePercentOnBar = false,
         ShowJobAbbrevOnBar = false,
         ShowRankNumber = false,
