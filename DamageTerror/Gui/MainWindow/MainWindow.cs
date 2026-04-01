@@ -490,48 +490,10 @@ public class MainWindow : Window, IDisposable
         var colWidths = new Dictionary<BarColumn, float>();
         foreach (var col in columnOrder)
         {
-            colWidths[col] = col switch
-            {
-                BarColumn.DamagePercent => ImGui.CalcTextSize("00.0%").X,
-                BarColumn.HealPercent => ImGui.CalcTextSize("00.0%").X,
-                BarColumn.CritDirectHit => ImGui.CalcTextSize("100%").X,
-                BarColumn.Crit => ImGui.CalcTextSize("100%").X,
-                BarColumn.DirectHit => ImGui.CalcTextSize("100%").X,
-                BarColumn.Deaths => ImGui.CalcTextSize("00").X,
-                BarColumn.DamageTaken => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.DamageTakenPercent => ImGui.CalcTextSize("00.0%").X,
-                BarColumn.Overheal => ImGui.CalcTextSize("100%").X,
-                BarColumn.OverhealAmount => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.MaxHit => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.PeakDps => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.MaxHeal => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.Swings => ImGui.CalcTextSize("0000").X,
-                BarColumn.Hits => ImGui.CalcTextSize("0000").X,
-                BarColumn.Misses => ImGui.CalcTextSize("0000").X,
-                BarColumn.HitRate => ImGui.CalcTextSize("100%").X,
-                BarColumn.CritHitCount => ImGui.CalcTextSize("0000").X,
-                BarColumn.DirectHitCount => ImGui.CalcTextSize("0000").X,
-                BarColumn.CritDirectHitCount => ImGui.CalcTextSize("0000").X,
-                BarColumn.BlockPct => ImGui.CalcTextSize("100%").X,
-                BarColumn.ParryPct => ImGui.CalcTextSize("100%").X,
-                BarColumn.HealsTaken => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.AbsorbHeal => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.Kills => ImGui.CalcTextSize("00").X,
-                BarColumn.InstantDps => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.InstantHps => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.CritHealPct => ImGui.CalcTextSize("100%").X,
-                BarColumn.HealCount => ImGui.CalcTextSize("0000").X,
-                BarColumn.CombatantDuration => ImGui.CalcTextSize("00:00").X,
-                BarColumn.DamageShield => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.MaxHealWard => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.PowerDrain => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.PowerHeal => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.Healed => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.Damage => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.Hps => ImGui.CalcTextSize("000.0K").X,
-                BarColumn.Dps => ImGui.CalcTextSize("000.0K").X,
-                _ => 0f,
-            };
+            if (CombatantBarComponent.ColumnWidthTemplates.TryGetValue(col, out var template))
+                colWidths[col] = ImGui.CalcTextSize(template).X;
+            else
+                colWidths[col] = 0f;
         }
         ImGui.PopFont();
         ImGui.GetFont().Scale = config.GetFontScale(config.HeaderFontSize);

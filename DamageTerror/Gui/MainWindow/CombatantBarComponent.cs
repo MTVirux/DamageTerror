@@ -114,13 +114,98 @@ public class CombatantBarComponent
         this.textureProvider = textureProvider;
     }
 
+    public static readonly Dictionary<BarColumn, string> ColumnWidthTemplates = new()
+    {
+        { BarColumn.Dps, "000.0K" },
+        { BarColumn.Hps, "000.0K" },
+        { BarColumn.Damage, "000.0K" },
+        { BarColumn.Healed, "000.0K" },
+        { BarColumn.DamagePercent, "00.0%" },
+        { BarColumn.HealPercent, "00.0%" },
+        { BarColumn.DirectHit, "100%" },
+        { BarColumn.Crit, "100%" },
+        { BarColumn.CritDirectHit, "100%" },
+        { BarColumn.Deaths, "00" },
+        { BarColumn.DamageTaken, "000.0K" },
+        { BarColumn.DamageTakenPercent, "00.0%" },
+        { BarColumn.Overheal, "100%" },
+        { BarColumn.OverhealAmount, "000.0K" },
+        { BarColumn.MaxHit, "000.0K" },
+        { BarColumn.PeakDps, "000.0K" },
+        { BarColumn.MaxHeal, "000.0K" },
+        { BarColumn.Swings, "0000" },
+        { BarColumn.Hits, "0000" },
+        { BarColumn.Misses, "0000" },
+        { BarColumn.HitRate, "100%" },
+        { BarColumn.CritHitCount, "0000" },
+        { BarColumn.DirectHitCount, "0000" },
+        { BarColumn.CritDirectHitCount, "0000" },
+        { BarColumn.BlockPct, "100%" },
+        { BarColumn.ParryPct, "100%" },
+        { BarColumn.HealsTaken, "000.0K" },
+        { BarColumn.AbsorbHeal, "000.0K" },
+        { BarColumn.Kills, "00" },
+        { BarColumn.InstantDps, "000.0K" },
+        { BarColumn.InstantHps, "000.0K" },
+        { BarColumn.CritHealPct, "100%" },
+        { BarColumn.HealCount, "0000" },
+        { BarColumn.CombatantDuration, "00:00" },
+        { BarColumn.DamageShield, "000.0K" },
+        { BarColumn.MaxHealWard, "000.0K" },
+        { BarColumn.PowerDrain, "000.0K" },
+        { BarColumn.PowerHeal, "000.0K" },
+    };
+
+    public static string GetColumnDisplayValue(CombatantEntry combatant, BarColumn col,
+        Configuration config, MeterTab? activeTab) => col switch
+    {
+        BarColumn.Dps => ValueFormatter.FormatColumn(combatant.EncDps, config, BarColumn.Dps, activeTab),
+        BarColumn.Hps => ValueFormatter.FormatColumn(combatant.EncHps, config, BarColumn.Hps, activeTab),
+        BarColumn.Damage => ValueFormatter.FormatColumn(combatant.Damage, config, BarColumn.Damage, activeTab),
+        BarColumn.Healed => ValueFormatter.FormatColumn(combatant.Healed, config, BarColumn.Healed, activeTab),
+        BarColumn.DamagePercent => !string.IsNullOrEmpty(combatant.DamagePercent) ? combatant.DamagePercent : "0%",
+        BarColumn.HealPercent => !string.IsNullOrEmpty(combatant.HealedPercent) ? combatant.HealedPercent : "0%",
+        BarColumn.DirectHit => ValueFormatter.FormatPercentColumn(combatant.DirectHitPct, config, BarColumn.DirectHit, activeTab),
+        BarColumn.Crit => ValueFormatter.FormatPercentColumn(combatant.CritPct, config, BarColumn.Crit, activeTab),
+        BarColumn.CritDirectHit => ValueFormatter.FormatPercentColumn(combatant.CritDirectHitPct, config, BarColumn.CritDirectHit, activeTab),
+        BarColumn.Deaths => $"{combatant.Deaths}",
+        BarColumn.DamageTaken => ValueFormatter.FormatColumn(combatant.DamageTaken, config, BarColumn.DamageTaken, activeTab),
+        BarColumn.DamageTakenPercent => !string.IsNullOrEmpty(combatant.DamageTakenPercent) ? combatant.DamageTakenPercent : "0%",
+        BarColumn.Overheal => ValueFormatter.FormatPercentColumn(combatant.OverhealPct, config, BarColumn.Overheal, activeTab),
+        BarColumn.OverhealAmount => ValueFormatter.FormatColumn(combatant.OverhealAmount, config, BarColumn.OverhealAmount, activeTab),
+        BarColumn.MaxHit => ValueFormatter.FormatColumn(combatant.MaxHitDamage, config, BarColumn.MaxHit, activeTab),
+        BarColumn.PeakDps => ValueFormatter.FormatColumn(combatant.PeakDps, config, BarColumn.PeakDps, activeTab),
+        BarColumn.MaxHeal => ValueFormatter.FormatColumn(combatant.MaxHealAmount, config, BarColumn.MaxHeal, activeTab),
+        BarColumn.Swings => $"{combatant.Swings}",
+        BarColumn.Hits => $"{combatant.Hits}",
+        BarColumn.Misses => $"{combatant.Misses}",
+        BarColumn.HitRate => ValueFormatter.FormatPercentColumn(combatant.HitRate, config, BarColumn.HitRate, activeTab),
+        BarColumn.CritHitCount => $"{combatant.CritHitCount}",
+        BarColumn.DirectHitCount => $"{combatant.DirectHitCount}",
+        BarColumn.CritDirectHitCount => $"{combatant.CritDirectHitCount}",
+        BarColumn.BlockPct => ValueFormatter.FormatPercentColumn(combatant.BlockPct, config, BarColumn.BlockPct, activeTab),
+        BarColumn.ParryPct => ValueFormatter.FormatPercentColumn(combatant.ParryPct, config, BarColumn.ParryPct, activeTab),
+        BarColumn.HealsTaken => ValueFormatter.FormatColumn(combatant.HealsTaken, config, BarColumn.HealsTaken, activeTab),
+        BarColumn.AbsorbHeal => ValueFormatter.FormatColumn(combatant.AbsorbHeal, config, BarColumn.AbsorbHeal, activeTab),
+        BarColumn.Kills => $"{combatant.Kills}",
+        BarColumn.InstantDps => ValueFormatter.FormatColumn(combatant.InstantDps, config, BarColumn.InstantDps, activeTab),
+        BarColumn.InstantHps => ValueFormatter.FormatColumn(combatant.InstantHps, config, BarColumn.InstantHps, activeTab),
+        BarColumn.CritHealPct => ValueFormatter.FormatPercentColumn(combatant.CritHealPct, config, BarColumn.CritHealPct, activeTab),
+        BarColumn.HealCount => $"{combatant.HealCount}",
+        BarColumn.CombatantDuration => combatant.CombatantDuration,
+        BarColumn.DamageShield => ValueFormatter.FormatColumn(combatant.DamageShield, config, BarColumn.DamageShield, activeTab),
+        BarColumn.MaxHealWard => ValueFormatter.FormatColumn(combatant.MaxHealWardAmount, config, BarColumn.MaxHealWard, activeTab),
+        BarColumn.PowerDrain => ValueFormatter.FormatColumn(combatant.PowerDrain, config, BarColumn.PowerDrain, activeTab),
+        BarColumn.PowerHeal => ValueFormatter.FormatColumn(combatant.PowerHeal, config, BarColumn.PowerHeal, activeTab),
+        _ => string.Empty,
+    };
+
     public bool Render(CombatantEntry combatant, double maxValue, int index, SortField sortBy, MeterTab? activeTab, string currentPlayerName = "")
     {
         var barHeight = config.BarHeight;
         var iconSize = config.IconSize;
         var value = GetSortValue(combatant, sortBy);
-        var isLocalPlayer = !string.IsNullOrEmpty(currentPlayerName)
-            && string.Equals(combatant.Name, currentPlayerName, StringComparison.OrdinalIgnoreCase);
+        var isLocalPlayer = combatant.IsLocalPlayer;
 
         var vis = ColumnVisibility.Resolve(config, activeTab);
         var fraction = maxValue > 0 ? (float)(value / maxValue) : 0f;
@@ -224,351 +309,14 @@ public class CombatantBarComponent
         for (var ci = columnOrder.Count - 1; ci >= 0; ci--)
         {
             var col = columnOrder[ci];
-            switch (col)
-            {
-                case BarColumn.DamagePercent when vis.ShowDamagePercent:
-                {
-                    var pctStr = !string.IsNullOrEmpty(combatant.DamagePercent) ? combatant.DamagePercent : "0%";
-                    var colW = ImGui.CalcTextSize("00.0%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(pctStr).X) * 0.5f, textY), valColor, pctStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.HealPercent when vis.ShowHealPercent:
-                {
-                    var hpStr = !string.IsNullOrEmpty(combatant.HealedPercent) ? combatant.HealedPercent : "0%";
-                    var colW = ImGui.CalcTextSize("00.0%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(hpStr).X) * 0.5f, textY), valColor, hpStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.CritDirectHit when vis.ShowCritDirectHit:
-                {
-                    var cdhStr = ValueFormatter.FormatPercentColumn(combatant.CritDirectHitPct, config, BarColumn.CritDirectHit, activeTab);
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(cdhStr).X) * 0.5f, textY), valColor, cdhStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Crit when vis.ShowCrit:
-                {
-                    var critStr = ValueFormatter.FormatPercentColumn(combatant.CritPct, config, BarColumn.Crit, activeTab);
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(critStr).X) * 0.5f, textY), valColor, critStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.DirectHit when vis.ShowDirectHit:
-                {
-                    var dhStr = ValueFormatter.FormatPercentColumn(combatant.DirectHitPct, config, BarColumn.DirectHit, activeTab);
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(dhStr).X) * 0.5f, textY), valColor, dhStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Deaths when vis.ShowDeaths:
-                {
-                    var deathStr = $"{combatant.Deaths}";
-                    var deathW = ImGui.CalcTextSize("00").X;
-                    rightX -= deathW;
-                    drawList.AddText(new Vector2(rightX + (deathW - ImGui.CalcTextSize(deathStr).X) * 0.5f, textY), valColor, deathStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.DamageTaken when vis.ShowDamageTaken:
-                {
-                    var takenStr = ValueFormatter.FormatColumn(combatant.DamageTaken, config, BarColumn.DamageTaken, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(takenStr).X) * 0.5f, textY), valColor, takenStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.DamageTakenPercent when vis.ShowDamageTakenPercent:
-                {
-                    var dtPctStr = !string.IsNullOrEmpty(combatant.DamageTakenPercent) ? combatant.DamageTakenPercent : "0%";
-                    var colW = ImGui.CalcTextSize("00.0%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(dtPctStr).X) * 0.5f, textY), valColor, dtPctStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Overheal when vis.ShowOverheal:
-                {
-                    var ohStr = ValueFormatter.FormatPercentColumn(combatant.OverhealPct, config, BarColumn.Overheal, activeTab);
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(ohStr).X) * 0.5f, textY), valColor, ohStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.OverhealAmount when vis.ShowOverhealAmount:
-                {
-                    var ohaStr = ValueFormatter.FormatColumn(combatant.OverhealAmount, config, BarColumn.OverhealAmount, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(ohaStr).X) * 0.5f, textY), valColor, ohaStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.MaxHit when vis.ShowMaxHit:
-                {
-                    var mhStr = ValueFormatter.FormatColumn(combatant.MaxHitDamage, config, BarColumn.MaxHit, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(mhStr).X) * 0.5f, textY), valColor, mhStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.PeakDps when vis.ShowPeakDps:
-                {
-                    var pkStr = ValueFormatter.FormatColumn(combatant.PeakDps, config, BarColumn.PeakDps, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(pkStr).X) * 0.5f, textY), valColor, pkStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.MaxHeal when vis.ShowMaxHeal:
-                {
-                    var mhStr = ValueFormatter.FormatColumn(combatant.MaxHealAmount, config, BarColumn.MaxHeal, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(mhStr).X) * 0.5f, textY), valColor, mhStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Swings when vis.ShowSwings:
-                {
-                    var swStr = $"{combatant.Swings}";
-                    var colW = ImGui.CalcTextSize("0000").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(swStr).X) * 0.5f, textY), valColor, swStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Hits when vis.ShowHits:
-                {
-                    var hitStr = $"{combatant.Hits}";
-                    var colW = ImGui.CalcTextSize("0000").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(hitStr).X) * 0.5f, textY), valColor, hitStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Misses when vis.ShowMisses:
-                {
-                    var missStr = $"{combatant.Misses}";
-                    var colW = ImGui.CalcTextSize("0000").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(missStr).X) * 0.5f, textY), valColor, missStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.HitRate when vis.ShowHitRate:
-                {
-                    var hrStr = ValueFormatter.FormatPercentColumn(combatant.HitRate, config, BarColumn.HitRate, activeTab);
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(hrStr).X) * 0.5f, textY), valColor, hrStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.CritHitCount when vis.ShowCritHitCount:
-                {
-                    var chStr = $"{combatant.CritHitCount}";
-                    var colW = ImGui.CalcTextSize("0000").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(chStr).X) * 0.5f, textY), valColor, chStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.DirectHitCount when vis.ShowDirectHitCount:
-                {
-                    var dhcStr = $"{combatant.DirectHitCount}";
-                    var colW = ImGui.CalcTextSize("0000").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(dhcStr).X) * 0.5f, textY), valColor, dhcStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.CritDirectHitCount when vis.ShowCritDirectHitCount:
-                {
-                    var cdhcStr = $"{combatant.CritDirectHitCount}";
-                    var colW = ImGui.CalcTextSize("0000").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(cdhcStr).X) * 0.5f, textY), valColor, cdhcStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.BlockPct when vis.ShowBlockPct:
-                {
-                    var blkStr = ValueFormatter.FormatPercentColumn(combatant.BlockPct, config, BarColumn.BlockPct, activeTab);
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(blkStr).X) * 0.5f, textY), valColor, blkStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.ParryPct when vis.ShowParryPct:
-                {
-                    var parStr = ValueFormatter.FormatPercentColumn(combatant.ParryPct, config, BarColumn.ParryPct, activeTab);
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(parStr).X) * 0.5f, textY), valColor, parStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.HealsTaken when vis.ShowHealsTaken:
-                {
-                    var htStr = ValueFormatter.FormatColumn(combatant.HealsTaken, config, BarColumn.HealsTaken, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(htStr).X) * 0.5f, textY), valColor, htStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.AbsorbHeal when vis.ShowAbsorbHeal:
-                {
-                    var absStr = ValueFormatter.FormatColumn(combatant.AbsorbHeal, config, BarColumn.AbsorbHeal, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(absStr).X) * 0.5f, textY), valColor, absStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Kills when vis.ShowKills:
-                {
-                    var killStr = $"{combatant.Kills}";
-                    var colW = ImGui.CalcTextSize("00").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(killStr).X) * 0.5f, textY), valColor, killStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.InstantDps when vis.ShowInstantDps:
-                {
-                    var idStr = ValueFormatter.FormatColumn(combatant.InstantDps, config, BarColumn.InstantDps, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(idStr).X) * 0.5f, textY), valColor, idStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.InstantHps when vis.ShowInstantHps:
-                {
-                    var ihStr = ValueFormatter.FormatColumn(combatant.InstantHps, config, BarColumn.InstantHps, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(ihStr).X) * 0.5f, textY), valColor, ihStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.CritHealPct when vis.ShowCritHealPct:
-                {
-                    var chpStr = ValueFormatter.FormatPercentColumn(combatant.CritHealPct, config, BarColumn.CritHealPct, activeTab);
-                    var colW = ImGui.CalcTextSize("100%").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(chpStr).X) * 0.5f, textY), valColor, chpStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.HealCount when vis.ShowHealCount:
-                {
-                    var hcStr = $"{combatant.HealCount}";
-                    var colW = ImGui.CalcTextSize("0000").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(hcStr).X) * 0.5f, textY), valColor, hcStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.CombatantDuration when vis.ShowCombatantDuration:
-                {
-                    var durStr = combatant.CombatantDuration;
-                    var colW = ImGui.CalcTextSize("00:00").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(durStr).X) * 0.5f, textY), valColor, durStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.DamageShield when vis.ShowDamageShield:
-                {
-                    var dsStr = ValueFormatter.FormatColumn(combatant.DamageShield, config, BarColumn.DamageShield, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(dsStr).X) * 0.5f, textY), valColor, dsStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.MaxHealWard when vis.ShowMaxHealWard:
-                {
-                    var mhwStr = ValueFormatter.FormatColumn(combatant.MaxHealWardAmount, config, BarColumn.MaxHealWard, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(mhwStr).X) * 0.5f, textY), valColor, mhwStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.PowerDrain when vis.ShowPowerDrain:
-                {
-                    var pdStr = ValueFormatter.FormatColumn(combatant.PowerDrain, config, BarColumn.PowerDrain, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(pdStr).X) * 0.5f, textY), valColor, pdStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.PowerHeal when vis.ShowPowerHeal:
-                {
-                    var phStr = ValueFormatter.FormatColumn(combatant.PowerHeal, config, BarColumn.PowerHeal, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(phStr).X) * 0.5f, textY), valColor, phStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Healed when vis.ShowHealed:
-                {
-                    var healStr = ValueFormatter.FormatColumn(combatant.Healed, config, BarColumn.Healed, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(healStr).X) * 0.5f, textY), valColor, healStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Damage when vis.ShowDamage:
-                {
-                    var dmgStr = ValueFormatter.FormatColumn(combatant.Damage, config, BarColumn.Damage, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(dmgStr).X) * 0.5f, textY), valColor, dmgStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Hps when vis.ShowHps:
-                {
-                    var hpsStr = ValueFormatter.FormatColumn(combatant.EncHps, config, BarColumn.Hps, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(hpsStr).X) * 0.5f, textY), valColor, hpsStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-                case BarColumn.Dps when vis.ShowDps:
-                {
-                    var dpsStr = ValueFormatter.FormatColumn(combatant.EncDps, config, BarColumn.Dps, activeTab);
-                    var colW = ImGui.CalcTextSize("000.0K").X;
-                    rightX -= colW;
-                    drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(dpsStr).X) * 0.5f, textY), valColor, dpsStr);
-                    rightX -= colSpacing;
-                    break;
-                }
-            }
+            if (!vis.IsVisible(col)) continue;
+
+            var text = GetColumnDisplayValue(combatant, col, config, activeTab);
+            if (!ColumnWidthTemplates.TryGetValue(col, out var template)) continue;
+            var colW = ImGui.CalcTextSize(template).X;
+            rightX -= colW;
+            drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(text).X) * 0.5f, textY), valColor, text);
+            rightX -= colSpacing;
         }
 
         ImGui.GetFont().Scale = prevScale;
