@@ -7,6 +7,39 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
+public struct ColumnVisibility
+{
+    public bool ShowDps, ShowHps, ShowDamage, ShowHealed, ShowDamagePercent;
+    public bool ShowDirectHit, ShowCrit, ShowCritDirectHit, ShowDeaths;
+
+    public static ColumnVisibility Resolve(Configuration config, MeterTab? activeTab) => new()
+    {
+        ShowDps = activeTab?.ShowDpsOnBar ?? config.ShowDpsOnBar,
+        ShowHps = activeTab?.ShowHpsOnBar ?? config.ShowHpsOnBar,
+        ShowDamage = activeTab?.ShowDamageOnBar ?? config.ShowDamageOnBar,
+        ShowHealed = activeTab?.ShowHealedOnBar ?? config.ShowHealedOnBar,
+        ShowDamagePercent = activeTab?.ShowDamagePercentOnBar ?? config.ShowDamagePercentOnBar,
+        ShowDirectHit = activeTab?.ShowDirectHitOnBar ?? config.ShowDirectHitOnBar,
+        ShowCrit = activeTab?.ShowCritOnBar ?? config.ShowCritOnBar,
+        ShowCritDirectHit = activeTab?.ShowCritDirectHitOnBar ?? config.ShowCritDirectHitOnBar,
+        ShowDeaths = activeTab?.ShowDeathsOnBar ?? config.ShowDeathsOnBar,
+    };
+
+    public bool IsVisible(BarColumn col) => col switch
+    {
+        BarColumn.Dps => ShowDps,
+        BarColumn.Hps => ShowHps,
+        BarColumn.Damage => ShowDamage,
+        BarColumn.Healed => ShowHealed,
+        BarColumn.DamagePercent => ShowDamagePercent,
+        BarColumn.DirectHit => ShowDirectHit,
+        BarColumn.Crit => ShowCrit,
+        BarColumn.CritDirectHit => ShowCritDirectHit,
+        BarColumn.Deaths => ShowDeaths,
+        _ => false,
+    };
+}
+
 public class CombatantBarComponent
 {
     private readonly Configuration config;
@@ -27,16 +60,7 @@ public class CombatantBarComponent
         if (value <= 0)
             return false;
 
-        // Per-tab display toggles (fall back to global config if no tab)
-        var showDps = activeTab?.ShowDpsOnBar ?? config.ShowDpsOnBar;
-        var showHps = activeTab?.ShowHpsOnBar ?? config.ShowHpsOnBar;
-        var showDmg = activeTab?.ShowDamageOnBar ?? config.ShowDamageOnBar;
-        var showHealed = activeTab?.ShowHealedOnBar ?? config.ShowHealedOnBar;
-        var showDmgPct = activeTab?.ShowDamagePercentOnBar ?? config.ShowDamagePercentOnBar;
-        var showDh = activeTab?.ShowDirectHitOnBar ?? config.ShowDirectHitOnBar;
-        var showCrit = activeTab?.ShowCritOnBar ?? config.ShowCritOnBar;
-        var showCdh = activeTab?.ShowCritDirectHitOnBar ?? config.ShowCritDirectHitOnBar;
-        var showDeaths = activeTab?.ShowDeathsOnBar ?? config.ShowDeathsOnBar;
+        var vis = ColumnVisibility.Resolve(config, activeTab);
         var fraction = maxValue > 0 ? (float)(value / maxValue) : 0f;
         fraction = Math.Clamp(fraction, 0f, 1f);
 
@@ -140,7 +164,7 @@ public class CombatantBarComponent
             var col = columnOrder[ci];
             switch (col)
             {
-                case BarColumn.DamagePercent when showDmgPct && !string.IsNullOrEmpty(combatant.DamagePercent):
+                case BarColumn.DamagePercent when vis.ShowDamagePercent && !string.IsNullOrEmpty(combatant.DamagePercent):
                 {
                     var pctStr = combatant.DamagePercent;
                     var colW = ImGui.CalcTextSize("00.0%").X;
@@ -149,7 +173,7 @@ public class CombatantBarComponent
                     rightX -= colSpacing;
                     break;
                 }
-                case BarColumn.CritDirectHit when showCdh:
+                case BarColumn.CritDirectHit when vis.ShowCritDirectHit:
                 {
                     var cdhStr = $"{combatant.CritDirectHitPct:F0}%";
                     var colW = ImGui.CalcTextSize("100%").X;
@@ -158,7 +182,7 @@ public class CombatantBarComponent
                     rightX -= colSpacing;
                     break;
                 }
-                case BarColumn.Crit when showCrit:
+                case BarColumn.Crit when vis.ShowCrit:
                 {
                     var critStr = $"{combatant.CritPct:F0}%";
                     var colW = ImGui.CalcTextSize("100%").X;
@@ -167,7 +191,7 @@ public class CombatantBarComponent
                     rightX -= colSpacing;
                     break;
                 }
-                case BarColumn.DirectHit when showDh:
+                case BarColumn.DirectHit when vis.ShowDirectHit:
                 {
                     var dhStr = $"{combatant.DirectHitPct:F0}%";
                     var colW = ImGui.CalcTextSize("100%").X;
@@ -176,7 +200,7 @@ public class CombatantBarComponent
                     rightX -= colSpacing;
                     break;
                 }
-                case BarColumn.Deaths when showDeaths:
+                case BarColumn.Deaths when vis.ShowDeaths:
                 {
                     var deathStr = $"{combatant.Deaths}";
                     var deathW = ImGui.CalcTextSize("00").X;
@@ -185,7 +209,7 @@ public class CombatantBarComponent
                     rightX -= colSpacing;
                     break;
                 }
-                case BarColumn.Healed when showHealed:
+                case BarColumn.Healed when vis.ShowHealed:
                 {
                     var healStr = ValueFormatter.Format(combatant.Healed, config.ValueDisplayFormat);
                     var colW = ImGui.CalcTextSize("000.0K").X;
@@ -194,7 +218,7 @@ public class CombatantBarComponent
                     rightX -= colSpacing;
                     break;
                 }
-                case BarColumn.Damage when showDmg:
+                case BarColumn.Damage when vis.ShowDamage:
                 {
                     var dmgStr = ValueFormatter.Format(combatant.Damage, config.ValueDisplayFormat);
                     var colW = ImGui.CalcTextSize("000.0K").X;
@@ -203,7 +227,7 @@ public class CombatantBarComponent
                     rightX -= colSpacing;
                     break;
                 }
-                case BarColumn.Hps when showHps:
+                case BarColumn.Hps when vis.ShowHps:
                 {
                     var hpsStr = ValueFormatter.Format(combatant.EncHps, config.ValueDisplayFormat);
                     var colW = ImGui.CalcTextSize("000.0K").X;
@@ -212,7 +236,7 @@ public class CombatantBarComponent
                     rightX -= colSpacing;
                     break;
                 }
-                case BarColumn.Dps when showDps:
+                case BarColumn.Dps when vis.ShowDps:
                 {
                     var dpsStr = ValueFormatter.Format(combatant.EncDps, config.ValueDisplayFormat);
                     var colW = ImGui.CalcTextSize("000.0K").X;

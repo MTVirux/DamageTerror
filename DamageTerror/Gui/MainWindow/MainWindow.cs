@@ -447,16 +447,7 @@ public class MainWindow : Window, IDisposable
         if (config.ShowNameOnBar)
             drawList.AddText(new Vector2(textStartX, textY), headerColor, "Name");
 
-        // Resolve per-tab toggles with global fallback
-        var showDps = activeTab?.ShowDpsOnBar ?? config.ShowDpsOnBar;
-        var showHps = activeTab?.ShowHpsOnBar ?? config.ShowHpsOnBar;
-        var showDmg = activeTab?.ShowDamageOnBar ?? config.ShowDamageOnBar;
-        var showHealed = activeTab?.ShowHealedOnBar ?? config.ShowHealedOnBar;
-        var showDmgPct = activeTab?.ShowDamagePercentOnBar ?? config.ShowDamagePercentOnBar;
-        var showDh = activeTab?.ShowDirectHitOnBar ?? config.ShowDirectHitOnBar;
-        var showCrit = activeTab?.ShowCritOnBar ?? config.ShowCritOnBar;
-        var showCdh = activeTab?.ShowCritDirectHitOnBar ?? config.ShowCritDirectHitOnBar;
-        var showDeaths = activeTab?.ShowDeathsOnBar ?? config.ShowDeathsOnBar;
+        var vis = ColumnVisibility.Resolve(config, activeTab);
 
         var rightX = cursorPos.X + windowWidth - config.BarRightPadding;
         var colSpacing = config.BarColumnSpacing;
@@ -492,20 +483,7 @@ public class MainWindow : Window, IDisposable
         for (var ci = columnOrder.Count - 1; ci >= 0; ci--)
         {
             var col = columnOrder[ci];
-            var visible = col switch
-            {
-                BarColumn.DamagePercent => showDmgPct,
-                BarColumn.CritDirectHit => showCdh,
-                BarColumn.Crit => showCrit,
-                BarColumn.DirectHit => showDh,
-                BarColumn.Deaths => showDeaths,
-                BarColumn.Healed => showHealed,
-                BarColumn.Damage => showDmg,
-                BarColumn.Hps => showHps,
-                BarColumn.Dps => showDps,
-                _ => false,
-            };
-            if (!visible) continue;
+            if (!vis.IsVisible(col)) continue;
 
             var headerLabel = activeTab?.GetHeaderLabel(col) ?? config.GetHeaderLabel(col);
             var colW = colWidths[col];
