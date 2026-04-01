@@ -35,7 +35,7 @@ public class EncounterHeaderComponent : IUIComponent
 
     public float GetHeight()
     {
-        if (!dataService.Config.ShowSelectionBar)
+        if (!dataService.Config.ShowEncounterPicker)
             return 0f;
 
         var pad = dataService.Config.SelectionBarHeight;
@@ -46,7 +46,7 @@ public class EncounterHeaderComponent : IUIComponent
 
     public void Render()
     {
-        if (!dataService.Config.ShowSelectionBar)
+        if (!dataService.Config.ShowEncounterPicker)
             return;
 
         var totalCount = dataService.Store.TotalCount;
@@ -57,9 +57,7 @@ public class EncounterHeaderComponent : IUIComponent
         {
             var enc = encounter.Encounter;
             var statusIcon = enc.IsActive ? "●" : "○";
-            var primaryValue = dataService.Config.ShowHps
-                ? $"{enc.EncHps:F1} rHPS"
-                : $"{enc.EncDps:F1} rDPS";
+            var primaryValue = $"{enc.EncDps:F1} rDPS";
             var titlePart = !string.IsNullOrEmpty(enc.Title) ? $" — {enc.Title}" : "";
             previewLabel = $"{statusIcon} {enc.ZoneName}{titlePart}  |  {enc.Duration}  |  {primaryValue}";
         }
@@ -89,9 +87,7 @@ public class EncounterHeaderComponent : IUIComponent
 
         var comboWidth = ImGui.GetContentRegionAvail().X;
 
-        if (dataService.Config.ShowEncounterPicker)
-        {
-            ImGui.SetNextItemWidth(comboWidth);
+        ImGui.SetNextItemWidth(comboWidth);
             if (ImGui.BeginCombo("##enc_combo", previewLabel))
             {
                 if (!comboWasOpen)
@@ -117,9 +113,7 @@ public class EncounterHeaderComponent : IUIComponent
                         && !h.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
                             || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                         continue;
-                    var hValue = dataService.Config.ShowHps
-                        ? $"{hEnc.EncHps:F1} rHPS"
-                        : $"{hEnc.EncDps:F1} rDPS";
+                    var hValue = $"{hEnc.EncDps:F1} rDPS";
                     var hTitle = !string.IsNullOrEmpty(hEnc.Title) ? $" — {hEnc.Title}" : "";
                     var hIcon = hEnc.IsActive ? "●" : "○";
                     var label = $"{hIcon} {hEnc.ZoneName}{hTitle}  |  {hEnc.Duration}  |  {hValue}##{i}";
@@ -149,9 +143,7 @@ public class EncounterHeaderComponent : IUIComponent
                         || active.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
                             || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                     {
-                        var aValue = dataService.Config.ShowHps
-                            ? $"{aEnc.EncHps:F1} rHPS"
-                            : $"{aEnc.EncDps:F1} rDPS";
+                        var aValue = $"{aEnc.EncDps:F1} rDPS";
                         var aTitle = !string.IsNullOrEmpty(aEnc.Title) ? $" — {aEnc.Title}" : "";
                         var aIcon = aEnc.IsActive ? "●" : "○";
                         var activeLabel = $"{aIcon} {aEnc.ZoneName}{aTitle}  |  {aEnc.Duration}  |  {aValue}##active";
@@ -166,7 +158,6 @@ public class EncounterHeaderComponent : IUIComponent
             {
                 comboWasOpen = false;
             }
-        }
 
         if (ImGui.BeginPopupContextItem("##enc_context"))
         {
