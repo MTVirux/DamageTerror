@@ -8,4 +8,5 @@ public enum SortField
     Healed,
     CritPct,
     Deaths,
+    DamageTaken,
 }

@@ -66,6 +66,7 @@ public static class CombatDataParser
                 DirectHitPct = GetDouble(c, "DirectHitPct"),
                 CritDirectHitPct = GetDouble(c, "CritDirectHitPct"),
                 Deaths = GetInt(c, "deaths"),
+                DamageTaken = GetLong(c, "damagetaken"),
                 OverhealPct = GetDouble(c, "OverHealPct"),
                 MaxHit = GetString(c, "maxhit"),
                 MaxHitDamage = GetLong(c, "MAXHIT"),

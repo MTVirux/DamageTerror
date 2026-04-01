@@ -15,4 +15,6 @@ public class SkillEntry
     public double DirectHitPct { get; set; }
 
     public double CritDirectHitPct { get; set; }
+
+    public SkillDamageType DamageType { get; set; }
 }

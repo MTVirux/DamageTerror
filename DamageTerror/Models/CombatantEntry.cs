@@ -24,6 +24,8 @@ public class CombatantEntry
 
     public int Deaths { get; set; }
 
+    public long DamageTaken { get; set; }
+
     public double OverhealPct { get; set; }
 
     public string MaxHit { get; set; } = string.Empty;
