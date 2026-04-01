@@ -22,6 +22,13 @@ public class EncounterHeaderComponent : IUIComponent
         this.saveConfig = saveConfig;
     }
 
+    private static string FormatEncounterLabel(CombatEncounter enc, string suffix = "")
+    {
+        var icon = enc.IsActive ? "●" : "○";
+        var title = !string.IsNullOrEmpty(enc.Title) ? $" — {enc.Title}" : "";
+        return $"{icon} {enc.ZoneName}{title}  |  {enc.Duration}  |  {enc.EncDps:F1} rDPS{suffix}";
+    }
+
     public EncounterSnapshot? SelectedEncounter
     {
         get
@@ -56,10 +63,7 @@ public class EncounterHeaderComponent : IUIComponent
         if (encounter != null)
         {
             var enc = encounter.Encounter;
-            var statusIcon = enc.IsActive ? "●" : "○";
-            var primaryValue = $"{enc.EncDps:F1} rDPS";
-            var titlePart = !string.IsNullOrEmpty(enc.Title) ? $" — {enc.Title}" : "";
-            previewLabel = $"{statusIcon} {enc.ZoneName}{titlePart}  |  {enc.Duration}  |  {primaryValue}";
+            previewLabel = FormatEncounterLabel(enc);
         }
         else
         {
@@ -113,10 +117,7 @@ public class EncounterHeaderComponent : IUIComponent
                         && !h.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
                             || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                         continue;
-                    var hValue = $"{hEnc.EncDps:F1} rDPS";
-                    var hTitle = !string.IsNullOrEmpty(hEnc.Title) ? $" — {hEnc.Title}" : "";
-                    var hIcon = hEnc.IsActive ? "●" : "○";
-                    var label = $"{hIcon} {hEnc.ZoneName}{hTitle}  |  {hEnc.Duration}  |  {hValue}##{i}";
+                    var label = FormatEncounterLabel(hEnc, $"##{i}");
                     if (ImGui.Selectable(label, selectedIndex == i))
                         selectedIndex = i;
 
@@ -143,10 +144,7 @@ public class EncounterHeaderComponent : IUIComponent
                         || active.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
                             || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                     {
-                        var aValue = $"{aEnc.EncDps:F1} rDPS";
-                        var aTitle = !string.IsNullOrEmpty(aEnc.Title) ? $" — {aEnc.Title}" : "";
-                        var aIcon = aEnc.IsActive ? "●" : "○";
-                        var activeLabel = $"{aIcon} {aEnc.ZoneName}{aTitle}  |  {aEnc.Duration}  |  {aValue}##active";
+                        var activeLabel = FormatEncounterLabel(aEnc, "##active");
                         if (ImGui.Selectable(activeLabel, selectedIndex == -1))
                             selectedIndex = -1;
                     }
