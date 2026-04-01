@@ -87,6 +87,54 @@ public class EncounterStore
         }
     }
 
+    public bool ArchiveActive()
+    {
+        lock (syncLock)
+        {
+            if (active == null)
+                return false;
+
+            history.Add(active);
+            dirty = true;
+
+            while (history.Count > maxHistory)
+                history.RemoveAt(0);
+
+            active = null;
+            wasActive = false;
+            return true;
+        }
+    }
+
+    public bool RestoreLatestForPlayer(string playerName)
+    {
+        lock (syncLock)
+        {
+            var idx = -1;
+            for (var i = history.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(history[i].PlayerName, playerName, StringComparison.OrdinalIgnoreCase))
+                {
+                    idx = i;
+                    break;
+                }
+            }
+
+            // Fall back to the latest entry if no match for this player.
+            if (idx < 0 && history.Count > 0)
+                idx = history.Count - 1;
+
+            if (idx < 0)
+                return false;
+
+            active = history[idx];
+            history.RemoveAt(idx);
+            wasActive = false;
+            dirty = true;
+            return true;
+        }
+    }
+
     public void Clear()
     {
         lock (syncLock)

@@ -12,6 +12,7 @@ public class DataService : IDisposable
     private CancellationTokenSource? cts;
     private bool disposed;
     private bool wasActive;
+    private bool playerChanged;
 
     public SkillTracker SkillTracker { get; } = new(ServiceManager.DataManager);
     public EncounterStore Store { get; }
@@ -135,6 +136,15 @@ public class DataService : IDisposable
 
     private void OnCombatData(EncounterSnapshot snapshot)
     {
+        // After a player change, drop stale data from the previous session
+        // until a genuinely new active encounter starts.
+        if (playerChanged)
+        {
+            if (!snapshot.Encounter.IsActive)
+                return;
+            playerChanged = false;
+        }
+
         if (string.IsNullOrEmpty(PlayerName))
         {
             try
@@ -180,6 +190,9 @@ public class DataService : IDisposable
         }
         wasActive = snapshot.Encounter.IsActive;
 
+        if (!string.IsNullOrEmpty(PlayerName))
+            snapshot.PlayerName = PlayerName;
+
         foreach (var c in snapshot.Combatants)
         {
             c.Skills = SkillTracker.GetSkills(c.Name);
@@ -206,18 +219,48 @@ public class DataService : IDisposable
             if (uint.TryParse(line[2], System.Globalization.NumberStyles.HexNumber,
                     System.Globalization.CultureInfo.InvariantCulture, out var id))
             {
-                PlayerName = line[3];
-                PlayerId = id;
-                log.Debug($"Player name from LogLine: {line[3]} (ID: {id})");
+                OnPlayerChanged(line[3], id);
             }
         }
     }
 
+    private void OnPlayerChanged(string newName, uint newId)
+    {
+        if (string.Equals(PlayerName, newName, StringComparison.OrdinalIgnoreCase))
+        {
+            PlayerName = newName;
+            PlayerId = newId;
+            return;
+        }
+
+        // Finalize skills on the outgoing encounter before archiving.
+        var outgoing = Store.ActiveEncounter;
+        if (outgoing != null)
+        {
+            foreach (var c in outgoing.Combatants)
+            {
+                c.Skills = SkillTracker.GetSkills(c.Name);
+                c.HealingSkills = SkillTracker.GetHealSkills(c.Name);
+            }
+        }
+
+        SkillTracker.Reset();
+
+        if (Store.ArchiveActive())
+            Store.Save();
+
+        wasActive = false;
+        playerChanged = true;
+        PlayerName = newName;
+        PlayerId = newId;
+
+        Store.RestoreLatestForPlayer(newName);
+        log.Debug($"Player changed to: {newName} (ID: {newId})");
+    }
+
     private void OnPrimaryPlayerChanged(string name, uint id)
     {
-        PlayerName = name;
-        PlayerId = id;
-        log.Debug($"Primary player set: {name} (ID: {id})");
+        OnPlayerChanged(name, id);
     }
 
     public void Dispose()
