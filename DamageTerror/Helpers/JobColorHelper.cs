@@ -5,28 +5,33 @@ public static class JobColorHelper
     private static readonly HashSet<string> Tanks = new(StringComparer.OrdinalIgnoreCase)
     {
         "Pld", "War", "Drk", "Gnb", "paladin", "warrior", "darkknight", "gunbreaker",
+        "Gla", "gladiator", "Mrd", "marauder",
     };
 
     private static readonly HashSet<string> Healers = new(StringComparer.OrdinalIgnoreCase)
     {
         "Whm", "Sch", "Ast", "Sge", "whitemage", "scholar", "astrologian", "sage",
+        "Cnj", "conjurer",
     };
 
     private static readonly HashSet<string> MeleeDps = new(StringComparer.OrdinalIgnoreCase)
     {
         "Mnk", "Drg", "Nin", "Sam", "Rpr", "Vpr",
         "monk", "dragoon", "ninja", "samurai", "reaper", "viper",
+        "Pgl", "pugilist", "Lnc", "lancer", "Rog", "rogue",
     };
 
     private static readonly HashSet<string> RangedDps = new(StringComparer.OrdinalIgnoreCase)
     {
         "Brd", "Mch", "Dnc", "bard", "machinist", "dancer",
+        "Arc", "archer",
     };
 
     private static readonly HashSet<string> CasterDps = new(StringComparer.OrdinalIgnoreCase)
     {
         "Blm", "Smn", "Rdm", "Pct", "Blu",
         "blackmage", "summoner", "redmage", "pictomancer", "bluemage",
+        "Thm", "thaumaturge", "Acn", "arcanist",
     };
 
     private static readonly HashSet<string> LimitBreak = new(StringComparer.OrdinalIgnoreCase)
@@ -39,9 +44,10 @@ public static class JobColorHelper
     public static readonly string[] MeleeDpsJobs = { "Mnk", "Drg", "Nin", "Sam", "Rpr", "Vpr" };
     public static readonly string[] RangedDpsJobs = { "Brd", "Mch", "Dnc" };
     public static readonly string[] CasterDpsJobs = { "Blm", "Smn", "Rdm", "Pct", "Blu" };
+    public static readonly string[] BaseClassJobs = { "Gla", "Mrd", "Cnj", "Pgl", "Lnc", "Arc", "Rog", "Thm", "Acn" };
 
     public static readonly string[] AllJobAbbreviations =
-        TankJobs.Concat(HealerJobs).Concat(MeleeDpsJobs).Concat(RangedDpsJobs).Concat(CasterDpsJobs).ToArray();
+        TankJobs.Concat(HealerJobs).Concat(MeleeDpsJobs).Concat(RangedDpsJobs).Concat(CasterDpsJobs).Concat(BaseClassJobs).ToArray();
 
     private static readonly Dictionary<string, Vector4> DefaultPerJobColors = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -75,6 +81,17 @@ public static class JobColorHelper
         { "Rdm", new Vector4(0.85f, 0.35f, 0.45f, 1.0f) },
         { "Pct", new Vector4(0.75f, 0.55f, 0.80f, 1.0f) },
         { "Blu", new Vector4(0.30f, 0.55f, 0.90f, 1.0f) },
+
+        // Base classes (share colors with their upgraded jobs)
+        { "Gla", new Vector4(0.40f, 0.55f, 0.90f, 1.0f) },  // → Pld
+        { "Mrd", new Vector4(0.20f, 0.30f, 0.70f, 1.0f) },  // → War
+        { "Cnj", new Vector4(0.85f, 0.85f, 0.70f, 1.0f) },  // → Whm
+        { "Pgl", new Vector4(0.85f, 0.65f, 0.15f, 1.0f) },  // → Mnk
+        { "Lnc", new Vector4(0.25f, 0.40f, 0.85f, 1.0f) },  // → Drg
+        { "Arc", new Vector4(0.55f, 0.80f, 0.30f, 1.0f) },  // → Brd
+        { "Rog", new Vector4(0.70f, 0.20f, 0.35f, 1.0f) },  // → Nin
+        { "Thm", new Vector4(0.60f, 0.45f, 0.85f, 1.0f) },  // → Blm
+        { "Acn", new Vector4(0.30f, 0.70f, 0.40f, 1.0f) },  // → Smn
     };
 
     public static Vector4 GetDefaultJobColor(string job)

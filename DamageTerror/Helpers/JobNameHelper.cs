@@ -30,6 +30,17 @@ public static class JobNameHelper
         { "Rdm", "Red Mage" },
         { "Pct", "Pictomancer" },
         { "Blu", "Blue Mage" },
+
+        // Base classes
+        { "Gla", "Gladiator" },
+        { "Mrd", "Marauder" },
+        { "Pgl", "Pugilist" },
+        { "Lnc", "Lancer" },
+        { "Arc", "Archer" },
+        { "Cnj", "Conjurer" },
+        { "Thm", "Thaumaturge" },
+        { "Acn", "Arcanist" },
+        { "Rog", "Rogue" },
     };
 
     public static string GetFullName(string abbreviation)

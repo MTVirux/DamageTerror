@@ -1,50 +1,95 @@
 using Dalamud.Plugin.Services;
+using DamageTerror.Enums;
 
 namespace DamageTerror.Helpers;
 
 public static class JobIconHelper
 {
-    private static readonly Dictionary<string, uint> JobIconMap = new(StringComparer.OrdinalIgnoreCase)
+    // Maps job name/abbreviation → classJobId
+    private static readonly Dictionary<string, uint> ClassJobIdMap = new(StringComparer.OrdinalIgnoreCase)
     {
-        { "Pld", 062119 }, { "paladin", 062119 },
-        { "War", 062121 }, { "warrior", 062121 },
-        { "Drk", 062132 }, { "darkknight", 062132 },
-        { "Gnb", 062137 }, { "gunbreaker", 062137 },
+        { "Pld", 19 }, { "paladin", 19 },
+        { "War", 21 }, { "warrior", 21 },
+        { "Drk", 32 }, { "darkknight", 32 },
+        { "Gnb", 37 }, { "gunbreaker", 37 },
 
-        { "Whm", 062124 }, { "whitemage", 062124 },
-        { "Sch", 062128 }, { "scholar", 062128 },
-        { "Ast", 062133 }, { "astrologian", 062133 },
-        { "Sge", 062140 }, { "sage", 062140 },
+        { "Whm", 24 }, { "whitemage", 24 },
+        { "Sch", 28 }, { "scholar", 28 },
+        { "Ast", 33 }, { "astrologian", 33 },
+        { "Sge", 40 }, { "sage", 40 },
 
-        { "Mnk", 062120 }, { "monk", 062120 },
-        { "Drg", 062122 }, { "dragoon", 062122 },
-        { "Nin", 062130 }, { "ninja", 062130 },
-        { "Sam", 062134 }, { "samurai", 062134 },
-        { "Rpr", 062139 }, { "reaper", 062139 },
-        { "Vpr", 062141 }, { "viper", 062141 },
+        { "Mnk", 20 }, { "monk", 20 },
+        { "Drg", 22 }, { "dragoon", 22 },
+        { "Nin", 30 }, { "ninja", 30 },
+        { "Sam", 34 }, { "samurai", 34 },
+        { "Rpr", 39 }, { "reaper", 39 },
+        { "Vpr", 41 }, { "viper", 41 },
 
-        { "Brd", 062123 }, { "bard", 062123 },
-        { "Mch", 062131 }, { "machinist", 062131 },
-        { "Dnc", 062138 }, { "dancer", 062138 },
+        { "Brd", 23 }, { "bard", 23 },
+        { "Mch", 31 }, { "machinist", 31 },
+        { "Dnc", 38 }, { "dancer", 38 },
 
-        { "Blm", 062125 }, { "blackmage", 062125 },
-        { "Smn", 062127 }, { "summoner", 062127 },
-        { "Rdm", 062135 }, { "redmage", 062135 },
-        { "Pct", 062142 }, { "pictomancer", 062142 },
-        { "Blu", 062136 }, { "bluemage", 062136 },
+        { "Blm", 25 }, { "blackmage", 25 },
+        { "Smn", 27 }, { "summoner", 27 },
+        { "Rdm", 35 }, { "redmage", 35 },
+        { "Pct", 42 }, { "pictomancer", 42 },
+        { "Blu", 36 }, { "bluemage", 36 },
+
+        // Base classes
+        { "Gla", 1 }, { "gladiator", 1 },
+        { "Pgl", 2 }, { "pugilist", 2 },
+        { "Mrd", 3 }, { "marauder", 3 },
+        { "Lnc", 4 }, { "lancer", 4 },
+        { "Arc", 5 }, { "archer", 5 },
+        { "Cnj", 6 }, { "conjurer", 6 },
+        { "Thm", 7 }, { "thaumaturge", 7 },
+        { "Acn", 26 }, { "arcanist", 26 },
+        { "Rog", 29 }, { "rogue", 29 },
 
         // Crafters/Gatherers (unlikely in combat but handle gracefully)
-        { "Crp", 062108 }, { "Bsm", 062109 }, { "Arm", 062110 },
-        { "Gsm", 062111 }, { "Ltw", 062112 }, { "Wvr", 062113 },
-        { "Alc", 062114 }, { "Cul", 062115 },
-        { "Min", 062116 }, { "Btn", 062117 }, { "Fsh", 062118 },
+        { "Crp", 8 }, { "Bsm", 9 }, { "Arm", 10 },
+        { "Gsm", 11 }, { "Ltw", 12 }, { "Wvr", 13 },
+        { "Alc", 14 }, { "Cul", 15 },
+        { "Min", 16 }, { "Btn", 17 }, { "Fsh", 18 },
     };
 
-    public static uint? GetIconId(string job)
+    // Fixed icon IDs for entries that don't map to a classJobId
+    private static readonly Dictionary<string, uint> FixedIconMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "Lmb", 103 }, { "Limit Break", 103 },
+    };
+
+    private static uint GetBaseOffset(JobIconStyle style) => style switch
+    {
+        JobIconStyle.Plain => 62000,
+        _ => 62100,
+    };
+
+    public static uint? GetIconId(string job, JobIconStyle style = JobIconStyle.Framed,
+        Dictionary<string, uint>? customIcons = null)
     {
         if (string.IsNullOrEmpty(job))
             return null;
 
-        return JobIconMap.TryGetValue(job, out var iconId) ? iconId : null;
+        // Custom per-job overrides take priority
+        if (style == JobIconStyle.Custom
+            && customIcons != null
+            && customIcons.TryGetValue(job, out var customId)
+            && customId != 0)
+            return customId;
+
+        if (FixedIconMap.TryGetValue(job, out var fixedId))
+            return fixedId;
+
+        if (!ClassJobIdMap.TryGetValue(job, out var classJobId))
+            return null;
+
+        // For Custom style without a per-job override, fall back to Framed
+        var offset = style == JobIconStyle.Custom ? GetBaseOffset(JobIconStyle.Framed) : GetBaseOffset(style);
+        return offset + classJobId;
     }
+
+    /// <summary>All distinct job abbreviations (short 3-letter form).</summary>
+    public static IEnumerable<string> AllJobAbbreviations =>
+        ClassJobIdMap.Keys.Where(k => k.Length <= 3);
 }
