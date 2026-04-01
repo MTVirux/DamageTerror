@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using DamageTerror.Enums;
 using DamageTerror.Helpers;
 using DamageTerror.Services;
 using Dalamud.Interface;
@@ -26,6 +27,7 @@ public class AppearanceTab
     }
 
     public static bool DrawBarsPage(Configuration config) => DrawBarsTab(config);
+    public static bool DrawFormattingPage(Configuration config) => DrawFormattingTab(config);
     public static bool DrawSelectionBarPage(Configuration config) => DrawSelectionBarTab(config);
     public static bool DrawColorsPage(Configuration config) => DrawColorsTab(config);
     public static bool DrawStatusBarPage(Configuration config) => DrawStatusBarTab(config);
@@ -126,6 +128,8 @@ public class AppearanceTab
             ImGui.OpenPopup("##importPresetPopup");
         }
 
+        ImGui.TextDisabled("Tip: Right-click custom presets in the dropdown to delete or export them.");
+
         if (ImGui.BeginPopup("##savePresetPopup"))
         {
             ImGui.Text("Save current settings as a custom preset:");
@@ -139,11 +143,15 @@ public class AppearanceTab
 
             ImGui.Spacing();
 
-            var canSave = !string.IsNullOrWhiteSpace(savePresetName);
+            var trimmedName = savePresetName.Trim();
+            var isBuiltInName = presetManager.BuiltInPresets.Any(p => p.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase));
+            var canSave = !string.IsNullOrWhiteSpace(savePresetName) && !isBuiltInName;
+            if (isBuiltInName && !string.IsNullOrWhiteSpace(savePresetName))
+                ImGui.TextColored(new Vector4(1f, 0.3f, 0.3f, 1f), "Cannot overwrite a built-in preset.");
             if (!canSave) ImGui.BeginDisabled();
             if (ImGui.Button("Save"))
             {
-                var preset = ThemePreset.CreateFromConfig(config, savePresetName.Trim(), savePresetDesc.Trim());
+                var preset = ThemePreset.CreateFromConfig(config, trimmedName, savePresetDesc.Trim());
                 presetManager.SaveCustomPreset(preset);
                 selectedPresetIndex = -1;
                 ImGui.CloseCurrentPopup();
@@ -267,19 +275,43 @@ public class AppearanceTab
         if (ImGui.CollapsingHeader("Visible Columns##presetCols"))
         {
             ImGui.Indent();
-            PresetToggle("Job Icons", preset.ShowJobIcons);
-            PresetToggle("Name", preset.ShowNameOnBar);
-            PresetToggle("Job Abbreviation", preset.ShowJobAbbrevOnBar);
-            PresetToggle("Rank Number", preset.ShowRankNumber);
-            PresetToggle("DPS", preset.ShowDpsOnBar);
-            PresetToggle("HPS", preset.ShowHpsOnBar);
-            PresetToggle("Damage", preset.ShowDamageOnBar);
-            PresetToggle("Healed", preset.ShowHealedOnBar);
-            PresetToggle("Damage %", preset.ShowDamagePercentOnBar);
-            PresetToggle("Direct Hit %", preset.ShowDirectHitOnBar);
-            PresetToggle("Crit %", preset.ShowCritOnBar);
-            PresetToggle("Crit+DH %", preset.ShowCritDirectHitOnBar);
-            PresetToggle("Deaths", preset.ShowDeathsOnBar);
+            if (preset.ShowJobIcons) PresetToggle("Job Icons", true);
+            if (preset.ShowNameOnBar) PresetToggle("Name", true);
+            if (preset.ShowJobAbbrevOnBar) PresetToggle("Job Abbreviation", true);
+            if (preset.ShowRankNumber) PresetToggle("Rank Number", true);
+
+            var firstTab = preset.Tabs is { Count: > 0 } ? preset.Tabs[0] : null;
+            var columnOrder = firstTab?.ColumnOrder ?? preset.ColumnOrder;
+
+            foreach (var col in columnOrder)
+            {
+                bool enabled;
+                if (firstTab != null)
+                    enabled = DisplayTab.GetTabColumnEnabled(firstTab, col);
+                else
+                    enabled = col switch
+                    {
+                        BarColumn.Dps => preset.ShowDpsOnBar,
+                        BarColumn.Hps => preset.ShowHpsOnBar,
+                        BarColumn.Damage => preset.ShowDamageOnBar,
+                        BarColumn.Healed => preset.ShowHealedOnBar,
+                        BarColumn.DamagePercent => preset.ShowDamagePercentOnBar,
+                        BarColumn.DirectHit => preset.ShowDirectHitOnBar,
+                        BarColumn.Crit => preset.ShowCritOnBar,
+                        BarColumn.CritDirectHit => preset.ShowCritDirectHitOnBar,
+                        BarColumn.Deaths => preset.ShowDeathsOnBar,
+                        BarColumn.DamageTaken => preset.ShowDamageTakenOnBar,
+                        BarColumn.Overheal => preset.ShowOverhealOnBar,
+                        _ => false,
+                    };
+
+                if (enabled)
+                {
+                    var label = DisplayTab.ColumnLabels.GetValueOrDefault(col, col.ToString());
+                    PresetToggle(label, true);
+                }
+            }
+
             ImGui.Unindent();
         }
 
@@ -529,20 +561,6 @@ public class AppearanceTab
 
         ImGui.Spacing();
 
-        if (ImGui.CollapsingHeader("Value Formatting", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-        var formatIdx = (int)config.ValueDisplayFormat;
-        var formatLabels = new[] { "Abbreviated (12.3K)", "Commas (12,345)", "Raw (12345.6)" };
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.Combo("Number format", ref formatIdx, formatLabels, formatLabels.Length))
-        {
-            config.ValueDisplayFormat = (ValueDisplayFormat)formatIdx;
-            changed = true;
-        }
-        }
-
-        ImGui.Spacing();
-
         if (ImGui.CollapsingHeader("Self Highlighting", ImGuiTreeNodeFlags.DefaultOpen))
         {
         var selfHighlight = config.SelfBarHighlight;
@@ -648,6 +666,127 @@ public class AppearanceTab
             config.HeaderSeparatorColor = new Vector4(0.4f, 0.4f, 0.4f, 0.5f);
             changed = true;
         }
+        }
+
+        return changed;
+    }
+
+    private static readonly double[] PreviewSamples = { 0, 42, 500, 1_234, 9_999, 15_000, 150_000, 999_999, 1_500_000, 12_345_678 };
+    private static readonly double[] PreviewPctSamples = { 0, 5.3, 12.75, 48.6, 100 };
+
+    private static bool DrawFormattingTab(Configuration config)
+    {
+        var changed = false;
+
+        var formatIdx = (int)config.ValueDisplayFormat;
+        var formatLabels = new[] { "Abbreviated (12.3K)", "Commas (12,345)", "Raw (12345.6)" };
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.Combo("Number format", ref formatIdx, formatLabels, formatLabels.Length))
+        {
+            config.ValueDisplayFormat = (ValueDisplayFormat)formatIdx;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+
+        var abbrevDec = config.AbbreviatedDecimalPlaces;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderInt("Abbreviated decimal places", ref abbrevDec, 0, 2))
+        {
+            config.AbbreviatedDecimalPlaces = abbrevDec;
+            changed = true;
+        }
+        ImGui.SameLine();
+        ImGui.TextDisabled("(K / M suffixed values)");
+
+        var rawDec = config.RawDecimalPlaces;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderInt("Value decimal places", ref rawDec, 0, 2))
+        {
+            config.RawDecimalPlaces = rawDec;
+            changed = true;
+        }
+        ImGui.SameLine();
+        ImGui.TextDisabled("(Raw / Commas values)");
+
+        var pctDec = config.PercentDecimalPlaces;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderInt("Percent decimal places", ref pctDec, 0, 2))
+        {
+            config.PercentDecimalPlaces = pctDec;
+            changed = true;
+        }
+
+        if (config.ValueDisplayFormat == ValueDisplayFormat.Abbreviated)
+        {
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+            ImGui.TextDisabled("Abbreviation Thresholds");
+
+            var kThresh = (float)config.AbbreviatedKThreshold;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.InputFloat("K threshold", ref kThresh, 1000f, 5000f, "%.0f"))
+            {
+                config.AbbreviatedKThreshold = Math.Max(0, kThresh);
+                changed = true;
+            }
+            ImGui.SameLine();
+            ImGui.TextDisabled("(values >= this show as K)");
+
+            var mThresh = (float)config.AbbreviatedMThreshold;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.InputFloat("M threshold", ref mThresh, 100000f, 500000f, "%.0f"))
+            {
+                config.AbbreviatedMThreshold = Math.Max(0, mThresh);
+                changed = true;
+            }
+            ImGui.SameLine();
+            ImGui.TextDisabled("(values >= this show as M)");
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        ImGui.TextDisabled("Preview");
+
+        if (ImGui.BeginTable("##fmtPreview", 2, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp))
+        {
+            ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthFixed, 100);
+            ImGui.TableSetupColumn("Formatted", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableHeadersRow();
+
+            foreach (var sample in PreviewSamples)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted($"{sample:N0}");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(ValueFormatter.Format(sample, config));
+            }
+
+            ImGui.EndTable();
+        }
+
+        ImGui.Spacing();
+        ImGui.TextDisabled("Percent Preview");
+
+        if (ImGui.BeginTable("##pctPreview", 2, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp))
+        {
+            ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthFixed, 100);
+            ImGui.TableSetupColumn("Formatted", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableHeadersRow();
+
+            foreach (var sample in PreviewPctSamples)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted($"{sample}%");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(ValueFormatter.FormatPercent(sample, config.PercentDecimalPlaces));
+            }
+
+            ImGui.EndTable();
         }
 
         return changed;
@@ -882,6 +1021,15 @@ public class AppearanceTab
         return changed;
     }
 
+    private static readonly (string Name, BarColumn[] Columns)[] DetailCategories =
+    {
+        ("Damage", new[] { BarColumn.Dps, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.Damage, BarColumn.DamagePercent, BarColumn.MaxHit, BarColumn.DamageShield }),
+        ("Healing", new[] { BarColumn.Hps, BarColumn.InstantHps, BarColumn.Healed, BarColumn.HealPercent, BarColumn.Overheal, BarColumn.OverhealAmount, BarColumn.CritHealPct, BarColumn.MaxHeal, BarColumn.MaxHealWard, BarColumn.HealCount, BarColumn.AbsorbHeal }),
+        ("Hit Statistics", new[] { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount }),
+        ("Defense", new[] { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct, BarColumn.HealsTaken }),
+        ("Other", new[] { BarColumn.Deaths, BarColumn.Kills, BarColumn.CombatantDuration, BarColumn.PowerDrain, BarColumn.PowerHeal }),
+    };
+
     private static bool DrawDetailsTab(Configuration config)
     {
         var changed = false;
@@ -889,41 +1037,45 @@ public class AppearanceTab
         if (ImGui.CollapsingHeader("Content", ImGuiTreeNodeFlags.DefaultOpen))
         {
             ImGui.TextDisabled("Choose what to show in the expanded detail view.");
+            ImGui.Spacing();
 
-            var showDmg = config.DetailShowDamage;
-            if (ImGui.Checkbox("Total damage", ref showDmg))
+            if (ImGui.Button("Enable All"))
             {
-                config.DetailShowDamage = showDmg;
+                config.DetailVisibleColumns = new HashSet<BarColumn>(Enum.GetValues<BarColumn>());
+                changed = true;
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Disable All"))
+            {
+                config.DetailVisibleColumns.Clear();
                 changed = true;
             }
 
-            var showCrit = config.DetailShowCritDhStats;
-            if (ImGui.Checkbox("Crit / DH / CDH stats", ref showCrit))
+            ImGui.Spacing();
+
+            foreach (var (catName, catColumns) in DetailCategories)
             {
-                config.DetailShowCritDhStats = showCrit;
-                changed = true;
+                if (ImGui.TreeNodeEx(catName, ImGuiTreeNodeFlags.DefaultOpen))
+                {
+                    foreach (var col in catColumns)
+                    {
+                        var label = DisplayTab.ColumnLabels.GetValueOrDefault(col, col.ToString());
+                        var enabled = config.DetailVisibleColumns.Contains(col);
+                        if (ImGui.Checkbox($"{label}##detail_{col}", ref enabled))
+                        {
+                            if (enabled)
+                                config.DetailVisibleColumns.Add(col);
+                            else
+                                config.DetailVisibleColumns.Remove(col);
+                            changed = true;
+                        }
+                    }
+                    ImGui.TreePop();
+                }
             }
 
-            var showDeaths = config.DetailShowDeaths;
-            if (ImGui.Checkbox("Deaths", ref showDeaths))
-            {
-                config.DetailShowDeaths = showDeaths;
-                changed = true;
-            }
-
-            var showOh = config.DetailShowOverheal;
-            if (ImGui.Checkbox("Overheal %", ref showOh))
-            {
-                config.DetailShowOverheal = showOh;
-                changed = true;
-            }
-
-            var showMax = config.DetailShowMaxHit;
-            if (ImGui.Checkbox("Max hit", ref showMax))
-            {
-                config.DetailShowMaxHit = showMax;
-                changed = true;
-            }
+            ImGui.Spacing();
+            ImGui.TextDisabled("Additional");
 
             var showTrend = config.DetailShowDpsTrend;
             if (ImGui.Checkbox("DPS trend (10s/30s/60s)", ref showTrend))
@@ -957,6 +1109,89 @@ public class AppearanceTab
 
         ImGui.Spacing();
 
+        if (ImGui.CollapsingHeader("Graph", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.TextDisabled("Configure the live instant DPS/HPS/DTPS graph.");
+            ImGui.Spacing();
+
+            var graphHeight = config.GraphHeight;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Graph height", ref graphHeight, 60f, 300f, "%.0f px"))
+            {
+                config.GraphHeight = graphHeight;
+                changed = true;
+            }
+
+            var lineThickness = config.GraphLineThickness;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Line thickness", ref lineThickness, 1f, 5f, "%.1f"))
+            {
+                config.GraphLineThickness = lineThickness;
+                changed = true;
+            }
+
+            var smoothing = config.GraphSmoothingWindow;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Smoothing window", ref smoothing, 1f, 30f, "%.0f sec"))
+            {
+                config.GraphSmoothingWindow = smoothing;
+                changed = true;
+            }
+
+            ImGui.Spacing();
+            ImGui.TextDisabled("Series visibility");
+
+            var showDps = config.GraphShowDps;
+            if (ImGui.Checkbox("Show iDPS##graph", ref showDps))
+            {
+                config.GraphShowDps = showDps;
+                changed = true;
+            }
+
+            var showHps = config.GraphShowHps;
+            if (ImGui.Checkbox("Show iHPS##graph", ref showHps))
+            {
+                config.GraphShowHps = showHps;
+                changed = true;
+            }
+
+            var showDtps = config.GraphShowDtps;
+            if (ImGui.Checkbox("Show iDTPS##graph", ref showDtps))
+            {
+                config.GraphShowDtps = showDtps;
+                changed = true;
+            }
+
+            ImGui.Spacing();
+            ImGui.TextDisabled("Colors");
+
+            changed |= ConfigHelpers.ColorEditProp("iDPS line", config.GraphDpsColor, v => config.GraphDpsColor = v);
+            changed |= ConfigHelpers.ColorEditProp("iHPS line", config.GraphHpsColor, v => config.GraphHpsColor = v);
+            changed |= ConfigHelpers.ColorEditProp("iDTPS line", config.GraphDtpsColor, v => config.GraphDtpsColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Graph background", config.GraphBackgroundColor, v => config.GraphBackgroundColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Grid lines", config.GraphGridColor, v => config.GraphGridColor = v);
+
+            ImGui.Spacing();
+
+            if (ImGui.Button("Reset Graph"))
+            {
+                config.GraphHeight = 120f;
+                config.GraphLineThickness = 2f;
+                config.GraphDpsColor = new Vector4(0.9f, 0.4f, 0.4f, 1f);
+                config.GraphHpsColor = new Vector4(0.4f, 0.85f, 0.4f, 1f);
+                config.GraphDtpsColor = new Vector4(0.4f, 0.55f, 0.9f, 1f);
+                config.GraphBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
+                config.GraphGridColor = new Vector4(0.3f, 0.3f, 0.3f, 0.3f);
+                config.GraphShowDps = true;
+                config.GraphShowHps = true;
+                config.GraphSmoothingWindow = 5f;
+                config.GraphShowDtps = true;
+                changed = true;
+            }
+        }
+
+        ImGui.Spacing();
+
         if (ImGui.CollapsingHeader("Layout", ImGuiTreeNodeFlags.DefaultOpen))
         {
         var detailIndent = config.DetailIndent;
@@ -983,6 +1218,7 @@ public class AppearanceTab
             config.DetailDeathColor = new Vector4(1f, 0.3f, 0.3f, 1f);
             config.DetailIndent = 8.0f;
             config.DetailFontSize = 14f;
+            config.DetailVisibleColumns = new HashSet<BarColumn>(Enum.GetValues<BarColumn>());
             changed = true;
         }
         }

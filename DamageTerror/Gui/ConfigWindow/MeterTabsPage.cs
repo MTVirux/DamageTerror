@@ -97,6 +97,21 @@ public static class MeterTabsPage
         if (!canRemove) ImGui.EndDisabled();
 
         ImGui.SameLine();
+        var canDuplicate = selectedTabIndex >= 0 && selectedTabIndex < config.MeterTabs.Count;
+        if (!canDuplicate) ImGui.BeginDisabled();
+        if (ImGui.Button("D##dupTab"))
+        {
+            var clone = config.MeterTabs[selectedTabIndex].Clone();
+            clone.Name += " (Copy)";
+            config.MeterTabs.Insert(selectedTabIndex + 1, clone);
+            selectedTabIndex++;
+            renameBuffer = clone.Name;
+            changed = true;
+        }
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Duplicate tab");
+        if (!canDuplicate) ImGui.EndDisabled();
+
+        ImGui.SameLine();
         var canMoveUp = selectedTabIndex > 0;
         if (!canMoveUp) ImGui.BeginDisabled();
         if (ImGui.Button("^##moveUp"))
@@ -203,7 +218,8 @@ public static class MeterTabsPage
         changed |= DisplayTab.DrawBarColumns(tab.ColumnOrder,
             col => DisplayTab.GetTabColumnEnabled(tab, col),
             (col, v) => DisplayTab.SetTabColumnEnabled(tab, col, v),
-            tab.ColumnHeaderLabels);
+            tab.ColumnHeaderLabels,
+            tab.ColumnFormatOverrides);
 
         return changed;
     }

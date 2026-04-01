@@ -90,11 +90,11 @@ public class EncounterHistoryTab
 
                 ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Raid DPS:");
                 ImGui.SameLine();
-                ImGui.TextUnformatted($"{encounter.EncDps:F1}");
+                ImGui.TextUnformatted(ValueFormatter.Format(encounter.EncDps, plugin.Config));
                 ImGui.SameLine();
                 ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "  HPS:");
                 ImGui.SameLine();
-                ImGui.TextUnformatted($"{encounter.EncHps:F1}");
+                ImGui.TextUnformatted(ValueFormatter.Format(encounter.EncHps, plugin.Config));
 
                 ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Deaths:");
                 ImGui.SameLine();
@@ -107,7 +107,7 @@ public class EncounterHistoryTab
                     foreach (var c in enc.Combatants.OrderByDescending(c => c.EncDps))
                     {
                         var jobTag = !string.IsNullOrEmpty(c.Job) ? $"[{c.Job.ToUpperInvariant()}] " : "";
-                        var cHeader = $"{jobTag}{c.Name}  —  DPS: {c.EncDps:F1}  HPS: {c.EncHps:F1}  Deaths: {c.Deaths}";
+                        var cHeader = $"{jobTag}{c.Name}  —  DPS: {ValueFormatter.Format(c.EncDps, plugin.Config)}  HPS: {ValueFormatter.Format(c.EncHps, plugin.Config)}  Deaths: {c.Deaths}";
 
                         if (ImGui.TreeNodeEx(cHeader, ImGuiTreeNodeFlags.None))
                         {
@@ -118,7 +118,7 @@ public class EncounterHistoryTab
                                 foreach (var s in c.Skills.OrderByDescending(s => s.TotalDamage))
                                 {
                                     ImGui.TextUnformatted(
-                                        $"{s.Name}  —  {s.TotalDamage:N0} ({s.DamagePercent:F1}%)  Hits: {s.HitCount}  C: {s.CritPct:F1}%  DH: {s.DirectHitPct:F1}%  CDH: {s.CritDirectHitPct:F1}%");
+                                        $"{s.Name}  —  {ValueFormatter.Format(s.TotalDamage, plugin.Config)} ({ValueFormatter.FormatPercent(s.DamagePercent, plugin.Config.PercentDecimalPlaces)})  Hits: {s.HitCount}  C: {ValueFormatter.FormatPercent(s.CritPct, plugin.Config.PercentDecimalPlaces)}  DH: {ValueFormatter.FormatPercent(s.DirectHitPct, plugin.Config.PercentDecimalPlaces)}  CDH: {ValueFormatter.FormatPercent(s.CritDirectHitPct, plugin.Config.PercentDecimalPlaces)}");
                                 }
                                 ImGui.Unindent(8f);
                             }
@@ -130,7 +130,7 @@ public class EncounterHistoryTab
                                 foreach (var s in c.HealingSkills.OrderByDescending(s => s.TotalDamage))
                                 {
                                     ImGui.TextUnformatted(
-                                        $"{s.Name}  —  {s.TotalDamage:N0} ({s.DamagePercent:F1}%)  Hits: {s.HitCount}");
+                                        $"{s.Name}  —  {ValueFormatter.Format(s.TotalDamage, plugin.Config)} ({ValueFormatter.FormatPercent(s.DamagePercent, plugin.Config.PercentDecimalPlaces)})  Hits: {s.HitCount}");
                                 }
                                 ImGui.Unindent(8f);
                             }

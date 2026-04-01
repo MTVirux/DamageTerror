@@ -25,7 +25,7 @@ public class EncounterHeaderComponent : IUIComponent
         var icon = enc.IsActive ? "●" : "○";
         var title = !string.IsNullOrEmpty(enc.Title) ? $" — {enc.Title}" : "";
         var player = !string.IsNullOrEmpty(playerName) ? $"  ({playerName})" : "";
-        return $"{icon} {enc.ZoneName}{title}  |  {enc.Duration}  |  {enc.EncDps:F1} rDPS{player}{suffix}";
+        return $"{icon} {enc.ZoneName}{title}  |  {enc.Duration}  |  {ValueFormatter.Format(enc.EncDps, ValueDisplayFormat.Raw, 1)} rDPS{player}{suffix}";
     }
 
     public EncounterSnapshot? SelectedEncounter
@@ -38,6 +38,8 @@ public class EncounterHeaderComponent : IUIComponent
             return dataService.Store.GetByIndex(selectedIndex);
         }
     }
+
+    public bool IsViewingLive => selectedIndex == -1;
 
     public float GetHeight()
     {

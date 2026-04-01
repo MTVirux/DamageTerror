@@ -29,6 +29,7 @@ public class ConfigWindow : Window, IDisposable
         StatusBar,
         Details,
         Font,
+        Formatting,
         History,
     }
 
@@ -40,6 +41,7 @@ public class ConfigWindow : Window, IDisposable
         (ConfigPage.Layout,       "Layout",                 null,           FontAwesomeIcon.ThLarge),
         (ConfigPage.Presets,      "Presets",                "Appearance",   FontAwesomeIcon.Palette),
         (ConfigPage.Bars,         "Meter Bars",             "Appearance",   FontAwesomeIcon.GripLines),
+        (ConfigPage.Formatting,   "Value Formatting",       "Appearance",   FontAwesomeIcon.SortNumericDown),
         (ConfigPage.TabButtons,   "Tab Buttons",            "Appearance",   FontAwesomeIcon.HandPointer),
         (ConfigPage.SelectionBar, "Encounter Select",       "Appearance",   FontAwesomeIcon.ArrowsAltH),
         (ConfigPage.Colors,       "Job/Role Colors",        "Appearance",   FontAwesomeIcon.FillDrip),
@@ -175,6 +177,10 @@ public class ConfigWindow : Window, IDisposable
 
             case ConfigPage.Bars:
                 changed |= AppearanceTab.DrawBarsPage(config);
+                break;
+
+            case ConfigPage.Formatting:
+                changed |= AppearanceTab.DrawFormattingPage(config);
                 break;
 
             case ConfigPage.TabButtons:

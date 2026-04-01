@@ -69,7 +69,7 @@ public class StatusBarComponent
 
         if (config.ShowStatusBarPersonalDps)
         {
-            var dpsText = ValueFormatter.Format(personalDps, config.ValueDisplayFormat);
+            var dpsText = ValueFormatter.Format(personalDps, config);
             drawList.AddText(new Vector2(x, textY), textColor, dpsText);
             x += ImGui.CalcTextSize(dpsText).X;
 
@@ -87,11 +87,11 @@ public class StatusBarComponent
 
         if (config.ShowStatusBarRaidDps)
         {
-            var rdpsText = ValueFormatter.Format(raidDps, config.ValueDisplayFormat);
+            var rdpsText = ValueFormatter.Format(raidDps, config);
             drawList.AddText(new Vector2(x, textY), textColor, rdpsText);
             x += ImGui.CalcTextSize(rdpsText).X;
 
-            var pctText = $" RDPS ({pct:F0}%)";
+            var pctText = $" RDPS ({ValueFormatter.FormatPercent(pct, config.PercentDecimalPlaces)})";
             drawList.AddText(new Vector2(x, textY), labelColor, pctText);
         }
 

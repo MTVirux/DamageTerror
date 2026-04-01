@@ -42,6 +42,20 @@ public class MainWindow : Window, IDisposable
     private DateTime? combatEndTime;
     private int selectedMeterTab;
 
+    private int SelectedMeterTab
+    {
+        get => selectedMeterTab;
+        set
+        {
+            if (selectedMeterTab != value)
+            {
+                selectedMeterTab = value;
+                plugin.Config.SelectedMeterTab = value;
+                plugin.SaveConfig();
+            }
+        }
+    }
+
     public MainWindow(DamageTerrorPlugin plugin, ITextureProvider textureProvider)
         : base(GetTitleWithVersion())
     {
@@ -53,9 +67,10 @@ public class MainWindow : Window, IDisposable
             MaximumSize = new Vector2(2000, 2000),
         };
 
+        this.selectedMeterTab = plugin.Config.SelectedMeterTab;
         this.headerComponent = new EncounterHeaderComponent(plugin.DataService, plugin.Config);
         this.barComponent = new CombatantBarComponent(plugin.Config, textureProvider);
-        this.detailPanel = new CombatantDetailPanel(plugin.Config);
+        this.detailPanel = new CombatantDetailPanel(plugin.Config, plugin.DataService.GraphTracker);
         this.statusBarComponent = new StatusBarComponent(plugin.Config);
 
         TitleBarButtons.Add(new TitleBarButton
@@ -204,7 +219,7 @@ public class MainWindow : Window, IDisposable
         if (useTabBar && encounter != null)
         {
             if (selectedMeterTab >= config.MeterTabs.Count)
-                selectedMeterTab = 0;
+                SelectedMeterTab = 0;
             activeTab = config.MeterTabs[selectedMeterTab];
         }
 
@@ -250,6 +265,15 @@ public class MainWindow : Window, IDisposable
             }
         }
 
+        // --- Force disconnected message even if EncounterSelect is hidden ---
+        if (!plugin.DataService.IsConnected && encounter == null)
+        {
+            ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
+            if (ImGui.Button("Reconnect"))
+                Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+            return;
+        }
+
         // --- Render components in configured layout order ---
         var ctrlShiftHeld = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
         foreach (var element in config.Layout)
@@ -262,9 +286,16 @@ public class MainWindow : Window, IDisposable
                     headerComponent.Render();
                     if (encounter == null)
                     {
-                        ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-                        if (ImGui.Button("Reconnect"))
-                            Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+                        if (plugin.DataService.IsConnected)
+                        {
+                            ImGui.TextDisabled("No combat data, go hit something!");
+                        }
+                        else
+                        {
+                            ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
+                            if (ImGui.Button("Reconnect"))
+                                Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+                        }
                         return;
                     }
                     break;
@@ -301,7 +332,7 @@ public class MainWindow : Window, IDisposable
                         ImGui.TextDisabled(useTabBar ? "No combatants match this tab's filter." : "No combatant data.");
                         break;
                     }
-                    DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, activeTab, currentPlayerName);
+                    DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, activeTab, currentPlayerName, encounter, headerComponent.IsViewingLive);
                     break;
             }
         }
@@ -357,7 +388,7 @@ public class MainWindow : Window, IDisposable
                 bgColor = isActive ? config.TabButtonActiveColor : config.TabButtonHoveredColor;
 
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
-                selectedMeterTab = i;
+                SelectedMeterTab = i;
 
             drawList.AddRectFilled(btnMin, btnMax, ImGui.ColorConvertFloat4ToU32(bgColor), rounding);
 
@@ -375,7 +406,7 @@ public class MainWindow : Window, IDisposable
         ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().X, cursor.Y + buttonHeight));
     }
 
-    private void DrawCombatantBars(List<CombatantEntry> combatants, double maxVal, SortField sortBy, float reservedHeight, MeterTab? activeTab, string currentPlayerName)
+    private void DrawCombatantBars(List<CombatantEntry> combatants, double maxVal, SortField sortBy, float reservedHeight, MeterTab? activeTab, string currentPlayerName, EncounterSnapshot? snapshot, bool isLive)
     {
         var availY = ImGui.GetContentRegionAvail().Y;
         var childHeight = reservedHeight > 0 ? Math.Max(0f, availY - reservedHeight) : 0f;
@@ -395,7 +426,7 @@ public class MainWindow : Window, IDisposable
                     detailPanel.Toggle(i);
                 }
 
-                detailPanel.Render(combatant, i);
+                detailPanel.Render(combatant, i, snapshot, isLive);
             }
         }
         ImGui.EndChild();
@@ -462,10 +493,39 @@ public class MainWindow : Window, IDisposable
             colWidths[col] = col switch
             {
                 BarColumn.DamagePercent => ImGui.CalcTextSize("00.0%").X,
+                BarColumn.HealPercent => ImGui.CalcTextSize("00.0%").X,
                 BarColumn.CritDirectHit => ImGui.CalcTextSize("100%").X,
                 BarColumn.Crit => ImGui.CalcTextSize("100%").X,
                 BarColumn.DirectHit => ImGui.CalcTextSize("100%").X,
                 BarColumn.Deaths => ImGui.CalcTextSize("00").X,
+                BarColumn.DamageTaken => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.DamageTakenPercent => ImGui.CalcTextSize("00.0%").X,
+                BarColumn.Overheal => ImGui.CalcTextSize("100%").X,
+                BarColumn.OverhealAmount => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.MaxHit => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.PeakDps => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.MaxHeal => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.Swings => ImGui.CalcTextSize("0000").X,
+                BarColumn.Hits => ImGui.CalcTextSize("0000").X,
+                BarColumn.Misses => ImGui.CalcTextSize("0000").X,
+                BarColumn.HitRate => ImGui.CalcTextSize("100%").X,
+                BarColumn.CritHitCount => ImGui.CalcTextSize("0000").X,
+                BarColumn.DirectHitCount => ImGui.CalcTextSize("0000").X,
+                BarColumn.CritDirectHitCount => ImGui.CalcTextSize("0000").X,
+                BarColumn.BlockPct => ImGui.CalcTextSize("100%").X,
+                BarColumn.ParryPct => ImGui.CalcTextSize("100%").X,
+                BarColumn.HealsTaken => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.AbsorbHeal => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.Kills => ImGui.CalcTextSize("00").X,
+                BarColumn.InstantDps => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.InstantHps => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.CritHealPct => ImGui.CalcTextSize("100%").X,
+                BarColumn.HealCount => ImGui.CalcTextSize("0000").X,
+                BarColumn.CombatantDuration => ImGui.CalcTextSize("00:00").X,
+                BarColumn.DamageShield => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.MaxHealWard => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.PowerDrain => ImGui.CalcTextSize("000.0K").X,
+                BarColumn.PowerHeal => ImGui.CalcTextSize("000.0K").X,
                 BarColumn.Healed => ImGui.CalcTextSize("000.0K").X,
                 BarColumn.Damage => ImGui.CalcTextSize("000.0K").X,
                 BarColumn.Hps => ImGui.CalcTextSize("000.0K").X,
