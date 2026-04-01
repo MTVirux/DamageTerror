@@ -27,6 +27,7 @@ public class ConfigWindow : Window, IDisposable
         SelectionBar,
         Colors,
         StatusBar,
+        Tooltip,
         Details,
         Font,
         Formatting,
@@ -46,6 +47,7 @@ public class ConfigWindow : Window, IDisposable
         (ConfigPage.SelectionBar, "Encounter Select",       "Appearance",   FontAwesomeIcon.ArrowsAltH),
         (ConfigPage.Colors,       "Job/Role Colors",        "Appearance",   FontAwesomeIcon.FillDrip),
         (ConfigPage.StatusBar,    "Encounter Status Bar",   "Appearance",   FontAwesomeIcon.InfoCircle),
+        (ConfigPage.Tooltip,      "Tooltips",               "Appearance",   FontAwesomeIcon.Comment),
         (ConfigPage.Details,      "Details Panel",          "Appearance",   FontAwesomeIcon.ChartBar),
         (ConfigPage.Font,         "Fonts",                  "Appearance",   FontAwesomeIcon.Font),
         (ConfigPage.History,      "History",                null,           FontAwesomeIcon.History),
@@ -197,6 +199,10 @@ public class ConfigWindow : Window, IDisposable
 
             case ConfigPage.StatusBar:
                 changed |= AppearanceTab.DrawStatusBarPage(config);
+                break;
+
+            case ConfigPage.Tooltip:
+                changed |= AppearanceTab.DrawTooltipPage(config);
                 break;
 
             case ConfigPage.Details:

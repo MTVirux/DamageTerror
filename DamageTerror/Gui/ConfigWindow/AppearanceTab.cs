@@ -31,6 +31,7 @@ public class AppearanceTab
     public static bool DrawSelectionBarPage(Configuration config) => DrawSelectionBarTab(config);
     public static bool DrawColorsPage(Configuration config) => DrawColorsTab(config);
     public static bool DrawStatusBarPage(Configuration config) => DrawStatusBarTab(config);
+    public static bool DrawTooltipPage(Configuration config) => DrawTooltipTab(config);
     public static bool DrawDetailsPage(Configuration config) => DrawDetailsTab(config);
     public static bool DrawFontPage(Configuration config, FontService? fontService, IUiBuilder? uiBuilder)
         => DrawFontTab(config, fontService, uiBuilder);
@@ -435,6 +436,36 @@ public class AppearanceTab
             PresetRow("Indent", $"{preset.DetailIndent:0}px");
             PresetColor("Label Color", preset.DetailLabelColor);
             PresetColor("Death Color", preset.DetailDeathColor);
+            ImGui.Unindent();
+        }
+
+        if (ImGui.CollapsingHeader("Tooltip##presetTooltip"))
+        {
+            ImGui.Indent();
+            PresetToggle("Show Tooltip", preset.ShowTooltip);
+            PresetRow("Delay", $"{preset.TooltipDelay:0.##}s");
+            PresetRow("Font Size", $"{preset.TooltipFontSize:0.#}pt");
+            PresetRow("Rounding", $"{preset.TooltipRounding:0.#}");
+            PresetRow("Padding", $"{preset.TooltipPadding:0}px");
+            PresetColor("Background", preset.TooltipBackgroundColor);
+            PresetColor("Text", preset.TooltipTextColor);
+            PresetColor("Labels", preset.TooltipLabelColor);
+
+            if (preset.TooltipFields.Count > 0)
+            {
+                ImGui.Spacing();
+                ImGui.TextColored(new Vector4(0.6f, 0.6f, 0.6f, 1f), "Fields:");
+                foreach (var field in preset.TooltipFields)
+                {
+                    var label = TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+                    PresetToggle(label, true);
+                }
+            }
+            else
+            {
+                PresetRow("Fields", "None");
+            }
+
             ImGui.Unindent();
         }
     }
@@ -1016,6 +1047,205 @@ public class AppearanceTab
                 }
             }
         }
+        }
+
+        return changed;
+    }
+
+    public static readonly Dictionary<TooltipField, string> TooltipFieldLabels = new()
+    {
+        { TooltipField.Name, "Name" },
+        { TooltipField.Job, "Job" },
+        { TooltipField.Dps, "DPS" },
+        { TooltipField.Hps, "HPS" },
+        { TooltipField.Damage, "Damage" },
+        { TooltipField.Healed, "Healed" },
+        { TooltipField.DamagePercent, "Damage %" },
+        { TooltipField.HealPercent, "Heal %" },
+        { TooltipField.Crit, "Crit %" },
+        { TooltipField.DirectHit, "Direct Hit %" },
+        { TooltipField.CritDirectHit, "Crit DH %" },
+        { TooltipField.Deaths, "Deaths" },
+        { TooltipField.DamageTaken, "Damage Taken" },
+        { TooltipField.Overheal, "Overheal %" },
+        { TooltipField.OverhealAmount, "Overheal" },
+        { TooltipField.MaxHit, "Max Hit" },
+        { TooltipField.MaxHeal, "Max Heal" },
+        { TooltipField.PeakDps, "Peak DPS" },
+        { TooltipField.Swings, "Swings" },
+        { TooltipField.Hits, "Hits" },
+        { TooltipField.Misses, "Misses" },
+        { TooltipField.HitRate, "Hit Rate" },
+        { TooltipField.Kills, "Kills" },
+        { TooltipField.CombatantDuration, "Duration" },
+        { TooltipField.HealsTaken, "Heals Taken" },
+        { TooltipField.InstantDps, "Instant DPS" },
+        { TooltipField.InstantHps, "Instant HPS" },
+        { TooltipField.CritHealPct, "Crit Heal %" },
+        { TooltipField.HealCount, "Heal Count" },
+        { TooltipField.DamageShield, "Damage Shield" },
+        { TooltipField.MaxHealWard, "Max Heal Ward" },
+    };
+
+    private static bool DrawTooltipTab(Configuration config)
+    {
+        var changed = false;
+
+        var showTooltip = config.ShowTooltip;
+        if (ImGui.Checkbox("Show tooltip on hover", ref showTooltip))
+        {
+            config.ShowTooltip = showTooltip;
+            changed = true;
+        }
+
+        if (!config.ShowTooltip)
+        {
+            ImGui.BeginDisabled();
+        }
+
+        var delay = config.TooltipDelay;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Hover delay", ref delay, 0.0f, 1.0f, "%.2f s"))
+        {
+            config.TooltipDelay = delay;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Visible Fields", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.TextDisabled("Choose which fields to show in the tooltip and their order.");
+            ImGui.Spacing();
+
+            var fields = config.TooltipFields;
+
+            for (var i = 0; i < fields.Count; i++)
+            {
+                var field = fields[i];
+                var label = TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+
+                ImGui.PushID($"ttf_{i}");
+
+                var canUp = i > 0;
+                var canDown = i < fields.Count - 1;
+
+                if (canUp)
+                {
+                    if (ImGui.ArrowButton("##up", ImGuiDir.Up))
+                    {
+                        (fields[i - 1], fields[i]) = (fields[i], fields[i - 1]);
+                        changed = true;
+                    }
+                }
+                else
+                {
+                    ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.3f);
+                    ImGui.ArrowButton("##up", ImGuiDir.Up);
+                    ImGui.PopStyleVar();
+                }
+
+                ImGui.SameLine();
+
+                if (canDown)
+                {
+                    if (ImGui.ArrowButton("##down", ImGuiDir.Down))
+                    {
+                        (fields[i], fields[i + 1]) = (fields[i + 1], fields[i]);
+                        changed = true;
+                    }
+                }
+                else
+                {
+                    ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.3f);
+                    ImGui.ArrowButton("##down", ImGuiDir.Down);
+                    ImGui.PopStyleVar();
+                }
+
+                ImGui.SameLine();
+
+                if (ImGui.Button("X##remove"))
+                {
+                    fields.RemoveAt(i);
+                    changed = true;
+                    ImGui.PopID();
+                    i--;
+                    continue;
+                }
+
+                ImGui.SameLine();
+                ImGui.Text(label);
+
+                ImGui.PopID();
+            }
+
+            ImGui.Spacing();
+
+            // Add field dropdown
+            var allFields = Enum.GetValues<TooltipField>();
+            var available = allFields.Where(f => !fields.Contains(f)).ToArray();
+            if (available.Length > 0)
+            {
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.BeginCombo("##addField", "Add field..."))
+                {
+                    foreach (var f in available)
+                    {
+                        var fieldLabel = TooltipFieldLabels.GetValueOrDefault(f, f.ToString());
+                        if (ImGui.Selectable(fieldLabel))
+                        {
+                            fields.Add(f);
+                            changed = true;
+                        }
+                    }
+                    ImGui.EndCombo();
+                }
+            }
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Appearance", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            var fontSize = config.TooltipFontSize;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Font size", ref fontSize, 8f, 24f, "%.1f pt"))
+            {
+                config.TooltipFontSize = fontSize;
+                changed = true;
+            }
+
+            var rounding = config.TooltipRounding;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Rounding", ref rounding, 0f, 12f, "%.1f"))
+            {
+                config.TooltipRounding = rounding;
+                changed = true;
+            }
+
+            var padding = config.TooltipPadding;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Padding", ref padding, 0f, 16f, "%.0f px"))
+            {
+                config.TooltipPadding = padding;
+                changed = true;
+            }
+
+            ImGui.Spacing();
+
+            if (ConfigHelpers.ColorEditProp("Background", config.TooltipBackgroundColor, v => config.TooltipBackgroundColor = v))
+                changed = true;
+
+            if (ConfigHelpers.ColorEditProp("Text Color", config.TooltipTextColor, v => config.TooltipTextColor = v))
+                changed = true;
+
+            if (ConfigHelpers.ColorEditProp("Label Color", config.TooltipLabelColor, v => config.TooltipLabelColor = v))
+                changed = true;
+        }
+
+        if (!config.ShowTooltip)
+        {
+            ImGui.EndDisabled();
         }
 
         return changed;
