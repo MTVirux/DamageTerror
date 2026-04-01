@@ -45,7 +45,6 @@ public class ThemePreset
     public Vector4 WindowBackgroundColor { get; set; } = new(0.06f, 0.06f, 0.06f, 0.94f);
     public float WindowRounding { get; set; } = 0f;
 
-    public bool ShowSelectionBar { get; set; } = true;
     public Vector4 SelectionBarTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 SelectionBarBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
     public float SelectionBarHeight { get; set; }
@@ -82,6 +81,9 @@ public class ThemePreset
     public Vector4 StatusBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
     public Vector4 SkillDamageFillColor { get; set; } = new(0.35f, 0.35f, 0.55f, 0.7f);
+    public Vector4 SkillPhysicalFillColor { get; set; } = new(0.55f, 0.30f, 0.25f, 0.7f);
+    public Vector4 SkillMagicFillColor { get; set; } = new(0.30f, 0.30f, 0.65f, 0.7f);
+    public bool UseSkillDamageTypeColors { get; set; } = false;
     public Vector4 SkillHealingFillColor { get; set; } = new(0.25f, 0.50f, 0.30f, 0.7f);
     public Vector4 SkillRowBackgroundColor { get; set; } = new(0.12f, 0.12f, 0.12f, 0.6f);
     public Vector4 SkillTextColor { get; set; } = new(1f, 1f, 1f, 0.9f);
@@ -93,13 +95,31 @@ public class ThemePreset
 
     public bool ShowJobIcons { get; set; } = true;
     public bool ShowNameOnBar { get; set; } = true;
-    public bool ShowValueOnBar { get; set; } = true;
+    public bool ShowDpsOnBar { get; set; } = true;
+    public bool ShowHpsOnBar { get; set; }
+    public bool ShowDamageOnBar { get; set; }
+    public bool ShowHealedOnBar { get; set; }
     public bool ShowDamagePercentOnBar { get; set; }
     public bool ShowJobAbbrevOnBar { get; set; }
     public bool ShowRankNumber { get; set; }
     public bool ShowDirectHitOnBar { get; set; }
     public bool ShowCritOnBar { get; set; }
     public bool ShowCritDirectHitOnBar { get; set; }
+    public bool ShowDeathsOnBar { get; set; }
+
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<BarColumn> ColumnOrder { get; set; } = new()
+    {
+        BarColumn.DamagePercent,
+        BarColumn.CritDirectHit,
+        BarColumn.Crit,
+        BarColumn.DirectHit,
+        BarColumn.Deaths,
+        BarColumn.Healed,
+        BarColumn.Damage,
+        BarColumn.Hps,
+        BarColumn.Dps,
+    };
 
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
@@ -142,7 +162,6 @@ public class ThemePreset
         config.WindowBackgroundColor = WindowBackgroundColor;
         config.WindowRounding = WindowRounding;
 
-        config.ShowSelectionBar = ShowSelectionBar;
         config.SelectionBarTextColor = SelectionBarTextColor;
         config.SelectionBarBackgroundColor = SelectionBarBackgroundColor;
         config.SelectionBarHeight = SelectionBarHeight;
@@ -179,6 +198,9 @@ public class ThemePreset
         config.StatusBarSeparatorColor = StatusBarSeparatorColor;
 
         config.SkillDamageFillColor = SkillDamageFillColor;
+        config.SkillPhysicalFillColor = SkillPhysicalFillColor;
+        config.SkillMagicFillColor = SkillMagicFillColor;
+        config.UseSkillDamageTypeColors = UseSkillDamageTypeColors;
         config.SkillHealingFillColor = SkillHealingFillColor;
         config.SkillRowBackgroundColor = SkillRowBackgroundColor;
         config.SkillTextColor = SkillTextColor;
@@ -190,13 +212,18 @@ public class ThemePreset
 
         config.ShowJobIcons = ShowJobIcons;
         config.ShowNameOnBar = ShowNameOnBar;
-        config.ShowValueOnBar = ShowValueOnBar;
+        config.ShowDpsOnBar = ShowDpsOnBar;
+        config.ShowHpsOnBar = ShowHpsOnBar;
+        config.ShowDamageOnBar = ShowDamageOnBar;
+        config.ShowHealedOnBar = ShowHealedOnBar;
         config.ShowDamagePercentOnBar = ShowDamagePercentOnBar;
         config.ShowJobAbbrevOnBar = ShowJobAbbrevOnBar;
         config.ShowRankNumber = ShowRankNumber;
         config.ShowDirectHitOnBar = ShowDirectHitOnBar;
         config.ShowCritOnBar = ShowCritOnBar;
         config.ShowCritDirectHitOnBar = ShowCritDirectHitOnBar;
+        config.ShowDeathsOnBar = ShowDeathsOnBar;
+        config.ColumnOrder = new List<BarColumn>(ColumnOrder);
 
         config.DetailLabelColor = DetailLabelColor;
         config.DetailDeathColor = DetailDeathColor;
@@ -247,7 +274,6 @@ public class ThemePreset
             WindowBackgroundColor = config.WindowBackgroundColor,
             WindowRounding = config.WindowRounding,
 
-            ShowSelectionBar = config.ShowSelectionBar,
             SelectionBarTextColor = config.SelectionBarTextColor,
             SelectionBarBackgroundColor = config.SelectionBarBackgroundColor,
             SelectionBarHeight = config.SelectionBarHeight,
@@ -284,6 +310,9 @@ public class ThemePreset
             StatusBarSeparatorColor = config.StatusBarSeparatorColor,
 
             SkillDamageFillColor = config.SkillDamageFillColor,
+            SkillPhysicalFillColor = config.SkillPhysicalFillColor,
+            SkillMagicFillColor = config.SkillMagicFillColor,
+            UseSkillDamageTypeColors = config.UseSkillDamageTypeColors,
             SkillHealingFillColor = config.SkillHealingFillColor,
             SkillRowBackgroundColor = config.SkillRowBackgroundColor,
             SkillTextColor = config.SkillTextColor,
@@ -295,13 +324,18 @@ public class ThemePreset
 
             ShowJobIcons = config.ShowJobIcons,
             ShowNameOnBar = config.ShowNameOnBar,
-            ShowValueOnBar = config.ShowValueOnBar,
+            ShowDpsOnBar = config.ShowDpsOnBar,
+            ShowHpsOnBar = config.ShowHpsOnBar,
+            ShowDamageOnBar = config.ShowDamageOnBar,
+            ShowHealedOnBar = config.ShowHealedOnBar,
             ShowDamagePercentOnBar = config.ShowDamagePercentOnBar,
             ShowJobAbbrevOnBar = config.ShowJobAbbrevOnBar,
             ShowRankNumber = config.ShowRankNumber,
             ShowDirectHitOnBar = config.ShowDirectHitOnBar,
             ShowCritOnBar = config.ShowCritOnBar,
             ShowCritDirectHitOnBar = config.ShowCritDirectHitOnBar,
+            ShowDeathsOnBar = config.ShowDeathsOnBar,
+            ColumnOrder = new List<BarColumn>(config.ColumnOrder),
 
             DetailLabelColor = config.DetailLabelColor,
             DetailDeathColor = config.DetailDeathColor,

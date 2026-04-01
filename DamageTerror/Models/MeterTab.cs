@@ -12,20 +12,54 @@ public class MeterTab
 
     public bool SortDescending { get; set; } = true;
 
-    public bool ShowHps { get; set; } = false;
+    // Per-tab bar content display toggles
+    public bool ShowDpsOnBar { get; set; } = true;
+    public bool ShowHpsOnBar { get; set; } = false;
+    public bool ShowDamageOnBar { get; set; } = false;
+    public bool ShowHealedOnBar { get; set; } = false;
+    public bool ShowDamagePercentOnBar { get; set; } = false;
+    public bool ShowDirectHitOnBar { get; set; } = false;
+    public bool ShowCritOnBar { get; set; } = false;
+    public bool ShowCritDirectHitOnBar { get; set; } = false;
+    public bool ShowDeathsOnBar { get; set; } = false;
+
+    // Per-tab column order (left-to-right rendering)
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<BarColumn> ColumnOrder { get; set; } = new()
+    {
+        BarColumn.DamagePercent,
+        BarColumn.CritDirectHit,
+        BarColumn.Crit,
+        BarColumn.DirectHit,
+        BarColumn.Deaths,
+        BarColumn.Healed,
+        BarColumn.Damage,
+        BarColumn.Hps,
+        BarColumn.Dps,
+    };
+
+    // Custom column header labels (per-tab overrides)
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<BarColumn, string> ColumnHeaderLabels { get; set; } = new();
+
+    public string GetHeaderLabel(BarColumn col)
+    {
+        if (ColumnHeaderLabels.TryGetValue(col, out var custom) && !string.IsNullOrEmpty(custom))
+            return custom;
+        return Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+    }
 
     public List<string> CustomJobFilter { get; set; } = new();
 
     public MeterTab() { }
 
     public MeterTab(string name, TabFilterMode filterMode = TabFilterMode.All,
-        SortField sortBy = SortField.EncDps, bool sortDescending = true, bool showHps = false)
+        SortField sortBy = SortField.EncDps, bool sortDescending = true)
     {
         Name = name;
         FilterMode = filterMode;
         SortBy = sortBy;
         SortDescending = sortDescending;
-        ShowHps = showHps;
     }
 
     public MeterTab Clone()
@@ -36,7 +70,17 @@ public class MeterTab
             FilterMode = FilterMode,
             SortBy = SortBy,
             SortDescending = SortDescending,
-            ShowHps = ShowHps,
+            ShowDpsOnBar = ShowDpsOnBar,
+            ShowHpsOnBar = ShowHpsOnBar,
+            ShowDamageOnBar = ShowDamageOnBar,
+            ShowHealedOnBar = ShowHealedOnBar,
+            ShowDamagePercentOnBar = ShowDamagePercentOnBar,
+            ShowDirectHitOnBar = ShowDirectHitOnBar,
+            ShowCritOnBar = ShowCritOnBar,
+            ShowCritDirectHitOnBar = ShowCritDirectHitOnBar,
+            ShowDeathsOnBar = ShowDeathsOnBar,
+            ColumnOrder = new List<BarColumn>(ColumnOrder),
+            ColumnHeaderLabels = new Dictionary<BarColumn, string>(ColumnHeaderLabels),
             CustomJobFilter = new List<string>(CustomJobFilter),
         };
     }

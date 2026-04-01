@@ -35,7 +35,9 @@ public class Configuration : IPluginConfiguration
     public SortField SortBy { get; set; } = SortField.EncDps;
     public bool SortDescending { get; set; } = true;
     public bool ShowJobIcons { get; set; } = true;
-    public bool ShowHps { get; set; } = false;
+    public JobIconStyle JobIconStyle { get; set; } = JobIconStyle.Framed;
+    public Dictionary<string, uint> CustomJobIcons { get; set; } = new();
+
 
     // Meter Tabs
     public bool ShowTabBar { get; set; } = false;
@@ -92,7 +94,6 @@ public class Configuration : IPluginConfiguration
     public float WindowRounding { get; set; } = 0f;
 
     // Selection Bar
-    public bool ShowSelectionBar { get; set; } = true;
     public Vector4 SelectionBarTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 SelectionBarBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
     public float SelectionBarHeight { get; set; } = 0.0f;
@@ -143,13 +144,56 @@ public class Configuration : IPluginConfiguration
     public bool ShowYouOnBar { get; set; } = true;
     public NameDisplayFormat SelfNameFormat { get; set; } = NameDisplayFormat.FullName;
     public NameDisplayFormat OthersNameFormat { get; set; } = NameDisplayFormat.FullName;
-    public bool ShowValueOnBar { get; set; } = true;
+    public bool ShowDpsOnBar { get; set; } = true;
+    public bool ShowHpsOnBar { get; set; } = false;
+    public bool ShowDamageOnBar { get; set; } = false;
+    public bool ShowHealedOnBar { get; set; } = false;
     public bool ShowDamagePercentOnBar { get; set; } = false;
     public bool ShowJobAbbrevOnBar { get; set; } = false;
     public bool ShowRankNumber { get; set; } = false;
     public bool ShowDirectHitOnBar { get; set; } = false;
     public bool ShowCritOnBar { get; set; } = false;
     public bool ShowCritDirectHitOnBar { get; set; } = false;
+    public bool ShowDeathsOnBar { get; set; } = false;
+
+    // Column Order (left-to-right rendering)
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<BarColumn> ColumnOrder { get; set; } = new()
+    {
+        BarColumn.DamagePercent,
+        BarColumn.CritDirectHit,
+        BarColumn.Crit,
+        BarColumn.DirectHit,
+        BarColumn.Deaths,
+        BarColumn.Healed,
+        BarColumn.Damage,
+        BarColumn.Hps,
+        BarColumn.Dps,
+    };
+
+    // Custom column header labels
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<BarColumn, string> ColumnHeaderLabels { get; set; } = new();
+
+    public static readonly Dictionary<BarColumn, string> DefaultHeaderLabels = new()
+    {
+        { BarColumn.Dps, "DPS" },
+        { BarColumn.Hps, "HPS" },
+        { BarColumn.Damage, "Dmg" },
+        { BarColumn.Healed, "Heal" },
+        { BarColumn.DamagePercent, "%" },
+        { BarColumn.DirectHit, "!" },
+        { BarColumn.Crit, "!!" },
+        { BarColumn.CritDirectHit, "!!!" },
+        { BarColumn.Deaths, "D" },
+    };
+
+    public string GetHeaderLabel(BarColumn col)
+    {
+        if (ColumnHeaderLabels.TryGetValue(col, out var custom) && !string.IsNullOrEmpty(custom))
+            return custom;
+        return DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+    }
 
     // Detail Panel
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
@@ -167,6 +211,9 @@ public class Configuration : IPluginConfiguration
 
     // Skill Breakdown Colors
     public Vector4 SkillDamageFillColor { get; set; } = new(0.35f, 0.35f, 0.55f, 0.7f);
+    public Vector4 SkillPhysicalFillColor { get; set; } = new(0.55f, 0.30f, 0.25f, 0.7f);
+    public Vector4 SkillMagicFillColor { get; set; } = new(0.30f, 0.30f, 0.65f, 0.7f);
+    public bool UseSkillDamageTypeColors { get; set; } = false;
     public Vector4 SkillHealingFillColor { get; set; } = new(0.25f, 0.50f, 0.30f, 0.7f);
     public Vector4 SkillRowBackgroundColor { get; set; } = new(0.12f, 0.12f, 0.12f, 0.6f);
     public Vector4 SkillTextColor { get; set; } = new(1f, 1f, 1f, 0.9f);
