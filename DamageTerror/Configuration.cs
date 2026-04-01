@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 
 namespace DamageTerror;
 
-/// <summary>Default base font size in pt, used as reference when no custom font is loaded.</summary>
 file static class FontDefaults
 {
     public const float BaseSizePt = 14f;
@@ -75,7 +74,7 @@ public class Configuration : IPluginConfiguration
     public bool HideWindowHeader { get; set; } = false;
     public float BarAlpha { get; set; } = 0.7f;
 
-    // ===== Customization — Role Colors =====
+    // Role Colors
 
     public Vector4 TankColor { get; set; } = new(0.2f, 0.4f, 0.8f, 1.0f);
     public Vector4 HealerColor { get; set; } = new(0.2f, 0.7f, 0.3f, 1.0f);
@@ -117,7 +116,7 @@ public class Configuration : IPluginConfiguration
     public string? CustomFontDisplayName { get; set; }
     public string? CustomFontSpecJson { get; set; }
 
-    // ===== Customization — Bar Appearance =====
+    // Bar Appearance
 
     public float BarHeight { get; set; } = 22.0f;
     public float BarSpacing { get; set; } = 1.0f;

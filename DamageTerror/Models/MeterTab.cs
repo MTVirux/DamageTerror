@@ -12,7 +12,6 @@ public class MeterTab
 
     public bool SortDescending { get; set; } = true;
 
-    // Per-tab bar content display toggles
     public bool ShowDpsOnBar { get; set; } = true;
     public bool ShowHpsOnBar { get; set; } = false;
     public bool ShowDamageOnBar { get; set; } = false;
@@ -23,7 +22,6 @@ public class MeterTab
     public bool ShowCritDirectHitOnBar { get; set; } = false;
     public bool ShowDeathsOnBar { get; set; } = false;
 
-    // Per-tab column order (left-to-right rendering)
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<BarColumn> ColumnOrder { get; set; } = new()
     {
@@ -38,7 +36,6 @@ public class MeterTab
         BarColumn.Dps,
     };
 
-    // Custom column header labels (per-tab overrides)
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public Dictionary<BarColumn, string> ColumnHeaderLabels { get; set; } = new();
 
