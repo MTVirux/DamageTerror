@@ -16,6 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Dalamud.Bindings.ImPlot">
+      <HintPath>$(DalamudLibPath)Dalamud.Bindings.ImPlot.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
   </ItemGroup>
 

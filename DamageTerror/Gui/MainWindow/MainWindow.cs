@@ -36,9 +36,12 @@ public class MainWindow : Window, IDisposable
     private readonly ITextureProvider textureProvider;
     private readonly EncounterHeaderComponent headerComponent;
     private readonly CombatantBarComponent barComponent;
+    private readonly GraphViewComponent graphViewComponent;
     private readonly CombatantDetailPanel detailPanel;
     private readonly StatusBarComponent statusBarComponent;
     private TitleBarButton? lockButton;
+    private TitleBarButton? viewModeButton;
+    private MeterTab? currentActiveTab;
     private DateTime? combatEndTime;
     private int selectedMeterTab;
 
@@ -70,7 +73,8 @@ public class MainWindow : Window, IDisposable
         this.selectedMeterTab = plugin.Config.SelectedMeterTab;
         this.headerComponent = new EncounterHeaderComponent(plugin.DataService, plugin.Config);
         this.barComponent = new CombatantBarComponent(plugin.Config, textureProvider);
-        this.detailPanel = new CombatantDetailPanel(plugin.Config, plugin.DataService.GraphTracker);
+        this.graphViewComponent = new GraphViewComponent(plugin.Config, plugin.DataService.GraphTracker, plugin.DataService.SkillTracker);
+        this.detailPanel = new CombatantDetailPanel(plugin.Config, plugin.DataService.GraphTracker, plugin.DataService.SkillTracker);
         this.statusBarComponent = new StatusBarComponent(plugin.Config);
 
         TitleBarButtons.Add(new TitleBarButton
@@ -103,6 +107,28 @@ public class MainWindow : Window, IDisposable
             }
         };
         TitleBarButtons.Add(lockButton);
+
+        viewModeButton = new TitleBarButton
+        {
+            Icon = FontAwesomeIcon.ChartLine,
+            IconOffset = new Vector2(2, 2),
+            ShowTooltip = () =>
+            {
+                if (currentActiveTab != null)
+                    ImGui.SetTooltip(currentActiveTab.ViewMode == ViewMode.Bars ? "Switch to graph" : "Switch to bars");
+                else
+                    ImGui.SetTooltip("Toggle view mode");
+            },
+        };
+        viewModeButton.Click = (m) =>
+        {
+            if (m == ImGuiMouseButton.Left && currentActiveTab != null)
+            {
+                currentActiveTab.ViewMode = currentActiveTab.ViewMode == ViewMode.Bars ? ViewMode.LineGraph : ViewMode.Bars;
+                plugin.SaveConfig();
+            }
+        };
+        TitleBarButtons.Add(viewModeButton);
     }
 
     public void Dispose()
@@ -188,6 +214,9 @@ public class MainWindow : Window, IDisposable
         if (lockButton != null)
             lockButton.Icon = this.plugin.Config.PinMainWindow ? FontAwesomeIcon.Lock : FontAwesomeIcon.LockOpen;
 
+        if (viewModeButton != null)
+            viewModeButton.Icon = currentActiveTab?.ViewMode == ViewMode.LineGraph ? FontAwesomeIcon.ChartBar : FontAwesomeIcon.ChartLine;
+
         Flags |= ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
 
         ImGui.PushStyleColor(ImGuiCol.WindowBg, this.plugin.Config.WindowBackgroundColor);
@@ -220,18 +249,36 @@ public class MainWindow : Window, IDisposable
         {
             if (selectedMeterTab >= config.MeterTabs.Count)
                 SelectedMeterTab = 0;
+            // If the selected tab is hidden, fall back to the first visible tab
+            if (config.MeterTabs[selectedMeterTab].IsHidden)
+            {
+                var firstVisible = config.MeterTabs.FindIndex(t => !t.IsHidden);
+                if (firstVisible >= 0)
+                    SelectedMeterTab = firstVisible;
+            }
             activeTab = config.MeterTabs[selectedMeterTab];
         }
 
+        currentActiveTab = activeTab;
+
         var sortBy = activeTab?.SortBy ?? SortField.EncDps;
         var sortDesc = activeTab?.SortDescending ?? true;
+
+        // Resolve party membership for group filtering
+        HashSet<string>? partyNames = null;
+        HashSet<string>? allianceNames = null;
+        if (activeTab?.GroupFilter is GroupFilter.Party or GroupFilter.Alliance)
+        {
+            partyNames = plugin.PartyService.GetPartyMemberNames();
+            allianceNames = plugin.PartyService.GetAllianceMemberNames();
+        }
 
         List<CombatantEntry>? combatants = null;
         double maxVal = 0;
 
         if (encounter != null)
         {
-            combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab);
+            combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
             if (combatants.Count > 0)
                 maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
         }
@@ -312,7 +359,15 @@ public class MainWindow : Window, IDisposable
                             activeTab = newTab;
                             sortBy = activeTab.SortBy;
                             sortDesc = activeTab.SortDescending;
-                            combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab);
+
+                            // Re-resolve party context if the new tab needs it
+                            if (activeTab.GroupFilter is GroupFilter.Party or GroupFilter.Alliance)
+                            {
+                                partyNames ??= plugin.PartyService.GetPartyMemberNames();
+                                allianceNames ??= plugin.PartyService.GetAllianceMemberNames();
+                            }
+
+                            combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
                             maxVal = combatants.Count > 0
                                 ? combatants.Sum(c => CombatantBarComponent.GetSortValue(c, sortBy))
                                 : 0;
@@ -343,6 +398,9 @@ public class MainWindow : Window, IDisposable
         var tabCount = config.MeterTabs.Count;
         if (tabCount == 0) return;
 
+        var visibleCount = config.MeterTabs.Count(t => !t.IsHidden);
+        if (visibleCount == 0) return;
+
         var regionWidth = ImGui.GetContentRegionAvail().X;
         var spacing = config.TabButtonSpacing;
         var buttonHeight = config.TabButtonHeight;
@@ -351,7 +409,7 @@ public class MainWindow : Window, IDisposable
         float buttonWidth;
         if (config.TabButtonStretchToFit)
         {
-            buttonWidth = (regionWidth - spacing * (tabCount - 1)) / tabCount;
+            buttonWidth = (regionWidth - spacing * (visibleCount - 1)) / visibleCount;
         }
         else
         {
@@ -368,6 +426,7 @@ public class MainWindow : Window, IDisposable
         for (var i = 0; i < tabCount; i++)
         {
             var tab = config.MeterTabs[i];
+            if (tab.IsHidden) continue;
             var isActive = selectedMeterTab == i;
 
             var bgColor = isActive ? config.TabButtonActiveColor : config.TabButtonColor;
@@ -390,12 +449,35 @@ public class MainWindow : Window, IDisposable
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 SelectedMeterTab = i;
 
+            // Right-click context menu for popout
+            if (ImGui.BeginPopupContextItem($"##tabCtx{i}"))
+            {
+                if (plugin.IsTabPoppedOut(tab.Id))
+                {
+                    if (ImGui.MenuItem("Close Popout Window"))
+                        plugin.ClosePopoutTab(tab.Id);
+                }
+                else
+                {
+                    if (ImGui.MenuItem("Open in Window"))
+                        plugin.OpenPopoutTab(tab.Id);
+                }
+                ImGui.EndPopup();
+            }
+
             drawList.AddRectFilled(btnMin, btnMax, ImGui.ColorConvertFloat4ToU32(bgColor), rounding);
 
             var textPos = new Vector2(
                 btnMin.X + (w - textSize.X) * 0.5f,
                 btnMin.Y + (buttonHeight - textSize.Y) * 0.5f);
             drawList.AddText(ImGui.GetFont(), ImGui.GetFontSize(), textPos, ImGui.ColorConvertFloat4ToU32(textColor), tab.Name);
+
+            // Popout indicator dot at top-right corner
+            if (plugin.IsTabPoppedOut(tab.Id))
+            {
+                var dotCenter = new Vector2(btnMax.X - 5f, btnMin.Y + 5f);
+                drawList.AddCircleFilled(dotCenter, 3f, ImGui.ColorConvertFloat4ToU32(config.TabButtonActiveColor));
+            }
 
             cursor = new Vector2(cursor.X + w + spacing, cursor.Y);
         }
@@ -413,20 +495,29 @@ public class MainWindow : Window, IDisposable
 
         if (ImGui.BeginChild("##combatants", new Vector2(0, childHeight), false))
         {
-            if (plugin.Config.ShowMeterHeader)
-            {
-                DrawMeterHeader(activeTab);
-            }
+            var viewMode = activeTab?.ViewMode ?? ViewMode.Bars;
 
-            for (int i = 0; i < combatants.Count; i++)
+            if (viewMode == ViewMode.LineGraph)
             {
-                var combatant = combatants[i];
-                if (barComponent.Render(combatant, maxVal, i, sortBy, activeTab, currentPlayerName))
+                graphViewComponent.Render(combatants, snapshot, isLive, activeTab, currentPlayerName);
+            }
+            else
+            {
+                if (plugin.Config.ShowMeterHeader)
                 {
-                    detailPanel.Toggle(i);
+                    DrawMeterHeader(activeTab);
                 }
 
-                detailPanel.Render(combatant, i, snapshot, isLive);
+                for (int i = 0; i < combatants.Count; i++)
+                {
+                    var combatant = combatants[i];
+                    if (barComponent.Render(combatant, maxVal, i, sortBy, activeTab, currentPlayerName))
+                    {
+                        detailPanel.Toggle(i);
+                    }
+
+                    detailPanel.Render(combatant, i, snapshot, isLive, activeTab);
+                }
             }
         }
         ImGui.EndChild();
@@ -538,13 +629,14 @@ public class MainWindow : Window, IDisposable
         ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + headerHeight + config.BarSpacing));
     }
 
-    private List<CombatantEntry> GetSortedCombatants(EncounterSnapshot encounter,
-        SortField sortBy, bool desc, MeterTab? activeTab)
+    internal static List<CombatantEntry> GetSortedCombatants(EncounterSnapshot encounter,
+        SortField sortBy, bool desc, MeterTab? activeTab,
+        HashSet<string>? partyNames = null, HashSet<string>? allianceNames = null)
     {
         var combatants = new List<CombatantEntry>(encounter.Combatants);
 
         if (activeTab != null)
-            combatants.RemoveAll(c => !activeTab.PassesFilter(c));
+            combatants.RemoveAll(c => !activeTab.PassesFilter(c, partyNames, allianceNames));
 
         combatants.Sort((a, b) =>
         {

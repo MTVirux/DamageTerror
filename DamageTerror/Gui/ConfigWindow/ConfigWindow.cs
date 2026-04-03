@@ -9,7 +9,6 @@ public class ConfigWindow : Window, IDisposable
 {
     private readonly DamageTerrorPlugin plugin;
     private readonly GeneralTab generalTab;
-    private readonly DisplayTab displayTab;
     private readonly AppearanceTab appearanceTab;
     private readonly EncounterHistoryTab historyTab;
 
@@ -18,17 +17,18 @@ public class ConfigWindow : Window, IDisposable
     private enum ConfigPage
     {
         General,
-        Display,
         Tabs,
         Layout,
         Presets,
         Bars,
+        NameFormat,
         TabButtons,
         SelectionBar,
         Colors,
         StatusBar,
         Tooltip,
         Details,
+        GraphView,
         Font,
         Formatting,
         History,
@@ -37,11 +37,11 @@ public class ConfigWindow : Window, IDisposable
     private static readonly (ConfigPage Page, string Label, string? Group, FontAwesomeIcon Icon)[] PageEntries =
     {
         (ConfigPage.General,      "General",                null,           FontAwesomeIcon.Cog),
-        (ConfigPage.Display,      "Display",                null,           FontAwesomeIcon.Eye),
         (ConfigPage.Tabs,         "Tabs",                   null,           FontAwesomeIcon.Columns),
         (ConfigPage.Layout,       "Layout",                 null,           FontAwesomeIcon.ThLarge),
         (ConfigPage.Presets,      "Presets",                "Appearance",   FontAwesomeIcon.Palette),
         (ConfigPage.Bars,         "Meter Bars",             "Appearance",   FontAwesomeIcon.GripLines),
+        (ConfigPage.NameFormat,   "Name Format",            "Appearance",   FontAwesomeIcon.IdCard),
         (ConfigPage.Formatting,   "Value Formatting",       "Appearance",   FontAwesomeIcon.SortNumericDown),
         (ConfigPage.TabButtons,   "Tab Buttons",            "Appearance",   FontAwesomeIcon.HandPointer),
         (ConfigPage.SelectionBar, "Encounter Select",       "Appearance",   FontAwesomeIcon.ArrowsAltH),
@@ -49,6 +49,7 @@ public class ConfigWindow : Window, IDisposable
         (ConfigPage.StatusBar,    "Encounter Status Bar",   "Appearance",   FontAwesomeIcon.InfoCircle),
         (ConfigPage.Tooltip,      "Tooltips",               "Appearance",   FontAwesomeIcon.Comment),
         (ConfigPage.Details,      "Details Panel",          "Appearance",   FontAwesomeIcon.ChartBar),
+        (ConfigPage.GraphView,    "Graph View",             "Appearance",   FontAwesomeIcon.ChartLine),
         (ConfigPage.Font,         "Fonts",                  "Appearance",   FontAwesomeIcon.Font),
         (ConfigPage.History,      "History",                null,           FontAwesomeIcon.History),
     };
@@ -58,7 +59,6 @@ public class ConfigWindow : Window, IDisposable
     {
         this.plugin = plugin;
         this.generalTab = new GeneralTab(plugin);
-        this.displayTab = new DisplayTab();
         this.appearanceTab = new AppearanceTab(presetManager);
         this.historyTab = new EncounterHistoryTab(plugin);
         this.SizeConstraints = new WindowSizeConstraints()
@@ -161,10 +161,6 @@ public class ConfigWindow : Window, IDisposable
                 changed |= generalTab.Draw(config);
                 break;
 
-            case ConfigPage.Display:
-                changed |= displayTab.Draw(config);
-                break;
-
             case ConfigPage.Tabs:
                 changed |= MeterTabsPage.Draw(config);
                 break;
@@ -179,6 +175,10 @@ public class ConfigWindow : Window, IDisposable
 
             case ConfigPage.Bars:
                 changed |= AppearanceTab.DrawBarsPage(config);
+                break;
+
+            case ConfigPage.NameFormat:
+                changed |= AppearanceTab.DrawNameFormatPage(config);
                 break;
 
             case ConfigPage.Formatting:
@@ -207,6 +207,10 @@ public class ConfigWindow : Window, IDisposable
 
             case ConfigPage.Details:
                 changed |= AppearanceTab.DrawDetailsPage(config);
+                break;
+
+            case ConfigPage.GraphView:
+                changed |= AppearanceTab.DrawGraphViewPage(config);
                 break;
 
             case ConfigPage.Font:

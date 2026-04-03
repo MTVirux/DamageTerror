@@ -8,16 +8,6 @@ namespace DamageTerror.Gui.ConfigWindow;
 
 public class DisplayTab
 {
-    private static readonly string[] NameFormatLabels = new[]
-    {
-        "Full Name",
-        "First Name Only",
-        "Last Name Only",
-        "Initials (F. L.)",
-        "Job Abbreviation",
-        "Job Full Name",
-    };
-
     public bool Draw(Configuration config)
     {
         var changed = false;
@@ -25,39 +15,6 @@ public class DisplayTab
         if (ImGui.CollapsingHeader("Content", ImGuiTreeNodeFlags.DefaultOpen))
         {
             ImGui.TextDisabled("General bar display options.");
-
-            ImGui.Spacing();
-
-            var showName = config.ShowNameOnBar;
-            if (ImGui.Checkbox("Player name", ref showName))
-            {
-                config.ShowNameOnBar = showName;
-                changed = true;
-            }
-
-            var showYou = config.ShowYouOnBar;
-            if (ImGui.Checkbox("Show \"YOU\" instead of character name", ref showYou))
-            {
-                config.ShowYouOnBar = showYou;
-                changed = true;
-            }
-
-            ImGui.Spacing();
-            ImGui.TextDisabled("Name display format.");
-
-            var selfFmt = (int)config.SelfNameFormat;
-            if (ImGui.Combo("Your name", ref selfFmt, NameFormatLabels, NameFormatLabels.Length))
-            {
-                config.SelfNameFormat = (NameDisplayFormat)selfFmt;
-                changed = true;
-            }
-
-            var othersFmt = (int)config.OthersNameFormat;
-            if (ImGui.Combo("Others' names", ref othersFmt, NameFormatLabels, NameFormatLabels.Length))
-            {
-                config.OthersNameFormat = (NameDisplayFormat)othersFmt;
-                changed = true;
-            }
 
             ImGui.Spacing();
 
@@ -335,44 +292,44 @@ public class DisplayTab
 
     public static bool GetTabColumnEnabled(MeterTab tab, BarColumn col) => col switch
     {
-        BarColumn.Dps => tab.ShowDpsOnBar,
-        BarColumn.Hps => tab.ShowHpsOnBar,
-        BarColumn.Damage => tab.ShowDamageOnBar,
-        BarColumn.Healed => tab.ShowHealedOnBar,
-        BarColumn.DamagePercent => tab.ShowDamagePercentOnBar,
-        BarColumn.HealPercent => tab.ShowHealPercentOnBar,
-        BarColumn.DirectHit => tab.ShowDirectHitOnBar,
-        BarColumn.Crit => tab.ShowCritOnBar,
-        BarColumn.CritDirectHit => tab.ShowCritDirectHitOnBar,
-        BarColumn.Deaths => tab.ShowDeathsOnBar,
-        BarColumn.DamageTaken => tab.ShowDamageTakenOnBar,
-        BarColumn.DamageTakenPercent => tab.ShowDamageTakenPercentOnBar,
-        BarColumn.Overheal => tab.ShowOverhealOnBar,
-        BarColumn.OverhealAmount => tab.ShowOverhealAmountOnBar,
-        BarColumn.MaxHit => tab.ShowMaxHitOnBar,
-        BarColumn.PeakDps => tab.ShowPeakDpsOnBar,
-        BarColumn.MaxHeal => tab.ShowMaxHealOnBar,
-        BarColumn.Swings => tab.ShowSwingsOnBar,
-        BarColumn.Hits => tab.ShowHitsOnBar,
-        BarColumn.Misses => tab.ShowMissesOnBar,
-        BarColumn.HitRate => tab.ShowHitRateOnBar,
-        BarColumn.CritHitCount => tab.ShowCritHitCountOnBar,
-        BarColumn.DirectHitCount => tab.ShowDirectHitCountOnBar,
-        BarColumn.CritDirectHitCount => tab.ShowCritDirectHitCountOnBar,
-        BarColumn.BlockPct => tab.ShowBlockPctOnBar,
-        BarColumn.ParryPct => tab.ShowParryPctOnBar,
-        BarColumn.HealsTaken => tab.ShowHealsTakenOnBar,
-        BarColumn.AbsorbHeal => tab.ShowAbsorbHealOnBar,
-        BarColumn.Kills => tab.ShowKillsOnBar,
-        BarColumn.InstantDps => tab.ShowInstantDpsOnBar,
-        BarColumn.InstantHps => tab.ShowInstantHpsOnBar,
-        BarColumn.CritHealPct => tab.ShowCritHealPctOnBar,
-        BarColumn.HealCount => tab.ShowHealCountOnBar,
-        BarColumn.CombatantDuration => tab.ShowCombatantDurationOnBar,
-        BarColumn.DamageShield => tab.ShowDamageShieldOnBar,
-        BarColumn.MaxHealWard => tab.ShowMaxHealWardOnBar,
-        BarColumn.PowerDrain => tab.ShowPowerDrainOnBar,
-        BarColumn.PowerHeal => tab.ShowPowerHealOnBar,
+        BarColumn.Dps => tab.ShowDpsColumn,
+        BarColumn.Hps => tab.ShowHpsColumn,
+        BarColumn.Damage => tab.ShowDamageColumn,
+        BarColumn.Healed => tab.ShowHealedColumn,
+        BarColumn.DamagePercent => tab.ShowDamagePercentColumn,
+        BarColumn.HealPercent => tab.ShowHealPercentColumn,
+        BarColumn.DirectHit => tab.ShowDirectHitColumn,
+        BarColumn.Crit => tab.ShowCritColumn,
+        BarColumn.CritDirectHit => tab.ShowCritDirectHitColumn,
+        BarColumn.Deaths => tab.ShowDeathsColumn,
+        BarColumn.DamageTaken => tab.ShowDamageTakenColumn,
+        BarColumn.DamageTakenPercent => tab.ShowDamageTakenPercentColumn,
+        BarColumn.Overheal => tab.ShowOverhealColumn,
+        BarColumn.OverhealAmount => tab.ShowOverhealAmountColumn,
+        BarColumn.MaxHit => tab.ShowMaxHitColumn,
+        BarColumn.PeakDps => tab.ShowPeakDpsColumn,
+        BarColumn.MaxHeal => tab.ShowMaxHealColumn,
+        BarColumn.Swings => tab.ShowSwingsColumn,
+        BarColumn.Hits => tab.ShowHitsColumn,
+        BarColumn.Misses => tab.ShowMissesColumn,
+        BarColumn.HitRate => tab.ShowHitRateColumn,
+        BarColumn.CritHitCount => tab.ShowCritHitCountColumn,
+        BarColumn.DirectHitCount => tab.ShowDirectHitCountColumn,
+        BarColumn.CritDirectHitCount => tab.ShowCritDirectHitCountColumn,
+        BarColumn.BlockPct => tab.ShowBlockPctColumn,
+        BarColumn.ParryPct => tab.ShowParryPctColumn,
+        BarColumn.HealsTaken => tab.ShowHealsTakenColumn,
+        BarColumn.AbsorbHeal => tab.ShowAbsorbHealColumn,
+        BarColumn.Kills => tab.ShowKillsColumn,
+        BarColumn.InstantDps => tab.ShowInstantDpsColumn,
+        BarColumn.InstantHps => tab.ShowInstantHpsColumn,
+        BarColumn.CritHealPct => tab.ShowCritHealPctColumn,
+        BarColumn.HealCount => tab.ShowHealCountColumn,
+        BarColumn.CombatantDuration => tab.ShowCombatantDurationColumn,
+        BarColumn.DamageShield => tab.ShowDamageShieldColumn,
+        BarColumn.MaxHealWard => tab.ShowMaxHealWardColumn,
+        BarColumn.PowerDrain => tab.ShowPowerDrainColumn,
+        BarColumn.PowerHeal => tab.ShowPowerHealColumn,
         _ => false,
     };
 
@@ -380,44 +337,44 @@ public class DisplayTab
     {
         switch (col)
         {
-            case BarColumn.Dps: tab.ShowDpsOnBar = value; break;
-            case BarColumn.Hps: tab.ShowHpsOnBar = value; break;
-            case BarColumn.Damage: tab.ShowDamageOnBar = value; break;
-            case BarColumn.Healed: tab.ShowHealedOnBar = value; break;
-            case BarColumn.DamagePercent: tab.ShowDamagePercentOnBar = value; break;
-            case BarColumn.HealPercent: tab.ShowHealPercentOnBar = value; break;
-            case BarColumn.DirectHit: tab.ShowDirectHitOnBar = value; break;
-            case BarColumn.Crit: tab.ShowCritOnBar = value; break;
-            case BarColumn.CritDirectHit: tab.ShowCritDirectHitOnBar = value; break;
-            case BarColumn.Deaths: tab.ShowDeathsOnBar = value; break;
-            case BarColumn.DamageTaken: tab.ShowDamageTakenOnBar = value; break;
-            case BarColumn.DamageTakenPercent: tab.ShowDamageTakenPercentOnBar = value; break;
-            case BarColumn.Overheal: tab.ShowOverhealOnBar = value; break;
-            case BarColumn.OverhealAmount: tab.ShowOverhealAmountOnBar = value; break;
-            case BarColumn.MaxHit: tab.ShowMaxHitOnBar = value; break;
-            case BarColumn.PeakDps: tab.ShowPeakDpsOnBar = value; break;
-            case BarColumn.MaxHeal: tab.ShowMaxHealOnBar = value; break;
-            case BarColumn.Swings: tab.ShowSwingsOnBar = value; break;
-            case BarColumn.Hits: tab.ShowHitsOnBar = value; break;
-            case BarColumn.Misses: tab.ShowMissesOnBar = value; break;
-            case BarColumn.HitRate: tab.ShowHitRateOnBar = value; break;
-            case BarColumn.CritHitCount: tab.ShowCritHitCountOnBar = value; break;
-            case BarColumn.DirectHitCount: tab.ShowDirectHitCountOnBar = value; break;
-            case BarColumn.CritDirectHitCount: tab.ShowCritDirectHitCountOnBar = value; break;
-            case BarColumn.BlockPct: tab.ShowBlockPctOnBar = value; break;
-            case BarColumn.ParryPct: tab.ShowParryPctOnBar = value; break;
-            case BarColumn.HealsTaken: tab.ShowHealsTakenOnBar = value; break;
-            case BarColumn.AbsorbHeal: tab.ShowAbsorbHealOnBar = value; break;
-            case BarColumn.Kills: tab.ShowKillsOnBar = value; break;
-            case BarColumn.InstantDps: tab.ShowInstantDpsOnBar = value; break;
-            case BarColumn.InstantHps: tab.ShowInstantHpsOnBar = value; break;
-            case BarColumn.CritHealPct: tab.ShowCritHealPctOnBar = value; break;
-            case BarColumn.HealCount: tab.ShowHealCountOnBar = value; break;
-            case BarColumn.CombatantDuration: tab.ShowCombatantDurationOnBar = value; break;
-            case BarColumn.DamageShield: tab.ShowDamageShieldOnBar = value; break;
-            case BarColumn.MaxHealWard: tab.ShowMaxHealWardOnBar = value; break;
-            case BarColumn.PowerDrain: tab.ShowPowerDrainOnBar = value; break;
-            case BarColumn.PowerHeal: tab.ShowPowerHealOnBar = value; break;
+            case BarColumn.Dps: tab.ShowDpsColumn = value; break;
+            case BarColumn.Hps: tab.ShowHpsColumn = value; break;
+            case BarColumn.Damage: tab.ShowDamageColumn = value; break;
+            case BarColumn.Healed: tab.ShowHealedColumn = value; break;
+            case BarColumn.DamagePercent: tab.ShowDamagePercentColumn = value; break;
+            case BarColumn.HealPercent: tab.ShowHealPercentColumn = value; break;
+            case BarColumn.DirectHit: tab.ShowDirectHitColumn = value; break;
+            case BarColumn.Crit: tab.ShowCritColumn = value; break;
+            case BarColumn.CritDirectHit: tab.ShowCritDirectHitColumn = value; break;
+            case BarColumn.Deaths: tab.ShowDeathsColumn = value; break;
+            case BarColumn.DamageTaken: tab.ShowDamageTakenColumn = value; break;
+            case BarColumn.DamageTakenPercent: tab.ShowDamageTakenPercentColumn = value; break;
+            case BarColumn.Overheal: tab.ShowOverhealColumn = value; break;
+            case BarColumn.OverhealAmount: tab.ShowOverhealAmountColumn = value; break;
+            case BarColumn.MaxHit: tab.ShowMaxHitColumn = value; break;
+            case BarColumn.PeakDps: tab.ShowPeakDpsColumn = value; break;
+            case BarColumn.MaxHeal: tab.ShowMaxHealColumn = value; break;
+            case BarColumn.Swings: tab.ShowSwingsColumn = value; break;
+            case BarColumn.Hits: tab.ShowHitsColumn = value; break;
+            case BarColumn.Misses: tab.ShowMissesColumn = value; break;
+            case BarColumn.HitRate: tab.ShowHitRateColumn = value; break;
+            case BarColumn.CritHitCount: tab.ShowCritHitCountColumn = value; break;
+            case BarColumn.DirectHitCount: tab.ShowDirectHitCountColumn = value; break;
+            case BarColumn.CritDirectHitCount: tab.ShowCritDirectHitCountColumn = value; break;
+            case BarColumn.BlockPct: tab.ShowBlockPctColumn = value; break;
+            case BarColumn.ParryPct: tab.ShowParryPctColumn = value; break;
+            case BarColumn.HealsTaken: tab.ShowHealsTakenColumn = value; break;
+            case BarColumn.AbsorbHeal: tab.ShowAbsorbHealColumn = value; break;
+            case BarColumn.Kills: tab.ShowKillsColumn = value; break;
+            case BarColumn.InstantDps: tab.ShowInstantDpsColumn = value; break;
+            case BarColumn.InstantHps: tab.ShowInstantHpsColumn = value; break;
+            case BarColumn.CritHealPct: tab.ShowCritHealPctColumn = value; break;
+            case BarColumn.HealCount: tab.ShowHealCountColumn = value; break;
+            case BarColumn.CombatantDuration: tab.ShowCombatantDurationColumn = value; break;
+            case BarColumn.DamageShield: tab.ShowDamageShieldColumn = value; break;
+            case BarColumn.MaxHealWard: tab.ShowMaxHealWardColumn = value; break;
+            case BarColumn.PowerDrain: tab.ShowPowerDrainColumn = value; break;
+            case BarColumn.PowerHeal: tab.ShowPowerHealColumn = value; break;
         }
     }
 

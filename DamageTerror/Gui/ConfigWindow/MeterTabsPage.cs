@@ -24,6 +24,14 @@ public static class MeterTabsPage
         "Custom Jobs",
     };
 
+    private static readonly string[] GroupFilterLabels =
+    {
+        "All",
+        "Solo",
+        "Party Only",
+        "Alliance",
+    };
+
     public static bool Draw(Configuration config)
     {
         var changed = false;
@@ -65,11 +73,16 @@ public static class MeterTabsPage
             {
                 var tab = config.MeterTabs[i];
                 var isSelected = selectedTabIndex == i;
-                if (ImGui.Selectable($"{tab.Name}##tab{i}", isSelected))
+                var label = tab.IsHidden ? $"{tab.Name} (Hidden)" : tab.Name;
+                if (tab.IsHidden)
+                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 1.0f));
+                if (ImGui.Selectable($"{label}##tab{i}", isSelected))
                 {
                     selectedTabIndex = i;
                     renameBuffer = tab.Name;
                 }
+                if (tab.IsHidden)
+                    ImGui.PopStyleColor();
             }
         }
         ImGui.EndChild();
@@ -86,7 +99,10 @@ public static class MeterTabsPage
         var canRemove = config.MeterTabs.Count > 1;
         if (!canRemove) ImGui.BeginDisabled();
         if (ImGui.Button("-##removeTab") && selectedTabIndex >= 0 && selectedTabIndex < config.MeterTabs.Count)
-        {
+        {            // Close popout window if this tab was popped out
+            var removedTab = config.MeterTabs[selectedTabIndex];
+            if (DamageTerrorPlugin.Instance.IsTabPoppedOut(removedTab.Id))
+                DamageTerrorPlugin.Instance.ClosePopoutTab(removedTab.Id);
             config.MeterTabs.RemoveAt(selectedTabIndex);
             if (selectedTabIndex >= config.MeterTabs.Count)
                 selectedTabIndex = config.MeterTabs.Count - 1;
@@ -172,11 +188,30 @@ public static class MeterTabsPage
             changed = true;
         }
 
+        var groupBuffer = tab.Group ?? "";
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.InputText("Group", ref groupBuffer, 64))
+        {
+            tab.Group = groupBuffer;
+            changed = true;
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Assign this tab to a group.\nTabs with the same group string are grouped together.");
+
+        var isHidden = tab.IsHidden;
+        if (ImGui.Checkbox("Hidden", ref isHidden))
+        {
+            tab.IsHidden = isHidden;
+            changed = true;
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Hide this tab from the tab bar.\nThe tab still exists and can be used for popout windows.");
+
         ImGui.Spacing();
 
         var filterIdx = (int)tab.FilterMode;
         ImGui.SetNextItemWidth(200);
-        if (ImGui.Combo("Filter", ref filterIdx, FilterModeLabels, FilterModeLabels.Length))
+        if (ImGui.Combo("Role Filter", ref filterIdx, FilterModeLabels, FilterModeLabels.Length))
         {
             tab.FilterMode = (TabFilterMode)filterIdx;
             changed = true;
@@ -187,6 +222,16 @@ public static class MeterTabsPage
             ImGui.Spacing();
             changed |= DrawCustomJobFilter(tab);
         }
+
+        var groupFilterIdx = (int)tab.GroupFilter;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.Combo("Group Filter", ref groupFilterIdx, GroupFilterLabels, GroupFilterLabels.Length))
+        {
+            tab.GroupFilter = (GroupFilter)groupFilterIdx;
+            changed = true;
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Filter by party membership.\nSolo = only you.\nParty Only = your party members.\nAlliance = all alliance members.\nCombines with Role Filter above.");
 
         ImGui.Spacing();
         ImGui.Separator();
@@ -211,15 +256,163 @@ public static class MeterTabsPage
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.Spacing();
-        ImGui.TextDisabled("Bar Content");
+        ImGui.TextDisabled("Content");
 
-        tab.ColumnOrder ??= new List<BarColumn>();
-        CombatantBarComponent.EnsureColumnOrderComplete(tab.ColumnOrder);
-        changed |= DisplayTab.DrawBarColumns(tab.ColumnOrder,
-            col => DisplayTab.GetTabColumnEnabled(tab, col),
-            (col, v) => DisplayTab.SetTabColumnEnabled(tab, col, v),
-            tab.ColumnHeaderLabels,
-            tab.ColumnFormatOverrides);
+        var viewModeLabels = new[] { "Bars", "Line Graph" };
+        var viewModeIdx = (int)tab.ViewMode;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.Combo("View Mode", ref viewModeIdx, viewModeLabels, viewModeLabels.Length))
+        {
+            tab.ViewMode = (ViewMode)viewModeIdx;
+            changed = true;
+        }
+
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Switch between traditional bars and a line graph overlay.\nGraph mode plots metrics over time for all combatants.");
+
+        if (tab.ViewMode == ViewMode.LineGraph)
+        {
+            ImGui.Spacing();
+            ImGui.TextDisabled("Graph Lines");
+
+            var showDps = tab.GraphShowDpsLine;
+            if (ImGui.Checkbox("Show DPS Line", ref showDps))
+            {
+                tab.GraphShowDpsLine = showDps;
+                changed = true;
+            }
+            ImGui.SameLine();
+            changed |= DrawSkillMarkerButton("dps", tab.DpsMarkers);
+
+            var showHps = tab.GraphShowHpsLine;
+            if (ImGui.Checkbox("Show HPS Line", ref showHps))
+            {
+                tab.GraphShowHpsLine = showHps;
+                changed = true;
+            }
+            ImGui.SameLine();
+            changed |= DrawSkillMarkerButton("hps", tab.HpsMarkers);
+
+            var showDtps = tab.GraphShowDtpsLine;
+            if (ImGui.Checkbox("Show DTPS Line", ref showDtps))
+            {
+                tab.GraphShowDtpsLine = showDtps;
+                changed = true;
+            }
+            ImGui.SameLine();
+            changed |= DrawSkillMarkerButton("dtps", tab.DtpsMarkers);
+        }
+
+        if (tab.ViewMode != ViewMode.LineGraph)
+        {
+            ImGui.Spacing();
+            ImGui.TextDisabled("Columns");
+
+            tab.ColumnOrder ??= new List<BarColumn>();
+            CombatantBarComponent.EnsureColumnOrderComplete(tab.ColumnOrder);
+            changed |= DisplayTab.DrawBarColumns(tab.ColumnOrder,
+                col => DisplayTab.GetTabColumnEnabled(tab, col),
+                (col, v) => DisplayTab.SetTabColumnEnabled(tab, col, v),
+                tab.ColumnHeaderLabels,
+                tab.ColumnFormatOverrides);
+        }
+
+        return changed;
+    }
+
+    private static bool DrawSkillMarkerButton(string id, SkillMarkerConfig mc)
+    {
+        var changed = false;
+        var hasMarkers = mc.ShowMarkers;
+        if (hasMarkers)
+            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.4f, 0.8f, 1.0f, 1.0f));
+        if (ImGui.SmallButton($"M##markers_{id}"))
+            ImGui.OpenPopup($"##markerPopup_{id}");
+        if (hasMarkers)
+            ImGui.PopStyleColor();
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(hasMarkers ? "Skill markers (click to configure)" : "Skill markers (disabled)");
+
+        if (ImGui.BeginPopup($"##markerPopup_{id}"))
+        {
+            ImGui.TextDisabled("Skill Markers");
+            ImGui.Separator();
+
+            var showMarkers = mc.ShowMarkers;
+            if (ImGui.Checkbox("Show skill markers", ref showMarkers))
+            {
+                mc.ShowMarkers = showMarkers;
+                changed = true;
+            }
+
+            changed |= ConfigHelpers.ColorEditProp($"Marker color##popup_{id}", mc.MarkerColor, v => mc.MarkerColor = v);
+
+            var markerSize = mc.MarkerSize;
+            ImGui.SetNextItemWidth(150);
+            if (ImGui.SliderFloat($"Marker size##popup_{id}", ref markerSize, 1f, 10f, "%.1f"))
+            {
+                mc.MarkerSize = markerSize;
+                changed = true;
+            }
+
+            var showCrit = mc.ShowCritMarkers;
+            if (ImGui.Checkbox($"Color by crit/DH##popup_{id}", ref showCrit))
+            {
+                mc.ShowCritMarkers = showCrit;
+                changed = true;
+            }
+
+            if (mc.ShowCritMarkers)
+            {
+                changed |= ConfigHelpers.ColorEditProp($"Crit ! color##popup_{id}", mc.CritMarkerColor, v => mc.CritMarkerColor = v);
+                changed |= ConfigHelpers.ColorEditProp($"Direct Hit !! color##popup_{id}", mc.DirectHitMarkerColor, v => mc.DirectHitMarkerColor = v);
+                changed |= ConfigHelpers.ColorEditProp($"Crit Direct Hit !!! color##popup_{id}", mc.CritDirectHitMarkerColor, v => mc.CritDirectHitMarkerColor = v);
+            }
+
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.TextDisabled("DoT / HoT Markers");
+
+            var showDotTick = mc.ShowDoTTickMarkers;
+            if (ImGui.Checkbox($"Show DoT/HoT tick markers##popup_{id}", ref showDotTick))
+            {
+                mc.ShowDoTTickMarkers = showDotTick;
+                changed = true;
+            }
+
+            if (mc.ShowDoTTickMarkers)
+            {
+                changed |= ConfigHelpers.ColorEditProp($"Tick color##popup_{id}", mc.DoTTickColor, v => mc.DoTTickColor = v);
+                var dotTickSize = mc.DoTTickMarkerSize;
+                ImGui.SetNextItemWidth(150);
+                if (ImGui.SliderFloat($"Tick size##popup_{id}", ref dotTickSize, 1f, 10f, "%.1f"))
+                {
+                    mc.DoTTickMarkerSize = dotTickSize;
+                    changed = true;
+                }
+            }
+
+            var showDotApp = mc.ShowDoTApplicationMarkers;
+            if (ImGui.Checkbox($"Show DoT/HoT application markers##popup_{id}", ref showDotApp))
+            {
+                mc.ShowDoTApplicationMarkers = showDotApp;
+                changed = true;
+            }
+
+            if (mc.ShowDoTApplicationMarkers)
+            {
+                changed |= ConfigHelpers.ColorEditProp($"Application color##popup_{id}", mc.DoTApplicationColor, v => mc.DoTApplicationColor = v);
+                var dotAppSize = mc.DoTApplicationMarkerSize;
+                ImGui.SetNextItemWidth(150);
+                if (ImGui.SliderFloat($"Application size##popup_{id}", ref dotAppSize, 1f, 10f, "%.1f"))
+                {
+                    mc.DoTApplicationMarkerSize = dotAppSize;
+                    changed = true;
+                }
+            }
+
+            ImGui.EndPopup();
+        }
 
         return changed;
     }

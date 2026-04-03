@@ -27,12 +27,14 @@ public class AppearanceTab
     }
 
     public static bool DrawBarsPage(Configuration config) => DrawBarsTab(config);
+    public static bool DrawNameFormatPage(Configuration config) => DrawNameFormatTab(config);
     public static bool DrawFormattingPage(Configuration config) => DrawFormattingTab(config);
     public static bool DrawSelectionBarPage(Configuration config) => DrawSelectionBarTab(config);
     public static bool DrawColorsPage(Configuration config) => DrawColorsTab(config);
     public static bool DrawStatusBarPage(Configuration config) => DrawStatusBarTab(config);
     public static bool DrawTooltipPage(Configuration config) => DrawTooltipTab(config);
     public static bool DrawDetailsPage(Configuration config) => DrawDetailsTab(config);
+    public static bool DrawGraphViewPage(Configuration config) => DrawGraphViewTab(config);
     public static bool DrawFontPage(Configuration config, FontService? fontService, IUiBuilder? uiBuilder)
         => DrawFontTab(config, fontService, uiBuilder);
 
@@ -498,9 +500,154 @@ public class AppearanceTab
         ImGui.TextColored(new Vector4(0.6f, 0.6f, 0.6f, 1f), label);
     }
 
+    private static bool DrawNameFormatTab(Configuration config)
+    {
+        var changed = false;
+
+        ImGui.TextDisabled("These settings apply everywhere player names are displayed.");
+        ImGui.Spacing();
+
+        var showName = config.ShowNameOnBar;
+        if (ImGui.Checkbox("Show player name on bars", ref showName))
+        {
+            config.ShowNameOnBar = showName;
+            changed = true;
+        }
+
+        var showYou = config.ShowYouOnBar;
+        if (ImGui.Checkbox("Show \"YOU\" instead of character name", ref showYou))
+        {
+            config.ShowYouOnBar = showYou;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+        ImGui.TextDisabled("Name display format.");
+
+        var nameFormatLabels = new[]
+        {
+            "Full Name",
+            "First Name Only",
+            "Last Name Only",
+            "Initials (F. L.)",
+            "Job Abbreviation",
+            "Job Full Name",
+        };
+
+        var selfFmt = (int)config.SelfNameFormat;
+        if (ImGui.Combo("Your name", ref selfFmt, nameFormatLabels, nameFormatLabels.Length))
+        {
+            config.SelfNameFormat = (NameDisplayFormat)selfFmt;
+            changed = true;
+        }
+
+        var othersFmt = (int)config.OthersNameFormat;
+        if (ImGui.Combo("Others' names", ref othersFmt, nameFormatLabels, nameFormatLabels.Length))
+        {
+            config.OthersNameFormat = (NameDisplayFormat)othersFmt;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        ImGui.TextDisabled("Self name color.");
+
+        var useSelfNameColor = config.UseSelfNameColor;
+        if (ImGui.Checkbox("Custom name color for local player", ref useSelfNameColor))
+        {
+            config.UseSelfNameColor = useSelfNameColor;
+            changed = true;
+        }
+
+        if (config.UseSelfNameColor)
+        {
+            ImGui.Indent();
+            changed |= ConfigHelpers.ColorEditProp("Self name color", config.SelfNameColor, v => config.SelfNameColor = v);
+            ImGui.Unindent();
+        }
+
+        return changed;
+    }
+
     private static bool DrawBarsTab(Configuration config)
     {
         var changed = false;
+
+        if (ImGui.CollapsingHeader("Naming", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.TextDisabled("Bar-specific name display options.");
+
+            ImGui.Spacing();
+
+            var showJob = config.ShowJobAbbrevOnBar;
+            if (ImGui.Checkbox("Job abbreviation text", ref showJob))
+            {
+                config.ShowJobAbbrevOnBar = showJob;
+                changed = true;
+            }
+
+            var showRank = config.ShowRankNumber;
+            if (ImGui.Checkbox("Rank number", ref showRank))
+            {
+                config.ShowRankNumber = showRank;
+                changed = true;
+            }
+
+            var showJobIcons = config.ShowJobIcons;
+            if (ImGui.Checkbox("Job icons", ref showJobIcons))
+            {
+                config.ShowJobIcons = showJobIcons;
+                changed = true;
+            }
+
+            if (config.ShowJobIcons)
+            {
+                ImGui.SameLine();
+                var styleIdx = (int)config.JobIconStyle;
+                var styleLabels = new[] { "Framed", "Plain", "Custom" };
+                ImGui.SetNextItemWidth(120);
+                if (ImGui.Combo("Icon style", ref styleIdx, styleLabels, styleLabels.Length))
+                {
+                    config.JobIconStyle = (JobIconStyle)styleIdx;
+                    changed = true;
+                }
+
+                if (config.JobIconStyle == JobIconStyle.Custom)
+                {
+                    ImGui.Indent();
+                    ImGui.TextDisabled("Set a game icon ID per job (0 = default framed).");
+                    ImGui.Spacing();
+
+                    foreach (var abbr in JobIconHelper.AllJobAbbreviations.OrderBy(a => a))
+                    {
+                        config.CustomJobIcons.TryGetValue(abbr, out var curId);
+                        var idInt = (int)curId;
+                        ImGui.SetNextItemWidth(100);
+                        if (ImGui.InputInt($"{abbr.ToUpperInvariant()}##custicon_{abbr}", ref idInt, 0))
+                        {
+                            if (idInt < 0) idInt = 0;
+                            config.CustomJobIcons[abbr] = (uint)idInt;
+                            changed = true;
+                        }
+
+                        if (idInt > 0)
+                        {
+                            ImGui.SameLine();
+                            var preview = ServiceManager.TextureProvider.GetFromGameIcon(new Dalamud.Interface.Textures.GameIconLookup((uint)idInt));
+                            if (preview.TryGetWrap(out var wrap, out _))
+                            {
+                                ImGui.Image(wrap.Handle, new Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight()));
+                            }
+                        }
+                    }
+
+                    ImGui.Unindent();
+                }
+            }
+        }
+
+        ImGui.Spacing();
 
         if (ImGui.CollapsingHeader("Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
         {
@@ -605,20 +752,6 @@ public class AppearanceTab
         {
             ImGui.Indent();
             changed |= ConfigHelpers.ColorEditProp("Accent color", config.SelfBarHighlightColor, v => config.SelfBarHighlightColor = v);
-            ImGui.Unindent();
-        }
-
-        var useSelfNameColor = config.UseSelfNameColor;
-        if (ImGui.Checkbox("Custom name color for local player", ref useSelfNameColor))
-        {
-            config.UseSelfNameColor = useSelfNameColor;
-            changed = true;
-        }
-
-        if (config.UseSelfNameColor)
-        {
-            ImGui.Indent();
-            changed |= ConfigHelpers.ColorEditProp("Self name color", config.SelfNameColor, v => config.SelfNameColor = v);
             ImGui.Unindent();
         }
         }
@@ -1087,6 +1220,14 @@ public class AppearanceTab
         { TooltipField.MaxHealWard, "Max Heal Ward" },
     };
 
+    private static readonly (string Name, TooltipField[] Fields)[] DisabledTooltipCategories =
+    {
+        ("Damage", new[] { TooltipField.Dps, TooltipField.InstantDps, TooltipField.Damage, TooltipField.DamagePercent, TooltipField.PeakDps, TooltipField.MaxHit, TooltipField.DamageTaken, TooltipField.DamageShield }),
+        ("Healing", new[] { TooltipField.Hps, TooltipField.InstantHps, TooltipField.Healed, TooltipField.HealPercent, TooltipField.Overheal, TooltipField.OverhealAmount, TooltipField.MaxHeal, TooltipField.MaxHealWard, TooltipField.CritHealPct, TooltipField.HealCount, TooltipField.HealsTaken }),
+        ("Rates", new[] { TooltipField.Crit, TooltipField.DirectHit, TooltipField.CritDirectHit, TooltipField.HitRate, TooltipField.Swings, TooltipField.Hits, TooltipField.Misses }),
+        ("Other", new[] { TooltipField.Name, TooltipField.Job, TooltipField.Deaths, TooltipField.Kills, TooltipField.CombatantDuration }),
+    };
+
     private static bool DrawTooltipTab(Configuration config)
     {
         var changed = false;
@@ -1109,98 +1250,6 @@ public class AppearanceTab
         {
             config.TooltipDelay = delay;
             changed = true;
-        }
-
-        ImGui.Spacing();
-
-        if (ImGui.CollapsingHeader("Visible Fields", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            ImGui.TextDisabled("Choose which fields to show in the tooltip and their order.");
-            ImGui.Spacing();
-
-            var fields = config.TooltipFields;
-
-            for (var i = 0; i < fields.Count; i++)
-            {
-                var field = fields[i];
-                var label = TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
-
-                ImGui.PushID($"ttf_{i}");
-
-                var canUp = i > 0;
-                var canDown = i < fields.Count - 1;
-
-                if (canUp)
-                {
-                    if (ImGui.ArrowButton("##up", ImGuiDir.Up))
-                    {
-                        (fields[i - 1], fields[i]) = (fields[i], fields[i - 1]);
-                        changed = true;
-                    }
-                }
-                else
-                {
-                    ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.3f);
-                    ImGui.ArrowButton("##up", ImGuiDir.Up);
-                    ImGui.PopStyleVar();
-                }
-
-                ImGui.SameLine();
-
-                if (canDown)
-                {
-                    if (ImGui.ArrowButton("##down", ImGuiDir.Down))
-                    {
-                        (fields[i], fields[i + 1]) = (fields[i + 1], fields[i]);
-                        changed = true;
-                    }
-                }
-                else
-                {
-                    ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.3f);
-                    ImGui.ArrowButton("##down", ImGuiDir.Down);
-                    ImGui.PopStyleVar();
-                }
-
-                ImGui.SameLine();
-
-                if (ImGui.Button("X##remove"))
-                {
-                    fields.RemoveAt(i);
-                    changed = true;
-                    ImGui.PopID();
-                    i--;
-                    continue;
-                }
-
-                ImGui.SameLine();
-                ImGui.Text(label);
-
-                ImGui.PopID();
-            }
-
-            ImGui.Spacing();
-
-            // Add field dropdown
-            var allFields = Enum.GetValues<TooltipField>();
-            var available = allFields.Where(f => !fields.Contains(f)).ToArray();
-            if (available.Length > 0)
-            {
-                ImGui.SetNextItemWidth(200);
-                if (ImGui.BeginCombo("##addField", "Add field..."))
-                {
-                    foreach (var f in available)
-                    {
-                        var fieldLabel = TooltipFieldLabels.GetValueOrDefault(f, f.ToString());
-                        if (ImGui.Selectable(fieldLabel))
-                        {
-                            fields.Add(f);
-                            changed = true;
-                        }
-                    }
-                    ImGui.EndCombo();
-                }
-            }
         }
 
         ImGui.Spacing();
@@ -1241,6 +1290,109 @@ public class AppearanceTab
 
             if (ConfigHelpers.ColorEditProp("Label Color", config.TooltipLabelColor, v => config.TooltipLabelColor = v))
                 changed = true;
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Visible Fields", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.TextDisabled("Choose which fields to show in the tooltip and their order.");
+            ImGui.Spacing();
+
+            var fields = config.TooltipFields;
+            var allFields = Enum.GetValues<TooltipField>();
+            var disabledFields = allFields.Where(f => !fields.Contains(f)).ToList();
+            disabledFields.Sort((a, b) =>
+                string.Compare(
+                    TooltipFieldLabels.GetValueOrDefault(a, a.ToString()),
+                    TooltipFieldLabels.GetValueOrDefault(b, b.ToString()),
+                    StringComparison.OrdinalIgnoreCase));
+
+            for (var i = 0; i < fields.Count; i++)
+            {
+                var field = fields[i];
+                var label = TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+
+                ImGui.PushID($"ttf_{i}");
+
+                var canUp = i > 0;
+                if (!canUp) ImGui.BeginDisabled();
+                if (ImGui.ArrowButton("##up", ImGuiDir.Up))
+                {
+                    (fields[i - 1], fields[i]) = (fields[i], fields[i - 1]);
+                    changed = true;
+                }
+                if (!canUp) ImGui.EndDisabled();
+
+                ImGui.SameLine();
+
+                var canDown = i < fields.Count - 1;
+                if (!canDown) ImGui.BeginDisabled();
+                if (ImGui.ArrowButton("##down", ImGuiDir.Down))
+                {
+                    (fields[i], fields[i + 1]) = (fields[i + 1], fields[i]);
+                    changed = true;
+                }
+                if (!canDown) ImGui.EndDisabled();
+
+                ImGui.SameLine();
+
+                var enabled = true;
+                if (ImGui.Checkbox(label, ref enabled))
+                {
+                    fields.RemoveAt(i);
+                    changed = true;
+                    ImGui.PopID();
+                    i--;
+                    continue;
+                }
+
+                ImGui.PopID();
+            }
+
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.TextDisabled("Disabled");
+            ImGui.Spacing();
+
+            if (disabledFields.Count > 0 && ImGui.BeginTabBar("##disabledTooltipFields"))
+            {
+                foreach (var (catName, catFields) in DisabledTooltipCategories)
+                {
+                    var catDisabled = catFields.Where(f => disabledFields.Contains(f)).ToList();
+
+                    if (catDisabled.Count == 0)
+                        continue;
+
+                    if (ImGui.BeginTabItem(catName))
+                    {
+                        catDisabled.Sort((a, b) =>
+                            string.Compare(
+                                TooltipFieldLabels.GetValueOrDefault(a, a.ToString()),
+                                TooltipFieldLabels.GetValueOrDefault(b, b.ToString()),
+                                StringComparison.OrdinalIgnoreCase));
+
+                        foreach (var field in catDisabled)
+                        {
+                            var label = TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+                            ImGui.PushID($"disabled_tt_{field}");
+
+                            var off = false;
+                            if (ImGui.Checkbox(label, ref off))
+                            {
+                                fields.Add(field);
+                                changed = true;
+                            }
+
+                            ImGui.PopID();
+                        }
+
+                        ImGui.EndTabItem();
+                    }
+                }
+
+                ImGui.EndTabBar();
+            }
         }
 
         if (!config.ShowTooltip)
@@ -1344,12 +1496,22 @@ public class AppearanceTab
             ImGui.TextDisabled("Configure the live instant DPS/HPS/DTPS graph.");
             ImGui.Spacing();
 
-            var graphHeight = config.GraphHeight;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Graph height", ref graphHeight, 60f, 300f, "%.0f px"))
+            var autoHeight = config.GraphAutoHeight;
+            if (ImGui.Checkbox("Auto-fit height##graph", ref autoHeight))
             {
-                config.GraphHeight = graphHeight;
+                config.GraphAutoHeight = autoHeight;
                 changed = true;
+            }
+
+            if (!config.GraphAutoHeight)
+            {
+                var graphHeight = config.GraphHeight;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderFloat("Graph height", ref graphHeight, 60f, 300f, "%.0f px"))
+                {
+                    config.GraphHeight = graphHeight;
+                    changed = true;
+                }
             }
 
             var lineThickness = config.GraphLineThickness;
@@ -1360,11 +1522,27 @@ public class AppearanceTab
                 changed = true;
             }
 
+            var graphFontSize = config.GraphFontSize;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Font size##graph", ref graphFontSize, 6f, 40f, "%.1fpt"))
+            {
+                config.GraphFontSize = graphFontSize;
+                changed = true;
+            }
+
             var smoothing = config.GraphSmoothingWindow;
             ImGui.SetNextItemWidth(200);
             if (ImGui.SliderFloat("Smoothing window", ref smoothing, 1f, 30f, "%.0f sec"))
             {
                 config.GraphSmoothingWindow = smoothing;
+                changed = true;
+            }
+
+            var updateInterval = config.GraphUpdateInterval;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Update interval", ref updateInterval, 0.1f, 2f, "%.2f sec"))
+            {
+                config.GraphUpdateInterval = updateInterval;
                 changed = true;
             }
 
@@ -1402,9 +1580,132 @@ public class AppearanceTab
             changed |= ConfigHelpers.ColorEditProp("Grid lines", config.GraphGridColor, v => config.GraphGridColor = v);
 
             ImGui.Spacing();
+            ImGui.TextDisabled("Display Options");
+
+            var graphShowLegend = config.GraphShowLegend;
+            if (ImGui.Checkbox("Show legend##graph", ref graphShowLegend))
+            {
+                config.GraphShowLegend = graphShowLegend;
+                changed = true;
+            }
+
+            var graphShowGrid = config.GraphShowGrid;
+            if (ImGui.Checkbox("Show grid lines##graph", ref graphShowGrid))
+            {
+                config.GraphShowGrid = graphShowGrid;
+                changed = true;
+            }
+
+            var graphShowXAxis = config.GraphShowXAxisLabels;
+            if (ImGui.Checkbox("Show X axis labels##graph", ref graphShowXAxis))
+            {
+                config.GraphShowXAxisLabels = graphShowXAxis;
+                changed = true;
+            }
+
+            var graphShowYAxis = config.GraphShowYAxisLabels;
+            if (ImGui.Checkbox("Show Y axis labels##graph", ref graphShowYAxis))
+            {
+                config.GraphShowYAxisLabels = graphShowYAxis;
+                changed = true;
+            }
+
+            ImGui.Spacing();
+            ImGui.TextDisabled("Value Labels");
+
+            var showLabels = config.GraphShowLabels;
+            if (ImGui.Checkbox("Show value labels##graph", ref showLabels))
+            {
+                config.GraphShowLabels = showLabels;
+                changed = true;
+            }
+
+            var labelOffsetX = config.GraphLabelOffsetX;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Label offset X##graph", ref labelOffsetX, -20f, 40f, "%.0f px"))
+            {
+                config.GraphLabelOffsetX = labelOffsetX;
+                changed = true;
+            }
+
+            var labelOffsetY = config.GraphLabelOffsetY;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Label offset Y##graph", ref labelOffsetY, -20f, 20f, "%.0f px"))
+            {
+                config.GraphLabelOffsetY = labelOffsetY;
+                changed = true;
+            }
+
+            ImGui.Spacing();
+            ImGui.TextDisabled("Axis & Mouse Text");
+
+            var autoScroll = config.GraphAutoScroll;
+            if (ImGui.Checkbox("Auto-scroll##graph", ref autoScroll))
+            {
+                config.GraphAutoScroll = autoScroll;
+                changed = true;
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("During combat, scroll the graph to show only the most recent time window instead of the full encounter.");
+
+            if (config.GraphAutoScroll)
+            {
+                var scrollWindow = config.GraphAutoScrollWindow;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderFloat("Scroll window##graph", ref scrollWindow, 15f, 300f, "%.0f sec"))
+                {
+                    config.GraphAutoScrollWindow = scrollWindow;
+                    changed = true;
+                }
+
+                var scrollSmooth = config.GraphAutoScrollSmoothing;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderFloat("Scroll smoothing##graph", ref scrollSmooth, 1f, 30f, "%.1f"))
+                {
+                    config.GraphAutoScrollSmoothing = scrollSmooth;
+                    changed = true;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("How quickly the graph scrolls to the new position. Higher = snappier, lower = smoother.");
+            }
+
+            var xPadding = config.GraphXAxisPadding;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("X axis padding##graph", ref xPadding, 1.0f, 2.0f, "%.2fx"))
+            {
+                config.GraphXAxisPadding = xPadding;
+                changed = true;
+            }
+
+            var yHeadroom = config.GraphYAxisHeadroom;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Y axis headroom##graph", ref yHeadroom, 1.0f, 2.0f, "%.2fx"))
+            {
+                config.GraphYAxisHeadroom = yHeadroom;
+                changed = true;
+            }
+
+            var yTickCount = config.GraphYAxisTickCount;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderInt("Y axis tick count##graph", ref yTickCount, 2, 16))
+            {
+                config.GraphYAxisTickCount = yTickCount;
+                changed = true;
+            }
+
+            var mouseOpacity = config.GraphMouseTextOpacity;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Mouse text opacity##graph", ref mouseOpacity, 0f, 1f, "%.2f"))
+            {
+                config.GraphMouseTextOpacity = mouseOpacity;
+                changed = true;
+            }
+
+            ImGui.Spacing();
 
             if (ImGui.Button("Reset Graph"))
             {
+                config.GraphAutoHeight = true;
                 config.GraphHeight = 120f;
                 config.GraphLineThickness = 2f;
                 config.GraphDpsColor = new Vector4(0.9f, 0.4f, 0.4f, 1f);
@@ -1412,10 +1713,26 @@ public class AppearanceTab
                 config.GraphDtpsColor = new Vector4(0.4f, 0.55f, 0.9f, 1f);
                 config.GraphBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
                 config.GraphGridColor = new Vector4(0.3f, 0.3f, 0.3f, 0.3f);
+                config.GraphShowLegend = true;
+                config.GraphShowGrid = true;
+                config.GraphShowXAxisLabels = true;
+                config.GraphShowYAxisLabels = true;
                 config.GraphShowDps = true;
                 config.GraphShowHps = true;
                 config.GraphSmoothingWindow = 5f;
+                config.GraphUpdateInterval = 0.25f;
                 config.GraphShowDtps = true;
+                config.GraphShowLabels = true;
+                config.GraphLabelOffsetX = 8f;
+                config.GraphLabelOffsetY = 0f;
+                config.GraphAutoScroll = false;
+                config.GraphAutoScrollWindow = 60f;
+                config.GraphAutoScrollSmoothing = 8f;
+                config.GraphXAxisPadding = 1.25f;
+                config.GraphYAxisHeadroom = 1.1f;
+                config.GraphYAxisTickCount = 8;
+                config.GraphMouseTextOpacity = 0.6f;
+                config.GraphFontSize = 14f;
                 changed = true;
             }
         }
@@ -1507,6 +1824,257 @@ public class AppearanceTab
             config.SkillHeaderTextColor = new Vector4(0.6f, 0.6f, 0.6f, 0.9f);
             changed = true;
         }
+        }
+
+        return changed;
+    }
+
+    private static bool DrawGraphViewTab(Configuration config)
+    {
+        var changed = false;
+
+        ImGui.TextWrapped("Configure the appearance of the graph view mode. Each tab can be switched to graph view in the Tabs settings page.");
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            var autoViewHeight = config.GraphViewAutoHeight;
+            if (ImGui.Checkbox("Auto-fit height##graphview", ref autoViewHeight))
+            {
+                config.GraphViewAutoHeight = autoViewHeight;
+                changed = true;
+            }
+
+            if (!config.GraphViewAutoHeight)
+            {
+                var height = config.GraphViewHeight;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderFloat("Graph height", ref height, 100f, 600f, "%.0f px"))
+                {
+                    config.GraphViewHeight = height;
+                    changed = true;
+                }
+            }
+
+            var lineThickness = config.GraphViewLineThickness;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Line thickness", ref lineThickness, 1f, 6f, "%.1f"))
+            {
+                config.GraphViewLineThickness = lineThickness;
+                changed = true;
+            }
+
+            var gvFontSize = config.GraphViewFontSize;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Font size##graphview", ref gvFontSize, 6f, 40f, "%.1fpt"))
+            {
+                config.GraphViewFontSize = gvFontSize;
+                changed = true;
+            }
+
+            var gvSmoothing = config.GraphViewSmoothingWindow;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Smoothing window##graphview", ref gvSmoothing, 1f, 30f, "%.0f sec"))
+            {
+                config.GraphViewSmoothingWindow = gvSmoothing;
+                changed = true;
+            }
+
+            var gvUpdateInterval = config.GraphViewUpdateInterval;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Update interval##graphview", ref gvUpdateInterval, 0.1f, 2f, "%.2f sec"))
+            {
+                config.GraphViewUpdateInterval = gvUpdateInterval;
+                changed = true;
+            }
+
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Display Options", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            var showLegend = config.GraphViewShowLegend;
+            if (ImGui.Checkbox("Show legend", ref showLegend))
+            {
+                config.GraphViewShowLegend = showLegend;
+                changed = true;
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Show a legend below the graph with combatant names and current values.");
+
+            var showGrid = config.GraphViewShowGrid;
+            if (ImGui.Checkbox("Show grid lines", ref showGrid))
+            {
+                config.GraphViewShowGrid = showGrid;
+                changed = true;
+            }
+
+            var showXAxis = config.GraphViewShowXAxisLabels;
+            if (ImGui.Checkbox("Show X axis labels", ref showXAxis))
+            {
+                config.GraphViewShowXAxisLabels = showXAxis;
+                changed = true;
+            }
+
+            var showYAxis = config.GraphViewShowYAxisLabels;
+            if (ImGui.Checkbox("Show Y axis labels", ref showYAxis))
+            {
+                config.GraphViewShowYAxisLabels = showYAxis;
+                changed = true;
+            }
+
+            var highlightSelf = config.GraphViewHighlightSelf;
+            if (ImGui.Checkbox("Highlight self (thicker line)", ref highlightSelf))
+            {
+                config.GraphViewHighlightSelf = highlightSelf;
+                changed = true;
+            }
+
+            if (config.GraphViewHighlightSelf)
+            {
+                var selfThickness = config.GraphViewSelfLineThickness;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderFloat("Self line thickness", ref selfThickness, 1f, 8f, "%.1f"))
+                {
+                    config.GraphViewSelfLineThickness = selfThickness;
+                    changed = true;
+                }
+            }
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Colors##graphview", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            changed |= ConfigHelpers.ColorEditProp("Background", config.GraphViewBackgroundColor, v => config.GraphViewBackgroundColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Grid lines", config.GraphViewGridColor, v => config.GraphViewGridColor = v);
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Value Labels##graphview", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            var showViewLabels = config.GraphViewShowLabels;
+            if (ImGui.Checkbox("Show value labels##graphview", ref showViewLabels))
+            {
+                config.GraphViewShowLabels = showViewLabels;
+                changed = true;
+            }
+
+            var labelOffsetX = config.GraphViewLabelOffsetX;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Label offset X##graphview", ref labelOffsetX, -20f, 40f, "%.0f px"))
+            {
+                config.GraphViewLabelOffsetX = labelOffsetX;
+                changed = true;
+            }
+
+            var labelOffsetY = config.GraphViewLabelOffsetY;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Label offset Y##graphview", ref labelOffsetY, -20f, 20f, "%.0f px"))
+            {
+                config.GraphViewLabelOffsetY = labelOffsetY;
+                changed = true;
+            }
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Axis & Mouse Text##graphview", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            var gvAutoScroll = config.GraphViewAutoScroll;
+            if (ImGui.Checkbox("Auto-scroll##graphview", ref gvAutoScroll))
+            {
+                config.GraphViewAutoScroll = gvAutoScroll;
+                changed = true;
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("During combat, scroll the graph to show only the most recent time window instead of the full encounter.");
+
+            if (config.GraphViewAutoScroll)
+            {
+                var gvScrollWindow = config.GraphViewAutoScrollWindow;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderFloat("Scroll window##graphview", ref gvScrollWindow, 15f, 300f, "%.0f sec"))
+                {
+                    config.GraphViewAutoScrollWindow = gvScrollWindow;
+                    changed = true;
+                }
+
+                var gvScrollSmooth = config.GraphViewAutoScrollSmoothing;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderFloat("Scroll smoothing##graphview", ref gvScrollSmooth, 1f, 30f, "%.1f"))
+                {
+                    config.GraphViewAutoScrollSmoothing = gvScrollSmooth;
+                    changed = true;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("How quickly the graph scrolls to the new position. Higher = snappier, lower = smoother.");
+            }
+
+            var gvXPadding = config.GraphViewXAxisPadding;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("X axis padding##graphview", ref gvXPadding, 1.0f, 2.0f, "%.2fx"))
+            {
+                config.GraphViewXAxisPadding = gvXPadding;
+                changed = true;
+            }
+
+            var gvYHeadroom = config.GraphViewYAxisHeadroom;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Y axis headroom##graphview", ref gvYHeadroom, 1.0f, 2.0f, "%.2fx"))
+            {
+                config.GraphViewYAxisHeadroom = gvYHeadroom;
+                changed = true;
+            }
+
+            var gvYTickCount = config.GraphViewYAxisTickCount;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderInt("Y axis tick count##graphview", ref gvYTickCount, 2, 16))
+            {
+                config.GraphViewYAxisTickCount = gvYTickCount;
+                changed = true;
+            }
+
+            var gvMouseOpacity = config.GraphViewMouseTextOpacity;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Mouse text opacity##graphview", ref gvMouseOpacity, 0f, 1f, "%.2f"))
+            {
+                config.GraphViewMouseTextOpacity = gvMouseOpacity;
+                changed = true;
+            }
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.Button("Reset Graph View"))
+        {
+            config.GraphViewAutoHeight = true;
+            config.GraphViewHeight = 300f;
+            config.GraphViewLineThickness = 2f;
+            config.GraphViewSmoothingWindow = 5f;
+            config.GraphViewUpdateInterval = 0.25f;
+            config.GraphViewBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
+            config.GraphViewGridColor = new Vector4(0.3f, 0.3f, 0.3f, 0.3f);
+            config.GraphViewShowLegend = true;
+            config.GraphViewShowGrid = true;
+            config.GraphViewShowXAxisLabels = true;
+            config.GraphViewShowYAxisLabels = true;
+            config.GraphViewHighlightSelf = true;
+            config.GraphViewSelfLineThickness = 3.5f;
+            config.GraphViewShowLabels = true;
+            config.GraphViewLabelOffsetX = 8f;
+            config.GraphViewLabelOffsetY = 0f;
+            config.GraphViewFontSize = 14f;
+            config.GraphViewAutoScroll = false;
+            config.GraphViewAutoScrollWindow = 60f;
+            config.GraphViewAutoScrollSmoothing = 8f;
+            config.GraphViewXAxisPadding = 1.25f;
+            config.GraphViewYAxisHeadroom = 1.1f;
+            config.GraphViewYAxisTickCount = 8;
+            config.GraphViewMouseTextOpacity = 0.6f;
+            changed = true;
         }
 
         return changed;
@@ -1618,6 +2186,22 @@ public class AppearanceTab
             changed = true;
         }
 
+        var graphFont = config.GraphFontSize;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Graph labels (detail)", ref graphFont, 6f, 40f, "%.1fpt"))
+        {
+            config.GraphFontSize = graphFont;
+            changed = true;
+        }
+
+        var graphViewFont = config.GraphViewFontSize;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Graph labels (overview)", ref graphViewFont, 6f, 40f, "%.1fpt"))
+        {
+            config.GraphViewFontSize = graphViewFont;
+            changed = true;
+        }
+
         ImGui.Spacing();
 
         if (ImGui.Button("Reset Sizes"))
@@ -1627,6 +2211,8 @@ public class AppearanceTab
             config.StatusBarFontSize = 14f;
             config.DetailFontSize = 14f;
             config.SkillFontSize = 14f;
+            config.GraphFontSize = 14f;
+            config.GraphViewFontSize = 14f;
             changed = true;
         }
         }

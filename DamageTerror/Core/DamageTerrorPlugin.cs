@@ -16,6 +16,8 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public DataService DataService { get; private set; } = null!;
 
+    public PartyMembershipService PartyService { get; private set; } = null!;
+
     public FontService FontService { get; private set; } = null!;
 
     private readonly WindowSystem windowSystem = new(typeof(DamageTerrorPlugin).AssemblyQualifiedName);
@@ -23,6 +25,8 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
     private readonly Gui.ConfigWindow.ConfigWindow configWindow;
     private readonly ICommandManager commandManager;
     private readonly IPluginLog pluginLog;
+    private readonly ITextureProvider textureProvider;
+    private readonly Dictionary<Guid, Gui.MainWindow.PopoutTabWindow> popoutWindows = new();
     private bool disposed;
 
     public DamageTerrorPlugin(
@@ -38,6 +42,7 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.PluginInterface = pluginInterface;
         this.commandManager = commandManager;
         this.pluginLog = pluginLog;
+        this.textureProvider = textureProvider;
 
         ECommonsMain.Init(pluginInterface, this);
         ServiceManager.Initialize(pluginInterface, playerState, dataManager, pluginLog, textureProvider);
@@ -53,7 +58,29 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.Config.Save = this.SaveConfig;
         Gui.ConfigWindow.LayoutPage.EnsureLayoutComplete(cfg);
 
+        // Ensure all MeterTabs have a stable GUID (migration for existing configs)
+        foreach (var tab in cfg.MeterTabs)
+        {
+            if (tab.Id == Guid.Empty)
+                tab.Id = Guid.NewGuid();
+        }
+
+        // Migrate graph line settings from old derived-from-columns behavior (Version 1 → 2)
+        if (cfg.Version < 2)
+        {
+            foreach (var tab in cfg.MeterTabs)
+            {
+                tab.GraphShowDpsLine = tab.ShowDpsColumn || tab.ShowInstantDpsColumn || tab.ShowPeakDpsColumn;
+                tab.GraphShowHpsLine = tab.ShowHpsColumn || tab.ShowInstantHpsColumn;
+                tab.GraphShowDtpsLine = tab.ShowDamageTakenColumn || tab.ShowDamageTakenPercentColumn;
+            }
+            cfg.Version = 2;
+            this.PluginInterface.SavePluginConfig(cfg);
+        }
+
         this.DataService = new DataService(pluginInterface, pluginLog, this.Config);
+
+        this.PartyService = new PartyMembershipService();
 
         this.FontService = new FontService(this.Config, pluginLog);
         if (this.Config.EnableCustomFont)
@@ -78,6 +105,16 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         });
 
         this.mainWindow.IsOpen = this.Config.ShowOnStart;
+
+        // Restore popout windows from persisted config
+        foreach (var tabId in this.Config.PopoutTabIds.ToList())
+        {
+            var tab = this.Config.MeterTabs.FirstOrDefault(t => t.Id == tabId);
+            if (tab != null)
+                OpenPopoutTabInternal(tab);
+            else
+                this.Config.PopoutTabIds.Remove(tabId);
+        }
 
         Task.Run(async () =>
         {
@@ -116,6 +153,10 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             this.DataService.Dispose();
             this.FontService.Dispose();
 
+            foreach (var popout in this.popoutWindows.Values)
+                popout.Dispose();
+            this.popoutWindows.Clear();
+
             this.windowSystem.RemoveAllWindows();
             this.mainWindow.Dispose();
             this.configWindow.Dispose();
@@ -132,15 +173,66 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.disposed = true;
     }
 
+    public void OpenPopoutTab(Guid tabId)
+    {
+        if (popoutWindows.ContainsKey(tabId))
+            return;
+
+        var tab = Config.MeterTabs.FirstOrDefault(t => t.Id == tabId);
+        if (tab == null)
+            return;
+
+        OpenPopoutTabInternal(tab);
+
+        if (!Config.PopoutTabIds.Contains(tabId))
+        {
+            Config.PopoutTabIds.Add(tabId);
+            SaveConfig();
+        }
+    }
+
+    public void ClosePopoutTab(Guid tabId)
+    {
+        if (!popoutWindows.TryGetValue(tabId, out var window))
+            return;
+
+        window.IsOpen = false;
+        this.windowSystem.RemoveWindow(window);
+        window.Dispose();
+        popoutWindows.Remove(tabId);
+
+        if (Config.PopoutTabIds.Remove(tabId))
+            SaveConfig();
+    }
+
+    public bool IsTabPoppedOut(Guid tabId) => popoutWindows.ContainsKey(tabId);
+
+    private void OpenPopoutTabInternal(MeterTab tab)
+    {
+        var window = new Gui.MainWindow.PopoutTabWindow(this, textureProvider, tab);
+        this.windowSystem.AddWindow(window);
+        window.IsOpen = true;
+        popoutWindows[tab.Id] = window;
+    }
+
     private void DrawUi() => this.windowSystem.Draw();
 
     private void OnCommand(string command, string arguments)
     {
         if (string.IsNullOrWhiteSpace(arguments))
-            this.mainWindow.IsOpen = !this.mainWindow.IsOpen;
+        {
+            var newState = !this.mainWindow.IsOpen;
+            this.mainWindow.IsOpen = newState;
+            foreach (var popout in this.popoutWindows.Values)
+                popout.SetVisible(newState);
+        }
         else if (arguments.Trim().Equals("config", StringComparison.OrdinalIgnoreCase))
             this.configWindow.IsOpen = !this.configWindow.IsOpen;
         else
+        {
             this.mainWindow.IsOpen = true;
+            foreach (var popout in this.popoutWindows.Values)
+                popout.SetVisible(true);
+        }
     }
 }

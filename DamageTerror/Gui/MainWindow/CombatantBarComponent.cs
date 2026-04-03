@@ -19,44 +19,44 @@ public struct ColumnVisibility
 
     public static ColumnVisibility Resolve(Configuration config, MeterTab? activeTab) => new()
     {
-        ShowDps = activeTab?.ShowDpsOnBar ?? true,
-        ShowHps = activeTab?.ShowHpsOnBar ?? false,
-        ShowDamage = activeTab?.ShowDamageOnBar ?? false,
-        ShowHealed = activeTab?.ShowHealedOnBar ?? false,
-        ShowDamagePercent = activeTab?.ShowDamagePercentOnBar ?? false,
-        ShowHealPercent = activeTab?.ShowHealPercentOnBar ?? false,
-        ShowDirectHit = activeTab?.ShowDirectHitOnBar ?? false,
-        ShowCrit = activeTab?.ShowCritOnBar ?? false,
-        ShowCritDirectHit = activeTab?.ShowCritDirectHitOnBar ?? false,
-        ShowDeaths = activeTab?.ShowDeathsOnBar ?? false,
-        ShowDamageTaken = activeTab?.ShowDamageTakenOnBar ?? false,
-        ShowDamageTakenPercent = activeTab?.ShowDamageTakenPercentOnBar ?? false,
-        ShowOverheal = activeTab?.ShowOverhealOnBar ?? false,
-        ShowOverhealAmount = activeTab?.ShowOverhealAmountOnBar ?? false,
-        ShowMaxHit = activeTab?.ShowMaxHitOnBar ?? false,
-        ShowPeakDps = activeTab?.ShowPeakDpsOnBar ?? false,
-        ShowMaxHeal = activeTab?.ShowMaxHealOnBar ?? false,
-        ShowSwings = activeTab?.ShowSwingsOnBar ?? false,
-        ShowHits = activeTab?.ShowHitsOnBar ?? false,
-        ShowMisses = activeTab?.ShowMissesOnBar ?? false,
-        ShowHitRate = activeTab?.ShowHitRateOnBar ?? false,
-        ShowCritHitCount = activeTab?.ShowCritHitCountOnBar ?? false,
-        ShowDirectHitCount = activeTab?.ShowDirectHitCountOnBar ?? false,
-        ShowCritDirectHitCount = activeTab?.ShowCritDirectHitCountOnBar ?? false,
-        ShowBlockPct = activeTab?.ShowBlockPctOnBar ?? false,
-        ShowParryPct = activeTab?.ShowParryPctOnBar ?? false,
-        ShowHealsTaken = activeTab?.ShowHealsTakenOnBar ?? false,
-        ShowAbsorbHeal = activeTab?.ShowAbsorbHealOnBar ?? false,
-        ShowKills = activeTab?.ShowKillsOnBar ?? false,
-        ShowInstantDps = activeTab?.ShowInstantDpsOnBar ?? false,
-        ShowInstantHps = activeTab?.ShowInstantHpsOnBar ?? false,
-        ShowCritHealPct = activeTab?.ShowCritHealPctOnBar ?? false,
-        ShowHealCount = activeTab?.ShowHealCountOnBar ?? false,
-        ShowCombatantDuration = activeTab?.ShowCombatantDurationOnBar ?? false,
-        ShowDamageShield = activeTab?.ShowDamageShieldOnBar ?? false,
-        ShowMaxHealWard = activeTab?.ShowMaxHealWardOnBar ?? false,
-        ShowPowerDrain = activeTab?.ShowPowerDrainOnBar ?? false,
-        ShowPowerHeal = activeTab?.ShowPowerHealOnBar ?? false,
+        ShowDps = activeTab?.ShowDpsColumn ?? true,
+        ShowHps = activeTab?.ShowHpsColumn ?? false,
+        ShowDamage = activeTab?.ShowDamageColumn ?? false,
+        ShowHealed = activeTab?.ShowHealedColumn ?? false,
+        ShowDamagePercent = activeTab?.ShowDamagePercentColumn ?? false,
+        ShowHealPercent = activeTab?.ShowHealPercentColumn ?? false,
+        ShowDirectHit = activeTab?.ShowDirectHitColumn ?? false,
+        ShowCrit = activeTab?.ShowCritColumn ?? false,
+        ShowCritDirectHit = activeTab?.ShowCritDirectHitColumn ?? false,
+        ShowDeaths = activeTab?.ShowDeathsColumn ?? false,
+        ShowDamageTaken = activeTab?.ShowDamageTakenColumn ?? false,
+        ShowDamageTakenPercent = activeTab?.ShowDamageTakenPercentColumn ?? false,
+        ShowOverheal = activeTab?.ShowOverhealColumn ?? false,
+        ShowOverhealAmount = activeTab?.ShowOverhealAmountColumn ?? false,
+        ShowMaxHit = activeTab?.ShowMaxHitColumn ?? false,
+        ShowPeakDps = activeTab?.ShowPeakDpsColumn ?? false,
+        ShowMaxHeal = activeTab?.ShowMaxHealColumn ?? false,
+        ShowSwings = activeTab?.ShowSwingsColumn ?? false,
+        ShowHits = activeTab?.ShowHitsColumn ?? false,
+        ShowMisses = activeTab?.ShowMissesColumn ?? false,
+        ShowHitRate = activeTab?.ShowHitRateColumn ?? false,
+        ShowCritHitCount = activeTab?.ShowCritHitCountColumn ?? false,
+        ShowDirectHitCount = activeTab?.ShowDirectHitCountColumn ?? false,
+        ShowCritDirectHitCount = activeTab?.ShowCritDirectHitCountColumn ?? false,
+        ShowBlockPct = activeTab?.ShowBlockPctColumn ?? false,
+        ShowParryPct = activeTab?.ShowParryPctColumn ?? false,
+        ShowHealsTaken = activeTab?.ShowHealsTakenColumn ?? false,
+        ShowAbsorbHeal = activeTab?.ShowAbsorbHealColumn ?? false,
+        ShowKills = activeTab?.ShowKillsColumn ?? false,
+        ShowInstantDps = activeTab?.ShowInstantDpsColumn ?? false,
+        ShowInstantHps = activeTab?.ShowInstantHpsColumn ?? false,
+        ShowCritHealPct = activeTab?.ShowCritHealPctColumn ?? false,
+        ShowHealCount = activeTab?.ShowHealCountColumn ?? false,
+        ShowCombatantDuration = activeTab?.ShowCombatantDurationColumn ?? false,
+        ShowDamageShield = activeTab?.ShowDamageShieldColumn ?? false,
+        ShowMaxHealWard = activeTab?.ShowMaxHealWardColumn ?? false,
+        ShowPowerDrain = activeTab?.ShowPowerDrainColumn ?? false,
+        ShowPowerHeal = activeTab?.ShowPowerHealColumn ?? false,
     };
 
     public bool IsVisible(BarColumn col) => col switch
@@ -293,9 +293,7 @@ public class CombatantBarComponent
 
         if (config.ShowNameOnBar)
         {
-            var displayName = isLocalPlayer && config.ShowYouOnBar ? "YOU" : combatant.Name;
-            var fmt = isLocalPlayer ? config.SelfNameFormat : config.OthersNameFormat;
-            displayName = FormatName(displayName, combatant.Job, fmt);
+            var displayName = NameFormatHelper.GetDisplayName(combatant.Name, combatant.Job, isLocalPlayer, config);
             var nameCol = (isLocalPlayer && config.UseSelfNameColor)
                 ? config.SelfNameColor
                 : config.NameTextColor;
@@ -360,36 +358,6 @@ public class CombatantBarComponent
         list.RemoveAll(col => !seen.Add(col));
     }
 
-    private static string FormatName(string name, string job, NameDisplayFormat fmt)
-    {
-        switch (fmt)
-        {
-            case NameDisplayFormat.FirstNameOnly:
-            {
-                var spaceIdx = name.IndexOf(' ');
-                return spaceIdx > 0 ? name[..spaceIdx] : name;
-            }
-            case NameDisplayFormat.LastNameOnly:
-            {
-                var spaceIdx = name.LastIndexOf(' ');
-                return spaceIdx >= 0 ? name[(spaceIdx + 1)..] : name;
-            }
-            case NameDisplayFormat.Initials:
-            {
-                var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                return parts.Length >= 2
-                    ? $"{parts[0][0]}. {parts[1][0]}."
-                    : name;
-            }
-            case NameDisplayFormat.JobAbbreviation:
-                return !string.IsNullOrEmpty(job) ? job.ToUpperInvariant() : name;
-            case NameDisplayFormat.JobFullName:
-                return !string.IsNullOrEmpty(job) ? JobNameHelper.GetFullName(job) : name;
-            default:
-                return name;
-        }
-    }
-
     private void DrawTooltip(CombatantEntry combatant, MeterTab? activeTab)
     {
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, config.TooltipRounding);
@@ -424,7 +392,7 @@ public class CombatantBarComponent
 
     private (string Label, string Value) GetTooltipFieldValue(CombatantEntry combatant, TooltipField field, MeterTab? activeTab) => field switch
     {
-        TooltipField.Name => ("Name", combatant.Name),
+        TooltipField.Name => ("Name", NameFormatHelper.GetDisplayName(combatant.Name, combatant.Job, combatant.IsLocalPlayer, config)),
         TooltipField.Job => ("Job", !string.IsNullOrEmpty(combatant.Job) ? JobNameHelper.GetFullName(combatant.Job) : "—"),
         TooltipField.Dps => ("DPS", GetColumnDisplayValue(combatant, BarColumn.Dps, config, activeTab)),
         TooltipField.Hps => ("HPS", GetColumnDisplayValue(combatant, BarColumn.Hps, config, activeTab)),

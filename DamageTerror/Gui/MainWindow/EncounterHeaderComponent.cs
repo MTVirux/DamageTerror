@@ -20,12 +20,15 @@ public class EncounterHeaderComponent : IUIComponent
         this.config = config;
     }
 
-    private static string FormatEncounterLabel(CombatEncounter enc, string playerName = "", string suffix = "")
+    private string FormatEncounterLabel(CombatEncounter enc, string playerName = "", string suffix = "", DateTime? timestamp = null)
     {
         var icon = enc.IsActive ? "●" : "○";
         var title = !string.IsNullOrEmpty(enc.Title) ? $" — {enc.Title}" : "";
-        var player = !string.IsNullOrEmpty(playerName) ? $"  ({playerName})" : "";
-        return $"{icon} {enc.ZoneName}{title}  |  {enc.Duration}  |  {ValueFormatter.Format(enc.EncDps, ValueDisplayFormat.Raw, 1)} rDPS{player}{suffix}";
+        var time = timestamp.HasValue ? $"  [{timestamp.Value.ToLocalTime():yyyy-MM-dd HH:mm}]" : "";
+        var formattedPlayer = !string.IsNullOrEmpty(playerName)
+            ? $"  ({NameFormatHelper.GetDisplayName(playerName, "", true, config)})"
+            : "";
+        return $"{icon} {enc.ZoneName}{title}{time}  |  {enc.Duration}  |  {ValueFormatter.Format(enc.EncDps, ValueDisplayFormat.Raw, 1)} rDPS{formattedPlayer}{suffix}";
     }
 
     public EncounterSnapshot? SelectedEncounter
@@ -64,7 +67,7 @@ public class EncounterHeaderComponent : IUIComponent
         if (encounter != null)
         {
             var enc = encounter.Encounter;
-            previewLabel = FormatEncounterLabel(enc, encounter.PlayerName);
+            previewLabel = FormatEncounterLabel(enc, encounter.PlayerName, timestamp: encounter.Timestamp);
         }
         else
         {
@@ -118,7 +121,7 @@ public class EncounterHeaderComponent : IUIComponent
                         || active.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
                             || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                     {
-                        var activeLabel = FormatEncounterLabel(aEnc, active.PlayerName ?? "", "##active");
+                        var activeLabel = FormatEncounterLabel(aEnc, active.PlayerName ?? "", "##active", active.Timestamp);
                         if (ImGui.Selectable(activeLabel, selectedIndex == -1))
                             selectedIndex = -1;
                     }
@@ -135,7 +138,7 @@ public class EncounterHeaderComponent : IUIComponent
                         && !h.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
                             || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                         continue;
-                    var label = FormatEncounterLabel(hEnc, h.PlayerName ?? "", $"##{i}");
+                    var label = FormatEncounterLabel(hEnc, h.PlayerName ?? "", $"##{i}", h.Timestamp);
                     if (ImGui.Selectable(label, selectedIndex == i))
                         selectedIndex = i;
 
