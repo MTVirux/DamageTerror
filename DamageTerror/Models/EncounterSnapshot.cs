@@ -52,7 +52,7 @@ public class EncounterSnapshot
             return false;
 
         var repaired = false;
-        var duration = ParseDuration(Encounter.Duration);
+        var duration = DurationHelper.ParseDuration(Encounter.Duration, 60f);
 
         foreach (var c in Combatants)
         {
@@ -114,16 +114,5 @@ public class EncounterSnapshot
                 });
             }
         }
-    }
-
-    private static float ParseDuration(string? duration)
-    {
-        if (string.IsNullOrEmpty(duration)) return 60f;
-        var parts = duration.Split(':');
-        if (parts.Length == 2
-            && int.TryParse(parts[0], out var min)
-            && int.TryParse(parts[1], out var sec))
-            return Math.Max(1f, min * 60f + sec);
-        return 60f;
     }
 }

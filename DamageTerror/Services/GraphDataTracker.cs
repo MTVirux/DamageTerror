@@ -119,7 +119,7 @@ public class GraphDataTracker
                 if (timer != null && timer.IsRunning)
                 {
                     timer.Stop();
-                    var encDuration = ParseDuration(enc.Duration);
+                    var encDuration = DurationHelper.ParseDuration(enc.Duration);
                     if (encDuration > 0f)
                         TrimToEncounterLength(encDuration);
                 }
@@ -128,7 +128,6 @@ public class GraphDataTracker
 
             var timeSec = timer?.ElapsedSeconds ?? 0f;
 
-            // Update CombatData ground-truth totals and validate LogLine accumulator.
             foreach (var c in snapshot.Combatants)
             {
                 if (string.IsNullOrEmpty(c.Name))
@@ -289,25 +288,5 @@ public class GraphDataTracker
                 }
             }
         }
-    }
-
-    internal static float ParseDuration(string duration)
-    {
-        if (string.IsNullOrEmpty(duration))
-            return 0f;
-
-        var parts = duration.Split(':');
-        if (parts.Length == 2
-            && float.TryParse(parts[0], out var mins)
-            && float.TryParse(parts[1], out var secs))
-            return mins * 60f + secs;
-
-        if (parts.Length == 3
-            && float.TryParse(parts[0], out var hrs)
-            && float.TryParse(parts[1], out var m2)
-            && float.TryParse(parts[2], out var s2))
-            return hrs * 3600f + m2 * 60f + s2;
-
-        return 0f;
     }
 }
