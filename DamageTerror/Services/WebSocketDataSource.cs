@@ -60,20 +60,25 @@ public class WebSocketDataSource : IDataSource
 
     private async Task ReceiveAndReconnectLoopAsync(CancellationToken ct)
     {
+        int retryDelay = 1000;
+        const int maxDelay = 30000;
+
         while (!ct.IsCancellationRequested && !disposed)
         {
             if (ws?.State == WebSocketState.Open)
             {
+                retryDelay = 1000;
                 await ReceiveLoopAsync(ct).ConfigureAwait(false);
             }
 
             if (ct.IsCancellationRequested || disposed)
                 break;
 
-            log.Debug("WebSocket disconnected, attempting reconnect...");
+            log.Debug($"WebSocket disconnected, reconnecting in {retryDelay}ms...");
             try
             {
-                await Task.Delay(100, ct).ConfigureAwait(false);
+                await Task.Delay(retryDelay, ct).ConfigureAwait(false);
+                retryDelay = Math.Min(retryDelay * 2, maxDelay);
                 await ConnectOnceAsync(ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException)

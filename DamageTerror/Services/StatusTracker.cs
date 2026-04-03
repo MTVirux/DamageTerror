@@ -96,8 +96,6 @@ public class StatusTracker
         var classification = ClassifyStatus(statusId);
         var now = timer?.ElapsedSeconds ?? 0f;
 
-        log.Debug($"[StatusTracker] GainsEffect: {sourceName} -> {targetName} | {statusName} (ID={statusId:X}) dur={duration:F1}s DoT={classification.IsDoT} HoT={classification.IsHoT}");
-
         var status = new ActiveStatus
         {
             SourceName = sourceName,
@@ -154,8 +152,6 @@ public class StatusTracker
     /// </summary>
     public void OnStatusLost(string sourceName, string targetName, uint statusId, float removalTime)
     {
-        log.Debug($"[StatusTracker] LosesEffect: {sourceName} -> {targetName} | ID={statusId:X} t={removalTime:F1}s");
-
         lock (syncLock)
         {
             var key = (targetName, statusId, sourceName);

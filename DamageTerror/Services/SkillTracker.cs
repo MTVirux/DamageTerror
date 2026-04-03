@@ -472,14 +472,8 @@ public class SkillTracker
         if (statusTracker == null)
             return;
 
-        log.Debug($"[StatusLine] type={type} len={line.Length} raw={string.Join("|", line)}");
-
-        // Both types 26 and 30 need at least 9 fields for the fields we parse
         if (line.Length < 9)
-        {
-            log.Debug($"[StatusLine] Skipped: too few fields ({line.Length})");
             return;
-        }
 
         var statusIdHex = line[2];
         var statusName = line[3];
