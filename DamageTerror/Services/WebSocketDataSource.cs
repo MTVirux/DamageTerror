@@ -13,7 +13,7 @@ public class WebSocketDataSource : IDataSource
     private ClientWebSocket? ws;
     private CancellationTokenSource? cts;
     private Task? receiveTask;
-    private bool disposed;
+    private volatile bool disposed;
 
     public event Action<EncounterSnapshot>? OnCombatData;
     public event Action<string, uint>? OnPrimaryPlayerChanged;
