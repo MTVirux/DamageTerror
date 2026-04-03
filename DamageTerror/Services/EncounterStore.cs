@@ -276,9 +276,6 @@ public class EncounterStore
 
             System.IO.File.WriteAllText(savePath, json);
         }
-        catch
-        {
-            // Best-effort save
-        }
+        catch { }
     }
 }

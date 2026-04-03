@@ -285,7 +285,6 @@ public class DataService : IDisposable
                 c.IsLocalPlayer = true;
         }
 
-        // Track peak DPS per combatant across snapshots within the same encounter.
         var prev = existing;
         if (prev != null)
         {

@@ -21,7 +21,6 @@ public class Configuration : IPluginConfiguration
     public bool ShowOnStart { get; set; } = true;
     public int MaxEncounterHistory { get; set; } = 30;
 
-    // Duty Type Filters
     public bool EnableInOverworld { get; set; } = true;
     public bool EnableInDungeons { get; set; } = true;
     public bool EnableInTrials { get; set; } = true;
@@ -38,8 +37,6 @@ public class Configuration : IPluginConfiguration
     public JobIconStyle JobIconStyle { get; set; } = JobIconStyle.Framed;
     public Dictionary<string, uint> CustomJobIcons { get; set; } = new();
 
-
-    // Meter Tabs
     public bool ShowTabBar { get; set; } = true;
     public int SelectedMeterTab { get; set; } = 0;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
@@ -52,7 +49,6 @@ public class Configuration : IPluginConfiguration
         },
     };
 
-    // Meter Tab Button Appearance
     public Vector4 TabButtonColor { get; set; } = new(0.20f, 0.22f, 0.27f, 1.0f);
     public Vector4 TabButtonHoveredColor { get; set; } = new(0.28f, 0.30f, 0.36f, 1.0f);
     public Vector4 TabButtonActiveColor { get; set; } = new(0.38f, 0.44f, 0.64f, 1.0f);
@@ -65,7 +61,6 @@ public class Configuration : IPluginConfiguration
     public float TabButtonFontSize { get; set; } = FontDefaults.BaseSizePt;
     public bool TabButtonStretchToFit { get; set; } = true;
 
-    // Layout Order
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<LayoutElement> Layout { get; set; } = new()
     {
@@ -84,8 +79,6 @@ public class Configuration : IPluginConfiguration
     public bool HideWindowHeader { get; set; } = false;
     public float BarAlpha { get; set; } = 0.7f;
 
-    // Role Colors
-
     public Vector4 TankColor { get; set; } = new(0.2f, 0.4f, 0.8f, 1.0f);
     public Vector4 HealerColor { get; set; } = new(0.2f, 0.7f, 0.3f, 1.0f);
     public Vector4 MeleeDpsColor { get; set; } = new(0.8f, 0.2f, 0.2f, 1.0f);
@@ -102,7 +95,6 @@ public class Configuration : IPluginConfiguration
     public Vector4 WindowBackgroundColor { get; set; } = new(0.06f, 0.06f, 0.06f, 0.94f);
     public float WindowRounding { get; set; } = 0f;
 
-    // Selection Bar
     public Vector4 SelectionBarTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 SelectionBarBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
     public float SelectionBarHeight { get; set; } = 0.0f;
@@ -110,7 +102,6 @@ public class Configuration : IPluginConfiguration
     public bool ShowSelectionBarSeparator { get; set; } = true;
     public Vector4 SelectionBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
-    // Header Row
     public Vector4 HeaderTextColor { get; set; } = new(0.7f, 0.7f, 0.7f, 0.9f);
     public Vector4 HeaderBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
     public float HeaderHeight { get; set; } = 22.0f;
@@ -118,15 +109,12 @@ public class Configuration : IPluginConfiguration
     public bool HeaderSeparator { get; set; } = false;
     public Vector4 HeaderSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
-    // Font Settings
     public bool EnableCustomFont { get; set; } = false;
     public string? CustomFontPath { get; set; }
     public int CustomFontIndex { get; set; }
     public float CustomFontSizePt { get; set; } = 14f;
     public string? CustomFontDisplayName { get; set; }
     public string? CustomFontSpecJson { get; set; }
-
-    // Bar Appearance
 
     public float BarHeight { get; set; } = 22.0f;
     public float BarSpacing { get; set; } = 1.0f;
@@ -138,7 +126,6 @@ public class Configuration : IPluginConfiguration
     public float BarColumnSpacing { get; set; } = 6.0f;
     public float IconTextPadding { get; set; } = 4.0f;
 
-    // Self Highlighting
     public bool SelfBarHighlight { get; set; } = false;
     public Vector4 SelfBarHighlightColor { get; set; } = new(1.0f, 0.85f, 0.3f, 0.9f);
     public bool UseSelfNameColor { get; set; } = false;
@@ -152,7 +139,6 @@ public class Configuration : IPluginConfiguration
     public double AbbreviatedKThreshold { get; set; } = 10_000;
     public double AbbreviatedMThreshold { get; set; } = 1_000_000;
 
-    // Bar Info
     public bool ShowMeterHeader { get; set; } = true;
     public bool ShowNameOnBar { get; set; } = true;
     public bool ShowYouOnBar { get; set; } = true;
@@ -203,7 +189,6 @@ public class Configuration : IPluginConfiguration
         { BarColumn.PowerHeal, "PwH" },
     };
 
-    // Detail Panel
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
@@ -216,7 +201,6 @@ public class Configuration : IPluginConfiguration
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public HashSet<string> DetailExpandedSections { get; set; } = new();
 
-    // Tooltip
     public bool ShowTooltip { get; set; } = true;
     public float TooltipDelay { get; set; } = 0.3f;
 
@@ -242,7 +226,6 @@ public class Configuration : IPluginConfiguration
     public float TooltipRounding { get; set; } = 4f;
     public float TooltipPadding { get; set; } = 6f;
 
-    // Graph
     public bool GraphAutoHeight { get; set; } = true;
     public float GraphHeight { get; set; } = 120f;
     public float GraphLineThickness { get; set; } = 2f;
@@ -272,7 +255,6 @@ public class Configuration : IPluginConfiguration
     public float GraphAutoScrollSmoothing { get; set; } = 8f;
     public float GraphFontSize { get; set; } = 14f;
 
-    // Graph View (main window graph mode)
     public bool GraphViewAutoHeight { get; set; } = true;
     public float GraphViewHeight { get; set; } = 300f;
     public float GraphViewLineThickness { get; set; } = 2f;
@@ -298,7 +280,6 @@ public class Configuration : IPluginConfiguration
     public int GraphViewYAxisTickCount { get; set; } = 8;
     public float GraphViewMouseTextOpacity { get; set; } = 0.6f;
 
-    // Skill Breakdown Colors
     public Vector4 SkillDamageFillColor { get; set; } = new(0.35f, 0.35f, 0.55f, 0.7f);
     public Vector4 SkillPhysicalFillColor { get; set; } = new(0.55f, 0.30f, 0.25f, 0.7f);
     public Vector4 SkillMagicFillColor { get; set; } = new(0.30f, 0.30f, 0.65f, 0.7f);
@@ -307,13 +288,11 @@ public class Configuration : IPluginConfiguration
     public Vector4 SkillTextColor { get; set; } = new(1f, 1f, 1f, 0.9f);
     public Vector4 SkillHeaderTextColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
 
-    // Skill Breakdown Appearance
     public float SkillRowHeight { get; set; } = 14f;
     public float SkillColumnPadding { get; set; } = 6f;
     public float SkillBarRounding { get; set; } = 0f;
     public float SkillFontSize { get; set; } = FontDefaults.BaseSizePt;
 
-    // Status Bar
     public bool ShowStatusBar { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
     public bool ShowStatusBarPersonalDps { get; set; } = true;
@@ -328,13 +307,11 @@ public class Configuration : IPluginConfiguration
     public Vector4 StatusBarInactiveColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
     public Vector4 StatusBarLabelColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
 
-    // Tab Popout
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<Guid> PopoutTabIds { get; set; } = new();
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public Dictionary<Guid, PopoutWindowPin> PopoutWindowPins { get; set; } = new();
 
-    // Window Pinning
     public bool PinMainWindow { get; set; } = false;
     public Vector2 MainWindowPos { get; set; } = new Vector2(100, 100);
     public Vector2 MainWindowSize { get; set; } = new Vector2(350, 400);
@@ -342,7 +319,6 @@ public class Configuration : IPluginConfiguration
     public Vector2 ConfigWindowPos { get; set; } = new Vector2(100, 100);
     public Vector2 ConfigWindowSize { get; set; } = new Vector2(400, 350);
 
-    // Helpers
     [JsonIgnore]
     public float BaseFontSizePt => EnableCustomFont && CustomFontSizePt > 0 ? CustomFontSizePt : FontDefaults.BaseSizePt;
 

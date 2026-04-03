@@ -141,15 +141,11 @@ public class WebSocketDataSource : IDataSource
             cts?.Cancel();
             if (ws?.State == WebSocketState.Open)
             {
-                // Best-effort close
                 ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Plugin closing",
                     CancellationToken.None).Wait(TimeSpan.FromSeconds(2));
             }
         }
-        catch
-        {
-            // Ignore close errors
-        }
+        catch { }
         finally
         {
             ws?.Dispose();

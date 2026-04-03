@@ -87,14 +87,12 @@ public class SkillTracker
 
         var type = line[0];
 
-        // Route status effect events to the StatusTracker
         if (type == "26" || type == "30")
         {
             ProcessStatusLine(type, line);
             return;
         }
 
-        // Route DoT/HoT tick events
         if (type == "24")
         {
             ProcessDoTHoTLine(line);
@@ -138,7 +136,6 @@ public class SkillTracker
 
             if (result.EffectType == 4)
             {
-                // Heal — take the first heal found
                 if (healAmount == 0)
                 {
                     healAmount = result.Amount;
@@ -147,7 +144,6 @@ public class SkillTracker
             }
             else if (dmgAmount == 0)
             {
-                // Damage (3/5/6) — take the first damage found
                 dmgAmount = result.Amount;
                 dmgSeverity = result.Severity;
             }
@@ -163,7 +159,6 @@ public class SkillTracker
                 AccumulateSkill(damageData, sourceName, skillName, dmgAmount, dmgSeverity, damageType);
                 RecordEvent(sourceName, skillName, dmgAmount, false, dmgSeverity);
 
-                // Record as a damage-taken event on the target side
                 if (!string.IsNullOrEmpty(targetName))
                     RecordDamageTakenEvent(targetName, skillName, dmgAmount, dmgSeverity);
             }
@@ -237,10 +232,7 @@ public class SkillTracker
                 }
             }
         }
-        catch
-        {
-            // Lumina lookup failure — leave as Unknown
-        }
+        catch { }
 
         damageTypeCache[actionId] = result;
         return result;

@@ -101,7 +101,6 @@ public class GraphDataTracker
 
         lock (syncLock)
         {
-            // Reset on new encounter
             if (enc.IsActive && !lastWasActive)
             {
                 perCombatant.Clear();
@@ -153,7 +152,6 @@ public class GraphDataTracker
 
                 if (logLineTotals.TryGetValue(name, out var llTotals))
                 {
-                    // Use LogLine data if it has accumulated anything for this combatant.
                     if (llTotals.damage > 0)
                         effectiveDamage = llTotals.damage;
                     if (llTotals.healed > 0)
@@ -179,7 +177,6 @@ public class GraphDataTracker
                 while (history.Count > 2 && history[0].time < windowStart && history[1].time <= windowStart)
                     history.RemoveAt(0);
 
-                // Compute rate over the sliding window
                 float iDps = 0f, iHps = 0f, iDtps = 0f;
                 var oldest = history[0];
                 if (timeSec > oldest.time)

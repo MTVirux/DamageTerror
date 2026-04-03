@@ -120,7 +120,6 @@ public class StatusTracker
 
             activeStatuses[key] = status;
 
-            // Record application in history
             if (!statusHistory.TryGetValue(sourceName, out var history))
             {
                 history = new List<StatusApplication>();
@@ -264,7 +263,6 @@ public class StatusTracker
 
     private void RecordRemoval(ActiveStatus status, float removalTime)
     {
-        // Find the matching application in history and stamp its removal time
         if (statusHistory.TryGetValue(status.SourceName, out var history))
         {
             for (int i = history.Count - 1; i >= 0; i--)
@@ -322,10 +320,7 @@ public class StatusTracker
                 }
             }
         }
-        catch
-        {
-            // Lumina lookup failure — leave classification unknown
-        }
+        catch { }
 
         classificationCache[statusId] = result;
         return result;
