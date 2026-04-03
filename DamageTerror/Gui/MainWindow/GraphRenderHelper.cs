@@ -1,0 +1,201 @@
+using Dalamud.Bindings.ImGui;
+using Dalamud.Bindings.ImPlot;
+using ImGui = Dalamud.Bindings.ImGui.ImGui;
+using ImPlot = Dalamud.Bindings.ImPlot.ImPlot;
+
+namespace DamageTerror.Gui.MainWindow;
+
+internal static class GraphRenderHelper
+{
+    public static float InterpolateValue(float[] times, float[]? values, float t)
+    {
+        if (values == null || values.Length == 0) return 0f;
+        if (values.Length == 1) return values[0];
+        if (t <= times[0]) return values[0];
+        if (t >= times[^1]) return values[^1];
+
+        for (var i = 1; i < times.Length; i++)
+        {
+            if (t <= times[i])
+            {
+                var frac = (t - times[i - 1]) / (times[i] - times[i - 1]);
+                return values[i - 1] + frac * (values[i] - values[i - 1]);
+            }
+        }
+
+        return values[^1];
+    }
+
+    public static string FormatValue(float val)
+    {
+        if (val >= 1_000_000) return $"{val / 1_000_000:F1}M";
+        if (val >= 10_000) return $"{val / 1_000:F1}K";
+        return $"{val:F0}";
+    }
+
+    public static string FormatValueLong(long val)
+    {
+        if (val >= 1_000_000) return $"{val / 1_000_000.0:F1}M";
+        if (val >= 10_000) return $"{val / 1_000.0:F1}K";
+        return val.ToString();
+    }
+
+    public static void SetupAbbreviatedYTicks(float maxVal, float headroomMultiplier, int targetTickCount)
+    {
+        var headroom = maxVal * headroomMultiplier;
+        var step = headroom / targetTickCount;
+
+        var magnitude = MathF.Pow(10f, MathF.Floor(MathF.Log10(step)));
+        var normalized = step / magnitude;
+        float niceStep;
+        if (normalized <= 1f) niceStep = magnitude;
+        else if (normalized <= 2f) niceStep = 2f * magnitude;
+        else if (normalized <= 5f) niceStep = 5f * magnitude;
+        else niceStep = 10f * magnitude;
+
+        var ticks = new List<double>();
+        var labels = new List<string>();
+        for (var v = niceStep; v <= headroom; v += niceStep)
+        {
+            ticks.Add(v);
+            if (v >= 1_000_000) labels.Add($"{v / 1_000_000:F1}M");
+            else if (v >= 1_000) labels.Add($"{v / 1_000:G4}K");
+            else labels.Add($"{v:F0}");
+        }
+
+        if (ticks.Count > 0)
+        {
+            var tickArr = ticks.ToArray();
+            var labelArr = labels.ToArray();
+            ImPlot.SetupAxisTicks(ImAxis.Y1, ref tickArr[0], ticks.Count, labelArr, false);
+        }
+    }
+
+    public static void PlotScatterSubset(float[] allX, float[] allY, List<int> indices, string label, Vector4 color, float? markerSize = null)
+    {
+        if (indices.Count == 0) return;
+        var sx = new float[indices.Count];
+        var sy = new float[indices.Count];
+        for (var i = 0; i < indices.Count; i++)
+        {
+            sx[i] = allX[indices[i]];
+            sy[i] = allY[indices[i]];
+        }
+        if (markerSize.HasValue)
+            ImPlot.PushStyleVar(ImPlotStyleVar.MarkerSize, markerSize.Value);
+        ImPlot.PushStyleColor(ImPlotCol.MarkerFill, color);
+        ImPlot.PushStyleColor(ImPlotCol.MarkerOutline, color);
+        ImPlot.PlotScatter(label, ref sx[0], ref sy[0], indices.Count);
+        ImPlot.PopStyleColor(2);
+        if (markerSize.HasValue)
+            ImPlot.PopStyleVar();
+    }
+
+    public static void PlotSkillMarkers(List<SkillUseEvent> events, float[] times, float[] values, string idPrefix, SkillMarkerConfig mc)
+    {
+        var mX = new float[events.Count];
+        var mY = new float[events.Count];
+        for (var ei = 0; ei < events.Count; ei++)
+        {
+            mX[ei] = events[ei].TimeSec;
+            mY[ei] = InterpolateValue(times, values, events[ei].TimeSec);
+        }
+
+        List<int> dotTickIdx = [], dotAppIdx = [], regularIdx = [];
+        for (var ei = 0; ei < events.Count; ei++)
+        {
+            var ev = events[ei];
+            if (ev.IsDoTTick || ev.IsHoTTick)
+                dotTickIdx.Add(ei);
+            else if (ev.IsDoTApplication || ev.IsHoTApplication)
+                dotAppIdx.Add(ei);
+            else
+                regularIdx.Add(ei);
+        }
+
+        if (mc.ShowDoTTickMarkers && dotTickIdx.Count > 0)
+            PlotScatterSubset(mX, mY, dotTickIdx, $"##{idPrefix}_skills_dot", mc.DoTTickColor, mc.DoTTickMarkerSize);
+
+        if (mc.ShowDoTApplicationMarkers && dotAppIdx.Count > 0)
+            PlotScatterSubset(mX, mY, dotAppIdx, $"##{idPrefix}_skills_dotapp", mc.DoTApplicationColor, mc.DoTApplicationMarkerSize);
+
+        if (regularIdx.Count > 0)
+        {
+            ImPlot.PushStyleVar(ImPlotStyleVar.MarkerSize, mc.MarkerSize);
+
+            if (mc.ShowCritMarkers)
+            {
+                List<int> normalIdx = [], critIdx = [], dhIdx = [], cdhIdx = [];
+                foreach (var ei in regularIdx)
+                {
+                    var ev = events[ei];
+                    if (ev.IsCrit && ev.IsDirectHit) cdhIdx.Add(ei);
+                    else if (ev.IsDirectHit) dhIdx.Add(ei);
+                    else if (ev.IsCrit) critIdx.Add(ei);
+                    else normalIdx.Add(ei);
+                }
+
+                PlotScatterSubset(mX, mY, normalIdx, $"##{idPrefix}_skills_n", mc.MarkerColor);
+                PlotScatterSubset(mX, mY, critIdx, $"##{idPrefix}_skills_c", mc.CritMarkerColor);
+                PlotScatterSubset(mX, mY, dhIdx, $"##{idPrefix}_skills_dh", mc.DirectHitMarkerColor);
+                PlotScatterSubset(mX, mY, cdhIdx, $"##{idPrefix}_skills_cdh", mc.CritDirectHitMarkerColor);
+            }
+            else
+            {
+                PlotScatterSubset(mX, mY, regularIdx, $"##{idPrefix}_skills", mc.MarkerColor);
+            }
+
+            ImPlot.PopStyleVar();
+        }
+    }
+
+    public static List<SkillUseEvent> GetSourceEvents(
+        bool isLive, string combatantName,
+        Services.SkillTracker skillTracker, EncounterSnapshot? snapshot)
+    {
+        if (isLive)
+        {
+            var events = skillTracker.GetSkillEvents(combatantName);
+            if (events.Count == 0
+                && snapshot?.SkillEvents != null
+                && snapshot.SkillEvents.TryGetValue(combatantName, out var fallback))
+            {
+                return fallback;
+            }
+            return events;
+        }
+
+        if (snapshot?.SkillEvents != null
+            && snapshot.SkillEvents.TryGetValue(combatantName, out var saved))
+        {
+            return saved;
+        }
+
+        return [];
+    }
+
+    public static List<SkillUseEvent> GetDamageTakenEvents(
+        bool isLive, string combatantName,
+        Services.SkillTracker skillTracker, EncounterSnapshot? snapshot)
+    {
+        if (isLive)
+        {
+            var events = skillTracker.GetDamageTakenEvents(combatantName);
+            if (events.Count == 0
+                && snapshot?.DamageTakenEvents != null
+                && snapshot.DamageTakenEvents.TryGetValue(combatantName, out var fallback))
+            {
+                return fallback;
+            }
+            return events;
+        }
+
+        if (snapshot?.DamageTakenEvents != null
+            && snapshot.DamageTakenEvents.TryGetValue(combatantName, out var saved))
+        {
+            return saved;
+        }
+
+        return [];
+    }
+}

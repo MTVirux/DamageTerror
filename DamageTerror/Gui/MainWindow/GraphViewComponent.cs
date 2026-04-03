@@ -36,7 +36,6 @@ public class GraphViewComponent
             return;
         }
 
-        // Gather samples for all combatants
         var allSeries = new List<(CombatantEntry combatant, List<GraphSample> samples)>();
         foreach (var c in combatants)
         {
@@ -80,12 +79,10 @@ public class GraphViewComponent
             ? Math.Max(100f, ImGui.GetContentRegionAvail().Y)
             : config.GraphViewHeight;
 
-        // Apply graph font scaling
         var prevScale = ImGui.GetFont().Scale;
         ImGui.GetFont().Scale = config.GetFontScale(config.GraphViewFontSize);
         ImGui.PushFont(ImGui.GetFont());
 
-        // Compute max time and max value across all series
         var maxTime = 0f;
         var maxVal = 0f;
         foreach (var (_, samples) in allSeries)
@@ -103,10 +100,8 @@ public class GraphViewComponent
         if (maxTime <= 0f) maxTime = 1f;
         if (maxVal <= 0f) maxVal = 1f;
 
-        // Count enabled metrics for labeling
         var metricCount = (showDps ? 1 : 0) + (showHps ? 1 : 0) + (showDtps ? 1 : 0);
 
-        // Configure ImPlot style
         ImPlot.PushStyleColor(ImPlotCol.Bg, config.GraphViewBackgroundColor);
         ImPlot.PushStyleColor(ImPlotCol.FrameBg, new Vector4(0, 0, 0, 0));
 
@@ -167,11 +162,10 @@ public class GraphViewComponent
                 if (!double.IsNaN(scrollXMin)) { scrollXMin = double.NaN; scrollXMax = double.NaN; }
                 ImPlot.SetupAxisLimits(ImAxis.X1, 0, maxTime * config.GraphViewXAxisPadding, axisLimitCond);
             }
-            // Prevent panning below 0
             ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, double.MaxValue);
 
             // Custom Y-axis ticks with K/M abbreviations, skipping 0
-            if (maxVal > 0f) SetupAbbreviatedYTicks(maxVal, config.GraphViewYAxisHeadroom, config.GraphViewYAxisTickCount);
+            if (maxVal > 0f) GraphRenderHelper.SetupAbbreviatedYTicks(maxVal, config.GraphViewYAxisHeadroom, config.GraphViewYAxisTickCount);
 
             var defaultThickness = config.GraphViewLineThickness;
             var selfThickness = config.GraphViewHighlightSelf ? config.GraphViewSelfLineThickness : defaultThickness;
@@ -187,7 +181,6 @@ public class GraphViewComponent
                 var displayName = NameFormatHelper.GetDisplayName(combatant.Name, combatant.Job, isSelf, config);
                 string? primaryLabel = null;
 
-                // Extract arrays from samples
                 var times = new float[samples.Count];
                 var dpsVals = showDps ? new float[samples.Count] : null;
                 var hpsVals = showHps ? new float[samples.Count] : null;
@@ -216,7 +209,7 @@ public class GraphViewComponent
                     {
                         var lastVal = dpsVals[^1];
                         ImPlot.PushStyleColor(ImPlotCol.InlayText, jobColor);
-                        ImPlot.PlotText(FormatValue(lastVal), times[^1], lastVal, labelOffset);
+                        ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
                         ImPlot.PopStyleColor();
                     }
                 }
@@ -243,7 +236,7 @@ public class GraphViewComponent
                     {
                         var lastVal = hpsVals[^1];
                         ImPlot.PushStyleColor(ImPlotCol.InlayText, hpsColor);
-                        ImPlot.PlotText(FormatValue(lastVal), times[^1], lastVal, labelOffset);
+                        ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
                         ImPlot.PopStyleColor();
                     }
                 }
@@ -270,7 +263,7 @@ public class GraphViewComponent
                     {
                         var lastVal = dtpsVals[^1];
                         ImPlot.PushStyleColor(ImPlotCol.InlayText, dtpsColor);
-                        ImPlot.PlotText(FormatValue(lastVal), times[^1], lastVal, labelOffset);
+                        ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
                         ImPlot.PopStyleColor();
                     }
                 }
@@ -286,73 +279,36 @@ public class GraphViewComponent
                     var hpsMc = activeTab?.HpsMarkers;
                     var dtpsMc = activeTab?.DtpsMarkers;
 
-                    // Fetch source-side skill events (damage dealt + heals cast)
                     List<SkillUseEvent>? sourceEvents = null;
                     if ((dpsMc?.ShowMarkers == true && dpsVals != null)
                         || (hpsMc?.ShowMarkers == true && hpsVals != null))
                     {
-                        if (isLive)
-                        {
-                            sourceEvents = skillTracker.GetSkillEvents(combatant.Name);
-                            if (sourceEvents.Count == 0
-                                && snapshot?.SkillEvents != null
-                                && snapshot.SkillEvents.TryGetValue(combatant.Name, out var fallbackEvt))
-                            {
-                                sourceEvents = fallbackEvt;
-                            }
-                        }
-                        else if (snapshot?.SkillEvents != null
-                            && snapshot.SkillEvents.TryGetValue(combatant.Name, out var saved))
-                        {
-                            sourceEvents = saved;
-                        }
+                        sourceEvents = GraphRenderHelper.GetSourceEvents(isLive, combatant.Name, skillTracker, snapshot);
                     }
 
-                    // DPS markers: damage events (non-heal) on the DPS line
                     var dpsLabel = metricCount > 1 ? $"{displayName} (DPS)" : displayName;
                     if (dpsMc?.ShowMarkers == true && dpsVals != null && !hiddenLegendEntries.Contains(dpsLabel) && sourceEvents != null)
                     {
                         var filtered = sourceEvents.Where(e => !e.IsHeal).ToList();
                         if (filtered.Count > 0)
-                            PlotSkillMarkers(filtered, times, dpsVals, $"{combatant.Name}_dps", dpsMc);
+                            GraphRenderHelper.PlotSkillMarkers(filtered, times, dpsVals, $"{combatant.Name}_dps", dpsMc);
                     }
 
-                    // HPS markers: healing events on the HPS line
                     var hpsLabel = metricCount > 1 ? $"{displayName} (HPS)" : displayName;
                     if (hpsMc?.ShowMarkers == true && hpsVals != null && !hiddenLegendEntries.Contains(hpsLabel) && sourceEvents != null)
                     {
                         var filtered = sourceEvents.Where(e => e.IsHeal).ToList();
                         if (filtered.Count > 0)
-                            PlotSkillMarkers(filtered, times, hpsVals, $"{combatant.Name}_hps", hpsMc);
+                            GraphRenderHelper.PlotSkillMarkers(filtered, times, hpsVals, $"{combatant.Name}_hps", hpsMc);
                     }
 
-                    // DTPS markers: enemy skills hitting this combatant, on the DTPS line
                     var dtpsLabel = metricCount > 1 ? $"{displayName} (DTPS)" : displayName;
                     if (dtpsMc?.ShowMarkers == true && dtpsVals != null && !hiddenLegendEntries.Contains(dtpsLabel))
                     {
-                        List<SkillUseEvent> dtEvents;
-                        if (isLive)
-                        {
-                            dtEvents = skillTracker.GetDamageTakenEvents(combatant.Name);
-                            if (dtEvents.Count == 0
-                                && snapshot?.DamageTakenEvents != null
-                                && snapshot.DamageTakenEvents.TryGetValue(combatant.Name, out var dtFallback))
-                            {
-                                dtEvents = dtFallback;
-                            }
-                        }
-                        else if (snapshot?.DamageTakenEvents != null
-                            && snapshot.DamageTakenEvents.TryGetValue(combatant.Name, out var dtSaved))
-                        {
-                            dtEvents = dtSaved;
-                        }
-                        else
-                        {
-                            dtEvents = [];
-                        }
+                        var dtEvents = GraphRenderHelper.GetDamageTakenEvents(isLive, combatant.Name, skillTracker, snapshot);
 
                         if (dtEvents.Count > 0)
-                            PlotSkillMarkers(dtEvents, times, dtpsVals, $"{combatant.Name}_dtps", dtpsMc);
+                            GraphRenderHelper.PlotSkillMarkers(dtEvents, times, dtpsVals, $"{combatant.Name}_dtps", dtpsMc);
                     }
                 }
             }
@@ -394,29 +350,13 @@ public class GraphViewComponent
                         if (tv != null) tv[i] = samples[i].Dtps;
                     }
 
-                    // Source-side events (damage dealt + heals cast)
                     List<SkillUseEvent>? sourceEvents = null;
                     if ((ttDpsMc?.ShowMarkers == true && dv != null)
                         || (ttHpsMc?.ShowMarkers == true && hv != null))
                     {
-                        if (isLive)
-                        {
-                            sourceEvents = skillTracker.GetSkillEvents(combatant.Name);
-                            if (sourceEvents.Count == 0
-                                && snapshot?.SkillEvents != null
-                                && snapshot.SkillEvents.TryGetValue(combatant.Name, out var fallbackEvt))
-                            {
-                                sourceEvents = fallbackEvt;
-                            }
-                        }
-                        else if (snapshot?.SkillEvents != null
-                            && snapshot.SkillEvents.TryGetValue(combatant.Name, out var saved))
-                        {
-                            sourceEvents = saved;
-                        }
+                        sourceEvents = GraphRenderHelper.GetSourceEvents(isLive, combatant.Name, skillTracker, snapshot);
                     }
 
-                    // DPS markers: non-heal events on DPS line
                     if (ttDpsMc?.ShowMarkers == true && dv != null && sourceEvents != null)
                     {
                         foreach (var ev in sourceEvents)
@@ -426,7 +366,6 @@ public class GraphViewComponent
                         }
                     }
 
-                    // HPS markers: heal events on HPS line
                     if (ttHpsMc?.ShowMarkers == true && hv != null && sourceEvents != null)
                     {
                         foreach (var ev in sourceEvents)
@@ -436,29 +375,9 @@ public class GraphViewComponent
                         }
                     }
 
-                    // DTPS markers: damage-taken events on DTPS line
                     if (ttDtpsMc?.ShowMarkers == true && tv != null)
                     {
-                        List<SkillUseEvent> dtEvents;
-                        if (isLive)
-                        {
-                            dtEvents = skillTracker.GetDamageTakenEvents(combatant.Name);
-                            if (dtEvents.Count == 0
-                                && snapshot?.DamageTakenEvents != null
-                                && snapshot.DamageTakenEvents.TryGetValue(combatant.Name, out var dtFallback))
-                            {
-                                dtEvents = dtFallback;
-                            }
-                        }
-                        else if (snapshot?.DamageTakenEvents != null
-                            && snapshot.DamageTakenEvents.TryGetValue(combatant.Name, out var dtSaved))
-                        {
-                            dtEvents = dtSaved;
-                        }
-                        else
-                        {
-                            dtEvents = [];
-                        }
+                        var dtEvents = GraphRenderHelper.GetDamageTakenEvents(isLive, combatant.Name, skillTracker, snapshot);
 
                         foreach (var ev in dtEvents)
                         {
@@ -474,7 +393,7 @@ public class GraphViewComponent
                 {
                     ImGui.BeginTooltip();
                     ImGui.Text(bestEvent.Value.SkillName);
-                    ImGui.Text(FormatValueLong(bestEvent.Value.Amount));
+                    ImGui.Text(GraphRenderHelper.FormatValueLong(bestEvent.Value.Amount));
                     if (bestIsDamageTaken)
                         ImGui.TextColored(new Vector4(1f, 0.4f, 0.4f, 1f), "(Received)");
                     if (bestEvent.Value.IsDoTTick || bestEvent.Value.IsHoTTick)
@@ -573,96 +492,12 @@ public class GraphViewComponent
         ImGui.GetFont().Scale = prevScale;
     }
 
-    private static void PlotScatterSubset(float[] allX, float[] allY, List<int> indices, string label, Vector4 color, float? markerSize = null)
-    {
-        if (indices.Count == 0) return;
-        var sx = new float[indices.Count];
-        var sy = new float[indices.Count];
-        for (var i = 0; i < indices.Count; i++)
-        {
-            sx[i] = allX[indices[i]];
-            sy[i] = allY[indices[i]];
-        }
-        if (markerSize.HasValue)
-            ImPlot.PushStyleVar(ImPlotStyleVar.MarkerSize, markerSize.Value);
-        ImPlot.PushStyleColor(ImPlotCol.MarkerFill, color);
-        ImPlot.PushStyleColor(ImPlotCol.MarkerOutline, color);
-        ImPlot.PlotScatter(label, ref sx[0], ref sy[0], indices.Count);
-        ImPlot.PopStyleColor(2);
-        if (markerSize.HasValue)
-            ImPlot.PopStyleVar();
-    }
-
-    /// <summary>Plot skill use markers for a list of events, interpolated onto the given value line.</summary>
-    private static void PlotSkillMarkers(List<SkillUseEvent> events, float[] times, float[] values, string idPrefix, SkillMarkerConfig mc)
-    {
-        var mX = new float[events.Count];
-        var mY = new float[events.Count];
-        for (var ei = 0; ei < events.Count; ei++)
-        {
-            mX[ei] = events[ei].TimeSec;
-            mY[ei] = InterpolateValue(times, values, events[ei].TimeSec);
-        }
-
-        // Separate DoT/HoT ticks and applications from regular ability events
-        List<int> dotTickIdx = [], dotAppIdx = [], regularIdx = [];
-        for (var ei = 0; ei < events.Count; ei++)
-        {
-            var ev = events[ei];
-            if (ev.IsDoTTick || ev.IsHoTTick)
-                dotTickIdx.Add(ei);
-            else if (ev.IsDoTApplication || ev.IsHoTApplication)
-                dotAppIdx.Add(ei);
-            else
-                regularIdx.Add(ei);
-        }
-
-        // Plot DoT/HoT tick markers (diamond shape via separate size)
-        if (mc.ShowDoTTickMarkers && dotTickIdx.Count > 0)
-            PlotScatterSubset(mX, mY, dotTickIdx, $"##{idPrefix}_skills_dot", mc.DoTTickColor, mc.DoTTickMarkerSize);
-
-        // Plot DoT/HoT application markers (larger, distinct color)
-        if (mc.ShowDoTApplicationMarkers && dotAppIdx.Count > 0)
-            PlotScatterSubset(mX, mY, dotAppIdx, $"##{idPrefix}_skills_dotapp", mc.DoTApplicationColor, mc.DoTApplicationMarkerSize);
-
-        // Plot regular ability markers with crit/DH split
-        if (regularIdx.Count > 0)
-        {
-            ImPlot.PushStyleVar(ImPlotStyleVar.MarkerSize, mc.MarkerSize);
-
-            if (mc.ShowCritMarkers)
-            {
-                List<int> normalIdx = [], critIdx = [], dhIdx = [], cdhIdx = [];
-                foreach (var ei in regularIdx)
-                {
-                    var ev = events[ei];
-                    if (ev.IsCrit && ev.IsDirectHit) cdhIdx.Add(ei);
-                    else if (ev.IsDirectHit) dhIdx.Add(ei);
-                    else if (ev.IsCrit) critIdx.Add(ei);
-                    else normalIdx.Add(ei);
-                }
-
-                PlotScatterSubset(mX, mY, normalIdx, $"##{idPrefix}_skills_n", mc.MarkerColor);
-                PlotScatterSubset(mX, mY, critIdx, $"##{idPrefix}_skills_c", mc.CritMarkerColor);
-                PlotScatterSubset(mX, mY, dhIdx, $"##{idPrefix}_skills_dh", mc.DirectHitMarkerColor);
-                PlotScatterSubset(mX, mY, cdhIdx, $"##{idPrefix}_skills_cdh", mc.CritDirectHitMarkerColor);
-            }
-            else
-            {
-                PlotScatterSubset(mX, mY, regularIdx, $"##{idPrefix}_skills", mc.MarkerColor);
-            }
-
-            ImPlot.PopStyleVar();
-        }
-    }
-
-    /// <summary>Check if a skill event is the nearest marker to the mouse, updating best-match state.</summary>
     private static void FindNearest(SkillUseEvent ev, float[] times, float[] values,
         ImPlotPoint mouse, Vector2 plotSize, float maxTime, float maxVal,
         bool isDamageTaken, ref float bestDist, ref SkillUseEvent? bestEvent, ref bool bestIsDamageTaken,
         SkillMarkerConfig mc, ref SkillMarkerConfig? bestMc)
     {
-        var y = InterpolateValue(times, values, ev.TimeSec);
+        var y = GraphRenderHelper.InterpolateValue(times, values, ev.TimeSec);
         var ndx = maxTime > 0 ? ((float)mouse.X - ev.TimeSec) / maxTime : 0f;
         var ndy = maxVal > 0 ? ((float)mouse.Y - y) / maxVal : 0f;
         var px = ndx * plotSize.X;
@@ -674,71 +509,6 @@ public class GraphViewComponent
             bestEvent = ev;
             bestIsDamageTaken = isDamageTaken;
             bestMc = mc;
-        }
-    }
-
-    private static string FormatValue(float val)
-    {
-        if (val >= 1_000_000) return $"{val / 1_000_000:F1}M";
-        if (val >= 10_000) return $"{val / 1_000:F1}K";
-        return $"{val:F0}";
-    }
-
-    private static string FormatValueLong(long val)
-    {
-        if (val >= 1_000_000) return $"{val / 1_000_000.0:F1}M";
-        if (val >= 10_000) return $"{val / 1_000.0:F1}K";
-        return val.ToString();
-    }
-
-    private static float InterpolateValue(float[] times, float[]? values, float t)
-    {
-        if (values == null || values.Length == 0) return 0f;
-        if (values.Length == 1) return values[0];
-        if (t <= times[0]) return values[0];
-        if (t >= times[^1]) return values[^1];
-
-        for (var i = 1; i < times.Length; i++)
-        {
-            if (t <= times[i])
-            {
-                var frac = (t - times[i - 1]) / (times[i] - times[i - 1]);
-                return values[i - 1] + frac * (values[i] - values[i - 1]);
-            }
-        }
-
-        return values[^1];
-    }
-
-    private static void SetupAbbreviatedYTicks(float maxVal, float headroomMultiplier, int targetTickCount)
-    {
-        var headroom = maxVal * headroomMultiplier;
-        var step = headroom / targetTickCount;
-
-        // Round step to a nice number
-        var magnitude = MathF.Pow(10f, MathF.Floor(MathF.Log10(step)));
-        var normalized = step / magnitude;
-        float niceStep;
-        if (normalized <= 1f) niceStep = magnitude;
-        else if (normalized <= 2f) niceStep = 2f * magnitude;
-        else if (normalized <= 5f) niceStep = 5f * magnitude;
-        else niceStep = 10f * magnitude;
-
-        var ticks = new List<double>();
-        var labels = new List<string>();
-        for (var v = niceStep; v <= headroom; v += niceStep)
-        {
-            ticks.Add(v);
-            if (v >= 1_000_000) labels.Add($"{v / 1_000_000:F1}M");
-            else if (v >= 1_000) labels.Add($"{v / 1_000:G4}K");
-            else labels.Add($"{v:F0}");
-        }
-
-        if (ticks.Count > 0)
-        {
-            var tickArr = ticks.ToArray();
-            var labelArr = labels.ToArray();
-            ImPlot.SetupAxisTicks(ImAxis.Y1, ref tickArr[0], ticks.Count, labelArr, false);
         }
     }
 }
