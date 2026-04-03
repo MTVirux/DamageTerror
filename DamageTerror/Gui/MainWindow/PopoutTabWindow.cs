@@ -149,7 +149,6 @@ public class PopoutTabWindow : Window, IDisposable
             return;
         }
 
-        // --- Data resolution ---
         var encounter = headerComponent.SelectedEncounter;
         var currentPlayerName = !string.IsNullOrEmpty(encounter?.PlayerName)
             ? encounter.PlayerName
@@ -158,7 +157,6 @@ public class PopoutTabWindow : Window, IDisposable
         var sortBy = tab.SortBy;
         var sortDesc = tab.SortDescending;
 
-        // Resolve party membership for group filtering
         HashSet<string>? partyNames = null;
         HashSet<string>? allianceNames = null;
         if (tab.GroupFilter is GroupFilter.Party or GroupFilter.Alliance)
@@ -215,7 +213,6 @@ public class PopoutTabWindow : Window, IDisposable
             return;
         }
 
-        // --- Render components in configured layout order ---
         var ctrlShiftHeld = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
         foreach (var element in config.Layout)
         {

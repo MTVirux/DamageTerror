@@ -106,7 +106,6 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         this.mainWindow.IsOpen = this.Config.ShowOnStart;
 
-        // Restore popout windows from persisted config
         foreach (var tabId in this.Config.PopoutTabIds.ToList())
         {
             var tab = this.Config.MeterTabs.FirstOrDefault(t => t.Id == tabId);

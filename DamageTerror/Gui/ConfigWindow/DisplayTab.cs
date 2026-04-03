@@ -135,7 +135,6 @@ public class DisplayTab
     {
         var changed = false;
 
-        // Collect enabled columns (preserve custom order)
         var enabledColumns = new List<(int index, BarColumn col)>();
         var disabledColumns = new List<BarColumn>();
         for (var i = 0; i < columnOrder.Count; i++)
@@ -152,7 +151,6 @@ public class DisplayTab
                 ColumnLabels.GetValueOrDefault(b, b.ToString()),
                 StringComparison.OrdinalIgnoreCase));
 
-        // Draw enabled columns with arrows and header labels
         for (var ei = 0; ei < enabledColumns.Count; ei++)
         {
             var (i, col) = enabledColumns[ei];

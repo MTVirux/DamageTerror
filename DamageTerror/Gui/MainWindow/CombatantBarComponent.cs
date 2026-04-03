@@ -148,7 +148,6 @@ public class CombatantBarComponent
         }
 
         var clicked = ImGui.InvisibleButton($"##combatant_{index}", new Vector2(windowWidth, barHeight));
-        // Tooltip on hover
         if (config.ShowTooltip && config.TooltipFields.Count > 0 && ImGui.IsItemHovered())
         {
             DrawTooltip(combatant, activeTab);

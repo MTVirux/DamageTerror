@@ -224,7 +224,6 @@ public class MainWindow : Window, IDisposable
         var sortBy = activeTab?.SortBy ?? SortField.EncDps;
         var sortDesc = activeTab?.SortDescending ?? true;
 
-        // Resolve party membership for group filtering
         HashSet<string>? partyNames = null;
         HashSet<string>? allianceNames = null;
         if (activeTab?.GroupFilter is GroupFilter.Party or GroupFilter.Alliance)
@@ -281,7 +280,6 @@ public class MainWindow : Window, IDisposable
             return;
         }
 
-        // --- Render components in configured layout order ---
         var ctrlShiftHeld = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
         foreach (var element in config.Layout)
         {
@@ -409,7 +407,6 @@ public class MainWindow : Window, IDisposable
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 SelectedMeterTab = i;
 
-            // Right-click context menu for popout
             if (ImGui.BeginPopupContextItem($"##tabCtx{i}"))
             {
                 if (plugin.IsTabPoppedOut(tab.Id))
@@ -432,7 +429,6 @@ public class MainWindow : Window, IDisposable
                 btnMin.Y + (buttonHeight - textSize.Y) * 0.5f);
             drawList.AddText(ImGui.GetFont(), ImGui.GetFontSize(), textPos, ImGui.ColorConvertFloat4ToU32(textColor), tab.Name);
 
-            // Popout indicator dot at top-right corner
             if (plugin.IsTabPoppedOut(tab.Id))
             {
                 var dotCenter = new Vector2(btnMax.X - 5f, btnMin.Y + 5f);
