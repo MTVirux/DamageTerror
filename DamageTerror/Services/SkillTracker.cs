@@ -12,13 +12,62 @@ public class SkillTracker
     private Dictionary<string, Dictionary<string, SkillAccum>> damageData = new();
     private Dictionary<string, Dictionary<string, SkillAccum>> healData = new();
 
+    // Timestamped skill use events per combatant (source-side: damage dealt / heals cast)
+    private readonly Dictionary<string, List<SkillUseEvent>> skillEvents = new(StringComparer.OrdinalIgnoreCase);
+
+    // Timestamped damage-taken events per combatant (target-side: enemy abilities hitting a player)
+    private readonly Dictionary<string, List<SkillUseEvent>> damageTakenEvents = new(StringComparer.OrdinalIgnoreCase);
+
+    // Historical skill events loaded from disk, used as fallback until live data is available.
+    private Dictionary<string, List<SkillUseEvent>>? seededEvents;
+    private Dictionary<string, List<SkillUseEvent>>? seededDamageTakenEvents;
+
+    // Shared encounter timer — same time base as GraphDataTracker
+    private EncounterTimer? timer;
+
+    // Graph tracker to feed high-resolution LogLine damage/heal totals into
+    private GraphDataTracker? graphTracker;
+
+    // Status tracker for DoT/HoT lifecycle correlation
+    private StatusTracker? statusTracker;
+
     // Cache action ID -> damage type to avoid repeated Lumina lookups
     private readonly ConcurrentDictionary<uint, SkillDamageType> damageTypeCache = new();
     private readonly IDataManager dataManager;
+    private readonly IPluginLog log;
 
-    public SkillTracker(IDataManager dataManager)
+    public SkillTracker(IDataManager dataManager, IPluginLog log)
     {
         this.dataManager = dataManager;
+        this.log = log;
+    }
+
+    /// <summary>Bind the shared encounter timer, graph tracker, and status tracker.</summary>
+    public void SetDependencies(EncounterTimer encounterTimer, GraphDataTracker tracker, StatusTracker statusTracker)
+    {
+        timer = encounterTimer;
+        graphTracker = tracker;
+        this.statusTracker = statusTracker;
+    }
+
+    /// <summary>
+    /// Pre-load historical skill events so that <see cref="GetSkillEvents"/> returns
+    /// them until live data is available. Cleared on the next <see cref="Reset"/> call.
+    /// </summary>
+    public void SeedHistoricalEvents(Dictionary<string, List<SkillUseEvent>> data)
+    {
+        lock (syncLock)
+        {
+            seededEvents = new Dictionary<string, List<SkillUseEvent>>(data, StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    public void SeedHistoricalDamageTakenEvents(Dictionary<string, List<SkillUseEvent>> data)
+    {
+        lock (syncLock)
+        {
+            seededDamageTakenEvents = new Dictionary<string, List<SkillUseEvent>>(data, StringComparer.OrdinalIgnoreCase);
+        }
     }
 
     private struct SkillAccum
@@ -33,14 +82,33 @@ public class SkillTracker
 
     public void ProcessLogLine(string[] line)
     {
-        if (line.Length < 10)
+        if (line.Length < 2)
             return;
 
         var type = line[0];
+
+        // Route status effect events to the StatusTracker
+        if (type == "26" || type == "30")
+        {
+            ProcessStatusLine(type, line);
+            return;
+        }
+
+        // Route DoT/HoT tick events
+        if (type == "24")
+        {
+            ProcessDoTHoTLine(line);
+            return;
+        }
+
+        if (line.Length < 10)
+            return;
+
         if (type != "21" && type != "22")
             return;
 
         var sourceName = line[3];
+        var targetName = line.Length > 7 ? line[7] : null;
         var skillName = string.Equals(line[5], "Attack", StringComparison.OrdinalIgnoreCase) ? "Auto Attack" : line[5];
 
         if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(skillName))
@@ -91,10 +159,25 @@ public class SkillTracker
         lock (syncLock)
         {
             if (dmgAmount > 0)
+            {
                 AccumulateSkill(damageData, sourceName, skillName, dmgAmount, dmgSeverity, damageType);
+                RecordEvent(sourceName, skillName, dmgAmount, false, dmgSeverity);
+
+                // Record as a damage-taken event on the target side
+                if (!string.IsNullOrEmpty(targetName))
+                    RecordDamageTakenEvent(targetName, skillName, dmgAmount, dmgSeverity);
+            }
             if (healAmount > 0)
+            {
                 AccumulateSkill(healData, sourceName, skillName, healAmount, healSeverity, damageType);
+                RecordEvent(sourceName, skillName, healAmount, true, healSeverity);
+            }
         }
+
+        // Feed high-resolution damage/heal totals into the graph tracker
+        // outside the skill lock to avoid nested locking.
+        if (dmgAmount > 0 || healAmount > 0)
+            graphTracker?.RecordLogLineEvent(sourceName, dmgAmount, healAmount);
     }
 
     private void AccumulateSkill(Dictionary<string, Dictionary<string, SkillAccum>> store,
@@ -173,14 +256,119 @@ public class SkillTracker
         return BuildSkillList(healData, combatantName);
     }
 
+    public List<SkillUseEvent> GetSkillEvents(string combatantName)
+    {
+        lock (syncLock)
+        {
+            if (skillEvents.TryGetValue(combatantName, out var events) && events.Count > 0)
+                return new List<SkillUseEvent>(events);
+
+            // Fall back to seeded historical events when live tracker has nothing yet.
+            if (seededEvents != null
+                && seededEvents.TryGetValue(combatantName, out var seeded)
+                && seeded.Count > 0)
+                return new List<SkillUseEvent>(seeded);
+
+            return new List<SkillUseEvent>();
+        }
+    }
+
+    public List<SkillUseEvent> GetDamageTakenEvents(string combatantName)
+    {
+        lock (syncLock)
+        {
+            if (damageTakenEvents.TryGetValue(combatantName, out var events) && events.Count > 0)
+                return new List<SkillUseEvent>(events);
+
+            if (seededDamageTakenEvents != null
+                && seededDamageTakenEvents.TryGetValue(combatantName, out var seeded)
+                && seeded.Count > 0)
+                return new List<SkillUseEvent>(seeded);
+
+            return new List<SkillUseEvent>();
+        }
+    }
+
     public void Reset()
     {
         lock (syncLock)
         {
             damageData.Clear();
             healData.Clear();
+            skillEvents.Clear();
+            damageTakenEvents.Clear();
+            seededEvents = null;
+            seededDamageTakenEvents = null;
             damageTypeCache.Clear();
         }
+    }
+
+    private void RecordEvent(string combatantName, string skillName, long amount, bool isHeal, byte severity,
+        bool isDoTTick = false, bool isHoTTick = false)
+    {
+        if (!skillEvents.TryGetValue(combatantName, out var events))
+        {
+            events = new List<SkillUseEvent>();
+            skillEvents[combatantName] = events;
+        }
+
+        events.Add(new SkillUseEvent
+        {
+            TimeSec = timer?.ElapsedSeconds ?? 0f,
+            SkillName = skillName,
+            Amount = amount,
+            IsHeal = isHeal,
+            IsCrit = (severity & 0x20) != 0,
+            IsDirectHit = (severity & 0x40) != 0,
+            IsDoTTick = isDoTTick,
+            IsHoTTick = isHoTTick,
+        });
+    }
+
+    /// <summary>
+    /// Retroactively tag the most recent skill event from a combatant as a DoT/HoT application.
+    /// Called by StatusTracker when a GainsEffect is received for a known DoT/HoT status,
+    /// since type 26 fires immediately after the type 21/22 that applied it.
+    /// </summary>
+    public void MarkLastEventAsApplication(string combatantName, bool isDoT, bool isHoT)
+    {
+        lock (syncLock)
+        {
+            if (!skillEvents.TryGetValue(combatantName, out var events) || events.Count == 0)
+                return;
+
+            var last = events[events.Count - 1];
+            // Only tag if it's a very recent event (within ~1s) and not already a tick
+            if (last.IsDoTTick || last.IsHoTTick)
+                return;
+
+            var now = timer?.ElapsedSeconds ?? 0f;
+            if (now - last.TimeSec > 1.0f)
+                return;
+
+            if (isDoT) last.IsDoTApplication = true;
+            if (isHoT) last.IsHoTApplication = true;
+            events[events.Count - 1] = last;
+        }
+    }
+
+    private void RecordDamageTakenEvent(string targetName, string skillName, long amount, byte severity)
+    {
+        if (!damageTakenEvents.TryGetValue(targetName, out var events))
+        {
+            events = new List<SkillUseEvent>();
+            damageTakenEvents[targetName] = events;
+        }
+
+        events.Add(new SkillUseEvent
+        {
+            TimeSec = timer?.ElapsedSeconds ?? 0f,
+            SkillName = skillName,
+            Amount = amount,
+            IsHeal = false,
+            IsCrit = (severity & 0x20) != 0,
+            IsDirectHit = (severity & 0x40) != 0,
+        });
     }
 
     private List<SkillEntry> BuildSkillList(Dictionary<string, Dictionary<string, SkillAccum>> store, string combatantName)
@@ -259,5 +447,137 @@ public class SkillTracker
         }
 
         return (amount, severity, effectType);
+    }
+
+    /// <summary>
+    /// Parse ACT log line types 26 (GainsEffect) and 30 (LosesEffect)
+    /// and forward to the StatusTracker for DoT/HoT lifecycle tracking.
+    ///
+    /// Type 26 (GainsEffect) field layout:
+    ///   [0]=type, [1]=timestamp, [2]=targetId, [3]=targetName,
+    ///   [4]=statusName, [5]=statusId(hex), [6]=duration(float),
+    ///   [7]=sourceId, [8]=sourceName, ...
+    ///
+    /// Type 30 (LosesEffect) field layout:
+    /// Parse ACT log line types 26 (GainsEffect) and 30 (LosesEffect)
+    /// and forward to the StatusTracker for DoT/HoT lifecycle tracking.
+    ///
+    /// Actual IINACT field layout (verified in-game):
+    ///   [0]=type, [1]=timestamp, [2]=statusId(hex), [3]=statusName,
+    ///   [4]=duration(float), [5]=sourceId(hex), [6]=sourceName,
+    ///   [7]=targetId(hex), [8]=targetName, [9]=stacks, [10]=targetHP, ...
+    /// </summary>
+    private void ProcessStatusLine(string type, string[] line)
+    {
+        if (statusTracker == null)
+            return;
+
+        log.Debug($"[StatusLine] type={type} len={line.Length} raw={string.Join("|", line)}");
+
+        // Both types 26 and 30 need at least 9 fields for the fields we parse
+        if (line.Length < 9)
+        {
+            log.Debug($"[StatusLine] Skipped: too few fields ({line.Length})");
+            return;
+        }
+
+        var statusIdHex = line[2];
+        var statusName = line[3];
+        var sourceName = line[6];
+        var targetName = line[8];
+
+        if (string.IsNullOrEmpty(statusIdHex))
+            return;
+
+        if (!uint.TryParse(statusIdHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var statusId))
+            return;
+
+        if (type == "26")
+        {
+            // GainsEffect — parse duration from field [4]
+            float duration = 0f;
+            if (line.Length > 4)
+                float.TryParse(line[4], NumberStyles.Float, CultureInfo.InvariantCulture, out duration);
+
+            statusTracker.OnStatusGained(sourceName, targetName, statusId, statusName, duration);
+        }
+        else if (type == "30")
+        {
+            // LosesEffect
+            var removalTime = timer?.ElapsedSeconds ?? 0f;
+            statusTracker.OnStatusLost(sourceName, targetName, statusId, removalTime);
+        }
+    }
+
+    /// <summary>
+    /// Parse ACT log line type 24 (DoTHoT) — periodic damage/heal ticks.
+    ///
+    /// Verified IINACT field layout:
+    ///   [0]=type, [1]=timestamp, [2]=targetId(hex), [3]=targetName,
+    ///   [4]="DoT"/"HoT", [5]=effectId(?), [6]=amount(hex),
+    ///   [7]=targetCurrentHP, [8]=targetMaxHP, ...
+    ///   [17]=sourceId(hex), [18]=sourceName, ...
+    /// </summary>
+    private void ProcessDoTHoTLine(string[] line)
+    {
+        // Need at least 19 fields to read sourceName at [18]
+        if (line.Length < 19)
+            return;
+
+        var targetName = line[3];
+        var dotOrHot = line[4];       // "DoT" or "HoT"
+        var amountHex = line[6];
+        var sourceName = line[18];
+
+        if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(amountHex))
+            return;
+
+        if (!long.TryParse(amountHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var amount) || amount <= 0)
+            return;
+
+        bool isHoT = string.Equals(dotOrHot, "HoT", StringComparison.OrdinalIgnoreCase);
+        bool isDoT = !isHoT;
+
+        // Resolve the status name from StatusTracker if possible.
+        // Type 24 doesn't include the status name, so we look up
+        // what DoT/HoT the source currently has on the target.
+        string skillName = isHoT ? "HoT" : "DoT";
+        if (statusTracker != null)
+        {
+            var statuses = statusTracker.GetActiveStatuses(targetName);
+            foreach (var s in statuses)
+            {
+                if (!string.Equals(s.SourceName, sourceName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
+                {
+                    skillName = s.StatusName;
+                    break;
+                }
+            }
+        }
+
+        lock (syncLock)
+        {
+            if (isDoT)
+            {
+                AccumulateSkill(damageData, sourceName, skillName, amount, 0, SkillDamageType.Magic);
+                RecordEvent(sourceName, skillName, amount, false, 0, isDoTTick: true);
+
+                if (!string.IsNullOrEmpty(targetName))
+                    RecordDamageTakenEvent(targetName, skillName, amount, 0);
+            }
+            else
+            {
+                AccumulateSkill(healData, sourceName, skillName, amount, 0, SkillDamageType.Magic);
+                RecordEvent(sourceName, skillName, amount, true, 0, isHoTTick: true);
+            }
+        }
+
+        // Feed into graph tracker for sliding-window DPS/HPS
+        if (isDoT)
+            graphTracker?.RecordLogLineEvent(sourceName, amount, 0);
+        else
+            graphTracker?.RecordLogLineEvent(sourceName, 0, amount);
     }
 }

@@ -1,6 +1,6 @@
 namespace DamageTerror.Services;
 
-using System.Diagnostics;
+using Dalamud.Plugin.Services;
 
 public struct GraphSample
 {
@@ -10,20 +10,90 @@ public struct GraphSample
     public float Dtps;
 }
 
+/// <summary>Tracks per-correction statistics for debugging graph validation.</summary>
+public struct ValidationStats
+{
+    public int CorrectionCount;
+    public double MaxDivergence;
+    public float LastCorrectionTime;
+}
+
 public class GraphDataTracker
 {
     private readonly object syncLock = new();
+    private readonly IPluginLog? log;
     private readonly Dictionary<string, List<GraphSample>> perCombatant = new(StringComparer.OrdinalIgnoreCase);
     // Ring buffer of recent (time, totals) per combatant for sliding window
     private readonly Dictionary<string, List<(float time, long damage, long healed, long damageTaken)>> recentHistory = new(StringComparer.OrdinalIgnoreCase);
-    // Latest received totals (updated every data frame)
-    private readonly Dictionary<string, (long damage, long healed, long damageTaken)> latestTotals = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Stopwatch stopwatch = new();
+
+    // --- Hybrid data sources ---
+    // LogLine-accumulated totals (high-resolution, updated per ability use)
+    private readonly Dictionary<string, (long damage, long healed)> logLineTotals = new(StringComparer.OrdinalIgnoreCase);
+    // CombatData totals (ground truth, updated every CombatData frame)
+    private readonly Dictionary<string, (long damage, long healed, long damageTaken)> combatDataTotals = new(StringComparer.OrdinalIgnoreCase);
+
+    // Historical graph data loaded from disk, used as fallback until live data is available.
+    private Dictionary<string, List<GraphSample>>? seededData;
+
+    private EncounterTimer? timer;
     private float lastEmitTime;
     private bool lastWasActive;
 
+    /// <summary>Validation diagnostics.</summary>
+    public ValidationStats Validation;
+
     /// <summary>Sliding window size in seconds for rate smoothing.</summary>
     public float WindowSeconds { get; set; } = 5f;
+
+    /// <summary>Minimum interval in seconds between emitted samples.</summary>
+    public float SampleIntervalSeconds { get; set; } = 0.25f;
+
+    /// <summary>Divergence threshold (0–1) above which LogLine totals are snapped to CombatData.</summary>
+    private const double ValidationThreshold = 0.05;
+
+    public GraphDataTracker() { }
+
+    public GraphDataTracker(IPluginLog log)
+    {
+        this.log = log;
+    }
+
+    /// <summary>
+    /// Bind the shared encounter timer. Must be called before any recording.
+    /// </summary>
+    public void SetTimer(EncounterTimer encounterTimer) => timer = encounterTimer;
+
+    /// <summary>
+    /// Pre-load historical graph data (e.g. from a restored encounter on disk)
+    /// so that <see cref="GetSamples"/> returns it until live data is available.
+    /// Cleared on the next <see cref="Reset"/> call.
+    /// </summary>
+    public void SeedHistorical(Dictionary<string, List<GraphSample>> data)
+    {
+        lock (syncLock)
+        {
+            seededData = new Dictionary<string, List<GraphSample>>(data, StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>
+    /// Called from SkillTracker on every processed LogLine to feed the high-resolution
+    /// damage/heal accumulator. Thread-safe.
+    /// </summary>
+    public void RecordLogLineEvent(string sourceName, long damageAmount, long healAmount)
+    {
+        if (string.IsNullOrEmpty(sourceName))
+            return;
+
+        lock (syncLock)
+        {
+            if (!logLineTotals.TryGetValue(sourceName, out var existing))
+                existing = default;
+            existing.damage += damageAmount;
+            existing.healed += healAmount;
+            logLineTotals[sourceName] = existing;
+        }
+    }
 
     public void RecordSample(EncounterSnapshot snapshot)
     {
@@ -36,9 +106,10 @@ public class GraphDataTracker
             {
                 perCombatant.Clear();
                 recentHistory.Clear();
-                latestTotals.Clear();
-                stopwatch.Restart();
-                lastEmitTime = 0f;
+                logLineTotals.Clear();
+                combatDataTotals.Clear();
+                // Use a negative lastEmitTime so the very first frame always emits a sample.
+                lastEmitTime = -SampleIntervalSeconds;
             }
 
             lastWasActive = enc.IsActive;
@@ -46,9 +117,9 @@ public class GraphDataTracker
             if (!enc.IsActive)
             {
                 // Trim graph to actual encounter length on first inactive frame
-                if (stopwatch.IsRunning)
+                if (timer != null && timer.IsRunning)
                 {
-                    stopwatch.Stop();
+                    timer.Stop();
                     var encDuration = ParseDuration(enc.Duration);
                     if (encDuration > 0f)
                         TrimToEncounterLength(encDuration);
@@ -56,23 +127,41 @@ public class GraphDataTracker
                 return;
             }
 
-            var timeSec = (float)stopwatch.Elapsed.TotalSeconds;
+            var timeSec = timer?.ElapsedSeconds ?? 0f;
 
+            // Update CombatData ground-truth totals and validate LogLine accumulator.
             foreach (var c in snapshot.Combatants)
             {
                 if (string.IsNullOrEmpty(c.Name))
                     continue;
-                latestTotals[c.Name] = (c.Damage, c.Healed, c.DamageTaken);
+                combatDataTotals[c.Name] = (c.Damage, c.Healed, c.DamageTaken);
+                ValidateAndCorrect(c.Name, c.Damage, c.Healed, timeSec);
             }
 
-            if (timeSec - lastEmitTime < 1f)
+            if (timeSec - lastEmitTime < SampleIntervalSeconds)
                 return;
 
             lastEmitTime = timeSec;
             var windowStart = timeSec - WindowSeconds;
 
-            foreach (var (name, totals) in latestTotals)
+            // Build effective totals per combatant: prefer LogLine data for damage/healed,
+            // fall back to CombatData. Always use CombatData for damageTaken.
+            foreach (var (name, cdTotals) in combatDataTotals)
             {
+                var effectiveDamage = cdTotals.damage;
+                var effectiveHealed = cdTotals.healed;
+
+                if (logLineTotals.TryGetValue(name, out var llTotals))
+                {
+                    // Use LogLine data if it has accumulated anything for this combatant.
+                    if (llTotals.damage > 0)
+                        effectiveDamage = llTotals.damage;
+                    if (llTotals.healed > 0)
+                        effectiveHealed = llTotals.healed;
+                }
+
+                var effectiveDamageTaken = cdTotals.damageTaken;
+
                 if (!perCombatant.TryGetValue(name, out var list))
                 {
                     list = new List<GraphSample>();
@@ -84,7 +173,7 @@ public class GraphDataTracker
                     history = new List<(float, long, long, long)>();
                     recentHistory[name] = history;
                 }
-                history.Add((timeSec, totals.damage, totals.healed, totals.damageTaken));
+                history.Add((timeSec, effectiveDamage, effectiveHealed, effectiveDamageTaken));
 
                 // Trim entries older than the window (keep at least one old entry as anchor)
                 while (history.Count > 2 && history[0].time < windowStart && history[1].time <= windowStart)
@@ -96,9 +185,9 @@ public class GraphDataTracker
                 if (timeSec > oldest.time)
                 {
                     var dt = (double)(timeSec - oldest.time);
-                    iDps = Math.Max(0f, (float)((totals.damage - oldest.damage) / dt));
-                    iHps = Math.Max(0f, (float)((totals.healed - oldest.healed) / dt));
-                    iDtps = Math.Max(0f, (float)((totals.damageTaken - oldest.damageTaken) / dt));
+                    iDps = Math.Max(0f, (float)((effectiveDamage - oldest.damage) / dt));
+                    iHps = Math.Max(0f, (float)((effectiveHealed - oldest.healed) / dt));
+                    iDtps = Math.Max(0f, (float)((effectiveDamageTaken - oldest.damageTaken) / dt));
                 }
 
                 list.Add(new GraphSample
@@ -112,12 +201,61 @@ public class GraphDataTracker
         }
     }
 
+    /// <summary>
+    /// Compare LogLine-accumulated totals against CombatData ground truth.
+    /// If the divergence exceeds <see cref="ValidationThreshold"/>, snap LogLine
+    /// totals to the CombatData values and log a warning.
+    /// </summary>
+    private void ValidateAndCorrect(string name, long cdDamage, long cdHealed, float timeSec)
+    {
+        if (!logLineTotals.TryGetValue(name, out var ll))
+            return; // No LogLine data yet — nothing to validate.
+
+        bool corrected = false;
+        double dmgDiv = 0, healDiv = 0;
+
+        if (cdDamage > 0)
+        {
+            dmgDiv = Math.Abs(ll.damage - cdDamage) / (double)cdDamage;
+            if (dmgDiv > ValidationThreshold)
+                corrected = true;
+        }
+
+        if (cdHealed > 0)
+        {
+            healDiv = Math.Abs(ll.healed - cdHealed) / (double)cdHealed;
+            if (healDiv > ValidationThreshold)
+                corrected = true;
+        }
+
+        if (corrected)
+        {
+            var maxDiv = Math.Max(dmgDiv, healDiv);
+            Validation.CorrectionCount++;
+            if (maxDiv > Validation.MaxDivergence)
+                Validation.MaxDivergence = maxDiv;
+            Validation.LastCorrectionTime = timeSec;
+
+            log?.Debug($"[GraphValidation] {name}: LogLine dmg {ll.damage} vs CombatData {cdDamage} " +
+                       $"({dmgDiv:P1}), heal {ll.healed} vs {cdHealed} ({healDiv:P1}), correcting");
+
+            logLineTotals[name] = (cdDamage, cdHealed);
+        }
+    }
+
     public List<GraphSample> GetSamples(string combatantName)
     {
         lock (syncLock)
         {
-            if (perCombatant.TryGetValue(combatantName, out var list))
+            if (perCombatant.TryGetValue(combatantName, out var list) && list.Count > 0)
                 return new List<GraphSample>(list);
+
+            // Fall back to seeded historical data when live tracker has nothing yet.
+            if (seededData != null
+                && seededData.TryGetValue(combatantName, out var seeded)
+                && seeded.Count > 0)
+                return new List<GraphSample>(seeded);
+
             return new List<GraphSample>();
         }
     }
@@ -128,10 +266,12 @@ public class GraphDataTracker
         {
             perCombatant.Clear();
             recentHistory.Clear();
-            latestTotals.Clear();
-            stopwatch.Reset();
+            logLineTotals.Clear();
+            combatDataTotals.Clear();
+            seededData = null;
             lastEmitTime = 0f;
             lastWasActive = false;
+            Validation = default;
         }
     }
 
@@ -154,7 +294,7 @@ public class GraphDataTracker
         }
     }
 
-    private static float ParseDuration(string duration)
+    internal static float ParseDuration(string duration)
     {
         if (string.IsNullOrEmpty(duration))
             return 0f;

@@ -13,9 +13,15 @@ public class DataService : IDisposable
     private bool disposed;
     private bool wasActive;
     private bool playerChanged;
+    private float lastPeriodicSaveTime;
 
-    public SkillTracker SkillTracker { get; } = new(ServiceManager.DataManager);
-    public GraphDataTracker GraphTracker { get; } = new();
+    /// <summary>Interval in seconds between periodic graph data captures during active encounters.</summary>
+    private const float PeriodicSaveInterval = 30f;
+
+    public EncounterTimer EncounterTimer { get; } = new();
+    public SkillTracker SkillTracker { get; }
+    public GraphDataTracker GraphTracker { get; }
+    public StatusTracker StatusTracker { get; }
     public EncounterStore Store { get; }
     public string PlayerName { get; private set; } = string.Empty;
     public uint PlayerId { get; private set; }
@@ -27,6 +33,16 @@ public class DataService : IDisposable
         this.pluginInterface = pluginInterface;
         this.log = log;
         this.config = config;
+
+        // Initialize services with shared timer for synchronized timestamps.
+        GraphTracker = new GraphDataTracker(log);
+        GraphTracker.SetTimer(EncounterTimer);
+        StatusTracker = new StatusTracker(ServiceManager.DataManager, log);
+        StatusTracker.SetTimer(EncounterTimer);
+        SkillTracker = new SkillTracker(ServiceManager.DataManager, log);
+        SkillTracker.SetDependencies(EncounterTimer, GraphTracker, StatusTracker);
+        StatusTracker.SetSkillTracker(SkillTracker);
+
         Store = new EncounterStore(config.MaxEncounterHistory);
 
         var configDir = pluginInterface.GetPluginConfigDirectory();
@@ -34,6 +50,38 @@ public class DataService : IDisposable
         Store.SetSavePath(savePath);
         Store.Load();
         log.Debug($"Encounter history loaded from {savePath}");
+
+        // Attempt to restore the most recent encounter for this player so
+        // graph data is visible immediately after a plugin reload.
+        try
+        {
+            var ps = ServiceManager.PlayerState;
+            if (ps is { IsLoaded: true })
+            {
+                var name = ps.CharacterName;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    PlayerName = name;
+                    Store.RestoreLatestForPlayer(name);
+
+                    // Seed trackers with historical data from the restored encounter
+                    // so graphs are visible immediately (survives snapshot replacement).
+                    var restored = Store.ActiveEncounter;
+                    if (restored != null)
+                    {
+                        if (restored.GraphData.Count > 0)
+                            GraphTracker.SeedHistorical(restored.GraphData);
+                        if (restored.SkillEvents.Count > 0)
+                            SkillTracker.SeedHistoricalEvents(restored.SkillEvents);
+                        if (restored.DamageTakenEvents.Count > 0)
+                            SkillTracker.SeedHistoricalDamageTakenEvents(restored.DamageTakenEvents);
+                    }
+
+                    log.Debug($"Restored last encounter for {name} on startup");
+                }
+            }
+        }
+        catch { /* IPlayerState may not be available yet */ }
     }
 
     public async Task StartAsync()
@@ -190,6 +238,21 @@ public class DataService : IDisposable
 
             SkillTracker.Reset();
             GraphTracker.Reset();
+            StatusTracker.Reset();
+            EncounterTimer.Restart();
+            lastPeriodicSaveTime = 0f;
+
+            // Re-seed historical data so the graph remains visible while
+            // the live tracker accumulates its first few samples.
+            if (outgoing != null)
+            {
+                if (outgoing.GraphData.Count > 0)
+                    GraphTracker.SeedHistorical(outgoing.GraphData);
+                if (outgoing.SkillEvents.Count > 0)
+                    SkillTracker.SeedHistoricalEvents(outgoing.SkillEvents);
+                if (outgoing.DamageTakenEvents.Count > 0)
+                    SkillTracker.SeedHistoricalDamageTakenEvents(outgoing.DamageTakenEvents);
+            }
         }
 
         wasActive = snapshot.Encounter.IsActive;
@@ -197,16 +260,33 @@ public class DataService : IDisposable
         if (!string.IsNullOrEmpty(PlayerName))
             snapshot.PlayerName = PlayerName;
 
+        var existing = Store.ActiveEncounter;
+
         foreach (var c in snapshot.Combatants)
         {
-            c.Skills = SkillTracker.GetSkills(c.Name);
-            c.HealingSkills = SkillTracker.GetHealSkills(c.Name);
+            var trackerSkills = SkillTracker.GetSkills(c.Name);
+            var trackerHealSkills = SkillTracker.GetHealSkills(c.Name);
+
+            // Preserve existing skills from the active encounter when the tracker
+            // has less data (e.g. after a plugin reload where the tracker restarted
+            // but CombatData still has cumulative totals).
+            var existingEntry = existing?.Combatants.Find(p =>
+                string.Equals(p.Name, c.Name, StringComparison.OrdinalIgnoreCase));
+
+            var trackerDmg = trackerSkills.Sum(s => s.TotalDamage);
+            var existingDmg = existingEntry?.Skills?.Sum(s => s.TotalDamage) ?? 0;
+            c.Skills = trackerDmg >= existingDmg ? trackerSkills : existingEntry!.Skills;
+
+            var trackerHeal = trackerHealSkills.Sum(s => s.TotalDamage);
+            var existingHeal = existingEntry?.HealingSkills?.Sum(s => s.TotalDamage) ?? 0;
+            c.HealingSkills = trackerHeal >= existingHeal ? trackerHealSkills : existingEntry!.HealingSkills;
+
             if (!string.IsNullOrEmpty(PlayerName) && string.Equals(c.Name, PlayerName, StringComparison.OrdinalIgnoreCase))
                 c.IsLocalPlayer = true;
         }
 
         // Track peak DPS per combatant across snapshots within the same encounter.
-        var prev = Store.ActiveEncounter;
+        var prev = existing;
         if (prev != null)
         {
             foreach (var c in snapshot.Combatants)
@@ -225,8 +305,26 @@ public class DataService : IDisposable
 
         var archived = Store.Update(snapshot);
 
-        GraphTracker.WindowSeconds = config.GraphSmoothingWindow;
+        GraphTracker.WindowSeconds = Math.Min(config.GraphSmoothingWindow, config.GraphViewSmoothingWindow);
+        GraphTracker.SampleIntervalSeconds = Math.Min(config.GraphUpdateInterval, config.GraphViewUpdateInterval);
         GraphTracker.RecordSample(snapshot);
+
+        // Periodically capture graph data during active encounters so that
+        // at most ~30 seconds of data is lost on an unexpected shutdown.
+        if (snapshot.Encounter.IsActive)
+        {
+            var elapsed = EncounterTimer.ElapsedSeconds;
+            if (elapsed - lastPeriodicSaveTime >= PeriodicSaveInterval)
+            {
+                lastPeriodicSaveTime = elapsed;
+                var active = Store.ActiveEncounter;
+                if (active != null)
+                {
+                    CaptureGraphData(active);
+                    Store.Save();
+                }
+            }
+        }
 
         if (archived)
             Store.Save();
@@ -234,12 +332,22 @@ public class DataService : IDisposable
 
     private void CaptureGraphData(EncounterSnapshot target)
     {
-        target.GraphData.Clear();
+        // Only overwrite per-combatant entries where the tracker has data.
+        // This preserves graph data loaded from disk when the tracker is empty
+        // (e.g. after a plugin reload).
         foreach (var c in target.Combatants)
         {
             var samples = GraphTracker.GetSamples(c.Name);
             if (samples.Count > 0)
                 target.GraphData[c.Name] = samples;
+
+            var events = SkillTracker.GetSkillEvents(c.Name);
+            if (events.Count > 0)
+                target.SkillEvents[c.Name] = events;
+
+            var dtEvents = SkillTracker.GetDamageTakenEvents(c.Name);
+            if (dtEvents.Count > 0)
+                target.DamageTakenEvents[c.Name] = dtEvents;
         }
     }
 
@@ -277,10 +385,14 @@ public class DataService : IDisposable
                 c.Skills = SkillTracker.GetSkills(c.Name);
                 c.HealingSkills = SkillTracker.GetHealSkills(c.Name);
             }
+
+            CaptureGraphData(outgoing);
         }
 
         SkillTracker.Reset();
         GraphTracker.Reset();
+        StatusTracker.Reset();
+        EncounterTimer.Reset();
 
         if (Store.ArchiveActive())
             Store.Save();
@@ -304,6 +416,11 @@ public class DataService : IDisposable
         if (disposed) return;
         disposed = true;
         Stop();
+
+        var outgoing = Store.ActiveEncounter;
+        if (outgoing != null)
+            CaptureGraphData(outgoing);
+
         Store.ArchiveActive();
         Store.Save(force: true);
     }

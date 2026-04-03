@@ -68,6 +68,46 @@ public class EncounterStore
                 while (history.Count > maxHistory)
                     history.RemoveAt(0);
             }
+            else if (!snapshot.Encounter.IsActive && !wasActive && active != null
+                     && active != snapshot
+                     && (active.GraphData.Count > 0 || active.SkillEvents.Count > 0))
+            {
+                // The active encounter was restored from history and has persisted
+                // graph/skill data. Carry the data forward to the incoming snapshot
+                // instead of archiving (which would create a duplicate on reload).
+                foreach (var kvp in active.GraphData)
+                {
+                    if (!snapshot.GraphData.ContainsKey(kvp.Key))
+                        snapshot.GraphData[kvp.Key] = kvp.Value;
+                }
+
+                foreach (var kvp in active.SkillEvents)
+                {
+                    if (!snapshot.SkillEvents.ContainsKey(kvp.Key))
+                        snapshot.SkillEvents[kvp.Key] = kvp.Value;
+                }
+
+                // Carry forward per-combatant Skills/HealingSkills when the
+                // incoming snapshot has less data (tracker restarted on reload).
+                foreach (var ac in active.Combatants)
+                {
+                    var sc = snapshot.Combatants.Find(c =>
+                        string.Equals(c.Name, ac.Name, StringComparison.OrdinalIgnoreCase));
+                    if (sc == null) continue;
+
+                    var scDmg = sc.Skills?.Sum(s => s.TotalDamage) ?? 0;
+                    var acDmg = ac.Skills?.Sum(s => s.TotalDamage) ?? 0;
+                    if (acDmg > scDmg && ac.Skills != null)
+                        sc.Skills = ac.Skills;
+
+                    var scHeal = sc.HealingSkills?.Sum(s => s.TotalDamage) ?? 0;
+                    var acHeal = ac.HealingSkills?.Sum(s => s.TotalDamage) ?? 0;
+                    if (acHeal > scHeal && ac.HealingSkills != null)
+                        sc.HealingSkills = ac.HealingSkills;
+                }
+
+                snapshot.Timestamp = active.Timestamp;
+            }
 
             active = snapshot;
             wasActive = snapshot.Encounter.IsActive;
@@ -166,6 +206,13 @@ public class EncounterStore
             var loaded = JsonConvert.DeserializeObject<List<EncounterSnapshot>>(json);
             if (loaded != null)
             {
+                var anyRepaired = false;
+                foreach (var snapshot in loaded)
+                {
+                    if (snapshot.ValidateAndRepair())
+                        anyRepaired = true;
+                }
+
                 lock (syncLock)
                 {
                     history.Clear();
@@ -173,10 +220,16 @@ public class EncounterStore
 
                     while (history.Count > maxHistory)
                         history.RemoveAt(0);
+
+                    if (anyRepaired)
+                        dirty = true;
                 }
             }
 
             loadedSuccessfully = true;
+
+            // Persist repaired data back to disk so the rebuild is a one-time migration.
+            Save();
         }
         catch
         {
