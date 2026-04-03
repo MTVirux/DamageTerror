@@ -44,6 +44,7 @@ public class MainWindow : Window, IDisposable
     private MeterTab? currentActiveTab;
     private DateTime? combatEndTime;
     private int selectedMeterTab;
+    private bool wasDrawnLastFrame = true;
 
     private int SelectedMeterTab
     {
@@ -187,8 +188,10 @@ public class MainWindow : Window, IDisposable
 
         var io = ImGui.GetIO();
         var forceShowHeader = io.KeyCtrl && io.KeyShift;
+        var isCollapsed = IsOpen && !wasDrawnLastFrame;
+        wasDrawnLastFrame = false;
 
-        if (this.plugin.Config.HideWindowHeader && !forceShowHeader)
+        if (this.plugin.Config.HideWindowHeader && !forceShowHeader && !isCollapsed)
             Flags |= ImGuiWindowFlags.NoTitleBar;
         else
             Flags &= ~ImGuiWindowFlags.NoTitleBar;
@@ -231,6 +234,7 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
+        wasDrawnLastFrame = true;
         using var fontScope = plugin.Config.EnableCustomFont ? plugin.FontService?.PushFont() : null;
 
         var config = plugin.Config;
@@ -566,8 +570,6 @@ public class MainWindow : Window, IDisposable
         if (config.ShowNameOnBar)
             drawList.AddText(new Vector2(textStartX, textY), headerColor, "Name");
 
-        var vis = ColumnVisibility.Resolve(config, activeTab);
-
         var rightX = cursorPos.X + windowWidth - config.BarRightPadding;
         var colSpacing = config.BarColumnSpacing;
 
@@ -593,7 +595,7 @@ public class MainWindow : Window, IDisposable
         for (var ci = columnOrder.Count - 1; ci >= 0; ci--)
         {
             var col = columnOrder[ci];
-            if (!vis.IsVisible(col)) continue;
+            if (activeTab == null || !activeTab.IsColumnVisible(col)) continue;
 
             var headerLabel = activeTab?.GetHeaderLabel(col) ?? Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
             var colW = colWidths[col];

@@ -290,23 +290,9 @@ public class AppearanceTab
             {
                 bool enabled;
                 if (firstTab != null)
-                    enabled = DisplayTab.GetTabColumnEnabled(firstTab, col);
+                    enabled = firstTab.IsColumnVisible(col);
                 else
-                    enabled = col switch
-                    {
-                        BarColumn.Dps => preset.ShowDpsOnBar,
-                        BarColumn.Hps => preset.ShowHpsOnBar,
-                        BarColumn.Damage => preset.ShowDamageOnBar,
-                        BarColumn.Healed => preset.ShowHealedOnBar,
-                        BarColumn.DamagePercent => preset.ShowDamagePercentOnBar,
-                        BarColumn.DirectHit => preset.ShowDirectHitOnBar,
-                        BarColumn.Crit => preset.ShowCritOnBar,
-                        BarColumn.CritDirectHit => preset.ShowCritDirectHitOnBar,
-                        BarColumn.Deaths => preset.ShowDeathsOnBar,
-                        BarColumn.DamageTaken => preset.ShowDamageTakenOnBar,
-                        BarColumn.Overheal => preset.ShowOverhealOnBar,
-                        _ => false,
-                    };
+                    enabled = preset.VisibleColumns.Contains(col);
 
                 if (enabled)
                 {

@@ -290,92 +290,14 @@ public class DisplayTab
         ("Others", new[] { BarColumn.CombatantDuration, BarColumn.PowerDrain, BarColumn.PowerHeal }),
     };
 
-    public static bool GetTabColumnEnabled(MeterTab tab, BarColumn col) => col switch
-    {
-        BarColumn.Dps => tab.ShowDpsColumn,
-        BarColumn.Hps => tab.ShowHpsColumn,
-        BarColumn.Damage => tab.ShowDamageColumn,
-        BarColumn.Healed => tab.ShowHealedColumn,
-        BarColumn.DamagePercent => tab.ShowDamagePercentColumn,
-        BarColumn.HealPercent => tab.ShowHealPercentColumn,
-        BarColumn.DirectHit => tab.ShowDirectHitColumn,
-        BarColumn.Crit => tab.ShowCritColumn,
-        BarColumn.CritDirectHit => tab.ShowCritDirectHitColumn,
-        BarColumn.Deaths => tab.ShowDeathsColumn,
-        BarColumn.DamageTaken => tab.ShowDamageTakenColumn,
-        BarColumn.DamageTakenPercent => tab.ShowDamageTakenPercentColumn,
-        BarColumn.Overheal => tab.ShowOverhealColumn,
-        BarColumn.OverhealAmount => tab.ShowOverhealAmountColumn,
-        BarColumn.MaxHit => tab.ShowMaxHitColumn,
-        BarColumn.PeakDps => tab.ShowPeakDpsColumn,
-        BarColumn.MaxHeal => tab.ShowMaxHealColumn,
-        BarColumn.Swings => tab.ShowSwingsColumn,
-        BarColumn.Hits => tab.ShowHitsColumn,
-        BarColumn.Misses => tab.ShowMissesColumn,
-        BarColumn.HitRate => tab.ShowHitRateColumn,
-        BarColumn.CritHitCount => tab.ShowCritHitCountColumn,
-        BarColumn.DirectHitCount => tab.ShowDirectHitCountColumn,
-        BarColumn.CritDirectHitCount => tab.ShowCritDirectHitCountColumn,
-        BarColumn.BlockPct => tab.ShowBlockPctColumn,
-        BarColumn.ParryPct => tab.ShowParryPctColumn,
-        BarColumn.HealsTaken => tab.ShowHealsTakenColumn,
-        BarColumn.AbsorbHeal => tab.ShowAbsorbHealColumn,
-        BarColumn.Kills => tab.ShowKillsColumn,
-        BarColumn.InstantDps => tab.ShowInstantDpsColumn,
-        BarColumn.InstantHps => tab.ShowInstantHpsColumn,
-        BarColumn.CritHealPct => tab.ShowCritHealPctColumn,
-        BarColumn.HealCount => tab.ShowHealCountColumn,
-        BarColumn.CombatantDuration => tab.ShowCombatantDurationColumn,
-        BarColumn.DamageShield => tab.ShowDamageShieldColumn,
-        BarColumn.MaxHealWard => tab.ShowMaxHealWardColumn,
-        BarColumn.PowerDrain => tab.ShowPowerDrainColumn,
-        BarColumn.PowerHeal => tab.ShowPowerHealColumn,
-        _ => false,
-    };
+    public static bool GetTabColumnEnabled(MeterTab tab, BarColumn col) => tab.IsColumnVisible(col);
 
     public static void SetTabColumnEnabled(MeterTab tab, BarColumn col, bool value)
     {
-        switch (col)
-        {
-            case BarColumn.Dps: tab.ShowDpsColumn = value; break;
-            case BarColumn.Hps: tab.ShowHpsColumn = value; break;
-            case BarColumn.Damage: tab.ShowDamageColumn = value; break;
-            case BarColumn.Healed: tab.ShowHealedColumn = value; break;
-            case BarColumn.DamagePercent: tab.ShowDamagePercentColumn = value; break;
-            case BarColumn.HealPercent: tab.ShowHealPercentColumn = value; break;
-            case BarColumn.DirectHit: tab.ShowDirectHitColumn = value; break;
-            case BarColumn.Crit: tab.ShowCritColumn = value; break;
-            case BarColumn.CritDirectHit: tab.ShowCritDirectHitColumn = value; break;
-            case BarColumn.Deaths: tab.ShowDeathsColumn = value; break;
-            case BarColumn.DamageTaken: tab.ShowDamageTakenColumn = value; break;
-            case BarColumn.DamageTakenPercent: tab.ShowDamageTakenPercentColumn = value; break;
-            case BarColumn.Overheal: tab.ShowOverhealColumn = value; break;
-            case BarColumn.OverhealAmount: tab.ShowOverhealAmountColumn = value; break;
-            case BarColumn.MaxHit: tab.ShowMaxHitColumn = value; break;
-            case BarColumn.PeakDps: tab.ShowPeakDpsColumn = value; break;
-            case BarColumn.MaxHeal: tab.ShowMaxHealColumn = value; break;
-            case BarColumn.Swings: tab.ShowSwingsColumn = value; break;
-            case BarColumn.Hits: tab.ShowHitsColumn = value; break;
-            case BarColumn.Misses: tab.ShowMissesColumn = value; break;
-            case BarColumn.HitRate: tab.ShowHitRateColumn = value; break;
-            case BarColumn.CritHitCount: tab.ShowCritHitCountColumn = value; break;
-            case BarColumn.DirectHitCount: tab.ShowDirectHitCountColumn = value; break;
-            case BarColumn.CritDirectHitCount: tab.ShowCritDirectHitCountColumn = value; break;
-            case BarColumn.BlockPct: tab.ShowBlockPctColumn = value; break;
-            case BarColumn.ParryPct: tab.ShowParryPctColumn = value; break;
-            case BarColumn.HealsTaken: tab.ShowHealsTakenColumn = value; break;
-            case BarColumn.AbsorbHeal: tab.ShowAbsorbHealColumn = value; break;
-            case BarColumn.Kills: tab.ShowKillsColumn = value; break;
-            case BarColumn.InstantDps: tab.ShowInstantDpsColumn = value; break;
-            case BarColumn.InstantHps: tab.ShowInstantHpsColumn = value; break;
-            case BarColumn.CritHealPct: tab.ShowCritHealPctColumn = value; break;
-            case BarColumn.HealCount: tab.ShowHealCountColumn = value; break;
-            case BarColumn.CombatantDuration: tab.ShowCombatantDurationColumn = value; break;
-            case BarColumn.DamageShield: tab.ShowDamageShieldColumn = value; break;
-            case BarColumn.MaxHealWard: tab.ShowMaxHealWardColumn = value; break;
-            case BarColumn.PowerDrain: tab.ShowPowerDrainColumn = value; break;
-            case BarColumn.PowerHeal: tab.ShowPowerHealColumn = value; break;
-        }
+        if (value)
+            tab.VisibleColumns.Add(col);
+        else
+            tab.VisibleColumns.Remove(col);
     }
 
     private static readonly string[] FormatLabels = { "Abbreviated (12.3K)", "Commas (12,345)", "Raw (12345.6)" };

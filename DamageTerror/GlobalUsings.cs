@@ -13,6 +13,5 @@ global using DamageTerror.Models;
 global using DamageTerror.Presets;
 global using DamageTerror.Services;
 
-// ECommons for reliable player/game state access
 global using ECommons.DalamudServices;
 global using ECommons.GameHelpers;

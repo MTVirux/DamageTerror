@@ -1,4 +1,6 @@
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace DamageTerror.Models;
 
@@ -13,12 +15,10 @@ public class SkillMarkerConfig
     public Vector4 DirectHitMarkerColor { get; set; } = new(0.3f, 0.85f, 1f, 0.95f);
     public Vector4 CritDirectHitMarkerColor { get; set; } = new(1f, 0.4f, 0.8f, 0.95f);
 
-    // DoT/HoT tick markers
     public bool ShowDoTTickMarkers { get; set; } = true;
     public Vector4 DoTTickColor { get; set; } = new(0.6f, 0.2f, 0.8f, 0.9f);
     public float DoTTickMarkerSize { get; set; } = 3f;
 
-    // DoT/HoT application markers
     public bool ShowDoTApplicationMarkers { get; set; } = true;
     public Vector4 DoTApplicationColor { get; set; } = new(0.9f, 0.3f, 0.9f, 0.95f);
     public float DoTApplicationMarkerSize { get; set; } = 5f;
@@ -79,44 +79,9 @@ public class MeterTab
     /// <summary>Skill marker settings for the DTPS line.</summary>
     public SkillMarkerConfig DtpsMarkers { get; set; } = new();
 
-    public bool ShowDpsColumn { get; set; } = true;
-    public bool ShowHpsColumn { get; set; } = false;
-    public bool ShowDamageColumn { get; set; } = false;
-    public bool ShowHealedColumn { get; set; } = false;
-    public bool ShowDamagePercentColumn { get; set; } = false;
-    public bool ShowHealPercentColumn { get; set; } = false;
-    public bool ShowDirectHitColumn { get; set; } = false;
-    public bool ShowCritColumn { get; set; } = false;
-    public bool ShowCritDirectHitColumn { get; set; } = false;
-    public bool ShowDeathsColumn { get; set; } = false;
-    public bool ShowDamageTakenColumn { get; set; } = false;
-    public bool ShowDamageTakenPercentColumn { get; set; } = false;
-    public bool ShowOverhealColumn { get; set; } = false;
-    public bool ShowOverhealAmountColumn { get; set; } = false;
-    public bool ShowMaxHitColumn { get; set; } = false;
-    public bool ShowPeakDpsColumn { get; set; } = false;
-    public bool ShowMaxHealColumn { get; set; } = false;
-    public bool ShowSwingsColumn { get; set; } = false;
-    public bool ShowHitsColumn { get; set; } = false;
-    public bool ShowMissesColumn { get; set; } = false;
-    public bool ShowHitRateColumn { get; set; } = false;
-    public bool ShowCritHitCountColumn { get; set; } = false;
-    public bool ShowDirectHitCountColumn { get; set; } = false;
-    public bool ShowCritDirectHitCountColumn { get; set; } = false;
-    public bool ShowBlockPctColumn { get; set; } = false;
-    public bool ShowParryPctColumn { get; set; } = false;
-    public bool ShowHealsTakenColumn { get; set; } = false;
-    public bool ShowAbsorbHealColumn { get; set; } = false;
-    public bool ShowKillsColumn { get; set; } = false;
-    public bool ShowInstantDpsColumn { get; set; } = false;
-    public bool ShowInstantHpsColumn { get; set; } = false;
-    public bool ShowCritHealPctColumn { get; set; } = false;
-    public bool ShowHealCountColumn { get; set; } = false;
-    public bool ShowCombatantDurationColumn { get; set; } = false;
-    public bool ShowDamageShieldColumn { get; set; } = false;
-    public bool ShowMaxHealWardColumn { get; set; } = false;
-    public bool ShowPowerDrainColumn { get; set; } = false;
-    public bool ShowPowerHealColumn { get; set; } = false;
+    /// <summary>Set of visible bar columns for this tab.</summary>
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public HashSet<BarColumn> VisibleColumns { get; set; } = new() { BarColumn.Dps };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<BarColumn> ColumnOrder { get; set; } = new()
@@ -145,7 +110,79 @@ public class MeterTab
         return Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
     }
 
+    public bool IsColumnVisible(BarColumn col) => VisibleColumns.Contains(col);
+
     public List<string> CustomJobFilter { get; set; } = new();
+
+    [JsonExtensionData]
+    private Dictionary<string, JToken>? _extensionData;
+
+    private static readonly Dictionary<string, BarColumn> LegacyColumnMap = new()
+    {
+        { "ShowDpsColumn", BarColumn.Dps },
+        { "ShowHpsColumn", BarColumn.Hps },
+        { "ShowDamageColumn", BarColumn.Damage },
+        { "ShowHealedColumn", BarColumn.Healed },
+        { "ShowDamagePercentColumn", BarColumn.DamagePercent },
+        { "ShowHealPercentColumn", BarColumn.HealPercent },
+        { "ShowDirectHitColumn", BarColumn.DirectHit },
+        { "ShowCritColumn", BarColumn.Crit },
+        { "ShowCritDirectHitColumn", BarColumn.CritDirectHit },
+        { "ShowDeathsColumn", BarColumn.Deaths },
+        { "ShowDamageTakenColumn", BarColumn.DamageTaken },
+        { "ShowDamageTakenPercentColumn", BarColumn.DamageTakenPercent },
+        { "ShowOverhealColumn", BarColumn.Overheal },
+        { "ShowOverhealAmountColumn", BarColumn.OverhealAmount },
+        { "ShowMaxHitColumn", BarColumn.MaxHit },
+        { "ShowPeakDpsColumn", BarColumn.PeakDps },
+        { "ShowMaxHealColumn", BarColumn.MaxHeal },
+        { "ShowSwingsColumn", BarColumn.Swings },
+        { "ShowHitsColumn", BarColumn.Hits },
+        { "ShowMissesColumn", BarColumn.Misses },
+        { "ShowHitRateColumn", BarColumn.HitRate },
+        { "ShowCritHitCountColumn", BarColumn.CritHitCount },
+        { "ShowDirectHitCountColumn", BarColumn.DirectHitCount },
+        { "ShowCritDirectHitCountColumn", BarColumn.CritDirectHitCount },
+        { "ShowBlockPctColumn", BarColumn.BlockPct },
+        { "ShowParryPctColumn", BarColumn.ParryPct },
+        { "ShowHealsTakenColumn", BarColumn.HealsTaken },
+        { "ShowAbsorbHealColumn", BarColumn.AbsorbHeal },
+        { "ShowKillsColumn", BarColumn.Kills },
+        { "ShowInstantDpsColumn", BarColumn.InstantDps },
+        { "ShowInstantHpsColumn", BarColumn.InstantHps },
+        { "ShowCritHealPctColumn", BarColumn.CritHealPct },
+        { "ShowHealCountColumn", BarColumn.HealCount },
+        { "ShowCombatantDurationColumn", BarColumn.CombatantDuration },
+        { "ShowDamageShieldColumn", BarColumn.DamageShield },
+        { "ShowMaxHealWardColumn", BarColumn.MaxHealWard },
+        { "ShowPowerDrainColumn", BarColumn.PowerDrain },
+        { "ShowPowerHealColumn", BarColumn.PowerHeal },
+    };
+
+    [OnDeserialized]
+    internal void OnDeserialized(StreamingContext context)
+    {
+        if (_extensionData == null || _extensionData.Count == 0)
+            return;
+
+        var migrated = new HashSet<BarColumn>();
+        var foundLegacy = false;
+
+        foreach (var (key, col) in LegacyColumnMap)
+        {
+            if (_extensionData.TryGetValue(key, out var val))
+            {
+                foundLegacy = true;
+                if (val.Value<bool>())
+                    migrated.Add(col);
+            }
+        }
+
+        if (foundLegacy)
+            VisibleColumns = migrated;
+
+        _extensionData = null;
+    }
 
     public MeterTab() { }
 
@@ -162,7 +199,6 @@ public class MeterTab
     {
         return new MeterTab
         {
-            // New GUID for cloned tab — do not copy Id
             Name = Name,
             Group = Group,
             IsHidden = IsHidden,
@@ -177,44 +213,7 @@ public class MeterTab
             DpsMarkers = DpsMarkers.Clone(),
             HpsMarkers = HpsMarkers.Clone(),
             DtpsMarkers = DtpsMarkers.Clone(),
-            ShowDpsColumn = ShowDpsColumn,
-            ShowHpsColumn = ShowHpsColumn,
-            ShowDamageColumn = ShowDamageColumn,
-            ShowHealedColumn = ShowHealedColumn,
-            ShowDamagePercentColumn = ShowDamagePercentColumn,
-            ShowHealPercentColumn = ShowHealPercentColumn,
-            ShowDirectHitColumn = ShowDirectHitColumn,
-            ShowCritColumn = ShowCritColumn,
-            ShowCritDirectHitColumn = ShowCritDirectHitColumn,
-            ShowDeathsColumn = ShowDeathsColumn,
-            ShowDamageTakenColumn = ShowDamageTakenColumn,
-            ShowDamageTakenPercentColumn = ShowDamageTakenPercentColumn,
-            ShowOverhealColumn = ShowOverhealColumn,
-            ShowOverhealAmountColumn = ShowOverhealAmountColumn,
-            ShowMaxHitColumn = ShowMaxHitColumn,
-            ShowPeakDpsColumn = ShowPeakDpsColumn,
-            ShowMaxHealColumn = ShowMaxHealColumn,
-            ShowSwingsColumn = ShowSwingsColumn,
-            ShowHitsColumn = ShowHitsColumn,
-            ShowMissesColumn = ShowMissesColumn,
-            ShowHitRateColumn = ShowHitRateColumn,
-            ShowCritHitCountColumn = ShowCritHitCountColumn,
-            ShowDirectHitCountColumn = ShowDirectHitCountColumn,
-            ShowCritDirectHitCountColumn = ShowCritDirectHitCountColumn,
-            ShowBlockPctColumn = ShowBlockPctColumn,
-            ShowParryPctColumn = ShowParryPctColumn,
-            ShowHealsTakenColumn = ShowHealsTakenColumn,
-            ShowAbsorbHealColumn = ShowAbsorbHealColumn,
-            ShowKillsColumn = ShowKillsColumn,
-            ShowInstantDpsColumn = ShowInstantDpsColumn,
-            ShowInstantHpsColumn = ShowInstantHpsColumn,
-            ShowCritHealPctColumn = ShowCritHealPctColumn,
-            ShowHealCountColumn = ShowHealCountColumn,
-            ShowCombatantDurationColumn = ShowCombatantDurationColumn,
-            ShowDamageShieldColumn = ShowDamageShieldColumn,
-            ShowMaxHealWardColumn = ShowMaxHealWardColumn,
-            ShowPowerDrainColumn = ShowPowerDrainColumn,
-            ShowPowerHealColumn = ShowPowerHealColumn,
+            VisibleColumns = new HashSet<BarColumn>(VisibleColumns),
             ColumnOrder = new List<BarColumn>(ColumnOrder),
             ColumnHeaderLabels = new Dictionary<BarColumn, string>(ColumnHeaderLabels),
             ColumnFormatOverrides = ColumnFormatOverrides.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()),
@@ -224,7 +223,6 @@ public class MeterTab
 
     public bool PassesFilter(CombatantEntry combatant, HashSet<string>? partyNames = null, HashSet<string>? allianceNames = null)
     {
-        // Group filter (Solo/Party/Alliance) — applied first
         if (GroupFilter != GroupFilter.All)
         {
             var passes = GroupFilter switch
@@ -240,7 +238,6 @@ public class MeterTab
                 return false;
         }
 
-        // Role filter
         if (FilterMode == TabFilterMode.All)
             return true;
 

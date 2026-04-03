@@ -394,8 +394,6 @@ public class PopoutTabWindow : Window, IDisposable
         if (config.ShowNameOnBar)
             drawList.AddText(new Vector2(textStartX, textY), headerColor, "Name");
 
-        var vis = ColumnVisibility.Resolve(config, activeTab);
-
         var rightX = cursorPos.X + windowWidth - config.BarRightPadding;
         var colSpacing = config.BarColumnSpacing;
 
@@ -420,7 +418,7 @@ public class PopoutTabWindow : Window, IDisposable
         for (var ci = columnOrder.Count - 1; ci >= 0; ci--)
         {
             var col = columnOrder[ci];
-            if (!vis.IsVisible(col)) continue;
+            if (!activeTab.IsColumnVisible(col)) continue;
 
             var headerLabel = activeTab.GetHeaderLabel(col) ?? Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
             var colW = colWidths[col];

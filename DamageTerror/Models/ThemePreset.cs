@@ -113,19 +113,12 @@ public class ThemePreset
 
     public bool ShowJobIcons { get; set; } = true;
     public bool ShowNameOnBar { get; set; } = true;
-    public bool ShowDpsOnBar { get; set; } = true;
-    public bool ShowHpsOnBar { get; set; }
-    public bool ShowDamageOnBar { get; set; }
-    public bool ShowHealedOnBar { get; set; }
-    public bool ShowDamagePercentOnBar { get; set; }
     public bool ShowJobAbbrevOnBar { get; set; }
     public bool ShowRankNumber { get; set; }
-    public bool ShowDirectHitOnBar { get; set; }
-    public bool ShowCritOnBar { get; set; }
-    public bool ShowCritDirectHitOnBar { get; set; }
-    public bool ShowDeathsOnBar { get; set; }
-    public bool ShowDamageTakenOnBar { get; set; }
-    public bool ShowOverhealOnBar { get; set; }
+
+    // Legacy column visibility — used only when Tabs is null (old presets)
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public HashSet<BarColumn> VisibleColumns { get; set; } = new() { BarColumn.Dps };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<BarColumn> ColumnOrder { get; set; } = new()
@@ -315,20 +308,10 @@ public class ThemePreset
         }
         else
         {
-            // Legacy path: apply column visibility from top-level flags to all existing tabs
+            // Legacy path: apply column visibility from top-level set to all existing tabs
             foreach (var tab in config.MeterTabs)
             {
-                tab.ShowDpsColumn = ShowDpsOnBar;
-                tab.ShowHpsColumn = ShowHpsOnBar;
-                tab.ShowDamageColumn = ShowDamageOnBar;
-                tab.ShowHealedColumn = ShowHealedOnBar;
-                tab.ShowDamagePercentColumn = ShowDamagePercentOnBar;
-                tab.ShowDirectHitColumn = ShowDirectHitOnBar;
-                tab.ShowCritColumn = ShowCritOnBar;
-                tab.ShowCritDirectHitColumn = ShowCritDirectHitOnBar;
-                tab.ShowDeathsColumn = ShowDeathsOnBar;
-                tab.ShowDamageTakenColumn = ShowDamageTakenOnBar;
-                tab.ShowOverhealColumn = ShowOverhealOnBar;
+                tab.VisibleColumns = new HashSet<BarColumn>(VisibleColumns);
                 tab.ColumnOrder = new List<BarColumn>(ColumnOrder);
             }
         }
@@ -464,17 +447,7 @@ public class ThemePreset
             ShowNameOnBar = config.ShowNameOnBar,
             ShowJobAbbrevOnBar = config.ShowJobAbbrevOnBar,
             ShowRankNumber = config.ShowRankNumber,
-            ShowDpsOnBar = firstTab?.ShowDpsColumn ?? true,
-            ShowHpsOnBar = firstTab?.ShowHpsColumn ?? false,
-            ShowDamageOnBar = firstTab?.ShowDamageColumn ?? false,
-            ShowHealedOnBar = firstTab?.ShowHealedColumn ?? false,
-            ShowDamagePercentOnBar = firstTab?.ShowDamagePercentColumn ?? false,
-            ShowDirectHitOnBar = firstTab?.ShowDirectHitColumn ?? false,
-            ShowCritOnBar = firstTab?.ShowCritColumn ?? false,
-            ShowCritDirectHitOnBar = firstTab?.ShowCritDirectHitColumn ?? false,
-            ShowDeathsOnBar = firstTab?.ShowDeathsColumn ?? false,
-            ShowDamageTakenOnBar = firstTab?.ShowDamageTakenColumn ?? false,
-            ShowOverhealOnBar = firstTab?.ShowOverhealColumn ?? false,
+            VisibleColumns = firstTab != null ? new HashSet<BarColumn>(firstTab.VisibleColumns) : new HashSet<BarColumn> { BarColumn.Dps },
             ColumnOrder = firstTab != null ? new List<BarColumn>(firstTab.ColumnOrder) : new List<BarColumn>(),
 
             Tabs = config.MeterTabs.Select(t => t.Clone()).ToList(),

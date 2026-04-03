@@ -7,102 +7,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-public struct ColumnVisibility
-{
-    public bool ShowDps, ShowHps, ShowDamage, ShowHealed, ShowDamagePercent, ShowHealPercent;
-    public bool ShowDirectHit, ShowCrit, ShowCritDirectHit, ShowDeaths;
-    public bool ShowDamageTaken, ShowDamageTakenPercent, ShowOverheal, ShowOverhealAmount, ShowMaxHit, ShowPeakDps;
-    public bool ShowMaxHeal, ShowSwings, ShowHits, ShowMisses, ShowHitRate;
-    public bool ShowCritHitCount, ShowDirectHitCount, ShowCritDirectHitCount;
-    public bool ShowBlockPct, ShowParryPct, ShowHealsTaken, ShowAbsorbHeal, ShowKills, ShowInstantDps, ShowInstantHps;
-    public bool ShowCritHealPct, ShowHealCount, ShowCombatantDuration, ShowDamageShield, ShowMaxHealWard, ShowPowerDrain, ShowPowerHeal;
-
-    public static ColumnVisibility Resolve(Configuration config, MeterTab? activeTab) => new()
-    {
-        ShowDps = activeTab?.ShowDpsColumn ?? true,
-        ShowHps = activeTab?.ShowHpsColumn ?? false,
-        ShowDamage = activeTab?.ShowDamageColumn ?? false,
-        ShowHealed = activeTab?.ShowHealedColumn ?? false,
-        ShowDamagePercent = activeTab?.ShowDamagePercentColumn ?? false,
-        ShowHealPercent = activeTab?.ShowHealPercentColumn ?? false,
-        ShowDirectHit = activeTab?.ShowDirectHitColumn ?? false,
-        ShowCrit = activeTab?.ShowCritColumn ?? false,
-        ShowCritDirectHit = activeTab?.ShowCritDirectHitColumn ?? false,
-        ShowDeaths = activeTab?.ShowDeathsColumn ?? false,
-        ShowDamageTaken = activeTab?.ShowDamageTakenColumn ?? false,
-        ShowDamageTakenPercent = activeTab?.ShowDamageTakenPercentColumn ?? false,
-        ShowOverheal = activeTab?.ShowOverhealColumn ?? false,
-        ShowOverhealAmount = activeTab?.ShowOverhealAmountColumn ?? false,
-        ShowMaxHit = activeTab?.ShowMaxHitColumn ?? false,
-        ShowPeakDps = activeTab?.ShowPeakDpsColumn ?? false,
-        ShowMaxHeal = activeTab?.ShowMaxHealColumn ?? false,
-        ShowSwings = activeTab?.ShowSwingsColumn ?? false,
-        ShowHits = activeTab?.ShowHitsColumn ?? false,
-        ShowMisses = activeTab?.ShowMissesColumn ?? false,
-        ShowHitRate = activeTab?.ShowHitRateColumn ?? false,
-        ShowCritHitCount = activeTab?.ShowCritHitCountColumn ?? false,
-        ShowDirectHitCount = activeTab?.ShowDirectHitCountColumn ?? false,
-        ShowCritDirectHitCount = activeTab?.ShowCritDirectHitCountColumn ?? false,
-        ShowBlockPct = activeTab?.ShowBlockPctColumn ?? false,
-        ShowParryPct = activeTab?.ShowParryPctColumn ?? false,
-        ShowHealsTaken = activeTab?.ShowHealsTakenColumn ?? false,
-        ShowAbsorbHeal = activeTab?.ShowAbsorbHealColumn ?? false,
-        ShowKills = activeTab?.ShowKillsColumn ?? false,
-        ShowInstantDps = activeTab?.ShowInstantDpsColumn ?? false,
-        ShowInstantHps = activeTab?.ShowInstantHpsColumn ?? false,
-        ShowCritHealPct = activeTab?.ShowCritHealPctColumn ?? false,
-        ShowHealCount = activeTab?.ShowHealCountColumn ?? false,
-        ShowCombatantDuration = activeTab?.ShowCombatantDurationColumn ?? false,
-        ShowDamageShield = activeTab?.ShowDamageShieldColumn ?? false,
-        ShowMaxHealWard = activeTab?.ShowMaxHealWardColumn ?? false,
-        ShowPowerDrain = activeTab?.ShowPowerDrainColumn ?? false,
-        ShowPowerHeal = activeTab?.ShowPowerHealColumn ?? false,
-    };
-
-    public bool IsVisible(BarColumn col) => col switch
-    {
-        BarColumn.Dps => ShowDps,
-        BarColumn.Hps => ShowHps,
-        BarColumn.Damage => ShowDamage,
-        BarColumn.Healed => ShowHealed,
-        BarColumn.DamagePercent => ShowDamagePercent,
-        BarColumn.HealPercent => ShowHealPercent,
-        BarColumn.DirectHit => ShowDirectHit,
-        BarColumn.Crit => ShowCrit,
-        BarColumn.CritDirectHit => ShowCritDirectHit,
-        BarColumn.Deaths => ShowDeaths,
-        BarColumn.DamageTaken => ShowDamageTaken,
-        BarColumn.DamageTakenPercent => ShowDamageTakenPercent,
-        BarColumn.Overheal => ShowOverheal,
-        BarColumn.OverhealAmount => ShowOverhealAmount,
-        BarColumn.MaxHit => ShowMaxHit,
-        BarColumn.PeakDps => ShowPeakDps,
-        BarColumn.MaxHeal => ShowMaxHeal,
-        BarColumn.Swings => ShowSwings,
-        BarColumn.Hits => ShowHits,
-        BarColumn.Misses => ShowMisses,
-        BarColumn.HitRate => ShowHitRate,
-        BarColumn.CritHitCount => ShowCritHitCount,
-        BarColumn.DirectHitCount => ShowDirectHitCount,
-        BarColumn.CritDirectHitCount => ShowCritDirectHitCount,
-        BarColumn.BlockPct => ShowBlockPct,
-        BarColumn.ParryPct => ShowParryPct,
-        BarColumn.HealsTaken => ShowHealsTaken,
-        BarColumn.AbsorbHeal => ShowAbsorbHeal,
-        BarColumn.Kills => ShowKills,
-        BarColumn.InstantDps => ShowInstantDps,
-        BarColumn.InstantHps => ShowInstantHps,
-        BarColumn.CritHealPct => ShowCritHealPct,
-        BarColumn.HealCount => ShowHealCount,
-        BarColumn.CombatantDuration => ShowCombatantDuration,
-        BarColumn.DamageShield => ShowDamageShield,
-        BarColumn.MaxHealWard => ShowMaxHealWard,
-        BarColumn.PowerDrain => ShowPowerDrain,
-        BarColumn.PowerHeal => ShowPowerHeal,
-        _ => false,
-    };
-}
-
 public class CombatantBarComponent
 {
     private readonly Configuration config;
@@ -207,7 +111,6 @@ public class CombatantBarComponent
         var value = GetSortValue(combatant, sortBy);
         var isLocalPlayer = combatant.IsLocalPlayer;
 
-        var vis = ColumnVisibility.Resolve(config, activeTab);
         var fraction = maxValue > 0 ? (float)(value / maxValue) : 0f;
         fraction = Math.Clamp(fraction, 0f, 1f);
 
@@ -311,7 +214,7 @@ public class CombatantBarComponent
         for (var ci = columnOrder.Count - 1; ci >= 0; ci--)
         {
             var col = columnOrder[ci];
-            if (!vis.IsVisible(col)) continue;
+            if (activeTab == null || !activeTab.IsColumnVisible(col)) continue;
 
             var text = GetColumnDisplayValue(combatant, col, config, activeTab);
             if (!ColumnWidthTemplates.TryGetValue(col, out var template)) continue;

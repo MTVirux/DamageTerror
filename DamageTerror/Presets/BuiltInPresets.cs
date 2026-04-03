@@ -12,8 +12,8 @@ public static class BuiltInPresets
 
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsColumn = false, ShowHpsColumn = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps } },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { VisibleColumns = new() { BarColumn.Hps } },
         },
     };
 
@@ -102,18 +102,13 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowDpsOnBar = true,
-        ShowDamagePercentOnBar = true,
-        ShowJobAbbrevOnBar = false,
         ShowRankNumber = true,
-        ShowDirectHitOnBar = false,
-        ShowCritOnBar = false,
-        ShowCritDirectHitOnBar = false,
+        VisibleColumns = new() { BarColumn.Dps, BarColumn.DamagePercent },
 
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true, ShowDamagePercentColumn = true },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsColumn = false, ShowHpsColumn = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps, BarColumn.DamagePercent } },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { VisibleColumns = new() { BarColumn.Hps } },
         },
 
         TabButtonColor = new(0.10f, 0.10f, 0.10f, 0.85f),
@@ -209,19 +204,14 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowDpsOnBar = true,
-        ShowDamagePercentOnBar = false,
-        ShowJobAbbrevOnBar = false,
         ShowRankNumber = true,
-        ShowDirectHitOnBar = false,
-        ShowCritOnBar = false,
-        ShowCritDirectHitOnBar = false,
+        VisibleColumns = new() { BarColumn.Dps },
 
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsColumn = false, ShowHpsColumn = true },
-            new MeterTab("Tanking", TabFilterMode.Tanks, SortField.DamageTaken) { ShowDpsColumn = false, ShowDamageTakenColumn = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps } },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { VisibleColumns = new() { BarColumn.Hps } },
+            new MeterTab("Tanking", TabFilterMode.Tanks, SortField.DamageTaken) { VisibleColumns = new() { BarColumn.DamageTaken } },
         },
 
         TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.9f),
@@ -325,18 +315,12 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowDpsOnBar = true,
-        ShowDamagePercentOnBar = false,
-        ShowJobAbbrevOnBar = false,
-        ShowRankNumber = false,
-        ShowDirectHitOnBar = false,
-        ShowCritOnBar = false,
-        ShowCritDirectHitOnBar = false,
+        VisibleColumns = new() { BarColumn.Dps },
 
         ShowTabBar = false,
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps } },
         },
 
         TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.5f),
@@ -472,18 +456,13 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowDpsOnBar = true,
-        ShowDamagePercentOnBar = false,
-        ShowJobAbbrevOnBar = false,
         ShowRankNumber = true,
-        ShowDirectHitOnBar = false,
-        ShowCritOnBar = false,
-        ShowCritDirectHitOnBar = false,
+        VisibleColumns = new() { BarColumn.Dps },
 
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsColumn = false, ShowHpsColumn = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps } },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { VisibleColumns = new() { BarColumn.Hps } },
         },
 
         TabButtonColor = new(0.10f, 0.10f, 0.12f, 0.85f),
@@ -587,36 +566,23 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowDpsOnBar = true,
-        ShowDamagePercentOnBar = true,
         ShowJobAbbrevOnBar = true,
         ShowRankNumber = true,
-        ShowDirectHitOnBar = true,
-        ShowCritOnBar = true,
-        ShowCritDirectHitOnBar = true,
+        VisibleColumns = new() { BarColumn.Dps, BarColumn.DamagePercent, BarColumn.DirectHit, BarColumn.Crit, BarColumn.CritDirectHit },
 
         Tabs = new()
         {
             new MeterTab("DPS", TabFilterMode.All, SortField.EncDps)
             {
-                ShowDpsColumn = true,
-                ShowDamagePercentColumn = true,
-                ShowCritColumn = true,
-                ShowDirectHitColumn = true,
-                ShowCritDirectHitColumn = true,
-                ShowDeathsColumn = true,
+                VisibleColumns = new() { BarColumn.Dps, BarColumn.DamagePercent, BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.Deaths },
             },
             new MeterTab("Healing", TabFilterMode.All, SortField.EncHps)
             {
-                ShowDpsColumn = false,
-                ShowHpsColumn = true,
-                ShowHealedColumn = true,
-                ShowOverhealColumn = true,
+                VisibleColumns = new() { BarColumn.Hps, BarColumn.Healed, BarColumn.Overheal },
             },
             new MeterTab("Deaths", TabFilterMode.Deaths, SortField.Deaths)
             {
-                ShowDpsColumn = true,
-                ShowDeathsColumn = true,
+                VisibleColumns = new() { BarColumn.Dps, BarColumn.Deaths },
             },
         },
 
@@ -762,18 +728,12 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        ShowDpsOnBar = true,
-        ShowDamagePercentOnBar = false,
-        ShowJobAbbrevOnBar = false,
-        ShowRankNumber = false,
-        ShowDirectHitOnBar = false,
-        ShowCritOnBar = false,
-        ShowCritDirectHitOnBar = false,
+        VisibleColumns = new() { BarColumn.Dps },
 
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsColumn = false, ShowHpsColumn = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps } },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { VisibleColumns = new() { BarColumn.Hps } },
         },
 
         TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.8f),

@@ -70,9 +70,9 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         {
             foreach (var tab in cfg.MeterTabs)
             {
-                tab.GraphShowDpsLine = tab.ShowDpsColumn || tab.ShowInstantDpsColumn || tab.ShowPeakDpsColumn;
-                tab.GraphShowHpsLine = tab.ShowHpsColumn || tab.ShowInstantHpsColumn;
-                tab.GraphShowDtpsLine = tab.ShowDamageTakenColumn || tab.ShowDamageTakenPercentColumn;
+                tab.GraphShowDpsLine = tab.VisibleColumns.Contains(BarColumn.Dps) || tab.VisibleColumns.Contains(BarColumn.InstantDps) || tab.VisibleColumns.Contains(BarColumn.PeakDps);
+                tab.GraphShowHpsLine = tab.VisibleColumns.Contains(BarColumn.Hps) || tab.VisibleColumns.Contains(BarColumn.InstantHps);
+                tab.GraphShowDtpsLine = tab.VisibleColumns.Contains(BarColumn.DamageTaken) || tab.VisibleColumns.Contains(BarColumn.DamageTakenPercent);
             }
             cfg.Version = 2;
             this.PluginInterface.SavePluginConfig(cfg);

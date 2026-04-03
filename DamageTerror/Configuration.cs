@@ -48,8 +48,7 @@ public class Configuration : IPluginConfiguration
         new MeterTab("DPS", TabFilterMode.All, SortField.EncDps, true),
         new MeterTab("Healing", TabFilterMode.All, SortField.EncHps, true)
         {
-            ShowDpsColumn = false,
-            ShowHpsColumn = true,
+            VisibleColumns = new() { BarColumn.Hps },
         },
     };
 
