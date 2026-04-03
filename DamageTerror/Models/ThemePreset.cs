@@ -97,6 +97,20 @@ public class ThemePreset
     public float SkillBarRounding { get; set; } = 0f;
     public float SkillFontSize { get; set; } = 14f;
 
+    // Graph View (main window graph mode)
+    public float GraphViewHeight { get; set; } = 300f;
+    public float GraphViewLineThickness { get; set; } = 2f;
+    public Vector4 GraphViewBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
+    public Vector4 GraphViewGridColor { get; set; } = new(0.3f, 0.3f, 0.3f, 0.3f);
+    public bool GraphViewShowLegend { get; set; } = true;
+    public bool GraphViewShowGrid { get; set; } = true;
+    public bool GraphViewShowXAxisLabels { get; set; } = true;
+    public bool GraphViewShowYAxisLabels { get; set; } = true;
+    public bool GraphViewHighlightSelf { get; set; } = true;
+    public float GraphViewSelfLineThickness { get; set; } = 3.5f;
+    public float GraphViewLabelOffsetX { get; set; } = 8f;
+    public float GraphViewLabelOffsetY { get; set; } = 0f;
+
     public bool ShowJobIcons { get; set; } = true;
     public bool ShowNameOnBar { get; set; } = true;
     public bool ShowDpsOnBar { get; set; } = true;
@@ -262,6 +276,20 @@ public class ThemePreset
         config.SkillBarRounding = SkillBarRounding;
         config.SkillFontSize = SkillFontSize;
 
+        // Graph View
+        config.GraphViewHeight = GraphViewHeight;
+        config.GraphViewLineThickness = GraphViewLineThickness;
+        config.GraphViewBackgroundColor = GraphViewBackgroundColor;
+        config.GraphViewGridColor = GraphViewGridColor;
+        config.GraphViewShowLegend = GraphViewShowLegend;
+        config.GraphViewShowGrid = GraphViewShowGrid;
+        config.GraphViewShowXAxisLabels = GraphViewShowXAxisLabels;
+        config.GraphViewShowYAxisLabels = GraphViewShowYAxisLabels;
+        config.GraphViewHighlightSelf = GraphViewHighlightSelf;
+        config.GraphViewSelfLineThickness = GraphViewSelfLineThickness;
+        config.GraphViewLabelOffsetX = GraphViewLabelOffsetX;
+        config.GraphViewLabelOffsetY = GraphViewLabelOffsetY;
+
         config.ShowJobIcons = ShowJobIcons;
         config.ShowNameOnBar = ShowNameOnBar;
         config.ShowJobAbbrevOnBar = ShowJobAbbrevOnBar;
@@ -290,17 +318,17 @@ public class ThemePreset
             // Legacy path: apply column visibility from top-level flags to all existing tabs
             foreach (var tab in config.MeterTabs)
             {
-                tab.ShowDpsOnBar = ShowDpsOnBar;
-                tab.ShowHpsOnBar = ShowHpsOnBar;
-                tab.ShowDamageOnBar = ShowDamageOnBar;
-                tab.ShowHealedOnBar = ShowHealedOnBar;
-                tab.ShowDamagePercentOnBar = ShowDamagePercentOnBar;
-                tab.ShowDirectHitOnBar = ShowDirectHitOnBar;
-                tab.ShowCritOnBar = ShowCritOnBar;
-                tab.ShowCritDirectHitOnBar = ShowCritDirectHitOnBar;
-                tab.ShowDeathsOnBar = ShowDeathsOnBar;
-                tab.ShowDamageTakenOnBar = ShowDamageTakenOnBar;
-                tab.ShowOverhealOnBar = ShowOverhealOnBar;
+                tab.ShowDpsColumn = ShowDpsOnBar;
+                tab.ShowHpsColumn = ShowHpsOnBar;
+                tab.ShowDamageColumn = ShowDamageOnBar;
+                tab.ShowHealedColumn = ShowHealedOnBar;
+                tab.ShowDamagePercentColumn = ShowDamagePercentOnBar;
+                tab.ShowDirectHitColumn = ShowDirectHitOnBar;
+                tab.ShowCritColumn = ShowCritOnBar;
+                tab.ShowCritDirectHitColumn = ShowCritDirectHitOnBar;
+                tab.ShowDeathsColumn = ShowDeathsOnBar;
+                tab.ShowDamageTakenColumn = ShowDamageTakenOnBar;
+                tab.ShowOverhealColumn = ShowOverhealOnBar;
                 tab.ColumnOrder = new List<BarColumn>(ColumnOrder);
             }
         }
@@ -418,21 +446,35 @@ public class ThemePreset
             SkillBarRounding = config.SkillBarRounding,
             SkillFontSize = config.SkillFontSize,
 
+            // Graph View
+            GraphViewHeight = config.GraphViewHeight,
+            GraphViewLineThickness = config.GraphViewLineThickness,
+            GraphViewBackgroundColor = config.GraphViewBackgroundColor,
+            GraphViewGridColor = config.GraphViewGridColor,
+            GraphViewShowLegend = config.GraphViewShowLegend,
+            GraphViewShowGrid = config.GraphViewShowGrid,
+            GraphViewShowXAxisLabels = config.GraphViewShowXAxisLabels,
+            GraphViewShowYAxisLabels = config.GraphViewShowYAxisLabels,
+            GraphViewHighlightSelf = config.GraphViewHighlightSelf,
+            GraphViewSelfLineThickness = config.GraphViewSelfLineThickness,
+            GraphViewLabelOffsetX = config.GraphViewLabelOffsetX,
+            GraphViewLabelOffsetY = config.GraphViewLabelOffsetY,
+
             ShowJobIcons = config.ShowJobIcons,
             ShowNameOnBar = config.ShowNameOnBar,
             ShowJobAbbrevOnBar = config.ShowJobAbbrevOnBar,
             ShowRankNumber = config.ShowRankNumber,
-            ShowDpsOnBar = firstTab?.ShowDpsOnBar ?? true,
-            ShowHpsOnBar = firstTab?.ShowHpsOnBar ?? false,
-            ShowDamageOnBar = firstTab?.ShowDamageOnBar ?? false,
-            ShowHealedOnBar = firstTab?.ShowHealedOnBar ?? false,
-            ShowDamagePercentOnBar = firstTab?.ShowDamagePercentOnBar ?? false,
-            ShowDirectHitOnBar = firstTab?.ShowDirectHitOnBar ?? false,
-            ShowCritOnBar = firstTab?.ShowCritOnBar ?? false,
-            ShowCritDirectHitOnBar = firstTab?.ShowCritDirectHitOnBar ?? false,
-            ShowDeathsOnBar = firstTab?.ShowDeathsOnBar ?? false,
-            ShowDamageTakenOnBar = firstTab?.ShowDamageTakenOnBar ?? false,
-            ShowOverhealOnBar = firstTab?.ShowOverhealOnBar ?? false,
+            ShowDpsOnBar = firstTab?.ShowDpsColumn ?? true,
+            ShowHpsOnBar = firstTab?.ShowHpsColumn ?? false,
+            ShowDamageOnBar = firstTab?.ShowDamageColumn ?? false,
+            ShowHealedOnBar = firstTab?.ShowHealedColumn ?? false,
+            ShowDamagePercentOnBar = firstTab?.ShowDamagePercentColumn ?? false,
+            ShowDirectHitOnBar = firstTab?.ShowDirectHitColumn ?? false,
+            ShowCritOnBar = firstTab?.ShowCritColumn ?? false,
+            ShowCritDirectHitOnBar = firstTab?.ShowCritDirectHitColumn ?? false,
+            ShowDeathsOnBar = firstTab?.ShowDeathsColumn ?? false,
+            ShowDamageTakenOnBar = firstTab?.ShowDamageTakenColumn ?? false,
+            ShowOverhealOnBar = firstTab?.ShowOverhealColumn ?? false,
             ColumnOrder = firstTab != null ? new List<BarColumn>(firstTab.ColumnOrder) : new List<BarColumn>(),
 
             Tabs = config.MeterTabs.Select(t => t.Clone()).ToList(),

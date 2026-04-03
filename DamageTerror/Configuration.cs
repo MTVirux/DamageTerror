@@ -48,8 +48,8 @@ public class Configuration : IPluginConfiguration
         new MeterTab("DPS", TabFilterMode.All, SortField.EncDps, true),
         new MeterTab("Healing", TabFilterMode.All, SortField.EncHps, true)
         {
-            ShowDpsOnBar = false,
-            ShowHpsOnBar = true,
+            ShowDpsColumn = false,
+            ShowHpsColumn = true,
         },
     };
 
@@ -244,6 +244,7 @@ public class Configuration : IPluginConfiguration
     public float TooltipPadding { get; set; } = 6f;
 
     // Graph
+    public bool GraphAutoHeight { get; set; } = true;
     public float GraphHeight { get; set; } = 120f;
     public float GraphLineThickness { get; set; } = 2f;
     public Vector4 GraphDpsColor { get; set; } = new(0.9f, 0.4f, 0.4f, 1f);
@@ -251,10 +252,52 @@ public class Configuration : IPluginConfiguration
     public Vector4 GraphDtpsColor { get; set; } = new(0.4f, 0.55f, 0.9f, 1f);
     public Vector4 GraphBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
     public Vector4 GraphGridColor { get; set; } = new(0.3f, 0.3f, 0.3f, 0.3f);
+    public bool GraphShowLegend { get; set; } = true;
+    public bool GraphShowGrid { get; set; } = true;
+    public bool GraphShowXAxisLabels { get; set; } = true;
+    public bool GraphShowYAxisLabels { get; set; } = true;
     public bool GraphShowDps { get; set; } = true;
     public bool GraphShowHps { get; set; } = true;
     public bool GraphShowDtps { get; set; } = true;
     public float GraphSmoothingWindow { get; set; } = 5f;
+    public float GraphUpdateInterval { get; set; } = 0.25f;
+    public bool GraphShowLabels { get; set; } = true;
+    public float GraphLabelOffsetX { get; set; } = 8f;
+    public float GraphLabelOffsetY { get; set; } = 0f;
+    public float GraphMouseTextOpacity { get; set; } = 0.6f;
+    public float GraphYAxisHeadroom { get; set; } = 1.1f;
+    public int GraphYAxisTickCount { get; set; } = 8;
+    public float GraphXAxisPadding { get; set; } = 1.25f;
+    public bool GraphAutoScroll { get; set; } = false;
+    public float GraphAutoScrollWindow { get; set; } = 60f;
+    public float GraphAutoScrollSmoothing { get; set; } = 8f;
+    public float GraphFontSize { get; set; } = 14f;
+
+    // Graph View (main window graph mode)
+    public bool GraphViewAutoHeight { get; set; } = true;
+    public float GraphViewHeight { get; set; } = 300f;
+    public float GraphViewLineThickness { get; set; } = 2f;
+    public Vector4 GraphViewBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
+    public Vector4 GraphViewGridColor { get; set; } = new(0.3f, 0.3f, 0.3f, 0.3f);
+    public float GraphViewSmoothingWindow { get; set; } = 5f;
+    public float GraphViewUpdateInterval { get; set; } = 0.25f;
+    public bool GraphViewShowLegend { get; set; } = true;
+    public bool GraphViewShowGrid { get; set; } = true;
+    public bool GraphViewShowXAxisLabels { get; set; } = true;
+    public bool GraphViewShowYAxisLabels { get; set; } = true;
+    public bool GraphViewHighlightSelf { get; set; } = true;
+    public float GraphViewSelfLineThickness { get; set; } = 3.5f;
+    public bool GraphViewShowLabels { get; set; } = true;
+    public float GraphViewLabelOffsetX { get; set; } = 8f;
+    public float GraphViewLabelOffsetY { get; set; } = 0f;
+    public float GraphViewFontSize { get; set; } = 14f;
+    public float GraphViewXAxisPadding { get; set; } = 1.25f;
+    public bool GraphViewAutoScroll { get; set; } = false;
+    public float GraphViewAutoScrollWindow { get; set; } = 60f;
+    public float GraphViewAutoScrollSmoothing { get; set; } = 8f;
+    public float GraphViewYAxisHeadroom { get; set; } = 1.1f;
+    public int GraphViewYAxisTickCount { get; set; } = 8;
+    public float GraphViewMouseTextOpacity { get; set; } = 0.6f;
 
     // Skill Breakdown Colors
     public Vector4 SkillDamageFillColor { get; set; } = new(0.35f, 0.35f, 0.55f, 0.7f);
@@ -285,6 +328,12 @@ public class Configuration : IPluginConfiguration
     public Vector4 StatusBarActiveColor { get; set; } = new(1.0f, 0.6f, 0.0f, 1.0f);
     public Vector4 StatusBarInactiveColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
     public Vector4 StatusBarLabelColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
+
+    // Tab Popout
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<Guid> PopoutTabIds { get; set; } = new();
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<Guid, PopoutWindowPin> PopoutWindowPins { get; set; } = new();
 
     // Window Pinning
     public bool PinMainWindow { get; set; } = false;

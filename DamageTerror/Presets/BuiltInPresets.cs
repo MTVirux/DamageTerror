@@ -12,8 +12,8 @@ public static class BuiltInPresets
 
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsOnBar = false, ShowHpsOnBar = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsColumn = false, ShowHpsColumn = true },
         },
     };
 
@@ -112,8 +112,8 @@ public static class BuiltInPresets
 
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true, ShowDamagePercentOnBar = true },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsOnBar = false, ShowHpsOnBar = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true, ShowDamagePercentColumn = true },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsColumn = false, ShowHpsColumn = true },
         },
 
         TabButtonColor = new(0.10f, 0.10f, 0.10f, 0.85f),
@@ -219,9 +219,9 @@ public static class BuiltInPresets
 
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsOnBar = false, ShowHpsOnBar = true },
-            new MeterTab("Tanking", TabFilterMode.Tanks, SortField.DamageTaken) { ShowDpsOnBar = false, ShowDamageTakenOnBar = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsColumn = false, ShowHpsColumn = true },
+            new MeterTab("Tanking", TabFilterMode.Tanks, SortField.DamageTaken) { ShowDpsColumn = false, ShowDamageTakenColumn = true },
         },
 
         TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.9f),
@@ -336,7 +336,7 @@ public static class BuiltInPresets
         ShowTabBar = false,
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true },
         },
 
         TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.5f),
@@ -482,8 +482,8 @@ public static class BuiltInPresets
 
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsOnBar = false, ShowHpsOnBar = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsColumn = false, ShowHpsColumn = true },
         },
 
         TabButtonColor = new(0.10f, 0.10f, 0.12f, 0.85f),
@@ -599,24 +599,24 @@ public static class BuiltInPresets
         {
             new MeterTab("DPS", TabFilterMode.All, SortField.EncDps)
             {
-                ShowDpsOnBar = true,
-                ShowDamagePercentOnBar = true,
-                ShowCritOnBar = true,
-                ShowDirectHitOnBar = true,
-                ShowCritDirectHitOnBar = true,
-                ShowDeathsOnBar = true,
+                ShowDpsColumn = true,
+                ShowDamagePercentColumn = true,
+                ShowCritColumn = true,
+                ShowDirectHitColumn = true,
+                ShowCritDirectHitColumn = true,
+                ShowDeathsColumn = true,
             },
             new MeterTab("Healing", TabFilterMode.All, SortField.EncHps)
             {
-                ShowDpsOnBar = false,
-                ShowHpsOnBar = true,
-                ShowHealedOnBar = true,
-                ShowOverhealOnBar = true,
+                ShowDpsColumn = false,
+                ShowHpsColumn = true,
+                ShowHealedColumn = true,
+                ShowOverhealColumn = true,
             },
             new MeterTab("Deaths", TabFilterMode.Deaths, SortField.Deaths)
             {
-                ShowDpsOnBar = true,
-                ShowDeathsOnBar = true,
+                ShowDpsColumn = true,
+                ShowDeathsColumn = true,
             },
         },
 
@@ -772,8 +772,8 @@ public static class BuiltInPresets
 
         Tabs = new()
         {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsOnBar = true },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsOnBar = false, ShowHpsOnBar = true },
+            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { ShowDpsColumn = true },
+            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { ShowDpsColumn = false, ShowHpsColumn = true },
         },
 
         TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.8f),
