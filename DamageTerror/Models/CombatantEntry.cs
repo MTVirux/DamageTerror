@@ -105,6 +105,8 @@ public class CombatantEntry
 
     public int Stuns { get; set; }
 
+    public int SkillIssue { get; set; }
+
     public List<SkillEntry> Skills { get; set; } = new();
 
     public List<SkillEntry> HealingSkills { get; set; } = new();

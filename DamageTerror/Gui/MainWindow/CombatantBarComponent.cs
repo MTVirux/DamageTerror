@@ -61,6 +61,7 @@ public class CombatantBarComponent
         { BarColumn.PowerDrain, "000.0K" },
         { BarColumn.PowerHeal, "000.0K" },
         { BarColumn.Stuns, "00" },
+        { BarColumn.SkillIssue, "00" },
         { BarColumn.RaidDps, "000.0K" },
         { BarColumn.RaidHps, "000.0K" },
     };
@@ -109,6 +110,7 @@ public class CombatantBarComponent
         BarColumn.PowerDrain => ValueFormatter.FormatColumn(combatant.PowerDrain, config, BarColumn.PowerDrain, activeTab),
         BarColumn.PowerHeal => ValueFormatter.FormatColumn(combatant.PowerHeal, config, BarColumn.PowerHeal, activeTab),
         BarColumn.Stuns => $"{combatant.Stuns}",
+        BarColumn.SkillIssue => $"{combatant.SkillIssue}",
         BarColumn.RaidDps => ValueFormatter.FormatColumn(combatant.RaidDps, config, BarColumn.RaidDps, activeTab),
         BarColumn.RaidHps => ValueFormatter.FormatColumn(combatant.RaidHps, config, BarColumn.RaidHps, activeTab),
         _ => string.Empty,
@@ -355,6 +357,7 @@ public class CombatantBarComponent
         TooltipField.DamageShield => ("Damage Shield", GetColumnDisplayValue(combatant, BarColumn.DamageShield, config, activeTab)),
         TooltipField.MaxHealWard => ("Max Heal Ward", GetColumnDisplayValue(combatant, BarColumn.MaxHealWard, config, activeTab)),
         TooltipField.Stuns => ("Stuns", $"{combatant.Stuns}"),
+        TooltipField.SkillIssue => ("Skill Issue", $"{combatant.SkillIssue}"),
         TooltipField.RaidDps => ("Group DPS", GetColumnDisplayValue(combatant, BarColumn.RaidDps, config, activeTab)),
         TooltipField.RaidHps => ("Group HPS", GetColumnDisplayValue(combatant, BarColumn.RaidHps, config, activeTab)),
         TooltipField.TopDamageSkills => ("Top Damage Skills", ""),

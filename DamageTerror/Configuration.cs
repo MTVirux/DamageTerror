@@ -208,6 +208,7 @@ public class Configuration : IPluginConfiguration
         { BarColumn.PowerDrain, "MPD" },
         { BarColumn.PowerHeal, "MPR" },
         { BarColumn.Stuns, "Stun" },
+        { BarColumn.SkillIssue, "SI" },
         { BarColumn.RaidDps, "gDPS" },
         { BarColumn.RaidHps, "gHPS" },
     };
@@ -255,6 +256,7 @@ public class Configuration : IPluginConfiguration
         { BarColumn.PowerDrain, "MP Drain" },
         { BarColumn.PowerHeal, "MP Restore" },
         { BarColumn.Stuns, "Stuns" },
+        { BarColumn.SkillIssue, "Skill Issue" },
         { BarColumn.RaidDps, "Raid DPS" },
         { BarColumn.RaidHps, "Raid HPS" },
     };

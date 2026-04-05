@@ -132,6 +132,7 @@ public class DisplayTab
         { BarColumn.PowerDrain, "MP Drain" },
         { BarColumn.PowerHeal, "MP Recovery" },
         { BarColumn.Stuns, "Stuns" },
+        { BarColumn.SkillIssue, "Skill Issue" },
         { BarColumn.RaidDps, "Group DPS" },
         { BarColumn.RaidHps, "Group HPS" },
     };
@@ -291,7 +292,7 @@ public class DisplayTab
         ("T%", new[] { BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct }),
         ("Counts", new[] { BarColumn.Swings, BarColumn.Hits, BarColumn.Misses, BarColumn.HitRate, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.HealCount, BarColumn.Deaths, BarColumn.Kills }),
         ("Others", new[] { BarColumn.CombatantDuration, BarColumn.PowerHeal }),
-        ("Brainrot", new[] { BarColumn.Stuns }),
+        ("Brainrot", new[] { BarColumn.Stuns, BarColumn.SkillIssue }),
 #if DEBUG
         ("Unknown", new[] { BarColumn.PowerDrain, BarColumn.AbsorbHeal, BarColumn.MaxHealWard }),
 #endif

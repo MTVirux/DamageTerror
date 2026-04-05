@@ -43,6 +43,7 @@ public enum BarColumn
     PowerDrain,
     PowerHeal,
     Stuns,
+    SkillIssue,
     RaidDps,
     RaidHps,
 }

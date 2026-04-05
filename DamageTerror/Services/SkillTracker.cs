@@ -16,6 +16,7 @@ public class SkillTracker
     private readonly Dictionary<string, List<SkillUseEvent>> skillEvents = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<SkillUseEvent>> damageTakenEvents = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> stunCounts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> skillIssueCounts = new(StringComparer.OrdinalIgnoreCase);
 
     private Dictionary<string, List<SkillUseEvent>>? seededEvents;
     private Dictionary<string, List<SkillUseEvent>>? seededDamageTakenEvents;
@@ -287,6 +288,14 @@ public class SkillTracker
         }
     }
 
+    public int GetSkillIssueCount(string combatantName)
+    {
+        lock (syncLock)
+        {
+            return skillIssueCounts.GetValueOrDefault(combatantName);
+        }
+    }
+
     public void Reset()
     {
         lock (syncLock)
@@ -298,6 +307,7 @@ public class SkillTracker
             skillEvents.Clear();
             damageTakenEvents.Clear();
             stunCounts.Clear();
+            skillIssueCounts.Clear();
             seededEvents = null;
             seededDamageTakenEvents = null;
             damageTypeCache.Clear();
@@ -522,6 +532,15 @@ public class SkillTracker
                 float.TryParse(line[4], NumberStyles.Float, CultureInfo.InvariantCulture, out duration);
 
             statusTracker.OnStatusGained(sourceName, targetName, statusId, statusName, duration);
+
+            if (string.Equals(statusName, "Vulnerability Up", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(statusName, "Damage Down", StringComparison.OrdinalIgnoreCase))
+            {
+                lock (syncLock)
+                {
+                    skillIssueCounts[targetName] = skillIssueCounts.GetValueOrDefault(targetName) + 1;
+                }
+            }
         }
         else if (type == "30")
         {
