@@ -17,8 +17,10 @@ public enum BarColumn
     Overheal,
     OverhealAmount,
     MaxHit,
+    MaxHitValue,
     PeakDps,
     MaxHeal,
+    MaxHealValue,
     Swings,
     Hits,
     Misses,
@@ -40,4 +42,7 @@ public enum BarColumn
     MaxHealWard,
     PowerDrain,
     PowerHeal,
+    Stuns,
+    RaidDps,
+    RaidHps,
 }
