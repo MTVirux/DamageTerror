@@ -106,8 +106,10 @@ public class DisplayTab
         { BarColumn.Overheal, "Overheal %" },
         { BarColumn.OverhealAmount, "Overheal Amount" },
         { BarColumn.MaxHit, "Highest Hit" },
+        { BarColumn.MaxHitValue, "Highest Hit Value" },
         { BarColumn.PeakDps, "Peak DPS" },
         { BarColumn.MaxHeal, "Max Heal" },
+        { BarColumn.MaxHealValue, "Max Heal Value" },
         { BarColumn.Swings, "Swings" },
         { BarColumn.Hits, "Hits" },
         { BarColumn.Misses, "Misses" },
@@ -128,7 +130,10 @@ public class DisplayTab
         { BarColumn.DamageShield, "Shield Damage" },
         { BarColumn.MaxHealWard, "Max Heal Ward" },
         { BarColumn.PowerDrain, "MP Drain" },
-        { BarColumn.PowerHeal, "Power Heal" },
+        { BarColumn.PowerHeal, "MP Recovery" },
+        { BarColumn.Stuns, "Stuns" },
+        { BarColumn.RaidDps, "Group DPS" },
+        { BarColumn.RaidHps, "Group HPS" },
     };
 
     public static bool DrawBarColumns(List<BarColumn> columnOrder, Func<BarColumn, bool> getEnabled, Action<BarColumn, bool> setEnabled, Dictionary<BarColumn, string> headerLabels, Dictionary<BarColumn, ColumnFormatOverride>? formatOverrides = null)
@@ -278,14 +283,18 @@ public class DisplayTab
 
     private static readonly (string Name, BarColumn[] Columns)[] DisabledCategories =
     {
-        ("Dmg", new[] { BarColumn.Dps, BarColumn.Damage, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.MaxHit, BarColumn.DamageShield }),
-        ("Heal", new[] { BarColumn.Hps, BarColumn.Healed, BarColumn.InstantHps, BarColumn.MaxHeal, BarColumn.MaxHealWard, BarColumn.OverhealAmount, BarColumn.AbsorbHeal }),
+        ("Dmg", new[] { BarColumn.Dps, BarColumn.Damage, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.MaxHit, BarColumn.MaxHitValue, BarColumn.DamageShield, BarColumn.RaidDps }),
+        ("Heal", new[] { BarColumn.Hps, BarColumn.Healed, BarColumn.InstantHps, BarColumn.MaxHeal, BarColumn.MaxHealValue, BarColumn.OverhealAmount, BarColumn.RaidHps }),
         ("Taken", new[] { BarColumn.DamageTaken, BarColumn.HealsTaken }),
         ("D%", new[] { BarColumn.DamagePercent, BarColumn.DirectHit, BarColumn.Crit, BarColumn.CritDirectHit }),
         ("H%", new[] { BarColumn.HealPercent, BarColumn.Overheal, BarColumn.CritHealPct }),
         ("T%", new[] { BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct }),
         ("Counts", new[] { BarColumn.Swings, BarColumn.Hits, BarColumn.Misses, BarColumn.HitRate, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.HealCount, BarColumn.Deaths, BarColumn.Kills }),
-        ("Others", new[] { BarColumn.CombatantDuration, BarColumn.PowerDrain, BarColumn.PowerHeal }),
+        ("Others", new[] { BarColumn.CombatantDuration, BarColumn.PowerHeal }),
+        ("Brainrot", new[] { BarColumn.Stuns }),
+#if DEBUG
+        ("Unknown", new[] { BarColumn.PowerDrain, BarColumn.AbsorbHeal, BarColumn.MaxHealWard }),
+#endif
     };
 
     public static bool GetTabColumnEnabled(MeterTab tab, BarColumn col) => tab.IsColumnVisible(col);

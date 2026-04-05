@@ -20,6 +20,7 @@ public class ConfigWindow : Window, IDisposable
         Tabs,
         Layout,
         Presets,
+        AppearanceGeneral,
         Bars,
         NameFormat,
         TabButtons,
@@ -40,6 +41,7 @@ public class ConfigWindow : Window, IDisposable
         (ConfigPage.Tabs,         "Tabs",                   null,           FontAwesomeIcon.Columns),
         (ConfigPage.Layout,       "Layout",                 null,           FontAwesomeIcon.ThLarge),
         (ConfigPage.Presets,      "Presets",                "Appearance",   FontAwesomeIcon.Palette),
+        (ConfigPage.AppearanceGeneral, "General",             "Appearance",   FontAwesomeIcon.SlidersH),
         (ConfigPage.Bars,         "Meter Bars",             "Appearance",   FontAwesomeIcon.GripLines),
         (ConfigPage.NameFormat,   "Name Format",            "Appearance",   FontAwesomeIcon.IdCard),
         (ConfigPage.Formatting,   "Value Formatting",       "Appearance",   FontAwesomeIcon.SortNumericDown),
@@ -96,6 +98,8 @@ public class ConfigWindow : Window, IDisposable
         {
             plugin.SaveConfig();
         }
+
+        AppearanceTab.FileDialogManager.Draw();
     }
 
     private void DrawSidebar()
@@ -171,6 +175,10 @@ public class ConfigWindow : Window, IDisposable
 
             case ConfigPage.Presets:
                 changed |= appearanceTab.DrawPresetsPage(config);
+                break;
+
+            case ConfigPage.AppearanceGeneral:
+                changed |= AppearanceTab.DrawAppearanceGeneralPage(config);
                 break;
 
             case ConfigPage.Bars:

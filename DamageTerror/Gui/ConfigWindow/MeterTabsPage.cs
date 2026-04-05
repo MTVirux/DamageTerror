@@ -178,7 +178,8 @@ public static class MeterTabsPage
     {
         var changed = false;
 
-        ImGui.TextDisabled("Tab Settings");
+        if (ImGui.CollapsingHeader("Tab Settings", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         ImGui.Spacing();
 
         ImGui.SetNextItemWidth(200);
@@ -233,10 +234,12 @@ public static class MeterTabsPage
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Filter by party membership.\nSolo = only you.\nParty Only = your party members.\nAlliance = all alliance members.\nCombines with Role Filter above.");
 
-        ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
+        }
 
+        ImGui.Separator();
+
+        if (ImGui.CollapsingHeader("Sort", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var sortOptions = Enum.GetNames(typeof(SortField));
         var currentSort = (int)tab.SortBy;
         ImGui.SetNextItemWidth(200);
@@ -253,11 +256,12 @@ public static class MeterTabsPage
             changed = true;
         }
 
-        ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
-        ImGui.TextDisabled("Content");
+        }
 
+        ImGui.Separator();
+
+        if (ImGui.CollapsingHeader("Meter/Graph Content", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var viewModeLabels = new[] { "Bars", "Line Graph" };
         var viewModeIdx = (int)tab.ViewMode;
         ImGui.SetNextItemWidth(200);
@@ -281,8 +285,6 @@ public static class MeterTabsPage
                 tab.GraphShowDpsLine = showDps;
                 changed = true;
             }
-            ImGui.SameLine();
-            changed |= DrawSkillMarkerButton("dps", tab.DpsMarkers);
 
             var showHps = tab.GraphShowHpsLine;
             if (ImGui.Checkbox("Show HPS Line", ref showHps))
@@ -290,8 +292,6 @@ public static class MeterTabsPage
                 tab.GraphShowHpsLine = showHps;
                 changed = true;
             }
-            ImGui.SameLine();
-            changed |= DrawSkillMarkerButton("hps", tab.HpsMarkers);
 
             var showDtps = tab.GraphShowDtpsLine;
             if (ImGui.Checkbox("Show DTPS Line", ref showDtps))
@@ -299,8 +299,6 @@ public static class MeterTabsPage
                 tab.GraphShowDtpsLine = showDtps;
                 changed = true;
             }
-            ImGui.SameLine();
-            changed |= DrawSkillMarkerButton("dtps", tab.DtpsMarkers);
         }
 
         if (tab.ViewMode != ViewMode.LineGraph)
@@ -317,101 +315,352 @@ public static class MeterTabsPage
                 tab.ColumnFormatOverrides);
         }
 
-        return changed;
-    }
+        }
 
-    private static bool DrawSkillMarkerButton(string id, SkillMarkerConfig mc)
-    {
-        var changed = false;
-        var hasMarkers = mc.ShowMarkers;
-        if (hasMarkers)
-            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.4f, 0.8f, 1.0f, 1.0f));
-        if (ImGui.SmallButton($"M##markers_{id}"))
-            ImGui.OpenPopup($"##markerPopup_{id}");
-        if (hasMarkers)
-            ImGui.PopStyleColor();
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(hasMarkers ? "Skill markers (click to configure)" : "Skill markers (disabled)");
+        ImGui.Separator();
 
-        if (ImGui.BeginPopup($"##markerPopup_{id}"))
+        if (ImGui.CollapsingHeader("Status Bar Content", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            ImGui.TextDisabled("Skill Markers");
-            ImGui.Separator();
+        var sbTimer = tab.ShowStatusBarTimer;
+        if (ImGui.Checkbox("Show combat timer##sbtab", ref sbTimer))
+        {
+            tab.ShowStatusBarTimer = sbTimer;
+            changed = true;
+        }
 
-            var showMarkers = mc.ShowMarkers;
-            if (ImGui.Checkbox("Show skill markers", ref showMarkers))
+        ImGui.Spacing();
+        ImGui.TextDisabled("Metrics");
+        tab.StatusBarMetrics ??= new List<BarColumn> { BarColumn.Dps, BarColumn.RaidDps };
+        changed |= DrawStatusBarMetrics(tab.StatusBarMetrics);
+        }
+
+        ImGui.Separator();
+
+        if (ImGui.CollapsingHeader("Tooltip Content", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.TextDisabled("Choose which fields to show in the tooltip and their order.");
+            ImGui.Spacing();
+
+            var skillCount = tab.TooltipTopSkillCount;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderInt("Top skills to show", ref skillCount, 1, 10))
             {
-                mc.ShowMarkers = showMarkers;
+                tab.TooltipTopSkillCount = skillCount;
                 changed = true;
             }
+            ImGui.Spacing();
 
-            changed |= ConfigHelpers.ColorEditProp($"Marker color##popup_{id}", mc.MarkerColor, v => mc.MarkerColor = v);
+            var fields = tab.TooltipFields;
+            var allFields = Enum.GetValues<TooltipField>();
+            var disabledFields = allFields.Where(f => !fields.Contains(f)).ToList();
+            disabledFields.Sort((a, b) =>
+                string.Compare(
+                    AppearanceTab.TooltipFieldLabels.GetValueOrDefault(a, a.ToString()),
+                    AppearanceTab.TooltipFieldLabels.GetValueOrDefault(b, b.ToString()),
+                    StringComparison.OrdinalIgnoreCase));
 
-            var markerSize = mc.MarkerSize;
-            ImGui.SetNextItemWidth(150);
-            if (ImGui.SliderFloat($"Marker size##popup_{id}", ref markerSize, 1f, 10f, "%.1f"))
+            for (var i = 0; i < fields.Count; i++)
             {
-                mc.MarkerSize = markerSize;
-                changed = true;
-            }
+                var field = fields[i];
+                var label = AppearanceTab.TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
 
-            var showCrit = mc.ShowCritMarkers;
-            if (ImGui.Checkbox($"Color by crit/DH##popup_{id}", ref showCrit))
-            {
-                mc.ShowCritMarkers = showCrit;
-                changed = true;
-            }
+                ImGui.PushID($"ttf_{i}");
 
-            if (mc.ShowCritMarkers)
-            {
-                changed |= ConfigHelpers.ColorEditProp($"Crit ! color##popup_{id}", mc.CritMarkerColor, v => mc.CritMarkerColor = v);
-                changed |= ConfigHelpers.ColorEditProp($"Direct Hit !! color##popup_{id}", mc.DirectHitMarkerColor, v => mc.DirectHitMarkerColor = v);
-                changed |= ConfigHelpers.ColorEditProp($"Crit Direct Hit !!! color##popup_{id}", mc.CritDirectHitMarkerColor, v => mc.CritDirectHitMarkerColor = v);
+                var canUp = i > 0;
+                if (!canUp) ImGui.BeginDisabled();
+                if (ImGui.ArrowButton("##up", ImGuiDir.Up))
+                {
+                    (fields[i - 1], fields[i]) = (fields[i], fields[i - 1]);
+                    changed = true;
+                }
+                if (!canUp) ImGui.EndDisabled();
+
+                ImGui.SameLine();
+
+                var canDown = i < fields.Count - 1;
+                if (!canDown) ImGui.BeginDisabled();
+                if (ImGui.ArrowButton("##down", ImGuiDir.Down))
+                {
+                    (fields[i], fields[i + 1]) = (fields[i + 1], fields[i]);
+                    changed = true;
+                }
+                if (!canDown) ImGui.EndDisabled();
+
+                ImGui.SameLine();
+
+                var enabled = true;
+                if (ImGui.Checkbox(label, ref enabled))
+                {
+                    fields.RemoveAt(i);
+                    changed = true;
+                    ImGui.PopID();
+                    i--;
+                    continue;
+                }
+
+                ImGui.PopID();
             }
 
             ImGui.Spacing();
             ImGui.Separator();
-            ImGui.TextDisabled("DoT / HoT Markers");
+            ImGui.TextDisabled("Disabled");
+            ImGui.Spacing();
 
-            var showDotTick = mc.ShowDoTTickMarkers;
-            if (ImGui.Checkbox($"Show DoT/HoT tick markers##popup_{id}", ref showDotTick))
+            if (disabledFields.Count > 0 && ImGui.BeginTabBar("##disabledTooltipFields"))
             {
-                mc.ShowDoTTickMarkers = showDotTick;
+                foreach (var (catName, catFields) in AppearanceTab.DisabledTooltipCategories)
+                {
+                    var catDisabled = catFields.Where(f => disabledFields.Contains(f)).ToList();
+
+                    if (catDisabled.Count == 0)
+                        continue;
+
+                    if (ImGui.BeginTabItem(catName))
+                    {
+                        catDisabled.Sort((a, b) =>
+                            string.Compare(
+                                AppearanceTab.TooltipFieldLabels.GetValueOrDefault(a, a.ToString()),
+                                AppearanceTab.TooltipFieldLabels.GetValueOrDefault(b, b.ToString()),
+                                StringComparison.OrdinalIgnoreCase));
+
+                        foreach (var field in catDisabled)
+                        {
+                            var label = AppearanceTab.TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+                            ImGui.PushID($"disabled_tt_{field}");
+
+                            var off = false;
+                            if (ImGui.Checkbox(label, ref off))
+                            {
+                                fields.Add(field);
+                                changed = true;
+                            }
+
+                            ImGui.PopID();
+                        }
+
+                        ImGui.EndTabItem();
+                    }
+                }
+
+                ImGui.EndTabBar();
+            }
+        }
+
+        ImGui.Separator();
+
+        if (ImGui.CollapsingHeader("Details Panel Content", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.TextDisabled("Choose what to show in the expanded detail view.");
+            ImGui.Spacing();
+
+            ImGui.TextDisabled("Tabs");
+
+            var showDetails = tab.DetailShowDetailsTab;
+            if (ImGui.Checkbox("Details##detailTab", ref showDetails))
+            {
+                tab.DetailShowDetailsTab = showDetails;
                 changed = true;
             }
 
-            if (mc.ShowDoTTickMarkers)
+            ImGui.SameLine();
+            var showSkillsTab = tab.DetailShowSkillsTab;
+            if (ImGui.Checkbox("Skills##detailTab", ref showSkillsTab))
             {
-                changed |= ConfigHelpers.ColorEditProp($"Tick color##popup_{id}", mc.DoTTickColor, v => mc.DoTTickColor = v);
-                var dotTickSize = mc.DoTTickMarkerSize;
-                ImGui.SetNextItemWidth(150);
-                if (ImGui.SliderFloat($"Tick size##popup_{id}", ref dotTickSize, 1f, 10f, "%.1f"))
-                {
-                    mc.DoTTickMarkerSize = dotTickSize;
-                    changed = true;
-                }
-            }
-
-            var showDotApp = mc.ShowDoTApplicationMarkers;
-            if (ImGui.Checkbox($"Show DoT/HoT application markers##popup_{id}", ref showDotApp))
-            {
-                mc.ShowDoTApplicationMarkers = showDotApp;
+                tab.DetailShowSkillsTab = showSkillsTab;
                 changed = true;
             }
 
-            if (mc.ShowDoTApplicationMarkers)
+            ImGui.SameLine();
+            var showGraphTab = tab.DetailShowGraphTab;
+            if (ImGui.Checkbox("Graph##detailTab", ref showGraphTab))
             {
-                changed |= ConfigHelpers.ColorEditProp($"Application color##popup_{id}", mc.DoTApplicationColor, v => mc.DoTApplicationColor = v);
-                var dotAppSize = mc.DoTApplicationMarkerSize;
-                ImGui.SetNextItemWidth(150);
-                if (ImGui.SliderFloat($"Application size##popup_{id}", ref dotAppSize, 1f, 10f, "%.1f"))
+                tab.DetailShowGraphTab = showGraphTab;
+                changed = true;
+            }
+
+            ImGui.Spacing();
+
+            if (ImGui.Button("Enable All##detailVis"))
+            {
+                tab.DetailVisibleColumns = new HashSet<BarColumn>(Enum.GetValues<BarColumn>());
+                changed = true;
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Disable All##detailVis"))
+            {
+                tab.DetailVisibleColumns.Clear();
+                changed = true;
+            }
+
+            ImGui.Spacing();
+
+            foreach (var (catName, catColumns) in AppearanceTab.DetailCategories)
+            {
+                if (ImGui.TreeNodeEx(catName + "##detailVis", ImGuiTreeNodeFlags.DefaultOpen))
                 {
-                    mc.DoTApplicationMarkerSize = dotAppSize;
-                    changed = true;
+                    // Get or create ordered list for this section
+                    if (!tab.DetailSectionOrder.TryGetValue(catName, out var sectionOrder) || sectionOrder.Count == 0)
+                    {
+                        sectionOrder = new List<BarColumn>(catColumns);
+                        tab.DetailSectionOrder[catName] = sectionOrder;
+                    }
+
+                    // Ensure all columns from the default are present
+                    foreach (var col in catColumns)
+                    {
+                        if (!sectionOrder.Contains(col))
+                            sectionOrder.Add(col);
+                    }
+
+                    // Remove columns no longer in the default
+                    var validCols = new HashSet<BarColumn>(catColumns);
+                    sectionOrder.RemoveAll(c => !validCols.Contains(c));
+
+                    // Render ordered list with visibility toggle + arrow button reorder
+                    for (var i = 0; i < sectionOrder.Count; i++)
+                    {
+                        var col = sectionOrder[i];
+                        var label = DisplayTab.ColumnLabels.GetValueOrDefault(col, col.ToString());
+                        var enabled = tab.DetailVisibleColumns.Contains(col);
+
+                        ImGui.PushID($"detailOrd_{catName}_{i}");
+
+                        var canUp = i > 0;
+                        if (!canUp) ImGui.BeginDisabled();
+                        if (ImGui.ArrowButton("##up", ImGuiDir.Up))
+                        {
+                            (sectionOrder[i], sectionOrder[i - 1]) = (sectionOrder[i - 1], sectionOrder[i]);
+                            changed = true;
+                        }
+                        if (!canUp) ImGui.EndDisabled();
+
+                        ImGui.SameLine();
+
+                        var canDown = i < sectionOrder.Count - 1;
+                        if (!canDown) ImGui.BeginDisabled();
+                        if (ImGui.ArrowButton("##down", ImGuiDir.Down))
+                        {
+                            (sectionOrder[i], sectionOrder[i + 1]) = (sectionOrder[i + 1], sectionOrder[i]);
+                            changed = true;
+                        }
+                        if (!canDown) ImGui.EndDisabled();
+
+                        ImGui.SameLine();
+
+                        if (ImGui.Checkbox(label, ref enabled))
+                        {
+                            if (enabled)
+                                tab.DetailVisibleColumns.Add(col);
+                            else
+                                tab.DetailVisibleColumns.Remove(col);
+                            changed = true;
+                        }
+
+                        ImGui.PopID();
+                    }
+
+                    if (ImGui.Button($"Reset Order##{catName}"))
+                    {
+                        tab.DetailSectionOrder[catName] = new List<BarColumn>(catColumns);
+                        changed = true;
+                    }
+
+                    ImGui.TreePop();
                 }
             }
 
-            ImGui.EndPopup();
+            ImGui.Spacing();
+
+            ImGui.TextDisabled("Skill breakdown");
+
+            var showSkills = tab.DetailShowSkillBreakdown;
+            if (ImGui.Checkbox("Show skill breakdown##detailVis", ref showSkills))
+            {
+                tab.DetailShowSkillBreakdown = showSkills;
+                changed = true;
+            }
+
+            if (tab.DetailShowSkillBreakdown)
+            {
+                var maxSkills = tab.MaxSkillBreakdownCount;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderInt("Max skills shown (0 = all)##detailVis", ref maxSkills, 0, 30))
+                {
+                    tab.MaxSkillBreakdownCount = maxSkills;
+                    changed = true;
+                }
+            }
+        }
+
+        return changed;
+    }
+
+    private static readonly (string Name, BarColumn[] Columns)[] StatusBarCategories =
+    {
+        ("Dmg", new[] { BarColumn.Dps, BarColumn.Damage, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.MaxHitValue, BarColumn.DamageShield, BarColumn.RaidDps }),
+        ("Heal", new[] { BarColumn.Hps, BarColumn.Healed, BarColumn.InstantHps, BarColumn.MaxHealValue, BarColumn.OverhealAmount, BarColumn.RaidHps }),
+        ("D%", new[] { BarColumn.DamagePercent, BarColumn.DirectHit, BarColumn.Crit, BarColumn.CritDirectHit }),
+        ("H%", new[] { BarColumn.HealPercent, BarColumn.Overheal, BarColumn.CritHealPct }),
+        ("Taken", new[] { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.HealsTaken }),
+        ("Counts", new[] { BarColumn.Swings, BarColumn.Hits, BarColumn.Misses, BarColumn.HitRate, BarColumn.Deaths, BarColumn.Kills }),
+        ("Other", new[] { BarColumn.CombatantDuration, BarColumn.HealCount, BarColumn.BlockPct, BarColumn.ParryPct }),
+    };
+
+    private static bool DrawStatusBarMetrics(List<BarColumn> metrics)
+    {
+        var changed = false;
+
+        if (ImGui.BeginTabBar("##sb_cats"))
+        {
+            foreach (var (name, columns) in StatusBarCategories)
+            {
+                if (ImGui.BeginTabItem(name))
+                {
+                    foreach (var col in columns)
+                    {
+                        var label = DisplayTab.ColumnLabels.GetValueOrDefault(col, col.ToString());
+                        var enabled = metrics.Contains(col);
+                        if (ImGui.Checkbox($"{label}##sb_{col}", ref enabled))
+                        {
+                            if (enabled)
+                                metrics.Add(col);
+                            else
+                                metrics.Remove(col);
+                            changed = true;
+                        }
+                    }
+                    ImGui.EndTabItem();
+                }
+            }
+            ImGui.EndTabBar();
+        }
+
+        if (metrics.Count > 0)
+        {
+            ImGui.Spacing();
+            ImGui.TextDisabled("Order (drag to reorder)");
+            for (var i = 0; i < metrics.Count; i++)
+            {
+                var col = metrics[i];
+                var label = DisplayTab.ColumnLabels.GetValueOrDefault(col, col.ToString());
+                ImGui.Selectable($"{label}##sbord_{i}");
+                if (ImGui.IsItemActive() && !ImGui.IsItemHovered())
+                {
+                    var delta = ImGui.GetMouseDragDelta(ImGuiMouseButton.Left).Y;
+                    if (delta < -ImGui.GetTextLineHeightWithSpacing() * 0.5f && i > 0)
+                    {
+                        (metrics[i], metrics[i - 1]) = (metrics[i - 1], metrics[i]);
+                        ImGui.ResetMouseDragDelta(ImGuiMouseButton.Left);
+                        changed = true;
+                    }
+                    else if (delta > ImGui.GetTextLineHeightWithSpacing() * 0.5f && i < metrics.Count - 1)
+                    {
+                        (metrics[i], metrics[i + 1]) = (metrics[i + 1], metrics[i]);
+                        ImGui.ResetMouseDragDelta(ImGuiMouseButton.Left);
+                        changed = true;
+                    }
+                }
+            }
         }
 
         return changed;
@@ -524,7 +773,7 @@ public static class MeterTabsPage
 
         var btnRounding = config.TabButtonRounding;
         ImGui.SetNextItemWidth(150);
-        if (ImGui.SliderFloat("Button Rounding", ref btnRounding, 0f, 16f, "%.0f"))
+        if (ImGui.SliderFloat("Button Rounding", ref btnRounding, 0f, 16f, "%.1f"))
         {
             config.TabButtonRounding = btnRounding;
             changed = true;

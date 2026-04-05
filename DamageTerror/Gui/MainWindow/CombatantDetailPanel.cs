@@ -12,15 +12,20 @@ public class CombatantDetailPanel
     private readonly GraphDataTracker graphTracker;
     private readonly SkillTracker skillTracker;
     private int expandedIndex = -1;
+    private readonly HashSet<string> expandedSkills = new();
+    private readonly HashSet<string> hiddenLegendEntries = new(StringComparer.Ordinal);
     private bool wasActivelyUpdating;
     private double scrollXMin = double.NaN;
     private double scrollXMax = double.NaN;
 
-    private static readonly BarColumn[] DamageSection = { BarColumn.Dps, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.Damage, BarColumn.DamagePercent, BarColumn.MaxHit, BarColumn.DamageShield };
-    private static readonly BarColumn[] HealingSection = { BarColumn.Hps, BarColumn.InstantHps, BarColumn.Healed, BarColumn.HealPercent, BarColumn.Overheal, BarColumn.OverhealAmount, BarColumn.CritHealPct, BarColumn.MaxHeal, BarColumn.MaxHealWard, BarColumn.HealCount, BarColumn.AbsorbHeal };
-    private static readonly BarColumn[] HitStatSection = { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount };
+    private static readonly BarColumn[] DamageSection = { BarColumn.Dps, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.Damage, BarColumn.DamagePercent, BarColumn.MaxHit, BarColumn.MaxHitValue, BarColumn.DamageShield, BarColumn.RaidDps };
+    private static readonly BarColumn[] HealingSection = { BarColumn.Hps, BarColumn.InstantHps, BarColumn.Healed, BarColumn.HealPercent, BarColumn.Overheal, BarColumn.OverhealAmount, BarColumn.CritHealPct, BarColumn.MaxHeal, BarColumn.MaxHealValue, BarColumn.HealCount, BarColumn.RaidHps };
+    private static readonly BarColumn[] HitStatSection = { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses };
     private static readonly BarColumn[] DefenseSection = { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct, BarColumn.HealsTaken };
-    private static readonly BarColumn[] OtherSection = { BarColumn.Deaths, BarColumn.Kills, BarColumn.CombatantDuration, BarColumn.PowerDrain, BarColumn.PowerHeal };
+    private static readonly BarColumn[] OtherSection = { BarColumn.Deaths, BarColumn.Kills, BarColumn.CombatantDuration, BarColumn.PowerHeal };
+#if DEBUG
+    private static readonly BarColumn[] UnknownSection = { BarColumn.PowerDrain, BarColumn.AbsorbHeal, BarColumn.MaxHealWard };
+#endif
 
     private EncounterSnapshot? currentSnapshot;
     private bool isLive;
@@ -66,29 +71,39 @@ public class CombatantDetailPanel
         currentSnapshot = snapshot;
         this.isLive = isLive;
 
-        var vis = config.DetailVisibleColumns;
+        var vis = activeTab?.DetailVisibleColumns ?? config.DetailVisibleColumns;
         var lc = config.DetailLabelColor;
+
+        var panelStart = ImGui.GetCursorScreenPos();
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.ChannelsSplit(2);
+        drawList.ChannelsSetCurrent(1);
+
         ImGui.Indent(config.DetailIndent);
 
         var prevScale = ImGui.GetFont().Scale;
         ImGui.GetFont().Scale = config.GetFontScale(config.DetailFontSize);
         ImGui.PushFont(ImGui.GetFont());
 
-        if (ImGui.BeginTabBar($"##detailTabs_{index}", ImGuiTabBarFlags.Reorderable))
+        var showDetailsTab = activeTab?.DetailShowDetailsTab ?? config.DetailShowDetailsTab;
+        var showSkillsTab = activeTab?.DetailShowSkillsTab ?? config.DetailShowSkillsTab;
+        var showGraphTab = activeTab?.DetailShowGraphTab ?? config.DetailShowGraphTab;
+
+        if (ImGui.BeginTabBar("##detailTabs", ImGuiTabBarFlags.Reorderable))
         {
-            if (ImGui.BeginTabItem($"Details##{index}"))
+            if (showDetailsTab && ImGui.BeginTabItem($"Details##detail"))
             {
-                DrawDetailsTab(combatant, index, vis, lc);
+                DrawDetailsTab(combatant, index, vis, lc, activeTab);
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem($"Skills##{index}"))
+            if (showSkillsTab && ImGui.BeginTabItem($"Skills##detail"))
             {
-                DrawSkillsTab(combatant, index);
+                DrawSkillsTab(combatant, index, activeTab);
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem($"Graph##{index}"))
+            if (showGraphTab && ImGui.BeginTabItem($"Graph##detail"))
             {
                 DrawGraphTab(combatant, index, activeTab);
                 ImGui.EndTabItem();
@@ -101,6 +116,12 @@ public class CombatantDetailPanel
         ImGui.PopFont();
 
         ImGui.Unindent(config.DetailIndent);
+
+        var panelEnd = new Vector2(panelStart.X + ImGui.GetContentRegionAvail().X + config.DetailIndent, ImGui.GetCursorScreenPos().Y);
+        drawList.ChannelsSetCurrent(0);
+        drawList.AddRectFilled(panelStart, panelEnd, ImGui.ColorConvertFloat4ToU32(config.DetailBackgroundColor));
+        drawList.ChannelsMerge();
+
         ImGui.Spacing();
     }
 
@@ -142,9 +163,7 @@ public class CombatantDetailPanel
         ImGui.Spacing();
 
         var regionW = ImGui.GetContentRegionAvail().X;
-        var graphH = config.GraphAutoHeight
-            ? Math.Max(60f, ImGui.GetContentRegionAvail().Y - ImGui.GetFrameHeightWithSpacing())
-            : config.GraphHeight;
+        var graphH = config.GraphHeight;
         var thickness = config.GraphLineThickness;
 
         var prevGraphScale = ImGui.GetFont().Scale;
@@ -177,17 +196,6 @@ public class CombatantDetailPanel
         if (!config.GraphShowXAxisLabels)
             xAxisFlags |= ImPlotAxisFlags.NoTickLabels;
 
-        var yAxisFlags = ImPlotAxisFlags.AutoFit;
-        if (!config.GraphShowGrid)
-            yAxisFlags |= ImPlotAxisFlags.NoGridLines;
-        if (!config.GraphShowYAxisLabels)
-            yAxisFlags |= ImPlotAxisFlags.NoTickLabels;
-
-        if (config.GraphShowGrid)
-        {
-            ImPlot.PushStyleColor(ImPlotCol.AxisGrid, config.GraphGridColor);
-        }
-
         var maxTime = times[^1];
         if (maxTime <= 0f) maxTime = 1f;
         var maxVal = 0f;
@@ -196,6 +204,17 @@ public class CombatantDetailPanel
             if (dpsVals != null && dpsVals[i] > maxVal) maxVal = dpsVals[i];
             if (hpsVals != null && hpsVals[i] > maxVal) maxVal = hpsVals[i];
             if (dtpsVals != null && dtpsVals[i] > maxVal) maxVal = dtpsVals[i];
+        }
+
+        var yAxisFlags = maxVal > 0f ? ImPlotAxisFlags.AutoFit : ImPlotAxisFlags.None;
+        if (!config.GraphShowGrid)
+            yAxisFlags |= ImPlotAxisFlags.NoGridLines;
+        if (!config.GraphShowYAxisLabels)
+            yAxisFlags |= ImPlotAxisFlags.NoTickLabels;
+
+        if (config.GraphShowGrid)
+        {
+            ImPlot.PushStyleColor(ImPlotCol.AxisGrid, config.GraphGridColor);
         }
 
         if (ImPlot.BeginPlot($"##DetailGraph_{index}", new Vector2(regionW, graphH), plotFlags))
@@ -236,8 +255,13 @@ public class CombatantDetailPanel
 
             // Custom Y-axis ticks with K/M abbreviations, skipping 0
             if (maxVal > 0f) GraphRenderHelper.SetupAbbreviatedYTicks(maxVal, config.GraphYAxisHeadroom, config.GraphYAxisTickCount);
+            else ImPlot.SetupAxisLimits(ImAxis.Y1, 0, 1, ImPlotCond.Always);
 
             var labelOffset = new Vector2(config.GraphLabelOffsetX, config.GraphLabelOffsetY);
+
+            var dpsHidden = hiddenLegendEntries.Contains("iDPS");
+            var hpsHidden = hiddenLegendEntries.Contains("iHPS");
+            var dtpsHidden = hiddenLegendEntries.Contains("iDTPS");
 
             if (dpsVals != null)
             {
@@ -247,7 +271,7 @@ public class CombatantDetailPanel
                 ImPlot.PopStyleVar();
                 ImPlot.PopStyleColor();
 
-                if (config.GraphShowLabels)
+                if (config.GraphShowLabels && !dpsHidden)
                 {
                     var lastVal = dpsVals[^1];
                     ImPlot.PushStyleColor(ImPlotCol.InlayText, config.GraphDpsColor);
@@ -264,7 +288,7 @@ public class CombatantDetailPanel
                 ImPlot.PopStyleVar();
                 ImPlot.PopStyleColor();
 
-                if (config.GraphShowLabels)
+                if (config.GraphShowLabels && !hpsHidden)
                 {
                     var lastVal = hpsVals[^1];
                     ImPlot.PushStyleColor(ImPlotCol.InlayText, config.GraphHpsColor);
@@ -281,7 +305,7 @@ public class CombatantDetailPanel
                 ImPlot.PopStyleVar();
                 ImPlot.PopStyleColor();
 
-                if (config.GraphShowLabels)
+                if (config.GraphShowLabels && !dtpsHidden)
                 {
                     var lastVal = dtpsVals[^1];
                     ImPlot.PushStyleColor(ImPlotCol.InlayText, config.GraphDtpsColor);
@@ -290,33 +314,33 @@ public class CombatantDetailPanel
                 }
             }
 
-            // ── Skill use markers (per-metric, using active tab config) ──
-            var dpsMc = activeTab?.DpsMarkers;
-            var hpsMc = activeTab?.HpsMarkers;
-            var dtpsMc = activeTab?.DtpsMarkers;
+            // ── Skill use markers (per-metric, using detail config) ──
+            var dpsMc = config.DetailDpsMarkers;
+            var hpsMc = config.DetailHpsMarkers;
+            var dtpsMc = config.DetailDtpsMarkers;
 
             List<SkillUseEvent>? sourceEvents = null;
-            if ((dpsMc?.ShowMarkers == true && dpsVals != null)
-                || (hpsMc?.ShowMarkers == true && hpsVals != null))
+            if ((dpsMc.ShowMarkers && dpsVals != null)
+                || (hpsMc.ShowMarkers && hpsVals != null))
             {
                 sourceEvents = GraphRenderHelper.GetSourceEvents(isLive, combatant.Name, skillTracker, currentSnapshot);
             }
 
-            if (dpsMc?.ShowMarkers == true && dpsVals != null && sourceEvents != null)
+            if (dpsMc.ShowMarkers && dpsVals != null && !dpsHidden && sourceEvents != null)
             {
                 var filtered = sourceEvents.Where(e => !e.IsHeal).ToList();
                 if (filtered.Count > 0)
                     GraphRenderHelper.PlotSkillMarkers(filtered, times, dpsVals, $"detail_{index}_dps", dpsMc);
             }
 
-            if (hpsMc?.ShowMarkers == true && hpsVals != null && sourceEvents != null)
+            if (hpsMc.ShowMarkers && hpsVals != null && !hpsHidden && sourceEvents != null)
             {
                 var filtered = sourceEvents.Where(e => e.IsHeal).ToList();
                 if (filtered.Count > 0)
                     GraphRenderHelper.PlotSkillMarkers(filtered, times, hpsVals, $"detail_{index}_hps", hpsMc);
             }
 
-            if (dtpsMc?.ShowMarkers == true && dtpsVals != null)
+            if (dtpsMc.ShowMarkers && dtpsVals != null && !dtpsHidden)
             {
                 var dtEvents = GraphRenderHelper.GetDamageTakenEvents(isLive, combatant.Name, skillTracker, currentSnapshot);
 
@@ -325,9 +349,9 @@ public class CombatantDetailPanel
             }
 
             // Skill marker tooltip — find nearest marker across all metrics on hover
-            var anyMarkersEnabled = dpsMc?.ShowMarkers == true
-                                 || hpsMc?.ShowMarkers == true
-                                 || dtpsMc?.ShowMarkers == true;
+            var anyMarkersEnabled = dpsMc.ShowMarkers
+                                 || hpsMc.ShowMarkers
+                                 || dtpsMc.ShowMarkers;
             if (anyMarkersEnabled && ImPlot.IsPlotHovered())
             {
                 var mouse = ImPlot.GetPlotMousePos();
@@ -352,15 +376,15 @@ public class CombatantDetailPanel
                     }
                 }
 
-                if (dpsMc?.ShowMarkers == true && sourceEvents != null)
+                if (dpsMc.ShowMarkers && !dpsHidden && sourceEvents != null)
                     foreach (var ev in sourceEvents.Where(e => !e.IsHeal))
                         FindNearestDetail(ev, times, dpsVals, dpsMc);
 
-                if (hpsMc?.ShowMarkers == true && sourceEvents != null)
+                if (hpsMc.ShowMarkers && !hpsHidden && sourceEvents != null)
                     foreach (var ev in sourceEvents.Where(e => e.IsHeal))
                         FindNearestDetail(ev, times, hpsVals, hpsMc);
 
-                if (dtpsMc?.ShowMarkers == true && dtpsVals != null)
+                if (dtpsMc.ShowMarkers && !dtpsHidden && dtpsVals != null)
                 {
                     var dtEventsForTt = GraphRenderHelper.GetDamageTakenEvents(isLive, combatant.Name, skillTracker, currentSnapshot);
 
@@ -383,6 +407,16 @@ public class CombatantDetailPanel
                             ImGui.TextColored(bestMc.CritMarkerColor, "Critical !");
                     }
                     ImGui.EndTooltip();
+                }
+            }
+
+            // Detect legend entry clicks to track hidden state
+            foreach (var label in new[] { "iDPS", "iHPS", "iDTPS" })
+            {
+                if (ImPlot.IsLegendEntryHovered(label) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                {
+                    if (!hiddenLegendEntries.Remove(label))
+                        hiddenLegendEntries.Add(label);
                 }
             }
 
@@ -457,29 +491,31 @@ public class CombatantDetailPanel
 
 
 
-    private void DrawSkillsTab(CombatantEntry combatant, int index)
+    private void DrawSkillsTab(CombatantEntry combatant, int index, MeterTab? activeTab)
     {
-        if (config.DetailShowSkillBreakdown && combatant.Skills.Count > 0)
+        var showBreakdown = activeTab?.DetailShowSkillBreakdown ?? config.DetailShowSkillBreakdown;
+
+        if (showBreakdown && combatant.Skills.Count > 0)
         {
             ImGui.Spacing();
             if (PersistentTreeNode("Damage Skills", index.ToString()))
             {
-                DrawSkillTable(combatant.Skills, index, "dmg", config.SkillDamageFillColor);
+                DrawSkillTable(combatant.Skills, index, "dmg", config.SkillDamageFillColor, activeTab);
                 ImGui.TreePop();
             }
         }
 
-        if (config.DetailShowSkillBreakdown && combatant.HealingSkills.Count > 0)
+        if (showBreakdown && combatant.HealingSkills.Count > 0)
         {
             ImGui.Spacing();
             if (PersistentTreeNode("Healing Skills", index.ToString()))
             {
-                DrawSkillTable(combatant.HealingSkills, index, "heal", config.SkillHealingFillColor);
+                DrawSkillTable(combatant.HealingSkills, index, "heal", config.SkillHealingFillColor, activeTab);
                 ImGui.TreePop();
             }
         }
 
-        if (!config.DetailShowSkillBreakdown || (combatant.Skills.Count == 0 && combatant.HealingSkills.Count == 0))
+        if (!showBreakdown || (combatant.Skills.Count == 0 && combatant.HealingSkills.Count == 0))
         {
             ImGui.Spacing();
             ImGui.TextDisabled("No skill data available.");
@@ -487,185 +523,184 @@ public class CombatantDetailPanel
         }
     }
 
-    private void DrawDetailsTab(CombatantEntry combatant, int index, HashSet<BarColumn> vis, Vector4 lc)
+    internal const string SectionDamage = "Damage";
+    internal const string SectionHealing = "Healing";
+    internal const string SectionHitStats = "Hit Statistics";
+    internal const string SectionDefense = "Defense";
+    internal const string SectionOther = "Other";
+#if DEBUG
+    internal const string SectionUnknown = "Unknown";
+#endif
+
+    internal static readonly (string Name, BarColumn[] Columns)[] Sections =
+    {
+        (SectionDamage, DamageSection),
+        (SectionHealing, HealingSection),
+        (SectionHitStats, HitStatSection),
+        (SectionDefense, DefenseSection),
+        (SectionOther, OtherSection),
+#if DEBUG
+        (SectionUnknown, UnknownSection),
+#endif
+    };
+
+    private void DrawDetailsTab(CombatantEntry combatant, int index, HashSet<BarColumn> vis, Vector4 lc, MeterTab? activeTab)
     {
         ImGui.Spacing();
 
-        // ── Damage ──
-        if (HasAny(vis, DamageSection))
+        if (!ImGui.BeginTabBar($"##detailSections_{index}", ImGuiTabBarFlags.Reorderable))
+            return;
+
+        foreach (var (sectionName, defaultOrder) in Sections)
         {
-            if (PersistentTreeNode("Damage", index.ToString()))
-            {
-                DrawRow(lc,
-                    (vis.Contains(BarColumn.Dps), "DPS", Fmt(combatant.EncDps)),
-                    (vis.Contains(BarColumn.InstantDps), "iDPS", Fmt(combatant.InstantDps)),
-                    (vis.Contains(BarColumn.PeakDps), "Peak", Fmt(combatant.PeakDps)));
+            if (!HasAny(vis, defaultOrder))
+                continue;
 
-                if (vis.Contains(BarColumn.Damage))
-                {
-                    var dmg = Fmt(combatant.Damage);
-                    if (vis.Contains(BarColumn.DamagePercent))
-                        dmg += $"  ({combatant.DamagePercent})";
-                    DrawRow(lc, (true, "Total", dmg));
-                }
-                else if (vis.Contains(BarColumn.DamagePercent))
-                {
-                    DrawRow(lc, (true, "Dmg %", combatant.DamagePercent));
-                }
+            var tabLabel = sectionName == SectionHitStats ? "Hit Stats" : sectionName;
+            if (!ImGui.BeginTabItem($"{tabLabel}##{index}"))
+                continue;
 
-                if (vis.Contains(BarColumn.MaxHit) && !string.IsNullOrEmpty(combatant.MaxHit))
-                    DrawRow(lc, (true, "Max Hit", $"{combatant.MaxHit} ({Fmt(combatant.MaxHitDamage)})"));
-
-                if (vis.Contains(BarColumn.DamageShield))
-                    DrawRow(lc, (true, "Shield", Fmt(combatant.DamageShield)));
-
-                if (config.DetailShowDpsTrend && (combatant.Last10Dps > 0 || combatant.Last30Dps > 0 || combatant.Last60Dps > 0))
-                {
-                    ImGui.TextColored(lc, "DPS 10s/30s/60s:");
-                    ImGui.SameLine();
-                    ImGui.TextUnformatted($"{Fmt(combatant.Last10Dps)} / {Fmt(combatant.Last30Dps)} / {Fmt(combatant.Last60Dps)}");
-                }
-
-                ImGui.TreePop();
-            }
+            var order = GetSectionOrder(sectionName, defaultOrder, activeTab);
+            DrawOrderedSection(order, combatant, vis, lc);
+            ImGui.EndTabItem();
         }
 
-        // ── Healing ──
-        if (HasAny(vis, HealingSection))
+        ImGui.EndTabBar();
+    }
+
+    private void DrawOrderedSection(List<BarColumn> order, CombatantEntry combatant, HashSet<BarColumn> vis, Vector4 lc)
+    {
+        var rowCount = 0;
+        var first = true;
+        foreach (var col in order)
         {
-            if (PersistentTreeNode("Healing", index.ToString()))
+            var data = GetDetailColumnData(col, combatant, vis);
+            if (data == null)
+                continue;
+
+            var (label, value) = data.Value;
+
+            if (rowCount == 3)
             {
-                DrawRow(lc,
-                    (vis.Contains(BarColumn.Hps), "HPS", Fmt(combatant.EncHps)),
-                    (vis.Contains(BarColumn.InstantHps), "iHPS", Fmt(combatant.InstantHps)));
-
-                if (vis.Contains(BarColumn.Healed))
-                {
-                    var heal = Fmt(combatant.Healed);
-                    if (vis.Contains(BarColumn.HealPercent))
-                        heal += $"  ({combatant.HealedPercent})";
-                    DrawRow(lc, (true, "Total", heal));
-                }
-                else if (vis.Contains(BarColumn.HealPercent))
-                {
-                    DrawRow(lc, (true, "Heal %", combatant.HealedPercent));
-                }
-
-                DrawRow(lc,
-                    (vis.Contains(BarColumn.Overheal), "Overheal", FmtPct(combatant.OverhealPct)),
-                    (vis.Contains(BarColumn.OverhealAmount), "OH Amt", Fmt(combatant.OverhealAmount)));
-
-                DrawRow(lc,
-                    (vis.Contains(BarColumn.CritHealPct), "Crit Heal", FmtPct(combatant.CritHealPct)),
-                    (vis.Contains(BarColumn.HealCount), "Heals", combatant.HealCount.ToString()));
-
-                if (vis.Contains(BarColumn.MaxHeal) && !string.IsNullOrEmpty(combatant.MaxHeal))
-                    DrawRow(lc, (true, "Max Heal", $"{combatant.MaxHeal} ({Fmt(combatant.MaxHealAmount)})"));
-
-                if (vis.Contains(BarColumn.MaxHealWard) && !string.IsNullOrEmpty(combatant.MaxHealWardName))
-                    DrawRow(lc, (true, "Max Ward", $"{combatant.MaxHealWardName} ({Fmt(combatant.MaxHealWardAmount)})"));
-
-                if (vis.Contains(BarColumn.AbsorbHeal))
-                    DrawRow(lc, (true, "Absorb", Fmt(combatant.AbsorbHeal)));
-
-                ImGui.TreePop();
+                rowCount = 0;
+                first = true;
             }
-        }
 
-        // ── Hit Statistics ──
-        if (HasAny(vis, HitStatSection))
+            if (col == BarColumn.Deaths)
+            {
+                if (!first) ImGui.SameLine();
+                ImGui.TextColored(lc, first ? "Deaths:" : "  Deaths:");
+                ImGui.SameLine();
+                if (combatant.Deaths > 0)
+                    ImGui.TextColored(config.DetailDeathColor, value);
+                else
+                    ImGui.TextUnformatted("0");
+            }
+            else if (first)
+            {
+                ImGui.TextColored(lc, $"{label}:");
+                ImGui.SameLine();
+                ImGui.TextUnformatted(value);
+            }
+            else
+            {
+                ImGui.SameLine();
+                ImGui.TextColored(lc, $"  {label}:");
+                ImGui.SameLine();
+                ImGui.TextUnformatted(value);
+            }
+
+            first = false;
+            rowCount++;
+        }
+    }
+
+    private (string label, string value)? GetDetailColumnData(BarColumn col, CombatantEntry c, HashSet<BarColumn> vis)
+    {
+        if (!vis.Contains(col))
+            return null;
+
+        return col switch
         {
-            if (PersistentTreeNode("Hit Statistics", index.ToString()))
-            {
-                DrawRow(lc,
-                    (vis.Contains(BarColumn.Crit), "Crit", FmtPct(combatant.CritPct)),
-                    (vis.Contains(BarColumn.DirectHit), "DH", FmtPct(combatant.DirectHitPct)),
-                    (vis.Contains(BarColumn.CritDirectHit), "CDH", FmtPct(combatant.CritDirectHitPct)));
+            // Damage
+            BarColumn.Dps => ("DPS", Fmt(c.EncDps)),
+            BarColumn.InstantDps => ("iDPS", Fmt(c.InstantDps)),
+            BarColumn.PeakDps => ("Peak", Fmt(c.PeakDps)),
+            BarColumn.Damage => ("Total", Fmt(c.Damage)),
+            BarColumn.DamagePercent => ("Dmg %", c.DamagePercent),
+            BarColumn.MaxHit when !string.IsNullOrEmpty(c.MaxHit) => ("Max Hit", c.MaxHitSkillName),
+            BarColumn.MaxHitValue when c.MaxHitDamage > 0 => ("Max Hit Value", Fmt(c.MaxHitDamage)),
+            BarColumn.DamageShield => ("Shield", Fmt(c.DamageShield)),
+            BarColumn.RaidDps => ("Group DPS", Fmt(c.RaidDps)),
 
-                if (vis.Contains(BarColumn.HitRate))
-                    DrawRow(lc, (true, "Hit Rate", FmtPct(combatant.HitRate)));
+            // Healing
+            BarColumn.Hps => ("HPS", Fmt(c.EncHps)),
+            BarColumn.InstantHps => ("iHPS", Fmt(c.InstantHps)),
+            BarColumn.Healed => ("Total", Fmt(c.Healed)),
+            BarColumn.HealPercent => ("Heal %", c.HealedPercent),
+            BarColumn.Overheal => ("Overheal", FmtPct(c.OverhealPct)),
+            BarColumn.OverhealAmount => ("OH Amt", Fmt(c.OverhealAmount)),
+            BarColumn.CritHealPct => ("Crit Heal", FmtPct(c.CritHealPct)),
+            BarColumn.MaxHeal when !string.IsNullOrEmpty(c.MaxHeal) => ("Max Heal", c.MaxHealSkillName),
+            BarColumn.MaxHealValue when c.MaxHealAmount > 0 => ("Max Heal Value", Fmt(c.MaxHealAmount)),
+            BarColumn.HealCount => ("Heals", c.HealCount.ToString()),
+            BarColumn.RaidHps => ("Group HPS", Fmt(c.RaidHps)),
 
-                DrawRow(lc,
-                    (vis.Contains(BarColumn.Swings), "Swings", combatant.Swings.ToString()),
-                    (vis.Contains(BarColumn.Hits), "Hits", combatant.Hits.ToString()),
-                    (vis.Contains(BarColumn.Misses), "Misses", combatant.Misses.ToString()));
+            // Hit Stats
+            BarColumn.Crit => ("Crit", FmtPct(c.CritPct)),
+            BarColumn.DirectHit => ("DH", FmtPct(c.DirectHitPct)),
+            BarColumn.CritDirectHit => ("CDH", FmtPct(c.CritDirectHitPct)),
+            BarColumn.CritHitCount => ("Crit#", c.CritHitCount.ToString()),
+            BarColumn.DirectHitCount => ("DH#", c.DirectHitCount.ToString()),
+            BarColumn.CritDirectHitCount => ("CDH#", c.CritDirectHitCount.ToString()),
+            BarColumn.HitRate => ("Hit Rate", FmtPct(c.HitRate)),
+            BarColumn.Swings => ("Swings", c.Swings.ToString()),
+            BarColumn.Hits => ("Hits", c.Hits.ToString()),
+            BarColumn.Misses => ("Misses", c.Misses.ToString()),
 
-                DrawRow(lc,
-                    (vis.Contains(BarColumn.CritHitCount), "Crit#", combatant.CritHitCount.ToString()),
-                    (vis.Contains(BarColumn.DirectHitCount), "DH#", combatant.DirectHitCount.ToString()),
-                    (vis.Contains(BarColumn.CritDirectHitCount), "CDH#", combatant.CritDirectHitCount.ToString()));
+            // Defense
+            BarColumn.DamageTaken => ("Taken", Fmt(c.DamageTaken)),
+            BarColumn.DamageTakenPercent => ("Taken %", c.DamageTakenPercent),
+            BarColumn.BlockPct => ("Block", FmtPct(c.BlockPct)),
+            BarColumn.ParryPct => ("Parry", FmtPct(c.ParryPct)),
+            BarColumn.HealsTaken => ("Heals Taken", Fmt(c.HealsTaken)),
 
-                ImGui.TreePop();
-            }
-        }
+            // Other
+            BarColumn.Deaths => ("Deaths", c.Deaths.ToString()),
+            BarColumn.Kills => ("Kills", c.Kills.ToString()),
+            BarColumn.CombatantDuration => ("Duration", c.CombatantDuration),
+            BarColumn.PowerHeal => ("MP Recovery", Fmt(c.PowerHeal)),
 
-        // ── Defense ──
-        if (HasAny(vis, DefenseSection))
+            // Debug
+            BarColumn.PowerDrain => ("MP Drain", Fmt(c.PowerDrain)),
+            BarColumn.AbsorbHeal => ("Absorb", Fmt(c.AbsorbHeal)),
+            BarColumn.MaxHealWard when !string.IsNullOrEmpty(c.MaxHealWardName) => ("Max Ward", $"{c.MaxHealWardName} ({Fmt(c.MaxHealWardAmount)})"),
+
+            _ => null,
+        };
+    }
+
+    private static List<BarColumn> GetSectionOrder(string sectionName, BarColumn[] defaultOrder, MeterTab? activeTab)
+    {
+        if (activeTab?.DetailSectionOrder != null
+            && activeTab.DetailSectionOrder.TryGetValue(sectionName, out var order)
+            && order.Count > 0)
         {
-            if (PersistentTreeNode("Defense", index.ToString()))
+            var valid = new HashSet<BarColumn>(defaultOrder);
+            var result = new List<BarColumn>();
+            foreach (var col in order)
             {
-                if (vis.Contains(BarColumn.DamageTaken))
-                {
-                    var taken = Fmt(combatant.DamageTaken);
-                    if (vis.Contains(BarColumn.DamageTakenPercent))
-                        taken += $"  ({combatant.DamageTakenPercent})";
-                    DrawRow(lc, (true, "Taken", taken));
-                }
-                else if (vis.Contains(BarColumn.DamageTakenPercent))
-                {
-                    DrawRow(lc, (true, "Taken %", combatant.DamageTakenPercent));
-                }
-
-                DrawRow(lc,
-                    (vis.Contains(BarColumn.BlockPct), "Block", FmtPct(combatant.BlockPct)),
-                    (vis.Contains(BarColumn.ParryPct), "Parry", FmtPct(combatant.ParryPct)));
-
-                if (vis.Contains(BarColumn.HealsTaken))
-                    DrawRow(lc, (true, "Heals Taken", Fmt(combatant.HealsTaken)));
-
-                ImGui.TreePop();
+                if (valid.Contains(col))
+                    result.Add(col);
             }
-        }
-
-        // ── Other ──
-        if (HasAny(vis, OtherSection))
-        {
-            if (PersistentTreeNode("Other", index.ToString()))
+            foreach (var col in defaultOrder)
             {
-                var deathsVis = vis.Contains(BarColumn.Deaths);
-                var killsVis = vis.Contains(BarColumn.Kills);
-                if (deathsVis || killsVis)
-                {
-                    var first = true;
-                    if (deathsVis)
-                    {
-                        ImGui.TextColored(lc, "Deaths:");
-                        ImGui.SameLine();
-                        if (combatant.Deaths > 0)
-                            ImGui.TextColored(config.DetailDeathColor, combatant.Deaths.ToString());
-                        else
-                            ImGui.TextUnformatted("0");
-                        first = false;
-                    }
-                    if (killsVis)
-                    {
-                        if (!first) ImGui.SameLine();
-                        if (!first) { ImGui.TextColored(lc, "  Kills:"); } else { ImGui.TextColored(lc, "Kills:"); }
-                        ImGui.SameLine();
-                        ImGui.TextUnformatted(combatant.Kills.ToString());
-                    }
-                }
-
-                if (vis.Contains(BarColumn.CombatantDuration))
-                    DrawRow(lc, (true, "Duration", combatant.CombatantDuration));
-
-                DrawRow(lc,
-                    (vis.Contains(BarColumn.PowerDrain), "MP Drain", Fmt(combatant.PowerDrain)),
-                    (vis.Contains(BarColumn.PowerHeal), "Power Heal", Fmt(combatant.PowerHeal)));
-
-                ImGui.TreePop();
+                if (!result.Contains(col))
+                    result.Add(col);
             }
+            return result;
         }
+        return new List<BarColumn>(defaultOrder);
     }
 
     private string Fmt(double value) => ValueFormatter.Format(value, config);
@@ -701,7 +736,7 @@ public class CombatantDetailPanel
         }
     }
 
-    private void DrawSkillTable(List<SkillEntry> skills, int index, string idPrefix, Vector4 fillColorVec)
+    private void DrawSkillTable(List<SkillEntry> skills, int index, string idPrefix, Vector4 fillColorVec, MeterTab? activeTab)
     {
         var availWidth = ImGui.GetContentRegionAvail().X;
         var skillBarHeight = config.SkillRowHeight;
@@ -718,7 +753,8 @@ public class CombatantDetailPanel
         ImGui.GetFont().Scale = config.GetFontScale(config.SkillFontSize);
         ImGui.PushFont(ImGui.GetFont());
 
-        var topSkills = config.MaxSkillBreakdownCount > 0 ? skills.Take(config.MaxSkillBreakdownCount).ToList() : skills;
+        var maxCount = activeTab?.MaxSkillBreakdownCount ?? config.MaxSkillBreakdownCount;
+        var topSkills = maxCount > 0 ? skills.Take(maxCount).ToList() : skills;
         var headerColor = ImGui.ColorConvertFloat4ToU32(config.SkillHeaderTextColor);
         var colPad = config.SkillColumnPadding;
 
@@ -739,27 +775,43 @@ public class CombatantDetailPanel
             colCdhW = Math.Max(colCdhW, ImGui.CalcTextSize(ValueFormatter.FormatPercent(s.CritDirectHitPct, config.PercentDecimalPlaces)).X);
         }
 
+        var textHeight = ImGui.CalcTextSize("X").Y;
+        var textYOff = (skillBarHeight - textHeight) * 0.5f;
+
         ImGui.InvisibleButton($"##{idPrefix}_hdr_{index}", new Vector2(availWidth, skillBarHeight));
         var hdrMin = ImGui.GetItemRectMin();
         var hdrMax = ImGui.GetItemRectMax();
-        drawList.AddText(new Vector2(hdrMin.X + 3, hdrMin.Y), headerColor, "Skill");
+        drawList.AddText(new Vector2(hdrMin.X + 3, hdrMin.Y + textYOff), headerColor, "Skill");
 
         var hdrX = hdrMax.X - 3;
-        hdrX -= colHitsW; drawList.AddText(new Vector2(hdrX + colHitsW - ImGui.CalcTextSize("Hits").X, hdrMin.Y), headerColor, "Hits"); hdrX -= colPad;
-        hdrX -= colCdhW; drawList.AddText(new Vector2(hdrX + colCdhW - ImGui.CalcTextSize("!!!").X, hdrMin.Y), headerColor, "!!!"); hdrX -= colPad;
-        hdrX -= colDhW; drawList.AddText(new Vector2(hdrX + colDhW - ImGui.CalcTextSize("!!").X, hdrMin.Y), headerColor, "!!"); hdrX -= colPad;
-        hdrX -= colCritW; drawList.AddText(new Vector2(hdrX + colCritW - ImGui.CalcTextSize("!").X, hdrMin.Y), headerColor, "!"); hdrX -= colPad;
-        hdrX -= colPctW; drawList.AddText(new Vector2(hdrX + colPctW - ImGui.CalcTextSize("%").X, hdrMin.Y), headerColor, "%"); hdrX -= colPad;
-        hdrX -= colValW; drawList.AddText(new Vector2(hdrX + colValW - ImGui.CalcTextSize("Amount").X, hdrMin.Y), headerColor, "Amount");
+        hdrX -= colHitsW; drawList.AddText(new Vector2(hdrX + (colHitsW - ImGui.CalcTextSize("Hits").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "Hits"); hdrX -= colPad;
+        hdrX -= colCdhW; drawList.AddText(new Vector2(hdrX + (colCdhW - ImGui.CalcTextSize("!!!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!!!"); hdrX -= colPad;
+        hdrX -= colDhW; drawList.AddText(new Vector2(hdrX + (colDhW - ImGui.CalcTextSize("!!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!!"); hdrX -= colPad;
+        hdrX -= colCritW; drawList.AddText(new Vector2(hdrX + (colCritW - ImGui.CalcTextSize("!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!"); hdrX -= colPad;
+        hdrX -= colPctW; drawList.AddText(new Vector2(hdrX + (colPctW - ImGui.CalcTextSize("%").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "%"); hdrX -= colPad;
+        hdrX -= colValW; drawList.AddText(new Vector2(hdrX + (colValW - ImGui.CalcTextSize("Amount").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "Amount");
 
         var skillIdx = 0;
         foreach (var skill in topSkills)
         {
             var barFraction = maxSkillVal > 0 ? (float)skill.TotalDamage / maxSkillVal : 0f;
+            var hasSubEntries = skill.SubEntries != null && skill.SubEntries.Count > 0;
+            var skillKey = $"{idPrefix}_{index}_{skill.Name}";
+            var isExpanded = hasSubEntries && expandedSkills.Contains(skillKey);
 
             ImGui.InvisibleButton($"##{idPrefix}_{index}_{skillIdx}", new Vector2(availWidth, skillBarHeight));
             var min = ImGui.GetItemRectMin();
             var max = ImGui.GetItemRectMax();
+
+            // Toggle expansion on click if skill has sub-entries
+            if (hasSubEntries && ImGui.IsItemClicked())
+            {
+                if (isExpanded)
+                    expandedSkills.Remove(skillKey);
+                else
+                    expandedSkills.Add(skillKey);
+                isExpanded = !isExpanded;
+            }
 
             drawList.AddRectFilled(min, max, bgColor, skillRounding);
             var barColor = skill.DamageType switch
@@ -769,21 +821,76 @@ public class CombatantDetailPanel
                     _ => fillColor,
                 };
             drawList.AddRectFilled(min, new Vector2(min.X + availWidth * barFraction, max.Y), barColor, skillRounding);
-            drawList.AddText(new Vector2(min.X + 3, min.Y), textColor, skill.Name);
+
+            // Draw expand indicator for skills with sub-entries
+            var nameX = min.X + 3;
+            if (hasSubEntries)
+            {
+                var arrow = isExpanded ? "v " : "> ";
+                drawList.AddText(new Vector2(nameX, min.Y + textYOff), textColor, arrow);
+                nameX += ImGui.CalcTextSize(arrow).X;
+            }
+            drawList.AddText(new Vector2(nameX, min.Y + textYOff), textColor, skill.Name);
 
             var x = max.X - 3;
             var hitsText = $"x{skill.HitCount}";
-            x -= colHitsW; drawList.AddText(new Vector2(x + colHitsW - ImGui.CalcTextSize(hitsText).X, min.Y), textColor, hitsText); x -= colPad;
+            x -= colHitsW; drawList.AddText(new Vector2(x + (colHitsW - ImGui.CalcTextSize(hitsText).X) * 0.5f, min.Y + textYOff), textColor, hitsText); x -= colPad;
             var cdhText = ValueFormatter.FormatPercent(skill.CritDirectHitPct, config.PercentDecimalPlaces);
-            x -= colCdhW; drawList.AddText(new Vector2(x + colCdhW - ImGui.CalcTextSize(cdhText).X, min.Y), textColor, cdhText); x -= colPad;
+            x -= colCdhW; drawList.AddText(new Vector2(x + (colCdhW - ImGui.CalcTextSize(cdhText).X) * 0.5f, min.Y + textYOff), textColor, cdhText); x -= colPad;
             var dhText = ValueFormatter.FormatPercent(skill.DirectHitPct, config.PercentDecimalPlaces);
-            x -= colDhW; drawList.AddText(new Vector2(x + colDhW - ImGui.CalcTextSize(dhText).X, min.Y), textColor, dhText); x -= colPad;
+            x -= colDhW; drawList.AddText(new Vector2(x + (colDhW - ImGui.CalcTextSize(dhText).X) * 0.5f, min.Y + textYOff), textColor, dhText); x -= colPad;
             var critText = ValueFormatter.FormatPercent(skill.CritPct, config.PercentDecimalPlaces);
-            x -= colCritW; drawList.AddText(new Vector2(x + colCritW - ImGui.CalcTextSize(critText).X, min.Y), textColor, critText); x -= colPad;
+            x -= colCritW; drawList.AddText(new Vector2(x + (colCritW - ImGui.CalcTextSize(critText).X) * 0.5f, min.Y + textYOff), textColor, critText); x -= colPad;
             var pctText = ValueFormatter.FormatPercent(skill.DamagePercent, config.PercentDecimalPlaces);
-            x -= colPctW; drawList.AddText(new Vector2(x + colPctW - ImGui.CalcTextSize(pctText).X, min.Y), textColor, pctText); x -= colPad;
+            x -= colPctW; drawList.AddText(new Vector2(x + (colPctW - ImGui.CalcTextSize(pctText).X) * 0.5f, min.Y + textYOff), textColor, pctText); x -= colPad;
             var valText = ValueFormatter.Format(skill.TotalDamage, config);
-            x -= colValW; drawList.AddText(new Vector2(x + colValW - ImGui.CalcTextSize(valText).X, min.Y), textColor, valText);
+            x -= colValW; drawList.AddText(new Vector2(x + (colValW - ImGui.CalcTextSize(valText).X) * 0.5f, min.Y + textYOff), textColor, valText);
+
+            // Draw sub-entries when expanded
+            if (isExpanded && skill.SubEntries != null)
+            {
+                var subIndent = 16f;
+                var subAvailWidth = availWidth - subIndent;
+                var subAlpha = 0.7f;
+
+                foreach (var sub in skill.SubEntries)
+                {
+                    var subFraction = skill.TotalDamage > 0 ? (float)sub.TotalDamage / maxSkillVal : 0f;
+
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + subIndent);
+                    ImGui.InvisibleButton($"##{idPrefix}_{index}_{skillIdx}_sub", new Vector2(subAvailWidth, skillBarHeight));
+                    var sMin = ImGui.GetItemRectMin();
+                    var sMax = ImGui.GetItemRectMax();
+
+                    drawList.AddRectFilled(sMin, sMax, bgColor, skillRounding);
+                    var subBarColor = sub.DamageType switch
+                    {
+                        SkillDamageType.Physical => physFillColor,
+                        SkillDamageType.Magic => magFillColor,
+                        _ => fillColor,
+                    };
+                    // Dim the sub-entry bar color
+                    var subBarColorVec = ImGui.ColorConvertU32ToFloat4(subBarColor);
+                    subBarColorVec.W *= subAlpha;
+                    var subBarColorU32 = ImGui.ColorConvertFloat4ToU32(subBarColorVec);
+                    drawList.AddRectFilled(sMin, new Vector2(sMin.X + subAvailWidth * subFraction, sMax.Y), subBarColorU32, skillRounding);
+                    drawList.AddText(new Vector2(sMin.X + 3, sMin.Y + textYOff), textColor, sub.Name);
+
+                    var sx = sMax.X - 3;
+                    var sHitsText = $"x{sub.HitCount}";
+                    sx -= colHitsW; drawList.AddText(new Vector2(sx + (colHitsW - ImGui.CalcTextSize(sHitsText).X) * 0.5f, sMin.Y + textYOff), textColor, sHitsText); sx -= colPad;
+                    var sCdhText = ValueFormatter.FormatPercent(sub.CritDirectHitPct, config.PercentDecimalPlaces);
+                    sx -= colCdhW; drawList.AddText(new Vector2(sx + (colCdhW - ImGui.CalcTextSize(sCdhText).X) * 0.5f, sMin.Y + textYOff), textColor, sCdhText); sx -= colPad;
+                    var sDhText = ValueFormatter.FormatPercent(sub.DirectHitPct, config.PercentDecimalPlaces);
+                    sx -= colDhW; drawList.AddText(new Vector2(sx + (colDhW - ImGui.CalcTextSize(sDhText).X) * 0.5f, sMin.Y + textYOff), textColor, sDhText); sx -= colPad;
+                    var sCritText = ValueFormatter.FormatPercent(sub.CritPct, config.PercentDecimalPlaces);
+                    sx -= colCritW; drawList.AddText(new Vector2(sx + (colCritW - ImGui.CalcTextSize(sCritText).X) * 0.5f, sMin.Y + textYOff), textColor, sCritText); sx -= colPad;
+                    var sPctText = ValueFormatter.FormatPercent(sub.DamagePercent, config.PercentDecimalPlaces);
+                    sx -= colPctW; drawList.AddText(new Vector2(sx + (colPctW - ImGui.CalcTextSize(sPctText).X) * 0.5f, sMin.Y + textYOff), textColor, sPctText); sx -= colPad;
+                    var sValText = ValueFormatter.Format(sub.TotalDamage, config);
+                    sx -= colValW; drawList.AddText(new Vector2(sx + (colValW - ImGui.CalcTextSize(sValText).X) * 0.5f, sMin.Y + textYOff), textColor, sValText);
+                }
+            }
 
             skillIdx++;
         }

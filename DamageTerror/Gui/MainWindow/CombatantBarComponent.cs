@@ -34,9 +34,11 @@ public class CombatantBarComponent
         { BarColumn.DamageTakenPercent, "00.0%" },
         { BarColumn.Overheal, "100%" },
         { BarColumn.OverhealAmount, "000.0K" },
-        { BarColumn.MaxHit, "000.0K" },
+        { BarColumn.MaxHit, "SkillNameHere" },
+        { BarColumn.MaxHitValue, "000.0K" },
         { BarColumn.PeakDps, "000.0K" },
-        { BarColumn.MaxHeal, "000.0K" },
+        { BarColumn.MaxHeal, "SkillNameHere" },
+        { BarColumn.MaxHealValue, "000.0K" },
         { BarColumn.Swings, "0000" },
         { BarColumn.Hits, "0000" },
         { BarColumn.Misses, "0000" },
@@ -58,6 +60,9 @@ public class CombatantBarComponent
         { BarColumn.MaxHealWard, "000.0K" },
         { BarColumn.PowerDrain, "000.0K" },
         { BarColumn.PowerHeal, "000.0K" },
+        { BarColumn.Stuns, "00" },
+        { BarColumn.RaidDps, "000.0K" },
+        { BarColumn.RaidHps, "000.0K" },
     };
 
     public static string GetColumnDisplayValue(CombatantEntry combatant, BarColumn col,
@@ -77,9 +82,11 @@ public class CombatantBarComponent
         BarColumn.DamageTakenPercent => !string.IsNullOrEmpty(combatant.DamageTakenPercent) ? combatant.DamageTakenPercent : "0%",
         BarColumn.Overheal => ValueFormatter.FormatPercentColumn(combatant.OverhealPct, config, BarColumn.Overheal, activeTab),
         BarColumn.OverhealAmount => ValueFormatter.FormatColumn(combatant.OverhealAmount, config, BarColumn.OverhealAmount, activeTab),
-        BarColumn.MaxHit => ValueFormatter.FormatColumn(combatant.MaxHitDamage, config, BarColumn.MaxHit, activeTab),
+        BarColumn.MaxHit => combatant.MaxHitSkillName,
+        BarColumn.MaxHitValue => ValueFormatter.FormatColumn(combatant.MaxHitDamage, config, BarColumn.MaxHitValue, activeTab),
         BarColumn.PeakDps => ValueFormatter.FormatColumn(combatant.PeakDps, config, BarColumn.PeakDps, activeTab),
-        BarColumn.MaxHeal => ValueFormatter.FormatColumn(combatant.MaxHealAmount, config, BarColumn.MaxHeal, activeTab),
+        BarColumn.MaxHeal => combatant.MaxHealSkillName,
+        BarColumn.MaxHealValue => ValueFormatter.FormatColumn(combatant.MaxHealAmount, config, BarColumn.MaxHealValue, activeTab),
         BarColumn.Swings => $"{combatant.Swings}",
         BarColumn.Hits => $"{combatant.Hits}",
         BarColumn.Misses => $"{combatant.Misses}",
@@ -101,6 +108,9 @@ public class CombatantBarComponent
         BarColumn.MaxHealWard => ValueFormatter.FormatColumn(combatant.MaxHealWardAmount, config, BarColumn.MaxHealWard, activeTab),
         BarColumn.PowerDrain => ValueFormatter.FormatColumn(combatant.PowerDrain, config, BarColumn.PowerDrain, activeTab),
         BarColumn.PowerHeal => ValueFormatter.FormatColumn(combatant.PowerHeal, config, BarColumn.PowerHeal, activeTab),
+        BarColumn.Stuns => $"{combatant.Stuns}",
+        BarColumn.RaidDps => ValueFormatter.FormatColumn(combatant.RaidDps, config, BarColumn.RaidDps, activeTab),
+        BarColumn.RaidHps => ValueFormatter.FormatColumn(combatant.RaidHps, config, BarColumn.RaidHps, activeTab),
         _ => string.Empty,
     };
 
@@ -148,7 +158,7 @@ public class CombatantBarComponent
         }
 
         var clicked = ImGui.InvisibleButton($"##combatant_{index}", new Vector2(windowWidth, barHeight));
-        if (config.ShowTooltip && config.TooltipFields.Count > 0 && ImGui.IsItemHovered())
+        if (config.ShowTooltip && ImGui.IsItemHovered())
         {
             DrawTooltip(combatant, activeTab);
         }
@@ -275,8 +285,25 @@ public class CombatantBarComponent
         var labelColor = config.TooltipLabelColor;
         var textColor = config.TooltipTextColor;
 
-        foreach (var field in config.TooltipFields)
+        var tooltipFields = activeTab?.TooltipFields ?? config.TooltipFields;
+        if (tooltipFields.Count == 0)
         {
+            ImGui.GetFont().Scale = prevScale;
+            ImGui.PopFont();
+            ImGui.EndTooltip();
+            ImGui.PopStyleColor();
+            ImGui.PopStyleVar(2);
+            return;
+        }
+
+        foreach (var field in tooltipFields)
+        {
+            if (field == TooltipField.TopDamageSkills || field == TooltipField.TopHealingSkills)
+            {
+                DrawTopSkillsTooltipSection(combatant, field, activeTab, labelColor, textColor);
+                continue;
+            }
+
             var (label, value) = GetTooltipFieldValue(combatant, field, activeTab);
             ImGui.TextColored(labelColor, label + ":");
             ImGui.SameLine();
@@ -309,8 +336,10 @@ public class CombatantBarComponent
         TooltipField.DamageTaken => ("Damage Taken", GetColumnDisplayValue(combatant, BarColumn.DamageTaken, config, activeTab)),
         TooltipField.Overheal => ("Overheal %", GetColumnDisplayValue(combatant, BarColumn.Overheal, config, activeTab)),
         TooltipField.OverhealAmount => ("Overheal", GetColumnDisplayValue(combatant, BarColumn.OverhealAmount, config, activeTab)),
-        TooltipField.MaxHit => ("Max Hit", $"{combatant.MaxHit} ({GetColumnDisplayValue(combatant, BarColumn.MaxHit, config, activeTab)})"),
-        TooltipField.MaxHeal => ("Max Heal", $"{combatant.MaxHeal} ({GetColumnDisplayValue(combatant, BarColumn.MaxHeal, config, activeTab)})"),
+        TooltipField.MaxHit => ("Max Hit", combatant.MaxHitSkillName),
+        TooltipField.MaxHitValue => ("Max Hit Value", GetColumnDisplayValue(combatant, BarColumn.MaxHitValue, config, activeTab)),
+        TooltipField.MaxHeal => ("Max Heal", combatant.MaxHealSkillName),
+        TooltipField.MaxHealValue => ("Max Heal Value", GetColumnDisplayValue(combatant, BarColumn.MaxHealValue, config, activeTab)),
         TooltipField.PeakDps => ("Peak DPS", GetColumnDisplayValue(combatant, BarColumn.PeakDps, config, activeTab)),
         TooltipField.Swings => ("Swings", $"{combatant.Swings}"),
         TooltipField.Hits => ("Hits", $"{combatant.Hits}"),
@@ -325,6 +354,38 @@ public class CombatantBarComponent
         TooltipField.HealCount => ("Heal Count", $"{combatant.HealCount}"),
         TooltipField.DamageShield => ("Damage Shield", GetColumnDisplayValue(combatant, BarColumn.DamageShield, config, activeTab)),
         TooltipField.MaxHealWard => ("Max Heal Ward", GetColumnDisplayValue(combatant, BarColumn.MaxHealWard, config, activeTab)),
+        TooltipField.Stuns => ("Stuns", $"{combatant.Stuns}"),
+        TooltipField.RaidDps => ("Group DPS", GetColumnDisplayValue(combatant, BarColumn.RaidDps, config, activeTab)),
+        TooltipField.RaidHps => ("Group HPS", GetColumnDisplayValue(combatant, BarColumn.RaidHps, config, activeTab)),
+        TooltipField.TopDamageSkills => ("Top Damage Skills", ""),
+        TooltipField.TopHealingSkills => ("Top Healing Skills", ""),
         _ => ("", ""),
     };
+
+    private void DrawTopSkillsTooltipSection(CombatantEntry combatant, TooltipField field, MeterTab? activeTab, Vector4 labelColor, Vector4 textColor)
+    {
+        var isHealing = field == TooltipField.TopHealingSkills;
+        var skills = isHealing ? combatant.HealingSkills : combatant.Skills;
+        var count = activeTab?.TooltipTopSkillCount ?? config.TooltipTopSkillCount;
+        var header = isHealing ? "Top Healing Skills" : "Top Damage Skills";
+
+        if (skills == null || skills.Count == 0)
+            return;
+
+        var topSkills = skills
+            .OrderByDescending(s => s.TotalDamage)
+            .Take(count)
+            .ToList();
+
+        if (topSkills.Count == 0)
+            return;
+
+        ImGui.Spacing();
+        ImGui.TextColored(labelColor, header + ":");
+        foreach (var skill in topSkills)
+        {
+            var value = ValueFormatter.Format(skill.TotalDamage, config);
+            ImGui.TextColored(textColor, $"  {skill.Name}  {value}  ({skill.DamagePercent:0.0}%)");
+        }
+    }
 }

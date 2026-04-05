@@ -18,7 +18,10 @@ public class EncounterHeaderComponent : IUIComponent
     {
         this.dataService = dataService;
         this.config = config;
+        dataService.OnNewEncounter += ResetToLive;
     }
+
+    public void ResetToLive() => selectedIndex = -1;
 
     private string FormatEncounterLabel(CombatEncounter enc, string playerName = "", string suffix = "", DateTime? timestamp = null)
     {
@@ -43,6 +46,8 @@ public class EncounterHeaderComponent : IUIComponent
     }
 
     public bool IsViewingLive => selectedIndex == -1;
+
+    public bool IsComboOpen => comboWasOpen;
 
     public float GetHeight()
     {
@@ -124,6 +129,16 @@ public class EncounterHeaderComponent : IUIComponent
                         var activeLabel = FormatEncounterLabel(aEnc, active.PlayerName ?? "", "##active", active.Timestamp);
                         if (ImGui.Selectable(activeLabel, selectedIndex == -1))
                             selectedIndex = -1;
+
+                        if (ImGui.BeginPopupContextItem("##enc_remove_active"))
+                        {
+                            if (ImGui.Selectable("Remove"))
+                            {
+                                dataService.Store.RemoveActive();
+                                selectedIndex = -1;
+                            }
+                            ImGui.EndPopup();
+                        }
                     }
                 }
 

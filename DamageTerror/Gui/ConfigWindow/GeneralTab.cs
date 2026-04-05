@@ -88,14 +88,31 @@ public class GeneralTab
             }
 
             ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.TextDisabled("Modifier key used by hidden layout elements and header reveal.");
+            ImGui.Spacing();
 
-            var maxHistory = config.MaxEncounterHistory;
+            var comboNames = new[] { "Ctrl + Shift", "Ctrl + Alt", "Shift + Alt", "Ctrl", "Shift", "Alt" };
+            var comboIndex = (int)config.ModifierKeyCombo;
             ImGui.SetNextItemWidth(150);
-            if (ImGui.SliderInt("Max encounters kept in history", ref maxHistory, 5, 100))
+            if (ImGui.Combo("Modifier keys", ref comboIndex, comboNames, comboNames.Length))
             {
-                config.MaxEncounterHistory = maxHistory;
+                config.ModifierKeyCombo = (ModifierCombo)comboIndex;
                 changed = true;
             }
+
+            var modeNames = new[] { "Hold", "Toggle" };
+            var modeIndex = (int)config.ModifierKeyMode;
+            ImGui.SetNextItemWidth(150);
+            if (ImGui.Combo("Modifier mode", ref modeIndex, modeNames, modeNames.Length))
+            {
+                config.ModifierKeyMode = (ModifierMode)modeIndex;
+                changed = true;
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Hold: active only while keys are pressed.\nToggle: press once to activate, press again to deactivate.");
+
+
         }
 
         ImGui.Spacing();

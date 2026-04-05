@@ -1,7 +1,9 @@
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.ImGuiFileDialog;
 using DamageTerror.Enums;
 using DamageTerror.Helpers;
 using DamageTerror.Services;
+using DamageTerror.Gui.MainWindow;
 using Dalamud.Interface;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
@@ -16,6 +18,8 @@ public class AppearanceTab
     private string importJson = string.Empty;
     private string? importError;
 
+    internal static readonly FileDialogManager FileDialogManager = new();
+
     public AppearanceTab(PresetManager presetManager)
     {
         this.presetManager = presetManager;
@@ -27,6 +31,7 @@ public class AppearanceTab
     }
 
     public static bool DrawBarsPage(Configuration config) => DrawBarsTab(config);
+    public static bool DrawAppearanceGeneralPage(Configuration config) => DrawAppearanceGeneralTab(config);
     public static bool DrawNameFormatPage(Configuration config) => DrawNameFormatTab(config);
     public static bool DrawFormattingPage(Configuration config) => DrawFormattingTab(config);
     public static bool DrawSelectionBarPage(Configuration config) => DrawSelectionBarTab(config);
@@ -257,7 +262,7 @@ public class AppearanceTab
             PresetRow("Right Padding", $"{preset.BarRightPadding:0}px");
             PresetRow("Column Spacing", $"{preset.BarColumnSpacing:0}px");
             PresetRow("Icon-Text Padding", $"{preset.IconTextPadding:0}px");
-            PresetRow("Window Rounding", $"{preset.WindowRounding:0.#}");
+            PresetRow("Window Padding", $"L:{preset.WindowPaddingLeft:0} R:{preset.WindowPaddingRight:0} T:{preset.WindowPaddingTop:0} B:{preset.WindowPaddingBottom:0}");
             ImGui.Unindent();
         }
 
@@ -275,32 +280,13 @@ public class AppearanceTab
             ImGui.Unindent();
         }
 
-        if (ImGui.CollapsingHeader("Visible Columns##presetCols"))
+        if (ImGui.CollapsingHeader("Display Flags##presetFlags"))
         {
             ImGui.Indent();
-            if (preset.ShowJobIcons) PresetToggle("Job Icons", true);
-            if (preset.ShowNameOnBar) PresetToggle("Name", true);
-            if (preset.ShowJobAbbrevOnBar) PresetToggle("Job Abbreviation", true);
-            if (preset.ShowRankNumber) PresetToggle("Rank Number", true);
-
-            var firstTab = preset.Tabs is { Count: > 0 } ? preset.Tabs[0] : null;
-            var columnOrder = firstTab?.ColumnOrder ?? preset.ColumnOrder;
-
-            foreach (var col in columnOrder)
-            {
-                bool enabled;
-                if (firstTab != null)
-                    enabled = firstTab.IsColumnVisible(col);
-                else
-                    enabled = preset.VisibleColumns.Contains(col);
-
-                if (enabled)
-                {
-                    var label = DisplayTab.ColumnLabels.GetValueOrDefault(col, col.ToString());
-                    PresetToggle(label, true);
-                }
-            }
-
+            PresetToggle("Job Icons", preset.ShowJobIcons);
+            PresetToggle("Name", preset.ShowNameOnBar);
+            PresetToggle("Job Abbreviation", preset.ShowJobAbbrevOnBar);
+            PresetToggle("Rank Number", preset.ShowRankNumber);
             ImGui.Unindent();
         }
 
@@ -325,6 +311,7 @@ public class AppearanceTab
             PresetColor("Melee DPS", preset.MeleeDpsColor);
             PresetColor("Ranged DPS", preset.RangedDpsColor);
             PresetColor("Caster DPS", preset.CasterDpsColor);
+            PresetColor("Limit Break", preset.LimitBreakColor);
             PresetColor("Default", preset.DefaultJobColor);
             if (preset.UsePerJobColors && preset.JobColors is { Count: > 0 })
                 PresetRow("Custom Job Colors", $"{preset.JobColors.Count} jobs");
@@ -374,8 +361,6 @@ public class AppearanceTab
             ImGui.Indent();
             PresetToggle("Show Status Bar", preset.ShowStatusBar);
             PresetToggle("Timer", preset.ShowStatusBarTimer);
-            PresetToggle("Personal DPS", preset.ShowStatusBarPersonalDps);
-            PresetToggle("Raid DPS", preset.ShowStatusBarRaidDps);
             PresetRow("Height", $"{preset.StatusBarHeight:0}px");
             PresetRow("Font Size", $"{preset.StatusBarFontSize:0.#}pt");
             PresetRow("Padding", $"{preset.StatusBarPadding:0}px");
@@ -438,22 +423,6 @@ public class AppearanceTab
             PresetColor("Background", preset.TooltipBackgroundColor);
             PresetColor("Text", preset.TooltipTextColor);
             PresetColor("Labels", preset.TooltipLabelColor);
-
-            if (preset.TooltipFields.Count > 0)
-            {
-                ImGui.Spacing();
-                ImGui.TextColored(new Vector4(0.6f, 0.6f, 0.6f, 1f), "Fields:");
-                foreach (var field in preset.TooltipFields)
-                {
-                    var label = TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
-                    PresetToggle(label, true);
-                }
-            }
-            else
-            {
-                PresetRow("Fields", "None");
-            }
-
             ImGui.Unindent();
         }
     }
@@ -551,6 +520,118 @@ public class AppearanceTab
             ImGui.Indent();
             changed |= ConfigHelpers.ColorEditProp("Self name color", config.SelfNameColor, v => config.SelfNameColor = v);
             ImGui.Unindent();
+        }
+
+        return changed;
+    }
+
+    private static bool DrawAppearanceGeneralTab(Configuration config)
+    {
+        var changed = false;
+
+        changed |= ConfigHelpers.ColorEditProp("Window background", config.WindowBackgroundColor, v => config.WindowBackgroundColor = v);
+
+        var padLeft = config.WindowPaddingLeft;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Padding left", ref padLeft, 0.0f, 32.0f, "%.0f"))
+        {
+            config.WindowPaddingLeft = padLeft;
+            changed = true;
+        }
+
+        var padRight = config.WindowPaddingRight;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Padding right", ref padRight, 0.0f, 32.0f, "%.0f"))
+        {
+            config.WindowPaddingRight = padRight;
+            changed = true;
+        }
+
+        var padTop = config.WindowPaddingTop;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Padding top", ref padTop, 0.0f, 32.0f, "%.0f"))
+        {
+            config.WindowPaddingTop = padTop;
+            changed = true;
+        }
+
+        var padBottom = config.WindowPaddingBottom;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Padding bottom", ref padBottom, 0.0f, 32.0f, "%.0f"))
+        {
+            config.WindowPaddingBottom = padBottom;
+            changed = true;
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Background Image", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.TextDisabled("Display a custom image behind the meter window.");
+            ImGui.Spacing();
+
+            var hasImage = !string.IsNullOrEmpty(config.BackgroundImagePath);
+            var pathDisplay = hasImage ? config.BackgroundImagePath! : "(none)";
+            ImGui.Text($"Image: {pathDisplay}");
+
+            if (ImGui.Button("Browse..."))
+            {
+                FileDialogManager.OpenFileDialog(
+                    "Select Background Image",
+                    "Image files{.png,.jpg,.jpeg,.gif}",
+                    (ok, path) =>
+                    {
+                        if (ok && !string.IsNullOrEmpty(path))
+                        {
+                            config.BackgroundImagePath = path;
+                            DamageTerrorPlugin.Instance.SaveConfig();
+                        }
+                    });
+            }
+
+            if (hasImage)
+            {
+                ImGui.SameLine();
+                if (ImGui.Button("Clear"))
+                {
+                    config.BackgroundImagePath = null;
+                    changed = true;
+                }
+
+                var opacity = config.BackgroundImageOpacity;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.SliderFloat("Opacity", ref opacity, 0.0f, 1.0f, "%.2f"))
+                {
+                    config.BackgroundImageOpacity = opacity;
+                    changed = true;
+                }
+
+                changed |= ConfigHelpers.ColorEditProp("Tint", config.BackgroundImageTint, v => config.BackgroundImageTint = v);
+
+                var scaleIdx = (int)config.BackgroundImageScale;
+                var scaleLabels = new[] { "Stretch", "Fit", "Fill", "Tile" };
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.Combo("Scale mode", ref scaleIdx, scaleLabels, scaleLabels.Length))
+                {
+                    config.BackgroundImageScale = (BackgroundImageScaleMode)scaleIdx;
+                    changed = true;
+                }
+
+                // Preview thumbnail
+                if (System.IO.File.Exists(config.BackgroundImagePath))
+                {
+                    var preview = ServiceManager.TextureProvider.GetFromFile(config.BackgroundImagePath);
+                    if (preview.TryGetWrap(out var wrap, out _))
+                    {
+                        ImGui.Spacing();
+                        var previewHeight = 80f;
+                        var aspect = (float)wrap.Width / wrap.Height;
+                        ImGui.Image(wrap.Handle, new Vector2(previewHeight * aspect, previewHeight));
+                    }
+                }
+            }
         }
 
         return changed;
@@ -749,15 +830,6 @@ public class AppearanceTab
         changed |= ConfigHelpers.ColorEditProp("Name text", config.NameTextColor, v => config.NameTextColor = v);
         changed |= ConfigHelpers.ColorEditProp("Value text", config.ValueTextColor, v => config.ValueTextColor = v);
         changed |= ConfigHelpers.ColorEditProp("Bar background", config.BarBackgroundColor, v => config.BarBackgroundColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Window background", config.WindowBackgroundColor, v => config.WindowBackgroundColor = v);
-
-        var windowRounding = config.WindowRounding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Window rounding", ref windowRounding, 0.0f, 12.0f, "%.1f"))
-        {
-            config.WindowRounding = windowRounding;
-            changed = true;
-        }
         }
 
         ImGui.Spacing();
@@ -1057,41 +1129,8 @@ public class AppearanceTab
     {
         var changed = false;
 
-        if (ImGui.CollapsingHeader("Visibility##statusbar", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-        var showStatusBar = config.ShowStatusBar;
-        if (ImGui.Checkbox("Show status bar", ref showStatusBar))
-        {
-            config.ShowStatusBar = showStatusBar;
-            changed = true;
-        }
-        }
-
-        if (config.ShowStatusBar)
-        {
         if (ImGui.CollapsingHeader("Options##statusbar", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var showTimer = config.ShowStatusBarTimer;
-            if (ImGui.Checkbox("Show combat timer", ref showTimer))
-            {
-                config.ShowStatusBarTimer = showTimer;
-                changed = true;
-            }
-
-            var showPersonalDps = config.ShowStatusBarPersonalDps;
-            if (ImGui.Checkbox("Show personal DPS", ref showPersonalDps))
-            {
-                config.ShowStatusBarPersonalDps = showPersonalDps;
-                changed = true;
-            }
-
-            var showRaidDps = config.ShowStatusBarRaidDps;
-            if (ImGui.Checkbox("Show raid DPS", ref showRaidDps))
-            {
-                config.ShowStatusBarRaidDps = showRaidDps;
-                changed = true;
-            }
-
             var showSep = config.ShowStatusBarSeparator;
             if (ImGui.Checkbox("Show separator line", ref showSep))
             {
@@ -1166,7 +1205,6 @@ public class AppearanceTab
                 }
             }
         }
-        }
 
         return changed;
     }
@@ -1189,7 +1227,9 @@ public class AppearanceTab
         { TooltipField.Overheal, "Overheal %" },
         { TooltipField.OverhealAmount, "Overheal" },
         { TooltipField.MaxHit, "Max Hit" },
+        { TooltipField.MaxHitValue, "Max Hit Value" },
         { TooltipField.MaxHeal, "Max Heal" },
+        { TooltipField.MaxHealValue, "Max Heal Value" },
         { TooltipField.PeakDps, "Peak DPS" },
         { TooltipField.Swings, "Swings" },
         { TooltipField.Hits, "Hits" },
@@ -1204,12 +1244,16 @@ public class AppearanceTab
         { TooltipField.HealCount, "Heal Count" },
         { TooltipField.DamageShield, "Damage Shield" },
         { TooltipField.MaxHealWard, "Max Heal Ward" },
+        { TooltipField.RaidDps, "Group DPS" },
+        { TooltipField.RaidHps, "Group HPS" },
+        { TooltipField.TopDamageSkills, "Top Damage Skills" },
+        { TooltipField.TopHealingSkills, "Top Healing Skills" },
     };
 
-    private static readonly (string Name, TooltipField[] Fields)[] DisabledTooltipCategories =
+    public static readonly (string Name, TooltipField[] Fields)[] DisabledTooltipCategories =
     {
-        ("Damage", new[] { TooltipField.Dps, TooltipField.InstantDps, TooltipField.Damage, TooltipField.DamagePercent, TooltipField.PeakDps, TooltipField.MaxHit, TooltipField.DamageTaken, TooltipField.DamageShield }),
-        ("Healing", new[] { TooltipField.Hps, TooltipField.InstantHps, TooltipField.Healed, TooltipField.HealPercent, TooltipField.Overheal, TooltipField.OverhealAmount, TooltipField.MaxHeal, TooltipField.MaxHealWard, TooltipField.CritHealPct, TooltipField.HealCount, TooltipField.HealsTaken }),
+        ("Damage", new[] { TooltipField.Dps, TooltipField.InstantDps, TooltipField.Damage, TooltipField.DamagePercent, TooltipField.PeakDps, TooltipField.MaxHit, TooltipField.MaxHitValue, TooltipField.DamageTaken, TooltipField.DamageShield, TooltipField.RaidDps, TooltipField.TopDamageSkills }),
+        ("Healing", new[] { TooltipField.Hps, TooltipField.InstantHps, TooltipField.Healed, TooltipField.HealPercent, TooltipField.Overheal, TooltipField.OverhealAmount, TooltipField.MaxHeal, TooltipField.MaxHealValue, TooltipField.MaxHealWard, TooltipField.CritHealPct, TooltipField.HealCount, TooltipField.HealsTaken, TooltipField.RaidHps, TooltipField.TopHealingSkills }),
         ("Rates", new[] { TooltipField.Crit, TooltipField.DirectHit, TooltipField.CritDirectHit, TooltipField.HitRate, TooltipField.Swings, TooltipField.Hits, TooltipField.Misses }),
         ("Other", new[] { TooltipField.Name, TooltipField.Job, TooltipField.Deaths, TooltipField.Kills, TooltipField.CombatantDuration }),
     };
@@ -1278,106 +1322,18 @@ public class AppearanceTab
                 changed = true;
         }
 
-        ImGui.Spacing();
-
-        if (ImGui.CollapsingHeader("Visible Fields", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Top Skills"))
         {
-            ImGui.TextDisabled("Choose which fields to show in the tooltip and their order.");
+            ImGui.TextDisabled("Number of top skills to show when \"Top Damage Skills\" or");
+            ImGui.TextDisabled("\"Top Healing Skills\" tooltip fields are enabled.");
             ImGui.Spacing();
 
-            var fields = config.TooltipFields;
-            var allFields = Enum.GetValues<TooltipField>();
-            var disabledFields = allFields.Where(f => !fields.Contains(f)).ToList();
-            disabledFields.Sort((a, b) =>
-                string.Compare(
-                    TooltipFieldLabels.GetValueOrDefault(a, a.ToString()),
-                    TooltipFieldLabels.GetValueOrDefault(b, b.ToString()),
-                    StringComparison.OrdinalIgnoreCase));
-
-            for (var i = 0; i < fields.Count; i++)
+            var skillCount = config.TooltipTopSkillCount;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderInt("Skills to show", ref skillCount, 1, 10))
             {
-                var field = fields[i];
-                var label = TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
-
-                ImGui.PushID($"ttf_{i}");
-
-                var canUp = i > 0;
-                if (!canUp) ImGui.BeginDisabled();
-                if (ImGui.ArrowButton("##up", ImGuiDir.Up))
-                {
-                    (fields[i - 1], fields[i]) = (fields[i], fields[i - 1]);
-                    changed = true;
-                }
-                if (!canUp) ImGui.EndDisabled();
-
-                ImGui.SameLine();
-
-                var canDown = i < fields.Count - 1;
-                if (!canDown) ImGui.BeginDisabled();
-                if (ImGui.ArrowButton("##down", ImGuiDir.Down))
-                {
-                    (fields[i], fields[i + 1]) = (fields[i + 1], fields[i]);
-                    changed = true;
-                }
-                if (!canDown) ImGui.EndDisabled();
-
-                ImGui.SameLine();
-
-                var enabled = true;
-                if (ImGui.Checkbox(label, ref enabled))
-                {
-                    fields.RemoveAt(i);
-                    changed = true;
-                    ImGui.PopID();
-                    i--;
-                    continue;
-                }
-
-                ImGui.PopID();
-            }
-
-            ImGui.Spacing();
-            ImGui.Separator();
-            ImGui.TextDisabled("Disabled");
-            ImGui.Spacing();
-
-            if (disabledFields.Count > 0 && ImGui.BeginTabBar("##disabledTooltipFields"))
-            {
-                foreach (var (catName, catFields) in DisabledTooltipCategories)
-                {
-                    var catDisabled = catFields.Where(f => disabledFields.Contains(f)).ToList();
-
-                    if (catDisabled.Count == 0)
-                        continue;
-
-                    if (ImGui.BeginTabItem(catName))
-                    {
-                        catDisabled.Sort((a, b) =>
-                            string.Compare(
-                                TooltipFieldLabels.GetValueOrDefault(a, a.ToString()),
-                                TooltipFieldLabels.GetValueOrDefault(b, b.ToString()),
-                                StringComparison.OrdinalIgnoreCase));
-
-                        foreach (var field in catDisabled)
-                        {
-                            var label = TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
-                            ImGui.PushID($"disabled_tt_{field}");
-
-                            var off = false;
-                            if (ImGui.Checkbox(label, ref off))
-                            {
-                                fields.Add(field);
-                                changed = true;
-                            }
-
-                            ImGui.PopID();
-                        }
-
-                        ImGui.EndTabItem();
-                    }
-                }
-
-                ImGui.EndTabBar();
+                config.TooltipTopSkillCount = skillCount;
+                changed = true;
             }
         }
 
@@ -1389,115 +1345,23 @@ public class AppearanceTab
         return changed;
     }
 
-    private static readonly (string Name, BarColumn[] Columns)[] DetailCategories =
-    {
-        ("Damage", new[] { BarColumn.Dps, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.Damage, BarColumn.DamagePercent, BarColumn.MaxHit, BarColumn.DamageShield }),
-        ("Healing", new[] { BarColumn.Hps, BarColumn.InstantHps, BarColumn.Healed, BarColumn.HealPercent, BarColumn.Overheal, BarColumn.OverhealAmount, BarColumn.CritHealPct, BarColumn.MaxHeal, BarColumn.MaxHealWard, BarColumn.HealCount, BarColumn.AbsorbHeal }),
-        ("Hit Statistics", new[] { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount }),
-        ("Defense", new[] { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct, BarColumn.HealsTaken }),
-        ("Other", new[] { BarColumn.Deaths, BarColumn.Kills, BarColumn.CombatantDuration, BarColumn.PowerDrain, BarColumn.PowerHeal }),
-    };
+    internal static readonly (string Name, BarColumn[] Columns)[] DetailCategories = CombatantDetailPanel.Sections;
 
     private static bool DrawDetailsTab(Configuration config)
     {
         var changed = false;
-
-        if (ImGui.CollapsingHeader("Content", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            ImGui.TextDisabled("Choose what to show in the expanded detail view.");
-            ImGui.Spacing();
-
-            if (ImGui.Button("Enable All"))
-            {
-                config.DetailVisibleColumns = new HashSet<BarColumn>(Enum.GetValues<BarColumn>());
-                changed = true;
-            }
-            ImGui.SameLine();
-            if (ImGui.Button("Disable All"))
-            {
-                config.DetailVisibleColumns.Clear();
-                changed = true;
-            }
-
-            ImGui.Spacing();
-
-            foreach (var (catName, catColumns) in DetailCategories)
-            {
-                if (ImGui.TreeNodeEx(catName, ImGuiTreeNodeFlags.DefaultOpen))
-                {
-                    foreach (var col in catColumns)
-                    {
-                        var label = DisplayTab.ColumnLabels.GetValueOrDefault(col, col.ToString());
-                        var enabled = config.DetailVisibleColumns.Contains(col);
-                        if (ImGui.Checkbox($"{label}##detail_{col}", ref enabled))
-                        {
-                            if (enabled)
-                                config.DetailVisibleColumns.Add(col);
-                            else
-                                config.DetailVisibleColumns.Remove(col);
-                            changed = true;
-                        }
-                    }
-                    ImGui.TreePop();
-                }
-            }
-
-            ImGui.Spacing();
-            ImGui.TextDisabled("Additional");
-
-            var showTrend = config.DetailShowDpsTrend;
-            if (ImGui.Checkbox("DPS trend (10s/30s/60s)", ref showTrend))
-            {
-                config.DetailShowDpsTrend = showTrend;
-                changed = true;
-            }
-
-            ImGui.Spacing();
-
-            ImGui.TextDisabled("Skill breakdown");
-
-            var showSkills = config.DetailShowSkillBreakdown;
-            if (ImGui.Checkbox("Show skill breakdown", ref showSkills))
-            {
-                config.DetailShowSkillBreakdown = showSkills;
-                changed = true;
-            }
-
-            if (config.DetailShowSkillBreakdown)
-            {
-                var maxSkills = config.MaxSkillBreakdownCount;
-                ImGui.SetNextItemWidth(200);
-                if (ImGui.SliderInt("Max skills shown (0 = all)", ref maxSkills, 0, 30))
-                {
-                    config.MaxSkillBreakdownCount = maxSkills;
-                    changed = true;
-                }
-            }
-        }
-
-        ImGui.Spacing();
 
         if (ImGui.CollapsingHeader("Graph", ImGuiTreeNodeFlags.DefaultOpen))
         {
             ImGui.TextDisabled("Configure the live instant DPS/HPS/DTPS graph.");
             ImGui.Spacing();
 
-            var autoHeight = config.GraphAutoHeight;
-            if (ImGui.Checkbox("Auto-fit height##graph", ref autoHeight))
+            var graphHeight = config.GraphHeight;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Graph height", ref graphHeight, 60f, 300f, "%.0f px"))
             {
-                config.GraphAutoHeight = autoHeight;
+                config.GraphHeight = graphHeight;
                 changed = true;
-            }
-
-            if (!config.GraphAutoHeight)
-            {
-                var graphHeight = config.GraphHeight;
-                ImGui.SetNextItemWidth(200);
-                if (ImGui.SliderFloat("Graph height", ref graphHeight, 60f, 300f, "%.0f px"))
-                {
-                    config.GraphHeight = graphHeight;
-                    changed = true;
-                }
             }
 
             var lineThickness = config.GraphLineThickness;
@@ -1691,7 +1555,6 @@ public class AppearanceTab
 
             if (ImGui.Button("Reset Graph"))
             {
-                config.GraphAutoHeight = true;
                 config.GraphHeight = 120f;
                 config.GraphLineThickness = 2f;
                 config.GraphDpsColor = new Vector4(0.9f, 0.4f, 0.4f, 1f);
@@ -1740,6 +1603,7 @@ public class AppearanceTab
 
         if (ImGui.CollapsingHeader("Colors##details", ImGuiTreeNodeFlags.DefaultOpen))
         {
+        changed |= ConfigHelpers.ColorEditProp("Background", config.DetailBackgroundColor, v => config.DetailBackgroundColor = v);
         changed |= ConfigHelpers.ColorEditProp("Label color", config.DetailLabelColor, v => config.DetailLabelColor = v);
         changed |= ConfigHelpers.ColorEditProp("Death highlight", config.DetailDeathColor, v => config.DetailDeathColor = v);
 
@@ -1747,11 +1611,11 @@ public class AppearanceTab
 
         if (ImGui.Button("Reset Details"))
         {
+            config.DetailBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
             config.DetailLabelColor = new Vector4(0.7f, 0.7f, 0.7f, 1f);
             config.DetailDeathColor = new Vector4(1f, 0.3f, 0.3f, 1f);
             config.DetailIndent = 8.0f;
             config.DetailFontSize = 14f;
-            config.DetailVisibleColumns = new HashSet<BarColumn>(Enum.GetValues<BarColumn>());
             changed = true;
         }
         }
@@ -1810,6 +1674,17 @@ public class AppearanceTab
             config.SkillHeaderTextColor = new Vector4(0.6f, 0.6f, 0.6f, 0.9f);
             changed = true;
         }
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Skill Markers##details", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            changed |= ConfigHelpers.DrawSkillMarkerSection("dt_dps", "DPS Markers", config.DetailDpsMarkers);
+            ImGui.Spacing();
+            changed |= ConfigHelpers.DrawSkillMarkerSection("dt_hps", "HPS Markers", config.DetailHpsMarkers);
+            ImGui.Spacing();
+            changed |= ConfigHelpers.DrawSkillMarkerSection("dt_dtps", "DTPS Markers", config.DetailDtpsMarkers);
         }
 
         return changed;
@@ -2034,6 +1909,17 @@ public class AppearanceTab
 
         ImGui.Spacing();
 
+        if (ImGui.CollapsingHeader("Skill Markers##graphview", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            changed |= ConfigHelpers.DrawSkillMarkerSection("gv_dps", "DPS Markers", config.GraphViewDpsMarkers);
+            ImGui.Spacing();
+            changed |= ConfigHelpers.DrawSkillMarkerSection("gv_hps", "HPS Markers", config.GraphViewHpsMarkers);
+            ImGui.Spacing();
+            changed |= ConfigHelpers.DrawSkillMarkerSection("gv_dtps", "DTPS Markers", config.GraphViewDtpsMarkers);
+        }
+
+        ImGui.Spacing();
+
         if (ImGui.Button("Reset Graph View"))
         {
             config.GraphViewAutoHeight = true;
@@ -2060,6 +1946,9 @@ public class AppearanceTab
             config.GraphViewYAxisHeadroom = 1.1f;
             config.GraphViewYAxisTickCount = 8;
             config.GraphViewMouseTextOpacity = 0.6f;
+            config.GraphViewDpsMarkers = new SkillMarkerConfig();
+            config.GraphViewHpsMarkers = new SkillMarkerConfig();
+            config.GraphViewDtpsMarkers = new SkillMarkerConfig();
             changed = true;
         }
 

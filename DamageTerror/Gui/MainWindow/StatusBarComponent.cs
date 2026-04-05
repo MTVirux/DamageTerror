@@ -19,10 +19,13 @@ public class StatusBarComponent
         return config.StatusBarHeight + (config.ShowStatusBarSeparator ? 1f : 0f);
     }
 
-    public void Render(EncounterSnapshot? encounter, string currentPlayerName = "")
+    public void Render(EncounterSnapshot? encounter, string currentPlayerName = "", MeterTab? tab = null)
     {
         if (!config.ShowStatusBar || encounter == null)
             return;
+
+        var showTimer = tab?.ShowStatusBarTimer ?? config.ShowStatusBarTimer;
+        var metrics = tab?.StatusBarMetrics ?? config.StatusBarMetrics;
 
         var windowWidth = ImGui.GetContentRegionAvail().X;
         var cursorPos = ImGui.GetCursorScreenPos();
@@ -60,42 +63,36 @@ public class StatusBarComponent
         var localPlayer = !string.IsNullOrEmpty(currentPlayerName)
             ? encounter.Combatants.FirstOrDefault(c => string.Equals(c.Name, currentPlayerName, StringComparison.OrdinalIgnoreCase))
             : null;
-        var personalDps = localPlayer?.EncDps ?? 0.0;
-        var raidDps = encounter.Encounter.EncDps;
-
-        var pct = raidDps > 0 ? (personalDps / raidDps) * 100.0 : 0.0;
 
         var x = cursorPos.X + padding;
+        var hasLeftContent = false;
 
-        if (config.ShowStatusBarPersonalDps)
+        if (metrics != null)
         {
-            var dpsText = ValueFormatter.Format(personalDps, config);
-            drawList.AddText(new Vector2(x, textY), textColor, dpsText);
-            x += ImGui.CalcTextSize(dpsText).X;
+            foreach (var col in metrics)
+            {
+                if (hasLeftContent)
+                {
+                    var sep = " / ";
+                    drawList.AddText(new Vector2(x, textY), labelColor, sep);
+                    x += ImGui.CalcTextSize(sep).X;
+                }
 
-            var dpsLabel = " DPS";
-            drawList.AddText(new Vector2(x, textY), labelColor, dpsLabel);
-            x += ImGui.CalcTextSize(dpsLabel).X;
+                var valueText = localPlayer != null
+                    ? CombatantBarComponent.GetColumnDisplayValue(localPlayer, col, config, tab)
+                    : "0";
+                drawList.AddText(new Vector2(x, textY), textColor, valueText);
+                x += ImGui.CalcTextSize(valueText).X;
+
+                var label = " " + Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+                drawList.AddText(new Vector2(x, textY), labelColor, label);
+                x += ImGui.CalcTextSize(label).X;
+                hasLeftContent = true;
+            }
         }
 
-        if (config.ShowStatusBarPersonalDps && config.ShowStatusBarRaidDps)
-        {
-            var sep = " / ";
-            drawList.AddText(new Vector2(x, textY), labelColor, sep);
-            x += ImGui.CalcTextSize(sep).X;
-        }
-
-        if (config.ShowStatusBarRaidDps)
-        {
-            var rdpsText = ValueFormatter.Format(raidDps, config);
-            drawList.AddText(new Vector2(x, textY), textColor, rdpsText);
-            x += ImGui.CalcTextSize(rdpsText).X;
-
-            var pctText = $" RDPS ({ValueFormatter.FormatPercent(pct, config.PercentDecimalPlaces)})";
-            drawList.AddText(new Vector2(x, textY), labelColor, pctText);
-        }
-
-        if (config.ShowStatusBarTimer)
+        // Timer (right-aligned)
+        if (showTimer)
         {
             var timerText = encounter.Encounter.Duration;
             var timerWidth = ImGui.CalcTextSize(timerText).X;
@@ -108,6 +105,4 @@ public class StatusBarComponent
         ImGui.GetFont().Scale = prevScale;
         ImGui.PopFont();
     }
-
-
 }

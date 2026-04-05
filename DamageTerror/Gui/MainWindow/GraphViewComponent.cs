@@ -115,7 +115,7 @@ public class GraphViewComponent
         if (!config.GraphViewShowXAxisLabels)
             xAxisFlags |= ImPlotAxisFlags.NoTickLabels;
 
-        var yAxisFlags = ImPlotAxisFlags.AutoFit;
+        var yAxisFlags = maxVal > 0f ? ImPlotAxisFlags.AutoFit : ImPlotAxisFlags.None;
         if (!config.GraphViewShowGrid)
             yAxisFlags |= ImPlotAxisFlags.NoGridLines;
         if (!config.GraphViewShowYAxisLabels)
@@ -166,6 +166,7 @@ public class GraphViewComponent
 
             // Custom Y-axis ticks with K/M abbreviations, skipping 0
             if (maxVal > 0f) GraphRenderHelper.SetupAbbreviatedYTicks(maxVal, config.GraphViewYAxisHeadroom, config.GraphViewYAxisTickCount);
+            else ImPlot.SetupAxisLimits(ImAxis.Y1, 0, 1, ImPlotCond.Always);
 
             var defaultThickness = config.GraphViewLineThickness;
             var selfThickness = config.GraphViewHighlightSelf ? config.GraphViewSelfLineThickness : defaultThickness;
@@ -275,9 +276,9 @@ public class GraphViewComponent
                 // ── Skill use markers per combatant, split by metric type ──
                 if (!combatantHidden)
                 {
-                    var dpsMc = activeTab?.DpsMarkers;
-                    var hpsMc = activeTab?.HpsMarkers;
-                    var dtpsMc = activeTab?.DtpsMarkers;
+                    var dpsMc = config.GraphViewDpsMarkers;
+                    var hpsMc = config.GraphViewHpsMarkers;
+                    var dtpsMc = config.GraphViewDtpsMarkers;
 
                     List<SkillUseEvent>? sourceEvents = null;
                     if ((dpsMc?.ShowMarkers == true && dpsVals != null)
@@ -317,9 +318,9 @@ public class GraphViewComponent
             // Uses plot-space coordinates (from GetPlotMousePos, which accounts for zoom/pan)
             // with per-axis normalization by plot pixel size, giving uniform hover behaviour
             // regardless of where markers sit on the graph or the current zoom level.
-            var anyMarkersEnabled = activeTab?.DpsMarkers.ShowMarkers == true
-                                || activeTab?.HpsMarkers.ShowMarkers == true
-                                || activeTab?.DtpsMarkers.ShowMarkers == true;
+            var anyMarkersEnabled = config.GraphViewDpsMarkers.ShowMarkers
+                                || config.GraphViewHpsMarkers.ShowMarkers
+                                || config.GraphViewDtpsMarkers.ShowMarkers;
             if (anyMarkersEnabled && ImPlot.IsPlotHovered())
             {
                 var mouse = ImPlot.GetPlotMousePos();
@@ -330,9 +331,9 @@ public class GraphViewComponent
                 SkillMarkerConfig? bestMc = null;
                 var bestIsDamageTaken = false;
 
-                var ttDpsMc = activeTab?.DpsMarkers;
-                var ttHpsMc = activeTab?.HpsMarkers;
-                var ttDtpsMc = activeTab?.DtpsMarkers;
+                var ttDpsMc = config.GraphViewDpsMarkers;
+                var ttHpsMc = config.GraphViewHpsMarkers;
+                var ttDtpsMc = config.GraphViewDtpsMarkers;
 
                 foreach (var (combatant, samples) in allSeries)
                 {

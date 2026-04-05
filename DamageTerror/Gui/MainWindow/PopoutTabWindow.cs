@@ -97,8 +97,7 @@ public class PopoutTabWindow : Window, IDisposable
     {
         RespectCloseHotkey = !plugin.Config.IgnoreEscClose;
 
-        var io = ImGui.GetIO();
-        var forceShowHeader = io.KeyCtrl && io.KeyShift;
+        var forceShowHeader = MeterWindowHelper.IsModifierActive(plugin.Config);
 
         if (plugin.Config.HideWindowHeader && !forceShowHeader)
             Flags |= ImGuiWindowFlags.NoTitleBar;
@@ -128,7 +127,7 @@ public class PopoutTabWindow : Window, IDisposable
         Flags |= ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
 
         ImGui.PushStyleColor(ImGuiCol.WindowBg, plugin.Config.WindowBackgroundColor);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, plugin.Config.WindowRounding);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
     }
 
     public override void PostDraw()
@@ -139,6 +138,31 @@ public class PopoutTabWindow : Window, IDisposable
 
     public override void Draw()
     {
+        var padLeft = plugin.Config.WindowPaddingLeft;
+        var padRight = plugin.Config.WindowPaddingRight;
+        var padTop = plugin.Config.WindowPaddingTop;
+        var padBottom = plugin.Config.WindowPaddingBottom;
+
+        // If the status bar is the last visible layout element, skip bottom padding so it sits flush
+        var modifierActiveEarly = MeterWindowHelper.IsModifierActive(plugin.Config);
+        LayoutElement? lastVisibleEl = null;
+        foreach (var el in plugin.Config.Layout)
+        {
+            if (el == LayoutElement.MeterTabs) continue;
+            if (plugin.Config.CtrlShiftOnlyElements.Contains(el) && !modifierActiveEarly)
+                continue;
+            lastVisibleEl = el;
+        }
+        var effectivePadBottom = lastVisibleEl == LayoutElement.StatusBar ? 0f : padBottom;
+
+        ImGui.SetCursorPos(new Vector2(padLeft, ImGui.GetCursorPosY() + padTop));
+        var avail = ImGui.GetContentRegionAvail();
+        if (!ImGui.BeginChild("##paddedContent", new Vector2(avail.X - padRight, avail.Y - effectivePadBottom), false))
+        {
+            ImGui.EndChild();
+            return;
+        }
+
         using var fontScope = plugin.Config.EnableCustomFont ? plugin.FontService?.PushFont() : null;
 
         var config = plugin.Config;
@@ -146,6 +170,7 @@ public class PopoutTabWindow : Window, IDisposable
         if (tab == null)
         {
             IsOpen = false;
+            ImGui.EndChild();
             return;
         }
 
@@ -178,13 +203,13 @@ public class PopoutTabWindow : Window, IDisposable
         // Calculate height reserved for elements rendered after CombatantBars
         float afterBarsHeight = 0f;
         bool passedBars = false;
-        var ctrlShiftHeldForHeight = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
+        var modifierHeld = MeterWindowHelper.IsModifierActive(config);
         foreach (var el in config.Layout)
         {
             // Skip MeterTabs in popout — this window is already a single tab
             if (el == LayoutElement.MeterTabs)
                 continue;
-            if (config.CtrlShiftOnlyElements.Contains(el) && !ctrlShiftHeldForHeight)
+            if (config.CtrlShiftOnlyElements.Contains(el) && !modifierHeld)
                 continue;
             if (passedBars)
             {
@@ -210,16 +235,17 @@ public class PopoutTabWindow : Window, IDisposable
             ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
             if (ImGui.Button("Reconnect"))
                 Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+            ImGui.EndChild();
             return;
         }
 
-        var ctrlShiftHeld = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
+        var modifierActive = MeterWindowHelper.IsModifierActive(config);
         foreach (var element in config.Layout)
         {
             // Skip MeterTabs — this popout is already a single tab
             if (element == LayoutElement.MeterTabs)
                 continue;
-            if (config.CtrlShiftOnlyElements.Contains(element) && !ctrlShiftHeld)
+            if (config.CtrlShiftOnlyElements.Contains(element) && !modifierActive)
                 continue;
 
             switch (element)
@@ -236,13 +262,14 @@ public class PopoutTabWindow : Window, IDisposable
                             if (ImGui.Button("Reconnect"))
                                 Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
                         }
+                        ImGui.EndChild();
                         return;
                     }
                     break;
 
                 case LayoutElement.StatusBar:
                     if (encounter != null)
-                        statusBarComponent.Render(encounter, currentPlayerName);
+                        statusBarComponent.Render(encounter, currentPlayerName, tab);
                     break;
 
                 case LayoutElement.CombatantBars:
@@ -250,12 +277,21 @@ public class PopoutTabWindow : Window, IDisposable
                     if (combatants == null || combatants.Count == 0)
                     {
                         ImGui.TextDisabled("No combatants match this tab's filter.");
-                        break;
                     }
-                    DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, tab, currentPlayerName, encounter, headerComponent.IsViewingLive);
+                    else
+                    {
+                        DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, tab, currentPlayerName, encounter, headerComponent.IsViewingLive);
+                    }
+                    // Anchor post-bars elements to the bottom of the content area
+                    if (afterBarsHeight > 0)
+                    {
+                        var contentMaxY = ImGui.GetWindowContentRegionMax().Y;
+                        ImGui.SetCursorPosY(contentMaxY - afterBarsHeight);
+                    }
                     break;
             }
         }
+        ImGui.EndChild();
     }
 
     public void SetVisible(bool visible)
@@ -297,7 +333,7 @@ public class PopoutTabWindow : Window, IDisposable
                     if (barComponent.Render(combatant, maxVal, i, sortBy, activeTab, currentPlayerName))
                         detailPanel.Toggle(i);
 
-                    detailPanel.Render(combatant, i, snapshot, isLive);
+                    detailPanel.Render(combatant, i, snapshot, isLive, activeTab);
                 }
             }
         }

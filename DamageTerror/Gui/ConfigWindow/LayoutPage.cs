@@ -72,7 +72,7 @@ public static class LayoutPage
                 changed = true;
             }
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Only show this component while Ctrl + Shift is held.");
+                ImGui.SetTooltip("Only show this component while the modifier key is active.");
 
             ImGui.SameLine();
 

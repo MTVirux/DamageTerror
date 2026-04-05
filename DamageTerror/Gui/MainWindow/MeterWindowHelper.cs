@@ -6,6 +6,37 @@ namespace DamageTerror.Gui.MainWindow;
 
 internal static class MeterWindowHelper
 {
+    private static bool toggleState;
+    private static bool wasModifierDown;
+
+    /// <summary>
+    /// Returns true when the configured modifier combo is active,
+    /// respecting the hold/toggle mode setting.
+    /// </summary>
+    public static bool IsModifierActive(Configuration config)
+    {
+        var io = ImGui.GetIO();
+        var down = config.ModifierKeyCombo switch
+        {
+            ModifierCombo.CtrlShift => io.KeyCtrl && io.KeyShift,
+            ModifierCombo.CtrlAlt   => io.KeyCtrl && io.KeyAlt,
+            ModifierCombo.ShiftAlt  => io.KeyShift && io.KeyAlt,
+            ModifierCombo.Ctrl      => io.KeyCtrl,
+            ModifierCombo.Shift     => io.KeyShift,
+            ModifierCombo.Alt       => io.KeyAlt,
+            _ => io.KeyCtrl && io.KeyShift,
+        };
+
+        if (config.ModifierKeyMode == ModifierMode.Hold)
+            return down;
+
+        // Toggle: flip state on rising edge
+        if (down && !wasModifierDown)
+            toggleState = !toggleState;
+        wasModifierDown = down;
+        return toggleState;
+    }
+
     public static bool IsDutyTypeEnabled(Configuration config)
     {
         var contentType = Content.ContentType;
@@ -131,7 +162,7 @@ internal static class MeterWindowHelper
             if (ImGui.IsMouseHoveringRect(hitMin, hitMax))
             {
                 ImGui.BeginTooltip();
-                ImGui.TextUnformatted(Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()));
+                ImGui.TextUnformatted(Configuration.FullColumnNames.GetValueOrDefault(col, col.ToString()));
                 ImGui.EndTooltip();
             }
 

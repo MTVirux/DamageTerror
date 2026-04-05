@@ -44,6 +44,8 @@ public class MainWindow : Window, IDisposable
     private DateTime? combatEndTime;
     private int selectedMeterTab;
     private bool wasDrawnLastFrame = true;
+    private GifAnimator? gifAnimator;
+    private string? gifAnimatorPath;
 
     private int SelectedMeterTab
     {
@@ -133,6 +135,8 @@ public class MainWindow : Window, IDisposable
 
     public void Dispose()
     {
+        gifAnimator?.Dispose();
+        gifAnimator = null;
     }
 
     public override bool DrawConditions()
@@ -142,8 +146,7 @@ public class MainWindow : Window, IDisposable
     {
         RespectCloseHotkey = !this.plugin.Config.IgnoreEscClose;
 
-        var io = ImGui.GetIO();
-        var forceShowHeader = io.KeyCtrl && io.KeyShift;
+        var forceShowHeader = MeterWindowHelper.IsModifierActive(plugin.Config);
         var isCollapsed = IsOpen && !wasDrawnLastFrame;
         wasDrawnLastFrame = false;
 
@@ -179,7 +182,7 @@ public class MainWindow : Window, IDisposable
         Flags |= ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
 
         ImGui.PushStyleColor(ImGuiCol.WindowBg, this.plugin.Config.WindowBackgroundColor);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, this.plugin.Config.WindowRounding);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
     }
 
     public override void PostDraw()
@@ -191,6 +194,34 @@ public class MainWindow : Window, IDisposable
     public override void Draw()
     {
         wasDrawnLastFrame = true;
+        plugin.DataService.CheckStaleness();
+
+        DrawBackgroundImage();
+
+        var padLeft = plugin.Config.WindowPaddingLeft;
+        var padRight = plugin.Config.WindowPaddingRight;
+        var padTop = plugin.Config.WindowPaddingTop;
+        var padBottom = plugin.Config.WindowPaddingBottom;
+
+        // If the status bar is the last visible layout element, skip bottom padding so it sits flush
+        var modifierActiveEarly = MeterWindowHelper.IsModifierActive(plugin.Config);
+        LayoutElement? lastVisibleEl = null;
+        foreach (var el in plugin.Config.Layout)
+        {
+            if (plugin.Config.CtrlShiftOnlyElements.Contains(el) && !modifierActiveEarly)
+                continue;
+            lastVisibleEl = el;
+        }
+        var effectivePadBottom = lastVisibleEl == LayoutElement.StatusBar ? 0f : padBottom;
+
+        ImGui.SetCursorPos(new Vector2(padLeft, ImGui.GetCursorPosY() + padTop));
+        var avail = ImGui.GetContentRegionAvail();
+        if (!ImGui.BeginChild("##paddedContent", new Vector2(avail.X - padRight, avail.Y - effectivePadBottom), false))
+        {
+            ImGui.EndChild();
+            return;
+        }
+
         using var fontScope = plugin.Config.EnableCustomFont ? plugin.FontService?.PushFont() : null;
 
         var config = plugin.Config;
@@ -201,11 +232,11 @@ public class MainWindow : Window, IDisposable
             ? encounter.PlayerName
             : plugin.DataService.PlayerName;
 
-        // Resolve active tab (needs encounter to exist for filtering)
+        // Resolve active tab (always resolve so status bar can read per-tab content settings)
         var useTabBar = config.ShowTabBar && config.MeterTabs.Count > 0;
         MeterTab? activeTab = null;
 
-        if (useTabBar && encounter != null)
+        if (config.MeterTabs.Count > 0 && encounter != null)
         {
             if (selectedMeterTab >= config.MeterTabs.Count)
                 SelectedMeterTab = 0;
@@ -245,10 +276,11 @@ public class MainWindow : Window, IDisposable
         // Calculate height reserved for elements rendered after CombatantBars
         float afterBarsHeight = 0f;
         bool passedBars = false;
-        var ctrlShiftHeldForHeight = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
+        var modifierHeld = MeterWindowHelper.IsModifierActive(config);
         foreach (var el in config.Layout)
         {
-            if (config.CtrlShiftOnlyElements.Contains(el) && !ctrlShiftHeldForHeight)
+            if (config.CtrlShiftOnlyElements.Contains(el) && !modifierHeld
+                && !(el == LayoutElement.EncounterSelect && headerComponent.IsComboOpen))
                 continue;
             if (passedBars)
             {
@@ -261,7 +293,7 @@ public class MainWindow : Window, IDisposable
                         afterBarsHeight += headerComponent.GetHeight();
                         break;
                     case LayoutElement.MeterTabs when useTabBar && encounter != null:
-                        afterBarsHeight += config.TabButtonHeight + ImGui.GetStyle().ItemSpacing.Y;
+                        afterBarsHeight += config.TabButtonHeight;
                         break;
                 }
             }
@@ -277,13 +309,15 @@ public class MainWindow : Window, IDisposable
             ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
             if (ImGui.Button("Reconnect"))
                 Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+            ImGui.EndChild();
             return;
         }
 
-        var ctrlShiftHeld = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
+        var modifierActive = MeterWindowHelper.IsModifierActive(config);
         foreach (var element in config.Layout)
         {
-            if (config.CtrlShiftOnlyElements.Contains(element) && !ctrlShiftHeld)
+            if (config.CtrlShiftOnlyElements.Contains(element) && !modifierActive
+                && !(element == LayoutElement.EncounterSelect && headerComponent.IsComboOpen))
                 continue;
             switch (element)
             {
@@ -301,6 +335,7 @@ public class MainWindow : Window, IDisposable
                             if (ImGui.Button("Reconnect"))
                                 Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
                         }
+                        ImGui.EndChild();
                         return;
                     }
                     break;
@@ -335,7 +370,7 @@ public class MainWindow : Window, IDisposable
 
                 case LayoutElement.StatusBar:
                     if (encounter != null)
-                        statusBarComponent.Render(encounter, currentPlayerName);
+                        statusBarComponent.Render(encounter, currentPlayerName, activeTab);
                     break;
 
                 case LayoutElement.CombatantBars:
@@ -343,12 +378,91 @@ public class MainWindow : Window, IDisposable
                     if (combatants == null || combatants.Count == 0)
                     {
                         ImGui.TextDisabled(useTabBar ? "No combatants match this tab's filter." : "No combatant data.");
-                        break;
                     }
-                    DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, activeTab, currentPlayerName, encounter, headerComponent.IsViewingLive);
+                    else
+                    {
+                        DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, activeTab, currentPlayerName, encounter, headerComponent.IsViewingLive);
+                    }
+                    // Anchor post-bars elements to the bottom of the content area
+                    if (afterBarsHeight > 0)
+                    {
+                        var contentMaxY = ImGui.GetWindowContentRegionMax().Y;
+                        ImGui.SetCursorPosY(contentMaxY - afterBarsHeight);
+                    }
                     break;
             }
         }
+        ImGui.EndChild();
+
+        DrawContextMenu();
+    }
+
+    private void DrawContextMenu()
+    {
+        // Open on right-click over the window background (not over other items)
+        if (ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows) && ImGui.IsMouseClicked(ImGuiMouseButton.Right) && !ImGui.IsAnyItemHovered())
+            ImGui.OpenPopup("##MainWindowContext");
+
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(3, 3));
+        if (ImGui.BeginPopup("##MainWindowContext"))
+        {
+            // Go to Live (hide if already viewing live)
+            if (!headerComponent.IsViewingLive)
+            {
+                if (ImGui.MenuItem("Go to Live"))
+                    headerComponent.ResetSelection();
+            }
+
+            // Cut encounter (only if active)
+            var active = plugin.DataService.Store.ActiveEncounter;
+            var isOngoing = active?.Encounter.IsActive == true;
+            ImGui.BeginDisabled(!isOngoing);
+            if (ImGui.MenuItem("Cut Encounter"))
+            {
+                plugin.DataService.Store.ArchiveActive();
+                plugin.DataService.Store.Save();
+            }
+            ImGui.EndDisabled();
+
+            ImGui.Separator();
+
+            // Swap view mode
+            var viewLabel = currentActiveTab?.ViewMode == ViewMode.LineGraph ? "Swap to Bar View" : "Swap to Graph View";
+            ImGui.BeginDisabled(currentActiveTab == null);
+            if (ImGui.MenuItem(viewLabel))
+            {
+                if (currentActiveTab != null)
+                {
+                    currentActiveTab.ViewMode = currentActiveTab.ViewMode == ViewMode.Bars ? ViewMode.LineGraph : ViewMode.Bars;
+                    plugin.SaveConfig();
+                }
+            }
+            ImGui.EndDisabled();
+
+            ImGui.Separator();
+
+            // Lock/Unlock window
+            var lockLabel = plugin.Config.PinMainWindow ? "Unlock Window" : "Lock Window";
+            if (ImGui.MenuItem(lockLabel))
+            {
+                if (!plugin.Config.PinMainWindow)
+                {
+                    plugin.Config.MainWindowPos = ImGui.GetWindowPos();
+                    plugin.Config.MainWindowSize = ImGui.GetWindowSize();
+                }
+                plugin.Config.PinMainWindow = !plugin.Config.PinMainWindow;
+                plugin.SaveConfig();
+                if (lockButton != null)
+                    lockButton.Icon = plugin.Config.PinMainWindow ? FontAwesomeIcon.Lock : FontAwesomeIcon.LockOpen;
+            }
+
+            // Open settings
+            if (ImGui.MenuItem("Open Settings"))
+                plugin.OpenConfigUi();
+
+            ImGui.EndPopup();
+        }
+        ImGui.PopStyleVar();
     }
 
     private void DrawMeterTabButtons(Configuration config)
@@ -477,6 +591,131 @@ public class MainWindow : Window, IDisposable
             }
         }
         ImGui.EndChild();
+    }
+
+    private static bool IsGif(string path)
+        => path.EndsWith(".gif", StringComparison.OrdinalIgnoreCase);
+
+    private void EnsureGifAnimator(string path)
+    {
+        if (gifAnimatorPath == path)
+            return;
+
+        gifAnimator?.Dispose();
+        gifAnimator = null;
+        gifAnimatorPath = path;
+
+        if (!IsGif(path))
+            return;
+
+        try
+        {
+            var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "DamageTerror", "gif_frames");
+            gifAnimator = new GifAnimator(textureProvider, path, tempDir);
+        }
+        catch
+        {
+            gifAnimator = null;
+        }
+    }
+
+    private void DrawBackgroundImage()
+    {
+        var path = plugin.Config.BackgroundImagePath;
+        if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
+        {
+            if (gifAnimatorPath != null)
+            {
+                gifAnimator?.Dispose();
+                gifAnimator = null;
+                gifAnimatorPath = null;
+            }
+            return;
+        }
+
+        Dalamud.Bindings.ImGui.ImTextureID texHandle;
+        float imgW, imgH;
+
+        if (IsGif(path))
+        {
+            EnsureGifAnimator(path);
+            if (gifAnimator == null || !gifAnimator.TryGetCurrentFrame(out texHandle, out var w, out var h))
+                return;
+            imgW = w;
+            imgH = h;
+        }
+        else
+        {
+            if (gifAnimatorPath != null)
+            {
+                gifAnimator?.Dispose();
+                gifAnimator = null;
+                gifAnimatorPath = null;
+            }
+            var texture = textureProvider.GetFromFile(path);
+            if (!texture.TryGetWrap(out var wrap, out _))
+                return;
+            texHandle = wrap.Handle;
+            imgW = wrap.Width;
+            imgH = wrap.Height;
+        }
+
+        var drawList = ImGui.GetWindowDrawList();
+        var windowPos = ImGui.GetWindowPos();
+        var windowSize = ImGui.GetWindowSize();
+
+        var opacity = plugin.Config.BackgroundImageOpacity;
+        var tint = plugin.Config.BackgroundImageTint;
+        var color = new Vector4(tint.X, tint.Y, tint.Z, tint.W * opacity);
+        var tintU32 = ImGui.ColorConvertFloat4ToU32(color);
+
+        var winW = windowSize.X;
+        var winH = windowSize.Y;
+
+        switch (plugin.Config.BackgroundImageScale)
+        {
+            case BackgroundImageScaleMode.Stretch:
+                drawList.AddImage(texHandle, windowPos, windowPos + windowSize, Vector2.Zero, Vector2.One, tintU32);
+                break;
+
+            case BackgroundImageScaleMode.Fit:
+            {
+                var scale = Math.Min(winW / imgW, winH / imgH);
+                var drawW = imgW * scale;
+                var drawH = imgH * scale;
+                var offset = new Vector2((winW - drawW) * 0.5f, (winH - drawH) * 0.5f);
+                drawList.AddImage(texHandle, windowPos + offset, windowPos + offset + new Vector2(drawW, drawH), Vector2.Zero, Vector2.One, tintU32);
+                break;
+            }
+
+            case BackgroundImageScaleMode.Fill:
+            {
+                var scale = Math.Max(winW / imgW, winH / imgH);
+                var drawW = imgW * scale;
+                var drawH = imgH * scale;
+                var offset = new Vector2((winW - drawW) * 0.5f, (winH - drawH) * 0.5f);
+                var uvMin = new Vector2(-offset.X / drawW, -offset.Y / drawH);
+                var uvMax = new Vector2((winW - offset.X) / drawW, (winH - offset.Y) / drawH);
+                drawList.AddImage(texHandle, windowPos, windowPos + windowSize, uvMin, uvMax, tintU32);
+                break;
+            }
+
+            case BackgroundImageScaleMode.Tile:
+            {
+                var tilesX = (int)Math.Ceiling(winW / imgW);
+                var tilesY = (int)Math.Ceiling(winH / imgH);
+                for (var ty = 0; ty < tilesY; ty++)
+                {
+                    for (var tx = 0; tx < tilesX; tx++)
+                    {
+                        var tilePos = windowPos + new Vector2(tx * imgW, ty * imgH);
+                        var tileEnd = tilePos + new Vector2(imgW, imgH);
+                        drawList.AddImage(texHandle, tilePos, tileEnd, Vector2.Zero, Vector2.One, tintU32);
+                    }
+                }
+                break;
+            }
+        }
     }
 
     private void DrawMeterHeader(MeterTab? activeTab)
