@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Bindings.ImPlot;
+using DamageTerror.Gui.ConfigWindow;
 using DamageTerror.Services;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 using ImPlot = Dalamud.Bindings.ImPlot.ImPlot;
@@ -19,14 +20,7 @@ public class CombatantDetailPanel
     private double scrollXMin = double.NaN;
     private double scrollXMax = double.NaN;
 
-    private static readonly BarColumn[] DamageSection = { BarColumn.Dps, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.Damage, BarColumn.DamagePercent, BarColumn.MaxHit, BarColumn.MaxHitValue, BarColumn.DamageShield, BarColumn.RaidDps };
-    private static readonly BarColumn[] HealingSection = { BarColumn.Hps, BarColumn.InstantHps, BarColumn.Healed, BarColumn.HealPercent, BarColumn.Overheal, BarColumn.OverhealAmount, BarColumn.CritHealPct, BarColumn.MaxHeal, BarColumn.MaxHealValue, BarColumn.HealCount, BarColumn.RaidHps };
-    private static readonly BarColumn[] HitStatSection = { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses };
-    private static readonly BarColumn[] DefenseSection = { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct, BarColumn.HealsTaken };
-    private static readonly BarColumn[] OtherSection = { BarColumn.Deaths, BarColumn.Kills, BarColumn.CombatantDuration, BarColumn.PowerHeal };
-#if DEBUG
-    private static readonly BarColumn[] UnknownSection = { BarColumn.PowerDrain, BarColumn.AbsorbHeal, BarColumn.MaxHealWard };
-#endif
+    internal static readonly (string Name, BarColumn[] Columns)[] Sections = MetricPicker.BarColumnCategories;
 
     private EncounterSnapshot? currentSnapshot;
     private bool isLive;
@@ -731,27 +725,6 @@ public class CombatantDetailPanel
         }
     }
 
-    internal const string SectionDamage = "Damage";
-    internal const string SectionHealing = "Healing";
-    internal const string SectionHitStats = "Hit Statistics";
-    internal const string SectionDefense = "Defense";
-    internal const string SectionOther = "Other";
-#if DEBUG
-    internal const string SectionUnknown = "Unknown";
-#endif
-
-    internal static readonly (string Name, BarColumn[] Columns)[] Sections =
-    {
-        (SectionDamage, DamageSection),
-        (SectionHealing, HealingSection),
-        (SectionHitStats, HitStatSection),
-        (SectionDefense, DefenseSection),
-        (SectionOther, OtherSection),
-#if DEBUG
-        (SectionUnknown, UnknownSection),
-#endif
-    };
-
     private void DrawDetailsTab(CombatantEntry combatant, int index, HashSet<BarColumn> vis, Vector4 lc, MeterTab? activeTab)
     {
         ImGui.Spacing();
@@ -764,8 +737,7 @@ public class CombatantDetailPanel
             if (!HasAny(vis, defaultOrder))
                 continue;
 
-            var tabLabel = sectionName == SectionHitStats ? "Hit Stats" : sectionName;
-            if (!ImGui.BeginTabItem($"{tabLabel}##{index}"))
+            if (!ImGui.BeginTabItem($"{sectionName}##{index}"))
                 continue;
 
             var order = GetSectionOrder(sectionName, defaultOrder, activeTab);
