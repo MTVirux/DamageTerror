@@ -3,7 +3,6 @@ using Dalamud.Interface.ImGuiFileDialog;
 using DamageTerror.Enums;
 using DamageTerror.Helpers;
 using DamageTerror.Services;
-using DamageTerror.Gui.MainWindow;
 using Dalamud.Interface;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
@@ -1209,54 +1208,9 @@ public class AppearanceTab
         return changed;
     }
 
-    public static readonly Dictionary<TooltipField, string> TooltipFieldLabels = new()
-    {
-        { TooltipField.Name, "Name" },
-        { TooltipField.Job, "Job" },
-        { TooltipField.Dps, "DPS" },
-        { TooltipField.Hps, "HPS" },
-        { TooltipField.Damage, "Damage" },
-        { TooltipField.Healed, "Healed" },
-        { TooltipField.DamagePercent, "Damage %" },
-        { TooltipField.HealPercent, "Heal %" },
-        { TooltipField.Crit, "Crit %" },
-        { TooltipField.DirectHit, "Direct Hit %" },
-        { TooltipField.CritDirectHit, "Crit DH %" },
-        { TooltipField.Deaths, "Deaths" },
-        { TooltipField.DamageTaken, "Damage Taken" },
-        { TooltipField.Overheal, "Overheal %" },
-        { TooltipField.OverhealAmount, "Overheal" },
-        { TooltipField.MaxHit, "Max Hit" },
-        { TooltipField.MaxHitValue, "Max Hit Value" },
-        { TooltipField.MaxHeal, "Max Heal" },
-        { TooltipField.MaxHealValue, "Max Heal Value" },
-        { TooltipField.PeakDps, "Peak DPS" },
-        { TooltipField.Swings, "Swings" },
-        { TooltipField.Hits, "Hits" },
-        { TooltipField.Misses, "Misses" },
-        { TooltipField.HitRate, "Hit Rate" },
-        { TooltipField.Kills, "Kills" },
-        { TooltipField.CombatantDuration, "Duration" },
-        { TooltipField.HealsTaken, "Heals Taken" },
-        { TooltipField.InstantDps, "Instant DPS" },
-        { TooltipField.InstantHps, "Instant HPS" },
-        { TooltipField.CritHealPct, "Crit Heal %" },
-        { TooltipField.HealCount, "Heal Count" },
-        { TooltipField.DamageShield, "Damage Shield" },
-        { TooltipField.MaxHealWard, "Max Heal Ward" },
-        { TooltipField.RaidDps, "Group DPS" },
-        { TooltipField.RaidHps, "Group HPS" },
-        { TooltipField.TopDamageSkills, "Top Damage Skills" },
-        { TooltipField.TopHealingSkills, "Top Healing Skills" },
-    };
+    public static Dictionary<TooltipField, string> TooltipFieldLabels => MetricPicker.TooltipFieldLabels;
 
-    public static readonly (string Name, TooltipField[] Fields)[] DisabledTooltipCategories =
-    {
-        ("Damage", new[] { TooltipField.Dps, TooltipField.InstantDps, TooltipField.Damage, TooltipField.DamagePercent, TooltipField.PeakDps, TooltipField.MaxHit, TooltipField.MaxHitValue, TooltipField.DamageTaken, TooltipField.DamageShield, TooltipField.RaidDps, TooltipField.TopDamageSkills }),
-        ("Healing", new[] { TooltipField.Hps, TooltipField.InstantHps, TooltipField.Healed, TooltipField.HealPercent, TooltipField.Overheal, TooltipField.OverhealAmount, TooltipField.MaxHeal, TooltipField.MaxHealValue, TooltipField.MaxHealWard, TooltipField.CritHealPct, TooltipField.HealCount, TooltipField.HealsTaken, TooltipField.RaidHps, TooltipField.TopHealingSkills }),
-        ("Rates", new[] { TooltipField.Crit, TooltipField.DirectHit, TooltipField.CritDirectHit, TooltipField.HitRate, TooltipField.Swings, TooltipField.Hits, TooltipField.Misses }),
-        ("Other", new[] { TooltipField.Name, TooltipField.Job, TooltipField.Deaths, TooltipField.Kills, TooltipField.CombatantDuration }),
-    };
+    public static (string Name, TooltipField[] Fields)[] DisabledTooltipCategories => MetricPicker.TooltipFieldCategories;
 
     private static bool DrawTooltipTab(Configuration config)
     {
@@ -1345,7 +1299,7 @@ public class AppearanceTab
         return changed;
     }
 
-    internal static readonly (string Name, BarColumn[] Columns)[] DetailCategories = CombatantDetailPanel.Sections;
+    internal static (string Name, BarColumn[] Columns)[] DetailCategories => MetricPicker.BarColumnCategories;
 
     private static bool DrawDetailsTab(Configuration config)
     {
