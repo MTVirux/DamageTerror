@@ -39,6 +39,7 @@ public class ThemePreset
     public Vector4 MeleeDpsColor { get; set; } = new(0.8f, 0.2f, 0.2f, 1.0f);
     public Vector4 RangedDpsColor { get; set; } = new(0.9f, 0.5f, 0.2f, 1.0f);
     public Vector4 CasterDpsColor { get; set; } = new(0.6f, 0.3f, 0.8f, 1.0f);
+    public Vector4 LimitBreakColor { get; set; } = new(1.0f, 0.5f, 0.0f, 1.0f);
     public Vector4 DefaultJobColor { get; set; } = new(0.5f, 0.5f, 0.5f, 1.0f);
 
 
@@ -48,7 +49,14 @@ public class ThemePreset
     public Vector4 NameTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 ValueTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 WindowBackgroundColor { get; set; } = new(0.06f, 0.06f, 0.06f, 0.94f);
-    public float WindowRounding { get; set; } = 0f;
+    public string? BackgroundImagePath { get; set; }
+    public float BackgroundImageOpacity { get; set; } = 1.0f;
+    public Vector4 BackgroundImageTint { get; set; } = new(1f, 1f, 1f, 1f);
+    public BackgroundImageScaleMode BackgroundImageScale { get; set; } = BackgroundImageScaleMode.Stretch;
+    public float WindowPaddingLeft { get; set; } = 8f;
+    public float WindowPaddingRight { get; set; } = 8f;
+    public float WindowPaddingTop { get; set; } = 8f;
+    public float WindowPaddingBottom { get; set; } = 8f;
 
     public Vector4 SelectionBarTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 SelectionBarBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
@@ -70,11 +78,10 @@ public class ThemePreset
     public int CustomFontIndex { get; set; }
     public float CustomFontSizePt { get; set; } = 14f;
     public string? CustomFontDisplayName { get; set; }
+    public string? CustomFontSpecJson { get; set; }
 
     public bool ShowStatusBar { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
-    public bool ShowStatusBarPersonalDps { get; set; } = true;
-    public bool ShowStatusBarRaidDps { get; set; } = true;
     public float StatusBarHeight { get; set; } = 20f;
     public float StatusBarFontSize { get; set; } = 14f;
     public float StatusBarPadding { get; set; } = 6f;
@@ -97,7 +104,41 @@ public class ThemePreset
     public float SkillBarRounding { get; set; } = 0f;
     public float SkillFontSize { get; set; } = 14f;
 
+    // Detail inline graph
+    public float GraphHeight { get; set; } = 120f;
+    public float GraphLineThickness { get; set; } = 2f;
+    public Vector4 GraphDpsColor { get; set; } = new(0.9f, 0.4f, 0.4f, 1f);
+    public Vector4 GraphHpsColor { get; set; } = new(0.4f, 0.85f, 0.4f, 1f);
+    public Vector4 GraphDtpsColor { get; set; } = new(0.4f, 0.55f, 0.9f, 1f);
+    public Vector4 GraphBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
+    public Vector4 GraphGridColor { get; set; } = new(0.3f, 0.3f, 0.3f, 0.3f);
+    public bool GraphShowLegend { get; set; } = true;
+    public bool GraphShowGrid { get; set; } = true;
+    public bool GraphShowXAxisLabels { get; set; } = true;
+    public bool GraphShowYAxisLabels { get; set; } = true;
+    public bool GraphShowDps { get; set; } = true;
+    public bool GraphShowHps { get; set; } = true;
+    public bool GraphShowDtps { get; set; } = true;
+    public float GraphSmoothingWindow { get; set; } = 5f;
+    public float GraphUpdateInterval { get; set; } = 0.25f;
+    public bool GraphShowLabels { get; set; } = true;
+    public float GraphLabelOffsetX { get; set; } = 8f;
+    public float GraphLabelOffsetY { get; set; } = 0f;
+    public float GraphMouseTextOpacity { get; set; } = 0.6f;
+    public float GraphYAxisHeadroom { get; set; } = 1.1f;
+    public int GraphYAxisTickCount { get; set; } = 8;
+    public float GraphXAxisPadding { get; set; } = 1.25f;
+    public bool GraphAutoScroll { get; set; } = false;
+    public float GraphAutoScrollWindow { get; set; } = 60f;
+    public float GraphAutoScrollSmoothing { get; set; } = 8f;
+    public float GraphFontSize { get; set; } = 14f;
+
+    public SkillMarkerConfig DetailDpsMarkers { get; set; } = new();
+    public SkillMarkerConfig DetailHpsMarkers { get; set; } = new();
+    public SkillMarkerConfig DetailDtpsMarkers { get; set; } = new();
+
     // Graph View (main window graph mode)
+    public bool GraphViewAutoHeight { get; set; } = true;
     public float GraphViewHeight { get; set; } = 300f;
     public float GraphViewLineThickness { get; set; } = 2f;
     public Vector4 GraphViewBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
@@ -108,32 +149,30 @@ public class ThemePreset
     public bool GraphViewShowYAxisLabels { get; set; } = true;
     public bool GraphViewHighlightSelf { get; set; } = true;
     public float GraphViewSelfLineThickness { get; set; } = 3.5f;
+    public float GraphViewSmoothingWindow { get; set; } = 5f;
+    public float GraphViewUpdateInterval { get; set; } = 0.25f;
+    public bool GraphViewShowLabels { get; set; } = true;
     public float GraphViewLabelOffsetX { get; set; } = 8f;
     public float GraphViewLabelOffsetY { get; set; } = 0f;
+    public float GraphViewFontSize { get; set; } = 14f;
+    public float GraphViewXAxisPadding { get; set; } = 1.25f;
+    public bool GraphViewAutoScroll { get; set; } = false;
+    public float GraphViewAutoScrollWindow { get; set; } = 60f;
+    public float GraphViewAutoScrollSmoothing { get; set; } = 8f;
+    public float GraphViewYAxisHeadroom { get; set; } = 1.1f;
+    public int GraphViewYAxisTickCount { get; set; } = 8;
+    public float GraphViewMouseTextOpacity { get; set; } = 0.6f;
+
+    public SkillMarkerConfig GraphViewDpsMarkers { get; set; } = new();
+    public SkillMarkerConfig GraphViewHpsMarkers { get; set; } = new();
+    public SkillMarkerConfig GraphViewDtpsMarkers { get; set; } = new();
 
     public bool ShowJobIcons { get; set; } = true;
     public bool ShowNameOnBar { get; set; } = true;
     public bool ShowJobAbbrevOnBar { get; set; }
     public bool ShowRankNumber { get; set; }
 
-    // Legacy column visibility — used only when Tabs is null (old presets)
-    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    public HashSet<BarColumn> VisibleColumns { get; set; } = new() { BarColumn.Dps };
-
-    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    public List<BarColumn> ColumnOrder { get; set; } = new()
-    {
-        BarColumn.DamagePercent,
-        BarColumn.CritDirectHit,
-        BarColumn.Crit,
-        BarColumn.DirectHit,
-        BarColumn.Deaths,
-        BarColumn.Healed,
-        BarColumn.Damage,
-        BarColumn.Hps,
-        BarColumn.Dps,
-    };
-
+    public Vector4 DetailBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
@@ -143,30 +182,12 @@ public class ThemePreset
     public bool ShowTooltip { get; set; } = true;
     public float TooltipDelay { get; set; } = 0.3f;
 
-    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    public List<TooltipField> TooltipFields { get; set; } = new()
-    {
-        TooltipField.Name,
-        TooltipField.Job,
-        TooltipField.Dps,
-        TooltipField.Damage,
-        TooltipField.DamagePercent,
-        TooltipField.Crit,
-        TooltipField.DirectHit,
-        TooltipField.CritDirectHit,
-        TooltipField.MaxHit,
-        TooltipField.Deaths,
-    };
-
     public Vector4 TooltipBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.95f);
     public Vector4 TooltipTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 TooltipLabelColor { get; set; } = new(0.6f, 0.6f, 0.6f, 1f);
     public float TooltipFontSize { get; set; } = 14f;
     public float TooltipRounding { get; set; } = 4f;
     public float TooltipPadding { get; set; } = 6f;
-
-    // Tab Definitions — when non-null, applying this preset replaces config tabs entirely
-    public List<MeterTab>? Tabs { get; set; }
 
     // Tab Button Styling
     public bool ShowTabBar { get; set; } = true;
@@ -179,6 +200,7 @@ public class ThemePreset
     public float TabButtonSpacing { get; set; } = 2f;
     public float TabButtonRounding { get; set; } = 4f;
     public float TabButtonFontSize { get; set; } = 14f;
+    public float TabButtonWidth { get; set; } = 80f;
     public bool TabButtonStretchToFit { get; set; } = true;
 
     public void ApplyTo(Configuration config)
@@ -212,6 +234,7 @@ public class ThemePreset
         config.MeleeDpsColor = MeleeDpsColor;
         config.RangedDpsColor = RangedDpsColor;
         config.CasterDpsColor = CasterDpsColor;
+        config.LimitBreakColor = LimitBreakColor;
         config.DefaultJobColor = DefaultJobColor;
 
         config.JobColors = JobColors != null ? new Dictionary<string, Vector4>(JobColors) : new();
@@ -220,7 +243,14 @@ public class ThemePreset
         config.NameTextColor = NameTextColor;
         config.ValueTextColor = ValueTextColor;
         config.WindowBackgroundColor = WindowBackgroundColor;
-        config.WindowRounding = WindowRounding;
+        config.BackgroundImagePath = BackgroundImagePath;
+        config.BackgroundImageOpacity = BackgroundImageOpacity;
+        config.BackgroundImageTint = BackgroundImageTint;
+        config.BackgroundImageScale = BackgroundImageScale;
+        config.WindowPaddingLeft = WindowPaddingLeft;
+        config.WindowPaddingRight = WindowPaddingRight;
+        config.WindowPaddingTop = WindowPaddingTop;
+        config.WindowPaddingBottom = WindowPaddingBottom;
 
         config.SelectionBarTextColor = SelectionBarTextColor;
         config.SelectionBarBackgroundColor = SelectionBarBackgroundColor;
@@ -242,11 +272,10 @@ public class ThemePreset
         config.CustomFontIndex = CustomFontIndex;
         config.CustomFontSizePt = CustomFontSizePt;
         config.CustomFontDisplayName = CustomFontDisplayName;
+        config.CustomFontSpecJson = CustomFontSpecJson;
 
         config.ShowStatusBar = ShowStatusBar;
         config.ShowStatusBarTimer = ShowStatusBarTimer;
-        config.ShowStatusBarPersonalDps = ShowStatusBarPersonalDps;
-        config.ShowStatusBarRaidDps = ShowStatusBarRaidDps;
         config.StatusBarHeight = StatusBarHeight;
         config.StatusBarFontSize = StatusBarFontSize;
         config.StatusBarPadding = StatusBarPadding;
@@ -269,19 +298,68 @@ public class ThemePreset
         config.SkillBarRounding = SkillBarRounding;
         config.SkillFontSize = SkillFontSize;
 
+        // Detail inline graph
+        config.GraphHeight = GraphHeight;
+        config.GraphLineThickness = GraphLineThickness;
+        config.GraphDpsColor = GraphDpsColor;
+        config.GraphHpsColor = GraphHpsColor;
+        config.GraphDtpsColor = GraphDtpsColor;
+        config.GraphBackgroundColor = GraphBackgroundColor;
+        config.GraphGridColor = GraphGridColor;
+        config.GraphShowLegend = GraphShowLegend;
+        config.GraphShowGrid = GraphShowGrid;
+        config.GraphShowXAxisLabels = GraphShowXAxisLabels;
+        config.GraphShowYAxisLabels = GraphShowYAxisLabels;
+        config.GraphShowDps = GraphShowDps;
+        config.GraphShowHps = GraphShowHps;
+        config.GraphShowDtps = GraphShowDtps;
+        config.GraphSmoothingWindow = GraphSmoothingWindow;
+        config.GraphUpdateInterval = GraphUpdateInterval;
+        config.GraphShowLabels = GraphShowLabels;
+        config.GraphLabelOffsetX = GraphLabelOffsetX;
+        config.GraphLabelOffsetY = GraphLabelOffsetY;
+        config.GraphMouseTextOpacity = GraphMouseTextOpacity;
+        config.GraphYAxisHeadroom = GraphYAxisHeadroom;
+        config.GraphYAxisTickCount = GraphYAxisTickCount;
+        config.GraphXAxisPadding = GraphXAxisPadding;
+        config.GraphAutoScroll = GraphAutoScroll;
+        config.GraphAutoScrollWindow = GraphAutoScrollWindow;
+        config.GraphAutoScrollSmoothing = GraphAutoScrollSmoothing;
+        config.GraphFontSize = GraphFontSize;
+
+        config.DetailDpsMarkers = DetailDpsMarkers.Clone();
+        config.DetailHpsMarkers = DetailHpsMarkers.Clone();
+        config.DetailDtpsMarkers = DetailDtpsMarkers.Clone();
+
         // Graph View
+        config.GraphViewAutoHeight = GraphViewAutoHeight;
         config.GraphViewHeight = GraphViewHeight;
         config.GraphViewLineThickness = GraphViewLineThickness;
         config.GraphViewBackgroundColor = GraphViewBackgroundColor;
         config.GraphViewGridColor = GraphViewGridColor;
+        config.GraphViewSmoothingWindow = GraphViewSmoothingWindow;
+        config.GraphViewUpdateInterval = GraphViewUpdateInterval;
         config.GraphViewShowLegend = GraphViewShowLegend;
         config.GraphViewShowGrid = GraphViewShowGrid;
         config.GraphViewShowXAxisLabels = GraphViewShowXAxisLabels;
         config.GraphViewShowYAxisLabels = GraphViewShowYAxisLabels;
         config.GraphViewHighlightSelf = GraphViewHighlightSelf;
         config.GraphViewSelfLineThickness = GraphViewSelfLineThickness;
+        config.GraphViewShowLabels = GraphViewShowLabels;
         config.GraphViewLabelOffsetX = GraphViewLabelOffsetX;
         config.GraphViewLabelOffsetY = GraphViewLabelOffsetY;
+        config.GraphViewFontSize = GraphViewFontSize;
+        config.GraphViewXAxisPadding = GraphViewXAxisPadding;
+        config.GraphViewAutoScroll = GraphViewAutoScroll;
+        config.GraphViewAutoScrollWindow = GraphViewAutoScrollWindow;
+        config.GraphViewAutoScrollSmoothing = GraphViewAutoScrollSmoothing;
+        config.GraphViewYAxisHeadroom = GraphViewYAxisHeadroom;
+        config.GraphViewYAxisTickCount = GraphViewYAxisTickCount;
+        config.GraphViewMouseTextOpacity = GraphViewMouseTextOpacity;
+
+        config.GraphViewDpsMarkers = GraphViewDpsMarkers.Clone();
+        config.GraphViewHpsMarkers = GraphViewHpsMarkers.Clone();
+        config.GraphViewDtpsMarkers = GraphViewDtpsMarkers.Clone();
 
         config.ShowJobIcons = ShowJobIcons;
         config.ShowNameOnBar = ShowNameOnBar;
@@ -299,23 +377,10 @@ public class ThemePreset
         config.TabButtonSpacing = TabButtonSpacing;
         config.TabButtonRounding = TabButtonRounding;
         config.TabButtonFontSize = TabButtonFontSize;
+        config.TabButtonWidth = TabButtonWidth;
         config.TabButtonStretchToFit = TabButtonStretchToFit;
 
-        // Tab definitions — replace tabs entirely when preset defines them
-        if (Tabs is { Count: > 0 })
-        {
-            config.MeterTabs = Tabs.Select(t => t.Clone()).ToList();
-        }
-        else
-        {
-            // Legacy path: apply column visibility from top-level set to all existing tabs
-            foreach (var tab in config.MeterTabs)
-            {
-                tab.VisibleColumns = new HashSet<BarColumn>(VisibleColumns);
-                tab.ColumnOrder = new List<BarColumn>(ColumnOrder);
-            }
-        }
-
+        config.DetailBackgroundColor = DetailBackgroundColor;
         config.DetailLabelColor = DetailLabelColor;
         config.DetailDeathColor = DetailDeathColor;
         config.DetailIndent = DetailIndent;
@@ -324,7 +389,6 @@ public class ThemePreset
         // Tooltip
         config.ShowTooltip = ShowTooltip;
         config.TooltipDelay = TooltipDelay;
-        config.TooltipFields = new List<TooltipField>(TooltipFields);
         config.TooltipBackgroundColor = TooltipBackgroundColor;
         config.TooltipTextColor = TooltipTextColor;
         config.TooltipLabelColor = TooltipLabelColor;
@@ -335,7 +399,6 @@ public class ThemePreset
 
     public static ThemePreset CreateFromConfig(Configuration config, string name, string description = "")
     {
-        var firstTab = config.MeterTabs.Count > 0 ? config.MeterTabs[0] : null;
         return new ThemePreset
         {
             Name = name,
@@ -370,6 +433,7 @@ public class ThemePreset
             MeleeDpsColor = config.MeleeDpsColor,
             RangedDpsColor = config.RangedDpsColor,
             CasterDpsColor = config.CasterDpsColor,
+            LimitBreakColor = config.LimitBreakColor,
             DefaultJobColor = config.DefaultJobColor,
 
             JobColors = config.JobColors.Count > 0
@@ -380,7 +444,14 @@ public class ThemePreset
             NameTextColor = config.NameTextColor,
             ValueTextColor = config.ValueTextColor,
             WindowBackgroundColor = config.WindowBackgroundColor,
-            WindowRounding = config.WindowRounding,
+            BackgroundImagePath = config.BackgroundImagePath,
+            BackgroundImageOpacity = config.BackgroundImageOpacity,
+            BackgroundImageTint = config.BackgroundImageTint,
+            BackgroundImageScale = config.BackgroundImageScale,
+            WindowPaddingLeft = config.WindowPaddingLeft,
+            WindowPaddingRight = config.WindowPaddingRight,
+            WindowPaddingTop = config.WindowPaddingTop,
+            WindowPaddingBottom = config.WindowPaddingBottom,
 
             SelectionBarTextColor = config.SelectionBarTextColor,
             SelectionBarBackgroundColor = config.SelectionBarBackgroundColor,
@@ -402,11 +473,10 @@ public class ThemePreset
             CustomFontIndex = config.CustomFontIndex,
             CustomFontSizePt = config.CustomFontSizePt,
             CustomFontDisplayName = config.CustomFontDisplayName,
+            CustomFontSpecJson = config.CustomFontSpecJson,
 
             ShowStatusBar = config.ShowStatusBar,
             ShowStatusBarTimer = config.ShowStatusBarTimer,
-            ShowStatusBarPersonalDps = config.ShowStatusBarPersonalDps,
-            ShowStatusBarRaidDps = config.ShowStatusBarRaidDps,
             StatusBarHeight = config.StatusBarHeight,
             StatusBarFontSize = config.StatusBarFontSize,
             StatusBarPadding = config.StatusBarPadding,
@@ -429,7 +499,41 @@ public class ThemePreset
             SkillBarRounding = config.SkillBarRounding,
             SkillFontSize = config.SkillFontSize,
 
+            // Detail inline graph
+            GraphHeight = config.GraphHeight,
+            GraphLineThickness = config.GraphLineThickness,
+            GraphDpsColor = config.GraphDpsColor,
+            GraphHpsColor = config.GraphHpsColor,
+            GraphDtpsColor = config.GraphDtpsColor,
+            GraphBackgroundColor = config.GraphBackgroundColor,
+            GraphGridColor = config.GraphGridColor,
+            GraphShowLegend = config.GraphShowLegend,
+            GraphShowGrid = config.GraphShowGrid,
+            GraphShowXAxisLabels = config.GraphShowXAxisLabels,
+            GraphShowYAxisLabels = config.GraphShowYAxisLabels,
+            GraphShowDps = config.GraphShowDps,
+            GraphShowHps = config.GraphShowHps,
+            GraphShowDtps = config.GraphShowDtps,
+            GraphSmoothingWindow = config.GraphSmoothingWindow,
+            GraphUpdateInterval = config.GraphUpdateInterval,
+            GraphShowLabels = config.GraphShowLabels,
+            GraphLabelOffsetX = config.GraphLabelOffsetX,
+            GraphLabelOffsetY = config.GraphLabelOffsetY,
+            GraphMouseTextOpacity = config.GraphMouseTextOpacity,
+            GraphYAxisHeadroom = config.GraphYAxisHeadroom,
+            GraphYAxisTickCount = config.GraphYAxisTickCount,
+            GraphXAxisPadding = config.GraphXAxisPadding,
+            GraphAutoScroll = config.GraphAutoScroll,
+            GraphAutoScrollWindow = config.GraphAutoScrollWindow,
+            GraphAutoScrollSmoothing = config.GraphAutoScrollSmoothing,
+            GraphFontSize = config.GraphFontSize,
+
+            DetailDpsMarkers = config.DetailDpsMarkers.Clone(),
+            DetailHpsMarkers = config.DetailHpsMarkers.Clone(),
+            DetailDtpsMarkers = config.DetailDtpsMarkers.Clone(),
+
             // Graph View
+            GraphViewAutoHeight = config.GraphViewAutoHeight,
             GraphViewHeight = config.GraphViewHeight,
             GraphViewLineThickness = config.GraphViewLineThickness,
             GraphViewBackgroundColor = config.GraphViewBackgroundColor,
@@ -440,17 +544,28 @@ public class ThemePreset
             GraphViewShowYAxisLabels = config.GraphViewShowYAxisLabels,
             GraphViewHighlightSelf = config.GraphViewHighlightSelf,
             GraphViewSelfLineThickness = config.GraphViewSelfLineThickness,
+            GraphViewSmoothingWindow = config.GraphViewSmoothingWindow,
+            GraphViewUpdateInterval = config.GraphViewUpdateInterval,
+            GraphViewShowLabels = config.GraphViewShowLabels,
             GraphViewLabelOffsetX = config.GraphViewLabelOffsetX,
             GraphViewLabelOffsetY = config.GraphViewLabelOffsetY,
+            GraphViewFontSize = config.GraphViewFontSize,
+            GraphViewXAxisPadding = config.GraphViewXAxisPadding,
+            GraphViewAutoScroll = config.GraphViewAutoScroll,
+            GraphViewAutoScrollWindow = config.GraphViewAutoScrollWindow,
+            GraphViewAutoScrollSmoothing = config.GraphViewAutoScrollSmoothing,
+            GraphViewYAxisHeadroom = config.GraphViewYAxisHeadroom,
+            GraphViewYAxisTickCount = config.GraphViewYAxisTickCount,
+            GraphViewMouseTextOpacity = config.GraphViewMouseTextOpacity,
+
+            GraphViewDpsMarkers = config.GraphViewDpsMarkers.Clone(),
+            GraphViewHpsMarkers = config.GraphViewHpsMarkers.Clone(),
+            GraphViewDtpsMarkers = config.GraphViewDtpsMarkers.Clone(),
 
             ShowJobIcons = config.ShowJobIcons,
             ShowNameOnBar = config.ShowNameOnBar,
             ShowJobAbbrevOnBar = config.ShowJobAbbrevOnBar,
             ShowRankNumber = config.ShowRankNumber,
-            VisibleColumns = firstTab != null ? new HashSet<BarColumn>(firstTab.VisibleColumns) : new HashSet<BarColumn> { BarColumn.Dps },
-            ColumnOrder = firstTab != null ? new List<BarColumn>(firstTab.ColumnOrder) : new List<BarColumn>(),
-
-            Tabs = config.MeterTabs.Select(t => t.Clone()).ToList(),
 
             ShowTabBar = config.ShowTabBar,
             TabButtonColor = config.TabButtonColor,
@@ -462,8 +577,10 @@ public class ThemePreset
             TabButtonSpacing = config.TabButtonSpacing,
             TabButtonRounding = config.TabButtonRounding,
             TabButtonFontSize = config.TabButtonFontSize,
+            TabButtonWidth = config.TabButtonWidth,
             TabButtonStretchToFit = config.TabButtonStretchToFit,
 
+            DetailBackgroundColor = config.DetailBackgroundColor,
             DetailLabelColor = config.DetailLabelColor,
             DetailDeathColor = config.DetailDeathColor,
             DetailIndent = config.DetailIndent,
@@ -472,7 +589,6 @@ public class ThemePreset
             // Tooltip
             ShowTooltip = config.ShowTooltip,
             TooltipDelay = config.TooltipDelay,
-            TooltipFields = new List<TooltipField>(config.TooltipFields),
             TooltipBackgroundColor = config.TooltipBackgroundColor,
             TooltipTextColor = config.TooltipTextColor,
             TooltipLabelColor = config.TooltipLabelColor,

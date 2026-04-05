@@ -10,6 +10,10 @@ public class CombatantEntry
 
     public double EncHps { get; set; }
 
+    public double RaidDps { get; set; }
+
+    public double RaidHps { get; set; }
+
     public long Damage { get; set; }
 
     public long Healed { get; set; }
@@ -38,17 +42,22 @@ public class CombatantEntry
 
     public long MaxHitDamage { get; set; }
 
-    public double Last10Dps { get; set; }
-
-    public double Last30Dps { get; set; }
-
-    public double Last60Dps { get; set; }
+    public string MaxHitSkillName => ExtractSkillName(MaxHit);
 
     public double PeakDps { get; set; }
 
     public string MaxHeal { get; set; } = string.Empty;
 
     public long MaxHealAmount { get; set; }
+
+    public string MaxHealSkillName => ExtractSkillName(MaxHeal);
+
+    private static string ExtractSkillName(string composite)
+    {
+        if (string.IsNullOrEmpty(composite)) return string.Empty;
+        var idx = composite.LastIndexOf('-');
+        return idx > 0 ? composite[..idx] : composite;
+    }
 
     public int Swings { get; set; }
 
@@ -94,9 +103,14 @@ public class CombatantEntry
 
     public long PowerHeal { get; set; }
 
+    public int Stuns { get; set; }
+
     public List<SkillEntry> Skills { get; set; } = new();
 
     public List<SkillEntry> HealingSkills { get; set; } = new();
 
     public bool IsLocalPlayer { get; set; }
+
+    /// <summary>Home world name (e.g. "Spriggan"). Resolved from party list at parse time, persisted with encounter history.</summary>
+    public string HomeWorld { get; set; } = string.Empty;
 }

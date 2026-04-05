@@ -29,4 +29,7 @@ public struct ActiveStatus
 
     /// <summary>True if this status applies periodic healing (HoT).</summary>
     public bool IsHoT;
+
+    /// <summary>Name of the action (type 21/22) that applied this status, if resolved.</summary>
+    public string? ApplyingActionName;
 }

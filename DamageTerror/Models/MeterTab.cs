@@ -61,6 +61,12 @@ public class MeterTab
 
     public GroupFilter GroupFilter { get; set; } = GroupFilter.All;
 
+    // Per-tab status bar content visibility
+    public bool ShowStatusBarTimer { get; set; } = true;
+
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.RaidDps };
+
     /// <summary>Whether DPS graph line should be shown (independent of bar columns).</summary>
     public bool GraphShowDpsLine { get; set; } = true;
 
@@ -69,15 +75,6 @@ public class MeterTab
 
     /// <summary>Whether DTPS graph line should be shown (independent of bar columns).</summary>
     public bool GraphShowDtpsLine { get; set; } = false;
-
-    /// <summary>Skill marker settings for the DPS line.</summary>
-    public SkillMarkerConfig DpsMarkers { get; set; } = new();
-
-    /// <summary>Skill marker settings for the HPS line.</summary>
-    public SkillMarkerConfig HpsMarkers { get; set; } = new();
-
-    /// <summary>Skill marker settings for the DTPS line.</summary>
-    public SkillMarkerConfig DtpsMarkers { get; set; } = new();
 
     /// <summary>Set of visible bar columns for this tab.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
@@ -113,6 +110,46 @@ public class MeterTab
     public bool IsColumnVisible(BarColumn col) => VisibleColumns.Contains(col);
 
     public List<string> CustomJobFilter { get; set; } = new();
+
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<TooltipField> TooltipFields { get; set; } = new()
+    {
+        TooltipField.Name,
+        TooltipField.Job,
+        TooltipField.Dps,
+        TooltipField.Damage,
+        TooltipField.DamagePercent,
+        TooltipField.Crit,
+        TooltipField.DirectHit,
+        TooltipField.CritDirectHit,
+        TooltipField.MaxHit,
+        TooltipField.Deaths,
+    };
+
+    public int TooltipTopSkillCount { get; set; } = 3;
+
+    /// <summary>Set of visible columns in the expanded detail panel for this tab.</summary>
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public HashSet<BarColumn> DetailVisibleColumns { get; set; } = new(Enum.GetValues<BarColumn>());
+
+    /// <summary>Whether to show the Details tab in the detail panel.</summary>
+    public bool DetailShowDetailsTab { get; set; } = true;
+
+    /// <summary>Whether to show the Skills tab in the detail panel.</summary>
+    public bool DetailShowSkillsTab { get; set; } = true;
+
+    /// <summary>Whether to show the Graph tab in the detail panel.</summary>
+    public bool DetailShowGraphTab { get; set; } = true;
+
+    /// <summary>Whether to show the skill breakdown section in the detail panel.</summary>
+    public bool DetailShowSkillBreakdown { get; set; } = true;
+
+    /// <summary>Maximum skills shown in skill breakdown (0 = all).</summary>
+    public int MaxSkillBreakdownCount { get; set; } = 0;
+
+    /// <summary>Per-section column order for the detail panel. Key is section name, value is ordered column list.</summary>
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<string, List<BarColumn>> DetailSectionOrder { get; set; } = new();
 
     [JsonExtensionData]
     private Dictionary<string, JToken>? _extensionData;
@@ -210,14 +247,22 @@ public class MeterTab
             GraphShowDpsLine = GraphShowDpsLine,
             GraphShowHpsLine = GraphShowHpsLine,
             GraphShowDtpsLine = GraphShowDtpsLine,
-            DpsMarkers = DpsMarkers.Clone(),
-            HpsMarkers = HpsMarkers.Clone(),
-            DtpsMarkers = DtpsMarkers.Clone(),
             VisibleColumns = new HashSet<BarColumn>(VisibleColumns),
             ColumnOrder = new List<BarColumn>(ColumnOrder),
             ColumnHeaderLabels = new Dictionary<BarColumn, string>(ColumnHeaderLabels),
             ColumnFormatOverrides = ColumnFormatOverrides.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()),
             CustomJobFilter = new List<string>(CustomJobFilter),
+            TooltipFields = new List<TooltipField>(TooltipFields),
+            TooltipTopSkillCount = TooltipTopSkillCount,
+            ShowStatusBarTimer = ShowStatusBarTimer,
+            StatusBarMetrics = new List<BarColumn>(StatusBarMetrics),
+            DetailVisibleColumns = new HashSet<BarColumn>(DetailVisibleColumns),
+            DetailShowDetailsTab = DetailShowDetailsTab,
+            DetailShowSkillsTab = DetailShowSkillsTab,
+            DetailShowGraphTab = DetailShowGraphTab,
+            DetailShowSkillBreakdown = DetailShowSkillBreakdown,
+            MaxSkillBreakdownCount = MaxSkillBreakdownCount,
+            DetailSectionOrder = DetailSectionOrder.ToDictionary(kv => kv.Key, kv => new List<BarColumn>(kv.Value)),
         };
     }
 

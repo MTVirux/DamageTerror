@@ -17,4 +17,7 @@ public class SkillEntry
     public double CritDirectHitPct { get; set; }
 
     public SkillDamageType DamageType { get; set; }
+
+    /// <summary>Optional nested entries for DoT/HoT tick breakdowns under this skill.</summary>
+    public List<SkillEntry>? SubEntries { get; set; }
 }

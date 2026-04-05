@@ -23,11 +23,11 @@ public class ColumnFormatOverride
     public static readonly HashSet<BarColumn> ValueColumns = new()
     {
         BarColumn.Dps, BarColumn.Hps, BarColumn.Damage, BarColumn.Healed,
-        BarColumn.DamageTaken, BarColumn.OverhealAmount, BarColumn.MaxHit,
-        BarColumn.PeakDps, BarColumn.MaxHeal, BarColumn.HealsTaken,
+        BarColumn.DamageTaken, BarColumn.OverhealAmount, BarColumn.MaxHitValue,
+        BarColumn.PeakDps, BarColumn.MaxHealValue, BarColumn.HealsTaken,
         BarColumn.AbsorbHeal, BarColumn.InstantDps, BarColumn.InstantHps,
         BarColumn.DamageShield, BarColumn.MaxHealWard, BarColumn.PowerDrain,
-        BarColumn.PowerHeal,
+        BarColumn.PowerHeal, BarColumn.RaidDps, BarColumn.RaidHps,
     };
 
     /// <summary>Columns whose values go through ValueFormatter.FormatPercent.</summary>
