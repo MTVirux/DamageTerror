@@ -70,6 +70,7 @@ public class Configuration : IPluginConfiguration
     public bool TabButtonStretchToFit { get; set; } = true;
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public List<LayoutElement> Layout { get; set; } = new()
     {
         LayoutElement.EncounterSelect,
@@ -79,6 +80,7 @@ public class Configuration : IPluginConfiguration
     };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public HashSet<LayoutElement> CtrlShiftOnlyElements { get; set; } = new();
 
     public ModifierCombo ModifierKeyCombo { get; set; } = ModifierCombo.CtrlShift;
@@ -267,6 +269,7 @@ public class Configuration : IPluginConfiguration
     public float DetailIndent { get; set; } = 8.0f;
     public float DetailFontSize { get; set; } = FontDefaults.BaseSizePt;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public HashSet<BarColumn> DetailVisibleColumns { get; set; } = new(Enum.GetValues<BarColumn>());
     public bool DetailShowDetailsTab { get; set; } = true;
     public bool DetailShowSkillsTab { get; set; } = true;
@@ -285,6 +288,7 @@ public class Configuration : IPluginConfiguration
     public float TooltipDelay { get; set; } = 0.3f;
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public List<TooltipField> TooltipFields { get; set; } = new()
     {
         TooltipField.Name,
@@ -391,6 +395,7 @@ public class Configuration : IPluginConfiguration
     public bool ShowStatusBar { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.RaidDps };
     public float StatusBarFontSize { get; set; } = 14.1f;
     public float StatusBarHeight { get; set; } = 20f;

@@ -65,6 +65,7 @@ public class MeterTab
     public bool ShowStatusBarTimer { get; set; } = true;
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.RaidDps };
 
     /// <summary>Whether DPS graph line should be shown (independent of bar columns).</summary>
@@ -78,6 +79,7 @@ public class MeterTab
 
     /// <summary>Set of visible bar columns for this tab.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public HashSet<BarColumn> VisibleColumns { get; set; } = new()
     {
         BarColumn.Dps, BarColumn.Damage, BarColumn.DamagePercent,
@@ -86,6 +88,7 @@ public class MeterTab
     };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public List<BarColumn> ColumnOrder { get; set; } = new()
     {
         BarColumn.Dps,
@@ -100,9 +103,11 @@ public class MeterTab
     };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumKeyDictionaryConverter))]
     public Dictionary<BarColumn, string> ColumnHeaderLabels { get; set; } = new();
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumKeyDictionaryConverter))]
     public Dictionary<BarColumn, ColumnFormatOverride> ColumnFormatOverrides { get; set; } = new();
 
     public string GetHeaderLabel(BarColumn col)
@@ -117,6 +122,7 @@ public class MeterTab
     public List<string> CustomJobFilter { get; set; } = new();
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public List<TooltipField> TooltipFields { get; set; } = new()
     {
         TooltipField.Name,
@@ -135,6 +141,7 @@ public class MeterTab
 
     /// <summary>Set of visible columns in the expanded detail panel for this tab.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public HashSet<BarColumn> DetailVisibleColumns { get; set; } = new(Enum.GetValues<BarColumn>());
 
     /// <summary>Whether to show the Details tab in the detail panel.</summary>
@@ -157,6 +164,7 @@ public class MeterTab
 
     /// <summary>Per-section column order for the detail panel. Key is section name, value is ordered column list.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumListMapConverter))]
     public Dictionary<string, List<BarColumn>> DetailSectionOrder { get; set; } = new();
 
     [JsonExtensionData]
