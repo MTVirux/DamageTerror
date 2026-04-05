@@ -26,6 +26,9 @@ public class StatusTracker
     // Historical record: all status applications this encounter (for uptime calculation)
     private readonly Dictionary<string, List<StatusApplication>> statusHistory = new(StringComparer.OrdinalIgnoreCase);
 
+    // Historical record: statuses received by each target (keyed by target name)
+    private readonly Dictionary<string, List<StatusApplication>> receivedHistory = new(StringComparer.OrdinalIgnoreCase);
+
     // Cache: statusId -> isDoT (true), isHoT, or neither
     private readonly ConcurrentDictionary<uint, StatusClassification> classificationCache = new();
 
@@ -104,6 +107,7 @@ public class StatusTracker
             Duration = duration,
             IsDoT = classification.IsDoT,
             IsHoT = classification.IsHoT,
+            IsBuff = classification.IsBuff,
         };
 
         lock (syncLock)
@@ -123,16 +127,28 @@ public class StatusTracker
                 statusHistory[sourceName] = history;
             }
 
-            history.Add(new StatusApplication
+            var application = new StatusApplication
             {
                 StatusId = statusId,
                 StatusName = statusName,
+                SourceName = sourceName,
                 TargetName = targetName,
                 AppliedAtSec = now,
                 Duration = duration,
                 IsDoT = classification.IsDoT,
                 IsHoT = classification.IsHoT,
-            });
+                IsBuff = classification.IsBuff,
+            };
+
+            history.Add(application);
+
+            if (!receivedHistory.TryGetValue(targetName, out var received))
+            {
+                received = new List<StatusApplication>();
+                receivedHistory[targetName] = received;
+            }
+
+            received.Add(application);
         }
 
         // Retroactively tag the type 21/22 event that applied this status
@@ -223,6 +239,17 @@ public class StatusTracker
         }
     }
 
+    /// <summary>Get the full status received history for a target player (statuses applied TO them).</summary>
+    public List<StatusApplication> GetStatusesReceived(string targetName)
+    {
+        lock (syncLock)
+        {
+            if (receivedHistory.TryGetValue(targetName, out var history))
+                return new List<StatusApplication>(history);
+            return new List<StatusApplication>();
+        }
+    }
+
     /// <summary>
     /// Calculate uptime percentage for a specific status applied by a source player
     /// across all targets. Returns 0-100.
@@ -264,6 +291,7 @@ public class StatusTracker
         {
             activeStatuses.Clear();
             statusHistory.Clear();
+            receivedHistory.Clear();
         }
     }
 
@@ -297,18 +325,15 @@ public class StatusTracker
         if (KnownDotStatusIds.Contains(statusId))
         {
             result.IsDoT = true;
-            classificationCache[statusId] = result;
-            return result;
+            result.IsBuff = false;
         }
-
-        if (KnownHotStatusIds.Contains(statusId))
+        else if (KnownHotStatusIds.Contains(statusId))
         {
             result.IsHoT = true;
-            classificationCache[statusId] = result;
-            return result;
+            result.IsBuff = true;
         }
 
-        // Attempt Lumina lookup for unknown statuses
+        // Attempt Lumina lookup to classify buff vs debuff
         try
         {
             var sheet = dataManager.GetExcelSheet<Lumina.Excel.Sheets.Status>();
@@ -317,12 +342,8 @@ public class StatusTracker
                 var row = sheet.GetRowOrDefault(statusId);
                 if (row.HasValue)
                 {
-                    // Heuristic: statuses with a non-zero "TransientValue" and
-                    // a duration that ticks are typically DoTs/HoTs.
-                    // The Status sheet doesn't have an explicit "IsDoT" flag,
-                    // but we can check if it belongs to certain categories.
-                    // For now, leave as unknown if not in the hardcoded list
-                    // and let the system learn from type 24 ticks later.
+                    // StatusCategory: 1 = buff (beneficial), 2 = debuff (detrimental)
+                    result.IsBuff = row.Value.StatusCategory == 1;
                 }
             }
         }
@@ -339,5 +360,6 @@ public class StatusTracker
     {
         public bool IsDoT;
         public bool IsHoT;
+        public bool IsBuff;
     }
 }
