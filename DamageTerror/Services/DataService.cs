@@ -418,6 +418,14 @@ public class DataService : IDisposable
             var dtEvents = SkillTracker.GetDamageTakenEvents(c.Name);
             if (dtEvents.Count > 0)
                 target.DamageTakenEvents[c.Name] = dtEvents;
+
+            var statusApplied = StatusTracker.GetStatusHistory(c.Name);
+            if (statusApplied.Count > 0)
+                target.StatusHistory[c.Name] = statusApplied;
+
+            var statusReceived = StatusTracker.GetStatusesReceived(c.Name);
+            if (statusReceived.Count > 0)
+                target.StatusesReceived[c.Name] = statusReceived;
         }
     }
 

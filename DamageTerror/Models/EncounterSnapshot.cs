@@ -26,6 +26,14 @@ public class EncounterSnapshot
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public Dictionary<string, List<SkillUseEvent>> DamageTakenEvents { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Per-combatant status application history (statuses applied BY this combatant), keyed by source name.</summary>
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public Dictionary<string, List<StatusApplication>> StatusHistory { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Per-combatant status received history (statuses applied TO this combatant), keyed by target name.</summary>
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public Dictionary<string, List<StatusApplication>> StatusesReceived { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>
     /// Rebuild dictionaries with case-insensitive comparers after JSON deserialization,
     /// since Newtonsoft.Json creates them with the default (case-sensitive) comparer.
@@ -39,6 +47,14 @@ public class EncounterSnapshot
             SkillEvents = new Dictionary<string, List<SkillUseEvent>>(SkillEvents, StringComparer.OrdinalIgnoreCase);
         if (DamageTakenEvents.Count > 0 && DamageTakenEvents.Comparer != StringComparer.OrdinalIgnoreCase)
             DamageTakenEvents = new Dictionary<string, List<SkillUseEvent>>(DamageTakenEvents, StringComparer.OrdinalIgnoreCase);
+        if (StatusHistory is null)
+            StatusHistory = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
+        else if (StatusHistory.Count > 0 && StatusHistory.Comparer != StringComparer.OrdinalIgnoreCase)
+            StatusHistory = new Dictionary<string, List<StatusApplication>>(StatusHistory, StringComparer.OrdinalIgnoreCase);
+        if (StatusesReceived is null)
+            StatusesReceived = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
+        else if (StatusesReceived.Count > 0 && StatusesReceived.Comparer != StringComparer.OrdinalIgnoreCase)
+            StatusesReceived = new Dictionary<string, List<StatusApplication>>(StatusesReceived, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
