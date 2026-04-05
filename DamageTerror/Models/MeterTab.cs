@@ -78,20 +78,25 @@ public class MeterTab
 
     /// <summary>Set of visible bar columns for this tab.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    public HashSet<BarColumn> VisibleColumns { get; set; } = new() { BarColumn.Dps };
+    public HashSet<BarColumn> VisibleColumns { get; set; } = new()
+    {
+        BarColumn.Dps, BarColumn.Damage, BarColumn.DamagePercent,
+        BarColumn.DirectHit, BarColumn.Crit, BarColumn.CritDirectHit,
+        BarColumn.SkillIssue,
+    };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<BarColumn> ColumnOrder { get; set; } = new()
     {
-        BarColumn.DamagePercent,
-        BarColumn.CritDirectHit,
-        BarColumn.Crit,
-        BarColumn.DirectHit,
-        BarColumn.Deaths,
-        BarColumn.Healed,
+        BarColumn.Dps,
         BarColumn.Damage,
         BarColumn.Hps,
-        BarColumn.Dps,
+        BarColumn.DirectHit,
+        BarColumn.Crit,
+        BarColumn.CritDirectHit,
+        BarColumn.Healed,
+        BarColumn.HealPercent,
+        BarColumn.DamagePercent,
     };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
