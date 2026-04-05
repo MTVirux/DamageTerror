@@ -31,7 +31,6 @@ public static class JobNameHelper
         { "Pct", "Pictomancer" },
         { "Blu", "Blue Mage" },
 
-        // Base classes
         { "Gla", "Gladiator" },
         { "Mrd", "Marauder" },
         { "Pgl", "Pugilist" },

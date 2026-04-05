@@ -23,16 +23,11 @@ public class GraphDataTracker
     private readonly object syncLock = new();
     private readonly IPluginLog? log;
     private readonly Dictionary<string, List<GraphSample>> perCombatant = new(StringComparer.OrdinalIgnoreCase);
-    // Ring buffer of recent (time, totals) per combatant for sliding window
     private readonly Dictionary<string, List<(float time, long damage, long healed, long damageTaken)>> recentHistory = new(StringComparer.OrdinalIgnoreCase);
 
-    // --- Hybrid data sources ---
-    // LogLine-accumulated totals (high-resolution, updated per ability use)
     private readonly Dictionary<string, (long damage, long healed)> logLineTotals = new(StringComparer.OrdinalIgnoreCase);
-    // CombatData totals (ground truth, updated every CombatData frame)
     private readonly Dictionary<string, (long damage, long healed, long damageTaken)> combatDataTotals = new(StringComparer.OrdinalIgnoreCase);
 
-    // Historical graph data loaded from disk, used as fallback until live data is available.
     private Dictionary<string, List<GraphSample>>? seededData;
 
     private EncounterTimer? timer;
@@ -172,7 +167,6 @@ public class GraphDataTracker
                 }
                 history.Add((timeSec, effectiveDamage, effectiveHealed, effectiveDamageTaken));
 
-                // Trim entries older than the window (keep at least one old entry as anchor)
                 while (history.Count > 2 && history[0].time < windowStart && history[1].time <= windowStart)
                     history.RemoveAt(0);
 

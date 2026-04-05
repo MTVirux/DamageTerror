@@ -116,7 +116,6 @@ public class PartyMembershipService
         if (nameSet.Contains(combatantName))
             return true;
 
-        // If the combatant name contains "@", try matching just the base name
         var atIndex = combatantName.IndexOf('@');
         if (atIndex > 0)
             return nameSet.Contains(combatantName[..atIndex]);

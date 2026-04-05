@@ -498,14 +498,12 @@ public static class MeterTabsPage
             {
                 if (ImGui.TreeNodeEx(catName + "##detailVis", ImGuiTreeNodeFlags.DefaultOpen))
                 {
-                    // Get or create ordered list for this section
                     if (!tab.DetailSectionOrder.TryGetValue(catName, out var sectionOrder) || sectionOrder.Count == 0)
                     {
                         sectionOrder = new List<BarColumn>(catColumns);
                         tab.DetailSectionOrder[catName] = sectionOrder;
                     }
 
-                    // Ensure all columns from the default are present
                     foreach (var col in catColumns)
                     {
                         if (!sectionOrder.Contains(col))

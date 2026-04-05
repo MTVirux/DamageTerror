@@ -143,7 +143,7 @@ public class PopoutTabWindow : Window, IDisposable
         var padTop = plugin.Config.WindowPaddingTop;
         var padBottom = plugin.Config.WindowPaddingBottom;
 
-        // If the status bar is the last visible layout element, skip bottom padding so it sits flush
+        // If the status bar is the last visible layout element, skip bottom padding
         var modifierActiveEarly = MeterWindowHelper.IsModifierActive(plugin.Config);
         LayoutElement? lastVisibleEl = null;
         foreach (var el in plugin.Config.Layout)

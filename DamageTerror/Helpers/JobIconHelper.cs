@@ -81,7 +81,6 @@ public static class JobIconHelper
         if (!ClassJobIdMap.TryGetValue(job, out var classJobId))
             return null;
 
-        // For Custom style without a per-job override, fall back to Framed
         var offset = style == JobIconStyle.Custom ? GetBaseOffset(JobIconStyle.Framed) : GetBaseOffset(style);
         return offset + classJobId;
     }

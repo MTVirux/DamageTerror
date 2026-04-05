@@ -203,7 +203,7 @@ public class MainWindow : Window, IDisposable
         var padTop = plugin.Config.WindowPaddingTop;
         var padBottom = plugin.Config.WindowPaddingBottom;
 
-        // If the status bar is the last visible layout element, skip bottom padding so it sits flush
+        // If the status bar is the last visible layout element, skip bottom padding
         var modifierActiveEarly = MeterWindowHelper.IsModifierActive(plugin.Config);
         LayoutElement? lastVisibleEl = null;
         foreach (var el in plugin.Config.Layout)
@@ -226,7 +226,6 @@ public class MainWindow : Window, IDisposable
 
         var config = plugin.Config;
 
-        // --- Data resolution (always runs regardless of layout order) ---
         var encounter = headerComponent.SelectedEncounter;
         var currentPlayerName = !string.IsNullOrEmpty(encounter?.PlayerName)
             ? encounter.PlayerName
@@ -240,7 +239,6 @@ public class MainWindow : Window, IDisposable
         {
             if (selectedMeterTab >= config.MeterTabs.Count)
                 SelectedMeterTab = 0;
-            // If the selected tab is hidden, fall back to the first visible tab
             if (config.MeterTabs[selectedMeterTab].IsHidden)
             {
                 var firstVisible = config.MeterTabs.FindIndex(t => !t.IsHidden);

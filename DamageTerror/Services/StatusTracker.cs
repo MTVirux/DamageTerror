@@ -16,8 +16,6 @@ public class StatusTracker
     private readonly IDataManager dataManager;
     private readonly IPluginLog log;
     private EncounterTimer? timer;
-
-    // SkillTracker reference for tagging application events
     private SkillTracker? skillTracker;
 
     // (targetName, statusId) -> ActiveStatus
@@ -112,7 +110,6 @@ public class StatusTracker
         {
             var key = (targetName, statusId, sourceName);
 
-            // If already active, record the old one ending (reapplication)
             if (activeStatuses.TryGetValue(key, out var existing))
             {
                 RecordRemoval(existing, now);
@@ -186,8 +183,6 @@ public class StatusTracker
     {
         lock (syncLock)
         {
-            // Search for any active status matching target + statusId.
-            // If multiple sources applied the same status, return the most recent.
             ActiveStatus? best = null;
             foreach (var kv in activeStatuses)
             {
@@ -202,9 +197,7 @@ public class StatusTracker
         }
     }
 
-    /// <summary>
-    /// Get all currently active statuses on a target.
-    /// </summary>
+    /// <summary>Get all currently active statuses on a target.</summary>
     public List<ActiveStatus> GetActiveStatuses(string targetName)
     {
         lock (syncLock)
@@ -219,10 +212,7 @@ public class StatusTracker
         }
     }
 
-    /// <summary>
-    /// Get the full status application history for a source player.
-    /// Used for uptime calculations.
-    /// </summary>
+    /// <summary>Get the full status application history for a source player.</summary>
     public List<StatusApplication> GetStatusHistory(string sourceName)
     {
         lock (syncLock)
@@ -303,7 +293,7 @@ public class StatusTracker
 
         var result = new StatusClassification();
 
-        // Check hardcoded known sets first (most reliable)
+        // Check hardcoded known sets first
         if (KnownDotStatusIds.Contains(statusId))
         {
             result.IsDoT = true;

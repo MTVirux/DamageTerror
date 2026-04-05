@@ -41,7 +41,6 @@ public class DataService : IDisposable
         this.log = log;
         this.config = config;
 
-        // Initialize services with shared timer for synchronized timestamps.
         GraphTracker = new GraphDataTracker(log);
         GraphTracker.SetTimer(EncounterTimer);
         StatusTracker = new StatusTracker(ServiceManager.DataManager, log);

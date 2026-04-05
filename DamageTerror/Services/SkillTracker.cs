@@ -8,37 +8,21 @@ public class SkillTracker
 {
     private readonly object syncLock = new();
 
-    // combatantName -> skillName -> accumulated hit statistics
     private Dictionary<string, Dictionary<string, SkillAccum>> damageData = new();
     private Dictionary<string, Dictionary<string, SkillAccum>> healData = new();
-
-    // Tick-only accumulators keyed by originating action name (for sub-entry display).
     private Dictionary<string, Dictionary<string, SkillAccum>> dotTickData = new();
     private Dictionary<string, Dictionary<string, SkillAccum>> hotTickData = new();
 
-    // Timestamped skill use events per combatant (source-side: damage dealt / heals cast)
     private readonly Dictionary<string, List<SkillUseEvent>> skillEvents = new(StringComparer.OrdinalIgnoreCase);
-
-    // Timestamped damage-taken events per combatant (target-side: enemy abilities hitting a player)
     private readonly Dictionary<string, List<SkillUseEvent>> damageTakenEvents = new(StringComparer.OrdinalIgnoreCase);
-
-    // Stun skill use counts per combatant (Leg Sweep + Low Blow only)
     private readonly Dictionary<string, int> stunCounts = new(StringComparer.OrdinalIgnoreCase);
 
-    // Historical skill events loaded from disk, used as fallback until live data is available.
     private Dictionary<string, List<SkillUseEvent>>? seededEvents;
     private Dictionary<string, List<SkillUseEvent>>? seededDamageTakenEvents;
 
-    // Shared encounter timer — same time base as GraphDataTracker
     private EncounterTimer? timer;
-
-    // Graph tracker to feed high-resolution LogLine damage/heal totals into
     private GraphDataTracker? graphTracker;
-
-    // Status tracker for DoT/HoT lifecycle correlation
     private StatusTracker? statusTracker;
-
-    // Cache action ID -> damage type to avoid repeated Lumina lookups
     private readonly ConcurrentDictionary<uint, SkillDamageType> damageTypeCache = new();
     private readonly IDataManager dataManager;
     private readonly IPluginLog log;
