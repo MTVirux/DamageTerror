@@ -478,6 +478,14 @@ public static class MeterTabsPage
                 changed = true;
             }
 
+            ImGui.SameLine();
+            var showBuffsTab = tab.DetailShowBuffsTab;
+            if (ImGui.Checkbox("Buffs##detailTab", ref showBuffsTab))
+            {
+                tab.DetailShowBuffsTab = showBuffsTab;
+                changed = true;
+            }
+
             ImGui.Spacing();
 
             if (ImGui.Button("Enable All##detailVis"))

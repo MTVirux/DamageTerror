@@ -36,7 +36,7 @@ public class PopoutTabWindow : Window, IDisposable
         this.headerComponent = new EncounterHeaderComponent(plugin.DataService, plugin.Config);
         this.barComponent = new CombatantBarComponent(plugin.Config, textureProvider);
         this.graphViewComponent = new GraphViewComponent(plugin.Config, plugin.DataService.GraphTracker, plugin.DataService.SkillTracker);
-        this.detailPanel = new CombatantDetailPanel(plugin.Config, plugin.DataService.GraphTracker, plugin.DataService.SkillTracker);
+        this.detailPanel = new CombatantDetailPanel(plugin.Config, plugin.DataService.GraphTracker, plugin.DataService.SkillTracker, plugin.DataService.StatusTracker);
         this.statusBarComponent = new StatusBarComponent(plugin.Config);
 
         var pinned = GetPin()?.Pinned ?? false;

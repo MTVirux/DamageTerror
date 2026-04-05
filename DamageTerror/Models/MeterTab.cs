@@ -141,6 +141,9 @@ public class MeterTab
     /// <summary>Whether to show the Graph tab in the detail panel.</summary>
     public bool DetailShowGraphTab { get; set; } = true;
 
+    /// <summary>Whether to show the Buffs/Debuffs tab in the detail panel.</summary>
+    public bool DetailShowBuffsTab { get; set; } = true;
+
     /// <summary>Whether to show the skill breakdown section in the detail panel.</summary>
     public bool DetailShowSkillBreakdown { get; set; } = true;
 
@@ -260,6 +263,7 @@ public class MeterTab
             DetailShowDetailsTab = DetailShowDetailsTab,
             DetailShowSkillsTab = DetailShowSkillsTab,
             DetailShowGraphTab = DetailShowGraphTab,
+            DetailShowBuffsTab = DetailShowBuffsTab,
             DetailShowSkillBreakdown = DetailShowSkillBreakdown,
             MaxSkillBreakdownCount = MaxSkillBreakdownCount,
             DetailSectionOrder = DetailSectionOrder.ToDictionary(kv => kv.Key, kv => new List<BarColumn>(kv.Value)),
