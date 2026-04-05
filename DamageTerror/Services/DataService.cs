@@ -14,9 +14,13 @@ public class DataService : IDisposable
     private bool wasActive;
     private bool playerChanged;
     private float lastPeriodicSaveTime;
+    private DateTime lastCombatDataTime;
 
     /// <summary>Interval in seconds between periodic graph data captures during active encounters.</summary>
     private const float PeriodicSaveInterval = 30f;
+
+    /// <summary>Seconds without CombatData before marking an active encounter as stale.</summary>
+    private const double StalenessTimeoutSeconds = 15.0;
 
     public EncounterTimer EncounterTimer { get; } = new();
     public SkillTracker SkillTracker { get; }
@@ -27,6 +31,9 @@ public class DataService : IDisposable
     public uint PlayerId { get; private set; }
     public bool IsConnected => activeSource?.IsConnected ?? false;
     public string ConnectionStatus { get; private set; } = "Not connected";
+
+    /// <summary>Raised when a new encounter boundary is detected (active encounter starts).</summary>
+    public event Action? OnNewEncounter;
 
     public DataService(IDalamudPluginInterface pluginInterface, IPluginLog log, Configuration config)
     {
@@ -43,7 +50,7 @@ public class DataService : IDisposable
         SkillTracker.SetDependencies(EncounterTimer, GraphTracker, StatusTracker);
         StatusTracker.SetSkillTracker(SkillTracker);
 
-        Store = new EncounterStore(config.MaxEncounterHistory);
+        Store = new EncounterStore();
 
         var configDir = pluginInterface.GetPluginConfigDirectory();
         var savePath = System.IO.Path.Combine(configDir, "encounters.json");
@@ -180,10 +187,42 @@ public class DataService : IDisposable
         }
 
         ConnectionStatus = "Disconnected";
+
+        // Mark any lingering active encounter as no longer live so the UI
+        // doesn't keep showing stale active state after a disconnect.
+        var active = Store.ActiveEncounter;
+        if (active is { Encounter.IsActive: true })
+        {
+            active.Encounter.IsActive = false;
+            wasActive = false;
+        }
+    }
+
+    /// <summary>
+    /// Checks whether the active encounter has gone stale (no CombatData received
+    /// within <see cref="StalenessTimeoutSeconds"/>). If so, clears <c>IsActive</c>
+    /// so the UI no longer shows it as live.
+    /// Call from the render loop or a framework update handler.
+    /// </summary>
+    public void CheckStaleness()
+    {
+        if (disposed) return;
+
+        var active = Store.ActiveEncounter;
+        if (active == null || !active.Encounter.IsActive) return;
+
+        var elapsed = (DateTime.UtcNow - lastCombatDataTime).TotalSeconds;
+        if (elapsed >= StalenessTimeoutSeconds)
+        {
+            active.Encounter.IsActive = false;
+            wasActive = false;
+        }
     }
 
     private void OnCombatData(EncounterSnapshot snapshot)
     {
+        lastCombatDataTime = DateTime.UtcNow;
+
         // After a player change, drop stale data from the previous session
         // until a genuinely new active encounter starts.
         if (playerChanged)
@@ -242,6 +281,8 @@ public class DataService : IDisposable
             EncounterTimer.Restart();
             lastPeriodicSaveTime = 0f;
 
+            OnNewEncounter?.Invoke();
+
             // Re-seed historical data so the graph remains visible while
             // the live tracker accumulates its first few samples.
             if (outgoing != null)
@@ -262,6 +303,9 @@ public class DataService : IDisposable
 
         var existing = Store.ActiveEncounter;
 
+        // Resolve home worlds from the current party list
+        var worldMap = ResolvePartyWorldMap();
+
         foreach (var c in snapshot.Combatants)
         {
             var trackerSkills = SkillTracker.GetSkills(c.Name);
@@ -281,11 +325,48 @@ public class DataService : IDisposable
             var existingHeal = existingEntry?.HealingSkills?.Sum(s => s.TotalDamage) ?? 0;
             c.HealingSkills = trackerHeal >= existingHeal ? trackerHealSkills : existingEntry!.HealingSkills;
 
+            // Derive heal count from tracked healing skills when the parser value is missing.
+            var trackerHealCount = c.HealingSkills.Sum(s => s.HitCount);
+            if (trackerHealCount > c.HealCount)
+                c.HealCount = trackerHealCount;
+
+            // Derive stun count from tracked Leg Sweep / Low Blow uses.
+            var trackerStuns = SkillTracker.GetStunCount(c.Name);
+            if (trackerStuns > c.Stuns)
+                c.Stuns = trackerStuns;
+
             if (!string.IsNullOrEmpty(PlayerName) && string.Equals(c.Name, PlayerName, StringComparison.OrdinalIgnoreCase))
                 c.IsLocalPlayer = true;
+
+            // Resolve home world: party list > existing entry > empty
+            if (worldMap.TryGetValue(c.Name, out var world))
+                c.HomeWorld = world;
+            else if (!string.IsNullOrEmpty(existingEntry?.HomeWorld))
+                c.HomeWorld = existingEntry!.HomeWorld;
         }
 
         var prev = existing;
+
+        var archived = Store.Update(snapshot);
+
+        GraphTracker.WindowSeconds = Math.Min(config.GraphSmoothingWindow, config.GraphViewSmoothingWindow);
+        GraphTracker.SampleIntervalSeconds = Math.Min(config.GraphUpdateInterval, config.GraphViewUpdateInterval);
+        GraphTracker.RecordSample(snapshot);
+
+        // Feed sliding-window instant values back into each combatant entry
+        // so columns, details panel, and tooltips show live iDPS / iHPS.
+        foreach (var c in snapshot.Combatants)
+        {
+            var samples = GraphTracker.GetSamples(c.Name);
+            if (samples.Count > 0)
+            {
+                var latest = samples[^1];
+                c.InstantDps = latest.Dps;
+                c.InstantHps = latest.Hps;
+            }
+        }
+
+        // Track peak DPS as the highest instantaneous DPS achieved during the encounter.
         if (prev != null)
         {
             foreach (var c in snapshot.Combatants)
@@ -293,20 +374,14 @@ public class DataService : IDisposable
                 var prevEntry = prev.Combatants.Find(p =>
                     string.Equals(p.Name, c.Name, StringComparison.OrdinalIgnoreCase));
                 var prevPeak = prevEntry?.PeakDps ?? 0;
-                c.PeakDps = Math.Max(c.EncDps, prevPeak);
+                c.PeakDps = Math.Max(c.InstantDps, prevPeak);
             }
         }
         else
         {
             foreach (var c in snapshot.Combatants)
-                c.PeakDps = c.EncDps;
+                c.PeakDps = c.InstantDps;
         }
-
-        var archived = Store.Update(snapshot);
-
-        GraphTracker.WindowSeconds = Math.Min(config.GraphSmoothingWindow, config.GraphViewSmoothingWindow);
-        GraphTracker.SampleIntervalSeconds = Math.Min(config.GraphUpdateInterval, config.GraphViewUpdateInterval);
-        GraphTracker.RecordSample(snapshot);
 
         // Periodically capture graph data during active encounters so that
         // at most ~30 seconds of data is lost on an unexpected shutdown.
@@ -348,6 +423,28 @@ public class DataService : IDisposable
             if (dtEvents.Count > 0)
                 target.DamageTakenEvents[c.Name] = dtEvents;
         }
+    }
+
+    /// <summary>
+    /// Build a combatant name → home world name map from the current party list.
+    /// </summary>
+    private Dictionary<string, string> ResolvePartyWorldMap()
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var members = ECommons.PartyFunctions.UniversalParty.Members;
+            foreach (var member in members)
+            {
+                if (string.IsNullOrEmpty(member.Name)) continue;
+                var worldName = member.HomeWorld.ValueNullable?.Name.ToString();
+                if (!string.IsNullOrEmpty(worldName))
+                    map[member.Name] = worldName;
+            }
+        }
+        catch { /* Party list unavailable */ }
+
+        return map;
     }
 
     private void OnLogLine(string[] line)

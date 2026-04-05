@@ -6,17 +6,16 @@ namespace DamageTerror.Services;
 public class EncounterStore
 {
     private readonly object syncLock = new();
-    private readonly int maxHistory;
     private readonly List<EncounterSnapshot> history = new();
     private EncounterSnapshot? active;
     private bool wasActive;
+    private bool suppressActive;
     private string? savePath;
     private bool dirty;
     private bool loadedSuccessfully;
 
-    public EncounterStore(int maxHistory)
+    public EncounterStore()
     {
-        this.maxHistory = maxHistory;
     }
 
     public EncounterSnapshot? ActiveEncounter
@@ -59,14 +58,26 @@ public class EncounterStore
         {
             var archived = false;
 
+            if (suppressActive)
+            {
+                if (snapshot.Encounter.IsActive && !wasActive)
+                    suppressActive = false;
+                else
+                {
+                    wasActive = snapshot.Encounter.IsActive;
+                    return false;
+                }
+            }
+
             if (snapshot.Encounter.IsActive && !wasActive && active != null)
             {
-                history.Add(active);
-                dirty = true;
-                archived = true;
-
-                while (history.Count > maxHistory)
-                    history.RemoveAt(0);
+                active.Encounter.IsActive = false;
+                if (!double.IsNaN(active.Encounter.EncDps))
+                {
+                    history.Add(active);
+                    dirty = true;
+                    archived = true;
+                }
             }
             else if (!snapshot.Encounter.IsActive && !wasActive && active != null
                      && active != snapshot
@@ -128,6 +139,17 @@ public class EncounterStore
         }
     }
 
+    public void RemoveActive()
+    {
+        lock (syncLock)
+        {
+            active = null;
+            wasActive = false;
+            suppressActive = true;
+            dirty = true;
+        }
+    }
+
     public bool ArchiveActive()
     {
         lock (syncLock)
@@ -135,11 +157,13 @@ public class EncounterStore
             if (active == null)
                 return false;
 
-            history.Add(active);
-            dirty = true;
+            active.Encounter.IsActive = false;
 
-            while (history.Count > maxHistory)
-                history.RemoveAt(0);
+            if (!double.IsNaN(active.Encounter.EncDps))
+            {
+                history.Add(active);
+                dirty = true;
+            }
 
             active = null;
             wasActive = false;
@@ -207,8 +231,17 @@ public class EncounterStore
             if (loaded != null)
             {
                 var anyRepaired = false;
+                loaded.RemoveAll(s => double.IsNaN(s.Encounter.EncDps));
                 foreach (var snapshot in loaded)
                 {
+                    // History entries are never live — clear stale active flags
+                    // that may have been persisted by older versions.
+                    if (snapshot.Encounter.IsActive)
+                    {
+                        snapshot.Encounter.IsActive = false;
+                        anyRepaired = true;
+                    }
+
                     if (snapshot.ValidateAndRepair())
                         anyRepaired = true;
                 }
@@ -217,9 +250,6 @@ public class EncounterStore
                 {
                     history.Clear();
                     history.AddRange(loaded);
-
-                    while (history.Count > maxHistory)
-                        history.RemoveAt(0);
 
                     if (anyRepaired)
                         dirty = true;

@@ -139,8 +139,24 @@ public class StatusTracker
         }
 
         // Retroactively tag the type 21/22 event that applied this status
+        // and capture the originating action name for DoT/HoT tick attribution.
         if (classification.IsDoT || classification.IsHoT)
-            skillTracker?.MarkLastEventAsApplication(sourceName, classification.IsDoT, classification.IsHoT);
+        {
+            var actionName = skillTracker?.MarkLastEventAsApplication(sourceName, classification.IsDoT, classification.IsHoT);
+            if (!string.IsNullOrEmpty(actionName))
+            {
+                // Update the ActiveStatus with the resolved action name
+                lock (syncLock)
+                {
+                    var key2 = (targetName, statusId, sourceName);
+                    if (activeStatuses.TryGetValue(key2, out var s))
+                    {
+                        s.ApplyingActionName = actionName;
+                        activeStatuses[key2] = s;
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>

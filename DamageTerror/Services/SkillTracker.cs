@@ -12,11 +12,18 @@ public class SkillTracker
     private Dictionary<string, Dictionary<string, SkillAccum>> damageData = new();
     private Dictionary<string, Dictionary<string, SkillAccum>> healData = new();
 
+    // Tick-only accumulators keyed by originating action name (for sub-entry display).
+    private Dictionary<string, Dictionary<string, SkillAccum>> dotTickData = new();
+    private Dictionary<string, Dictionary<string, SkillAccum>> hotTickData = new();
+
     // Timestamped skill use events per combatant (source-side: damage dealt / heals cast)
     private readonly Dictionary<string, List<SkillUseEvent>> skillEvents = new(StringComparer.OrdinalIgnoreCase);
 
     // Timestamped damage-taken events per combatant (target-side: enemy abilities hitting a player)
     private readonly Dictionary<string, List<SkillUseEvent>> damageTakenEvents = new(StringComparer.OrdinalIgnoreCase);
+
+    // Stun skill use counts per combatant (Leg Sweep + Low Blow only)
+    private readonly Dictionary<string, int> stunCounts = new(StringComparer.OrdinalIgnoreCase);
 
     // Historical skill events loaded from disk, used as fallback until live data is available.
     private Dictionary<string, List<SkillUseEvent>>? seededEvents;
@@ -161,6 +168,10 @@ public class SkillTracker
 
                 if (!string.IsNullOrEmpty(targetName))
                     RecordDamageTakenEvent(targetName, skillName, dmgAmount, dmgSeverity);
+
+                if (string.Equals(skillName, "Leg Sweep", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(skillName, "Low Blow", StringComparison.OrdinalIgnoreCase))
+                    stunCounts[sourceName] = stunCounts.GetValueOrDefault(sourceName) + 1;
             }
             if (healAmount > 0)
             {
@@ -240,12 +251,12 @@ public class SkillTracker
 
     public List<SkillEntry> GetSkills(string combatantName)
     {
-        return BuildSkillList(damageData, combatantName);
+        return BuildSkillList(damageData, dotTickData, combatantName, "DoT");
     }
 
     public List<SkillEntry> GetHealSkills(string combatantName)
     {
-        return BuildSkillList(healData, combatantName);
+        return BuildSkillList(healData, hotTickData, combatantName, "HoT");
     }
 
     public List<SkillUseEvent> GetSkillEvents(string combatantName)
@@ -281,14 +292,25 @@ public class SkillTracker
         }
     }
 
+    public int GetStunCount(string combatantName)
+    {
+        lock (syncLock)
+        {
+            return stunCounts.GetValueOrDefault(combatantName);
+        }
+    }
+
     public void Reset()
     {
         lock (syncLock)
         {
             damageData.Clear();
             healData.Clear();
+            dotTickData.Clear();
+            hotTickData.Clear();
             skillEvents.Clear();
             damageTakenEvents.Clear();
+            stunCounts.Clear();
             seededEvents = null;
             seededDamageTakenEvents = null;
             damageTypeCache.Clear();
@@ -321,26 +343,28 @@ public class SkillTracker
     /// Retroactively tag the most recent skill event from a combatant as a DoT/HoT application.
     /// Called by StatusTracker when a GainsEffect is received for a known DoT/HoT status,
     /// since type 26 fires immediately after the type 21/22 that applied it.
+    /// Returns the action name of the tagged event, or null if no match.
     /// </summary>
-    public void MarkLastEventAsApplication(string combatantName, bool isDoT, bool isHoT)
+    public string? MarkLastEventAsApplication(string combatantName, bool isDoT, bool isHoT)
     {
         lock (syncLock)
         {
             if (!skillEvents.TryGetValue(combatantName, out var events) || events.Count == 0)
-                return;
+                return null;
 
             var last = events[events.Count - 1];
             // Only tag if it's a very recent event (within ~1s) and not already a tick
             if (last.IsDoTTick || last.IsHoTTick)
-                return;
+                return null;
 
             var now = timer?.ElapsedSeconds ?? 0f;
             if (now - last.TimeSec > 1.0f)
-                return;
+                return null;
 
             if (isDoT) last.IsDoTApplication = true;
             if (isHoT) last.IsHoTApplication = true;
             events[events.Count - 1] = last;
+            return last.SkillName;
         }
     }
 
@@ -363,12 +387,19 @@ public class SkillTracker
         });
     }
 
-    private List<SkillEntry> BuildSkillList(Dictionary<string, Dictionary<string, SkillAccum>> store, string combatantName)
+    private List<SkillEntry> BuildSkillList(
+        Dictionary<string, Dictionary<string, SkillAccum>> store,
+        Dictionary<string, Dictionary<string, SkillAccum>> tickStore,
+        string combatantName,
+        string tickLabel)
     {
         lock (syncLock)
         {
             if (!store.TryGetValue(combatantName, out var skills))
                 return new List<SkillEntry>();
+
+            // Look up tick data for this combatant (may be null)
+            tickStore.TryGetValue(combatantName, out var ticks);
 
             var list = skills.Select(kv =>
             {
@@ -386,6 +417,26 @@ public class SkillTracker
                     entry.DirectHitPct = (double)(a.DirectHits + a.CritDirectHits) / a.Hits * 100.0;
                     entry.CritDirectHitPct = (double)a.CritDirectHits / a.Hits * 100.0;
                 }
+
+                // Attach tick sub-entry if this skill has periodic ticks
+                if (ticks != null && ticks.TryGetValue(kv.Key, out var tickAccum) && tickAccum.Hits > 0)
+                {
+                    var tickEntry = new SkillEntry
+                    {
+                        Name = $"{kv.Key} ({tickLabel})",
+                        TotalDamage = tickAccum.Amount,
+                        HitCount = tickAccum.Hits,
+                        DamageType = tickAccum.DamageType,
+                    };
+                    if (tickAccum.Hits > 0)
+                    {
+                        tickEntry.CritPct = (double)(tickAccum.Crits + tickAccum.CritDirectHits) / tickAccum.Hits * 100.0;
+                        tickEntry.DirectHitPct = (double)(tickAccum.DirectHits + tickAccum.CritDirectHits) / tickAccum.Hits * 100.0;
+                        tickEntry.CritDirectHitPct = (double)tickAccum.CritDirectHits / tickAccum.Hits * 100.0;
+                    }
+                    entry.SubEntries = new List<SkillEntry> { tickEntry };
+                }
+
                 return entry;
             }).OrderByDescending(s => s.TotalDamage).ToList();
 
@@ -393,7 +444,14 @@ public class SkillTracker
             if (total > 0)
             {
                 foreach (var s in list)
+                {
                     s.DamagePercent = (double)s.TotalDamage / total * 100.0;
+                    if (s.SubEntries != null)
+                    {
+                        foreach (var sub in s.SubEntries)
+                            sub.DamagePercent = (double)sub.TotalDamage / total * 100.0;
+                    }
+                }
             }
 
             return list;
@@ -524,10 +582,11 @@ public class SkillTracker
         bool isHoT = string.Equals(dotOrHot, "HoT", StringComparison.OrdinalIgnoreCase);
         bool isDoT = !isHoT;
 
-        // Resolve the status name from StatusTracker if possible.
+        // Resolve the status name and originating action from StatusTracker.
         // Type 24 doesn't include the status name, so we look up
         // what DoT/HoT the source currently has on the target.
         string skillName = isHoT ? "HoT" : "DoT";
+        string? actionName = null;
         if (statusTracker != null)
         {
             var statuses = statusTracker.GetActiveStatuses(targetName);
@@ -537,7 +596,8 @@ public class SkillTracker
                     continue;
                 if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
                 {
-                    skillName = s.StatusName;
+                    actionName = s.ApplyingActionName;
+                    skillName = actionName ?? s.StatusName;
                     break;
                 }
             }
@@ -548,6 +608,7 @@ public class SkillTracker
             if (isDoT)
             {
                 AccumulateSkill(damageData, sourceName, skillName, amount, 0, SkillDamageType.Magic);
+                AccumulateSkill(dotTickData, sourceName, skillName, amount, 0, SkillDamageType.Magic);
                 RecordEvent(sourceName, skillName, amount, false, 0, isDoTTick: true);
 
                 if (!string.IsNullOrEmpty(targetName))
@@ -556,6 +617,7 @@ public class SkillTracker
             else
             {
                 AccumulateSkill(healData, sourceName, skillName, amount, 0, SkillDamageType.Magic);
+                AccumulateSkill(hotTickData, sourceName, skillName, amount, 0, SkillDamageType.Magic);
                 RecordEvent(sourceName, skillName, amount, true, 0, isHoTTick: true);
             }
         }
