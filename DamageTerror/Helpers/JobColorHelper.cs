@@ -30,42 +30,42 @@ public static class JobColorHelper
 
     private static readonly Dictionary<string, Vector4> DefaultPerJobColors = new(StringComparer.OrdinalIgnoreCase)
     {
-        { "Pld", new Vector4(0.40f, 0.55f, 0.90f, 1.0f) },
-        { "War", new Vector4(0.20f, 0.30f, 0.70f, 1.0f) },
-        { "Drk", new Vector4(0.50f, 0.20f, 0.60f, 1.0f) },
+        { "Pld", new Vector4(0.65882355f, 0.8235294f, 0.9019608f, 1.0f) },
+        { "War", new Vector4(0.8117647f, 0.14901961f, 0.12941177f, 1.0f) },
+        { "Drk", new Vector4(0.81960785f, 0.14901961f, 0.8f, 1.0f) },
         { "Gnb", new Vector4(0.25f, 0.45f, 0.65f, 1.0f) },
 
-        { "Whm", new Vector4(0.85f, 0.85f, 0.70f, 1.0f) },
-        { "Sch", new Vector4(0.30f, 0.45f, 0.85f, 1.0f) },
-        { "Ast", new Vector4(0.90f, 0.75f, 0.30f, 1.0f) },
-        { "Sge", new Vector4(0.35f, 0.65f, 0.75f, 1.0f) },
+        { "Whm", new Vector4(1.0f, 0.9411765f, 0.8627451f, 1.0f) },
+        { "Sch", new Vector4(0.5254902f, 0.34117648f, 1.0f, 1.0f) },
+        { "Ast", new Vector4(1.0f, 0.90588236f, 0.2901961f, 1.0f) },
+        { "Sge", new Vector4(0.65882355f, 0.8235294f, 0.9019608f, 1.0f) },
 
-        { "Mnk", new Vector4(0.85f, 0.65f, 0.15f, 1.0f) },
-        { "Drg", new Vector4(0.25f, 0.40f, 0.85f, 1.0f) },
-        { "Nin", new Vector4(0.70f, 0.20f, 0.35f, 1.0f) },
-        { "Sam", new Vector4(0.90f, 0.55f, 0.20f, 1.0f) },
-        { "Rpr", new Vector4(0.60f, 0.25f, 0.40f, 1.0f) },
-        { "Vpr", new Vector4(0.45f, 0.70f, 0.30f, 1.0f) },
+        { "Mnk", new Vector4(0.8392157f, 0.6117647f, 0.0f, 1.0f) },
+        { "Drg", new Vector4(0.25490198f, 0.39215687f, 0.8039216f, 1.0f) },
+        { "Nin", new Vector4(0.6862745f, 0.09803922f, 0.39215687f, 1.0f) },
+        { "Sam", new Vector4(0.89411765f, 0.42745098f, 0.015686275f, 1.0f) },
+        { "Rpr", new Vector4(0.5882353f, 0.3529412f, 0.5647059f, 1.0f) },
+        { "Vpr", new Vector4(0.0627451f, 0.50980395f, 0.0627451f, 1.0f) },
 
-        { "Brd", new Vector4(0.55f, 0.80f, 0.30f, 1.0f) },
-        { "Mch", new Vector4(0.45f, 0.75f, 0.80f, 1.0f) },
-        { "Dnc", new Vector4(0.85f, 0.55f, 0.65f, 1.0f) },
+        { "Brd", new Vector4(0.5686275f, 0.7294118f, 0.36862746f, 1.0f) },
+        { "Mch", new Vector4(0.43137255f, 0.88235295f, 0.8392157f, 1.0f) },
+        { "Dnc", new Vector4(0.8862745f, 0.6901961f, 0.6862745f, 1.0f) },
 
-        { "Blm", new Vector4(0.60f, 0.45f, 0.85f, 1.0f) },
-        { "Smn", new Vector4(0.30f, 0.70f, 0.40f, 1.0f) },
-        { "Rdm", new Vector4(0.85f, 0.35f, 0.45f, 1.0f) },
-        { "Pct", new Vector4(0.75f, 0.55f, 0.80f, 1.0f) },
+        { "Blm", new Vector4(0.64705884f, 0.4745098f, 0.8392157f, 1.0f) },
+        { "Smn", new Vector4(0.1764706f, 0.60784316f, 0.47058824f, 1.0f) },
+        { "Rdm", new Vector4(0.9098039f, 0.48235294f, 0.48235294f, 1.0f) },
+        { "Pct", new Vector4(0.9882353f, 0.57254905f, 0.88235295f, 1.0f) },
         { "Blu", new Vector4(0.30f, 0.55f, 0.90f, 1.0f) },
 
-        { "Gla", new Vector4(0.40f, 0.55f, 0.90f, 1.0f) },
-        { "Mrd", new Vector4(0.20f, 0.30f, 0.70f, 1.0f) },
-        { "Cnj", new Vector4(0.85f, 0.85f, 0.70f, 1.0f) },
-        { "Pgl", new Vector4(0.85f, 0.65f, 0.15f, 1.0f) },
-        { "Lnc", new Vector4(0.25f, 0.40f, 0.85f, 1.0f) },
-        { "Arc", new Vector4(0.55f, 0.80f, 0.30f, 1.0f) },
-        { "Rog", new Vector4(0.70f, 0.20f, 0.35f, 1.0f) },
-        { "Thm", new Vector4(0.60f, 0.45f, 0.85f, 1.0f) },
-        { "Acn", new Vector4(0.30f, 0.70f, 0.40f, 1.0f) }
+        { "Gla", new Vector4(0.65882355f, 0.8235294f, 0.9019608f, 1.0f) },
+        { "Mrd", new Vector4(0.8117647f, 0.14901961f, 0.12941177f, 1.0f) },
+        { "Cnj", new Vector4(1.0f, 0.9411765f, 0.8627451f, 1.0f) },
+        { "Pgl", new Vector4(0.8392157f, 0.6117647f, 0.0f, 1.0f) },
+        { "Lnc", new Vector4(0.25490198f, 0.39215687f, 0.8039216f, 1.0f) },
+        { "Arc", new Vector4(0.5686275f, 0.7294118f, 0.36862746f, 1.0f) },
+        { "Rog", new Vector4(0.6862745f, 0.09803922f, 0.39215687f, 1.0f) },
+        { "Thm", new Vector4(0.64705884f, 0.4745098f, 0.8392157f, 1.0f) },
+        { "Acn", new Vector4(0.1764706f, 0.60784316f, 0.47058824f, 1.0f) }
     };
 
     public static Vector4 GetDefaultJobColor(string job)

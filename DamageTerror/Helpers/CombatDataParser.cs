@@ -21,6 +21,14 @@ public static class CombatDataParser
             Timestamp = DateTime.UtcNow,
         };
 
+        var raidDps = snapshot.Encounter.EncDps;
+        var raidHps = snapshot.Encounter.EncHps;
+        foreach (var c in snapshot.Combatants)
+        {
+            c.RaidDps = raidDps;
+            c.RaidHps = raidHps;
+        }
+
         return snapshot;
     }
 
@@ -73,9 +81,6 @@ public static class CombatDataParser
                 OverhealAmount = GetLong(c, "overHeal"),
                 MaxHit = GetString(c, "maxhit"),
                 MaxHitDamage = GetLong(c, "MAXHIT"),
-                Last10Dps = GetDouble(c, "Last10DPS"),
-                Last30Dps = GetDouble(c, "Last30DPS"),
-                Last60Dps = GetDouble(c, "Last60DPS"),
                 MaxHeal = GetString(c, "maxheal"),
                 MaxHealAmount = GetLong(c, "MAXHEAL"),
                 Swings = GetInt(c, "swings"),
