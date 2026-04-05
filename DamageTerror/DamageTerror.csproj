@@ -34,4 +34,8 @@
     <ProjectReference Include="..\NightmareUI\NightmareUI\NightmareUI.csproj" />
     <ProjectReference Include="..\NightmareUI.OtterGuiWrapper\NightmareUI.OtterGuiWrapper\NightmareUI.OtterGuiWrapper.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0-preview.3.25173.2" />
+  </ItemGroup>
 </Project>

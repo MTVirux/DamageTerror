@@ -99,6 +99,8 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.PluginInterface.UiBuilder.OpenConfigUi += this.OpenConfigUi;
         this.PluginInterface.UiBuilder.OpenMainUi += this.OpenMainUi;
 
+        Svc.ClientState.TerritoryChanged += this.OnTerritoryChanged;
+
         this.commandManager.AddHandler("/dt", new CommandInfo(this.OnCommand)
         {
             HelpMessage = "Toggle the Damage Terror meter window.",
@@ -160,6 +162,8 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             this.mainWindow.Dispose();
             this.configWindow.Dispose();
 
+            Svc.ClientState.TerritoryChanged -= this.OnTerritoryChanged;
+
             this.PluginInterface.UiBuilder.Draw -= this.DrawUi;
             this.PluginInterface.UiBuilder.OpenConfigUi -= this.OpenConfigUi;
             this.PluginInterface.UiBuilder.OpenMainUi -= this.OpenMainUi;
@@ -215,6 +219,13 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
     }
 
     private void DrawUi() => this.windowSystem.Draw();
+
+    private void OnTerritoryChanged(ushort territoryId)
+    {
+        var contentType = Content.ContentType;
+        var contentName = Content.ContentName ?? "Unknown";
+        this.pluginLog.Information($"Territory changed: {contentName} (ID: {territoryId}, Type: {contentType})");
+    }
 
     private void OnCommand(string command, string arguments)
     {

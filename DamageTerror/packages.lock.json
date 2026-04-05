@@ -14,6 +14,15 @@
         "resolved": "1.2.39",
         "contentHash": "fcFN01tDTIQqDuTwr1jUQK/geofiwjG5DycJQOnC72i1SsLAk1ELe+apBOuZ11UMQG8YKFZG1FgvjZPbqHyatg=="
       },
+      "System.Drawing.Common": {
+        "type": "Direct",
+        "requested": "[10.0.0-preview.3.25173.2, )",
+        "resolved": "10.0.0-preview.3.25173.2",
+        "contentHash": "K5Jp1focfWA1BVRryfcZt0vgFpBxrO/i8PA5m4TsorqoYzUBW55MecUVlII3A5kgQHdEI1ADln0wjfAaJAAshg==",
+        "dependencies": {
+          "Microsoft.Win32.SystemEvents": "10.0.0-preview.3.25171.5"
+        }
+      },
       "JetBrains.Annotations": {
         "type": "Transitive",
         "resolved": "2024.3.0",
@@ -31,6 +40,11 @@
         "type": "Transitive",
         "resolved": "9.0.2",
         "contentHash": "MNe7GSTBf3jQx5vYrXF0NZvn6l7hUKF6J54ENfAgCO8y6xjN1XUmKKWG464LP2ye6QqDiA1dkaWEZBYnhoZzjg=="
+      },
+      "Microsoft.Win32.SystemEvents": {
+        "type": "Transitive",
+        "resolved": "10.0.0-preview.3.25171.5",
+        "contentHash": "no1DVBWRLoSQLz8aRwztO5bOd3Osw16xcnWr4oZwb0mX77C0UoNU/GwTsytNh9ygr2xBhMSKl/Tr49ZqLYGk0w=="
       },
       "ecommons": {
         "type": "Project"
