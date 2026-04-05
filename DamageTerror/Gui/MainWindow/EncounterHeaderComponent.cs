@@ -6,7 +6,7 @@ using Dalamud.Bindings.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-public class EncounterHeaderComponent : IUIComponent
+public class EncounterHeaderComponent
 {
     private readonly DataService dataService;
     private readonly Configuration config;
