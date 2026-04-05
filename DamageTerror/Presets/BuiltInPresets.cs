@@ -9,12 +9,6 @@ public static class BuiltInPresets
         Name = "Default",
         Description = "Stock DamageTerror appearance. Use this to reset to factory settings.",
         IsBuiltIn = true,
-
-        Tabs = new()
-        {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps } },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { VisibleColumns = new() { BarColumn.Hps } },
-        },
     };
 
 
@@ -57,7 +51,6 @@ public static class BuiltInPresets
         NameTextColor = new(1f, 1f, 1f, 1f),
         ValueTextColor = new(1f, 1f, 1f, 1f),
         WindowBackgroundColor = new(0.055f, 0.055f, 0.055f, 0.95f),
-        WindowRounding = 0f,
 
         SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f),
         SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.6f),
@@ -103,13 +96,6 @@ public static class BuiltInPresets
         ShowJobIcons = true,
         ShowNameOnBar = true,
         ShowRankNumber = true,
-        VisibleColumns = new() { BarColumn.Dps, BarColumn.DamagePercent },
-
-        Tabs = new()
-        {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps, BarColumn.DamagePercent } },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { VisibleColumns = new() { BarColumn.Hps } },
-        },
 
         TabButtonColor = new(0.10f, 0.10f, 0.10f, 0.85f),
         TabButtonHoveredColor = new(0.18f, 0.18f, 0.18f, 0.9f),
@@ -160,7 +146,6 @@ public static class BuiltInPresets
         NameTextColor = new(1f, 1f, 1f, 1f),
         ValueTextColor = new(1f, 1f, 1f, 0.95f),
         WindowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.92f),
-        WindowRounding = 3f,
 
         SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f),
         SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f),
@@ -182,8 +167,6 @@ public static class BuiltInPresets
         StatusBarHeight = 20f,
         StatusBarFontSize = 13.3f,
         StatusBarPadding = 6f,
-        ShowStatusBarPersonalDps = true,
-        ShowStatusBarRaidDps = true,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.85f),
         StatusBarActiveColor = new(1.0f, 0.55f, 0.10f, 1.0f),
@@ -205,14 +188,6 @@ public static class BuiltInPresets
         ShowJobIcons = true,
         ShowNameOnBar = true,
         ShowRankNumber = true,
-        VisibleColumns = new() { BarColumn.Dps },
-
-        Tabs = new()
-        {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps } },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { VisibleColumns = new() { BarColumn.Hps } },
-            new MeterTab("Tanking", TabFilterMode.Tanks, SortField.DamageTaken) { VisibleColumns = new() { BarColumn.DamageTaken } },
-        },
 
         TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.9f),
         TabButtonHoveredColor = new(0.20f, 0.18f, 0.15f, 0.95f),
@@ -271,7 +246,6 @@ public static class BuiltInPresets
         NameTextColor = new(1f, 1f, 1f, 0.90f),
         ValueTextColor = new(1f, 1f, 1f, 0.90f),
         WindowBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.70f),
-        WindowRounding = 8f,
 
         SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 0.9f),
         SelectionBarBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
@@ -293,8 +267,6 @@ public static class BuiltInPresets
         StatusBarHeight = 18f,
         StatusBarFontSize = 12.6f,
         StatusBarPadding = 4f,
-        ShowStatusBarPersonalDps = true,
-        ShowStatusBarRaidDps = false,
         ShowStatusBarSeparator = false,
         StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.7f),
         StatusBarActiveColor = new(0.9f, 0.6f, 0.1f, 1.0f),
@@ -315,13 +287,8 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        VisibleColumns = new() { BarColumn.Dps },
 
         ShowTabBar = false,
-        Tabs = new()
-        {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps } },
-        },
 
         TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.5f),
         TabButtonHoveredColor = new(0.15f, 0.15f, 0.15f, 0.6f),
@@ -335,13 +302,6 @@ public static class BuiltInPresets
 
         // Tooltip
         TooltipDelay = 0.2f,
-        TooltipFields = new()
-        {
-            TooltipField.Name,
-            TooltipField.Dps,
-            TooltipField.DamagePercent,
-            TooltipField.MaxHit,
-        },
         TooltipBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.85f),
         TooltipTextColor = new(1f, 1f, 1f, 0.9f),
         TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 0.85f),
@@ -412,7 +372,6 @@ public static class BuiltInPresets
         NameTextColor = new(1f, 1f, 1f, 1f),
         ValueTextColor = new(1f, 1f, 1f, 1f),
         WindowBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.92f),
-        WindowRounding = 6f,
 
         SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f),
         SelectionBarBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.4f),
@@ -434,8 +393,6 @@ public static class BuiltInPresets
         StatusBarHeight = 20f,
         StatusBarFontSize = 14f,
         StatusBarPadding = 6f,
-        ShowStatusBarPersonalDps = true,
-        ShowStatusBarRaidDps = true,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.9f),
         StatusBarActiveColor = new(1.0f, 0.55f, 0.15f, 1.0f),
@@ -457,13 +414,6 @@ public static class BuiltInPresets
         ShowJobIcons = true,
         ShowNameOnBar = true,
         ShowRankNumber = true,
-        VisibleColumns = new() { BarColumn.Dps },
-
-        Tabs = new()
-        {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps } },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { VisibleColumns = new() { BarColumn.Hps } },
-        },
 
         TabButtonColor = new(0.10f, 0.10f, 0.12f, 0.85f),
         TabButtonHoveredColor = new(0.20f, 0.20f, 0.25f, 0.9f),
@@ -522,7 +472,6 @@ public static class BuiltInPresets
         NameTextColor = new(1f, 1f, 1f, 0.95f),
         ValueTextColor = new(1f, 1f, 1f, 0.95f),
         WindowBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
-        WindowRounding = 0f,
 
         SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 1f),
         SelectionBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.5f),
@@ -544,8 +493,6 @@ public static class BuiltInPresets
         StatusBarHeight = 18f,
         StatusBarFontSize = 11.9f,
         StatusBarPadding = 3f,
-        ShowStatusBarPersonalDps = true,
-        ShowStatusBarRaidDps = true,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.9f),
         StatusBarActiveColor = new(0.95f, 0.60f, 0.10f, 1.0f),
@@ -568,23 +515,6 @@ public static class BuiltInPresets
         ShowNameOnBar = true,
         ShowJobAbbrevOnBar = true,
         ShowRankNumber = true,
-        VisibleColumns = new() { BarColumn.Dps, BarColumn.DamagePercent, BarColumn.DirectHit, BarColumn.Crit, BarColumn.CritDirectHit },
-
-        Tabs = new()
-        {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps)
-            {
-                VisibleColumns = new() { BarColumn.Dps, BarColumn.DamagePercent, BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.Deaths },
-            },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps)
-            {
-                VisibleColumns = new() { BarColumn.Hps, BarColumn.Healed, BarColumn.Overheal },
-            },
-            new MeterTab("Deaths", TabFilterMode.Deaths, SortField.Deaths)
-            {
-                VisibleColumns = new() { BarColumn.Dps, BarColumn.Deaths },
-            },
-        },
 
         TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.7f),
         TabButtonHoveredColor = new(0.15f, 0.15f, 0.15f, 0.8f),
@@ -598,22 +528,6 @@ public static class BuiltInPresets
 
         // Tooltip
         TooltipDelay = 0.2f,
-        TooltipFields = new()
-        {
-            TooltipField.Name,
-            TooltipField.Job,
-            TooltipField.Dps,
-            TooltipField.Damage,
-            TooltipField.DamagePercent,
-            TooltipField.Crit,
-            TooltipField.DirectHit,
-            TooltipField.CritDirectHit,
-            TooltipField.Deaths,
-            TooltipField.MaxHit,
-            TooltipField.Hps,
-            TooltipField.Healed,
-            TooltipField.Overheal,
-        },
         TooltipBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
         TooltipTextColor = new(1f, 1f, 1f, 0.95f),
         TooltipLabelColor = new(0.60f, 0.60f, 0.60f, 0.9f),
@@ -684,7 +598,6 @@ public static class BuiltInPresets
         NameTextColor = new(0.95f, 0.95f, 0.95f, 1f),
         ValueTextColor = new(0.95f, 0.95f, 0.95f, 1f),
         WindowBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.92f),
-        WindowRounding = 2f,
 
         SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f),
         SelectionBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.4f),
@@ -706,8 +619,6 @@ public static class BuiltInPresets
         StatusBarHeight = 20f,
         StatusBarFontSize = 13.3f,
         StatusBarPadding = 5f,
-        ShowStatusBarPersonalDps = true,
-        ShowStatusBarRaidDps = true,
         ShowStatusBarSeparator = true,
         StatusBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.88f),
         StatusBarActiveColor = new(0.90f, 0.60f, 0.15f, 1.0f),
@@ -728,13 +639,6 @@ public static class BuiltInPresets
 
         ShowJobIcons = true,
         ShowNameOnBar = true,
-        VisibleColumns = new() { BarColumn.Dps },
-
-        Tabs = new()
-        {
-            new MeterTab("DPS", TabFilterMode.All, SortField.EncDps) { VisibleColumns = new() { BarColumn.Dps } },
-            new MeterTab("Healing", TabFilterMode.All, SortField.EncHps) { VisibleColumns = new() { BarColumn.Hps } },
-        },
 
         TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.8f),
         TabButtonHoveredColor = new(0.20f, 0.20f, 0.20f, 0.85f),
