@@ -3,6 +3,14 @@ using Newtonsoft.Json;
 
 namespace DamageTerror;
 
+public enum BackgroundImageScaleMode
+{
+    Stretch,
+    Fit,
+    Fill,
+    Tile,
+}
+
 file static class FontDefaults
 {
     public const float BaseSizePt = 14f;
@@ -19,7 +27,7 @@ public class Configuration : IPluginConfiguration
     public bool PreferIpc { get; set; } = true;
 
     public bool ShowOnStart { get; set; } = true;
-    public int MaxEncounterHistory { get; set; } = 30;
+
 
     public bool EnableInOverworld { get; set; } = true;
     public bool EnableInDungeons { get; set; } = true;
@@ -73,6 +81,9 @@ public class Configuration : IPluginConfiguration
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public HashSet<LayoutElement> CtrlShiftOnlyElements { get; set; } = new();
 
+    public ModifierCombo ModifierKeyCombo { get; set; } = ModifierCombo.CtrlShift;
+    public ModifierMode ModifierKeyMode { get; set; } = ModifierMode.Hold;
+
     public bool HideOutOfCombat { get; set; } = false;
     public float HideOutOfCombatDelay { get; set; } = 5f;
     public bool IgnoreEscClose { get; set; } = true;
@@ -93,7 +104,14 @@ public class Configuration : IPluginConfiguration
     public Vector4 NameTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 ValueTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 WindowBackgroundColor { get; set; } = new(0.06f, 0.06f, 0.06f, 0.94f);
-    public float WindowRounding { get; set; } = 0f;
+    public string? BackgroundImagePath { get; set; }
+    public float BackgroundImageOpacity { get; set; } = 1.0f;
+    public Vector4 BackgroundImageTint { get; set; } = new(1f, 1f, 1f, 1f);
+    public BackgroundImageScaleMode BackgroundImageScale { get; set; } = BackgroundImageScaleMode.Stretch;
+    public float WindowPaddingLeft { get; set; } = 8f;
+    public float WindowPaddingRight { get; set; } = 8f;
+    public float WindowPaddingTop { get; set; } = 8f;
+    public float WindowPaddingBottom { get; set; } = 8f;
 
     public Vector4 SelectionBarTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 SelectionBarBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
@@ -164,8 +182,10 @@ public class Configuration : IPluginConfiguration
         { BarColumn.Overheal, "OH%" },
         { BarColumn.OverhealAmount, "OH" },
         { BarColumn.MaxHit, "Max" },
+        { BarColumn.MaxHitValue, "MaxV" },
         { BarColumn.PeakDps, "Peak" },
         { BarColumn.MaxHeal, "MH" },
+        { BarColumn.MaxHealValue, "MHV" },
         { BarColumn.Swings, "Sw" },
         { BarColumn.Hits, "Hits" },
         { BarColumn.Misses, "Miss" },
@@ -186,20 +206,77 @@ public class Configuration : IPluginConfiguration
         { BarColumn.DamageShield, "Shld" },
         { BarColumn.MaxHealWard, "MHW" },
         { BarColumn.PowerDrain, "MPD" },
-        { BarColumn.PowerHeal, "PwH" },
+        { BarColumn.PowerHeal, "MPR" },
+        { BarColumn.Stuns, "Stun" },
+        { BarColumn.RaidDps, "gDPS" },
+        { BarColumn.RaidHps, "gHPS" },
     };
 
+    public static readonly Dictionary<BarColumn, string> FullColumnNames = new()
+    {
+        { BarColumn.Dps, "Damage Per Second" },
+        { BarColumn.Hps, "Healing Per Second" },
+        { BarColumn.Damage, "Total Damage" },
+        { BarColumn.Healed, "Total Healed" },
+        { BarColumn.DamagePercent, "Damage %" },
+        { BarColumn.HealPercent, "Healing %" },
+        { BarColumn.DirectHit, "Direct Hit %" },
+        { BarColumn.Crit, "Critical Hit %" },
+        { BarColumn.CritDirectHit, "Critical Direct Hit %" },
+        { BarColumn.Deaths, "Deaths" },
+        { BarColumn.DamageTaken, "Damage Taken" },
+        { BarColumn.DamageTakenPercent, "Damage Taken %" },
+        { BarColumn.Overheal, "Overheal %" },
+        { BarColumn.OverhealAmount, "Overheal Amount" },
+        { BarColumn.MaxHit, "Max Hit" },
+        { BarColumn.MaxHitValue, "Max Hit Value" },
+        { BarColumn.PeakDps, "Peak DPS" },
+        { BarColumn.MaxHeal, "Max Heal" },
+        { BarColumn.MaxHealValue, "Max Heal Value" },
+        { BarColumn.Swings, "Swings" },
+        { BarColumn.Hits, "Hits" },
+        { BarColumn.Misses, "Misses" },
+        { BarColumn.HitRate, "Hit Rate / Accuracy" },
+        { BarColumn.CritHitCount, "Critical Hit Count" },
+        { BarColumn.DirectHitCount, "Direct Hit Count" },
+        { BarColumn.CritDirectHitCount, "Critical Direct Hit Count" },
+        { BarColumn.BlockPct, "Block %" },
+        { BarColumn.ParryPct, "Parry %" },
+        { BarColumn.HealsTaken, "Heals Taken" },
+        { BarColumn.AbsorbHeal, "Absorb / Shield Heal" },
+        { BarColumn.Kills, "Kills" },
+        { BarColumn.InstantDps, "Instant DPS" },
+        { BarColumn.InstantHps, "Instant HPS" },
+        { BarColumn.CritHealPct, "Critical Heal %" },
+        { BarColumn.HealCount, "Heal Count" },
+        { BarColumn.CombatantDuration, "Combatant Duration" },
+        { BarColumn.DamageShield, "Damage Shield" },
+        { BarColumn.MaxHealWard, "Max Heal Ward" },
+        { BarColumn.PowerDrain, "MP Drain" },
+        { BarColumn.PowerHeal, "MP Restore" },
+        { BarColumn.Stuns, "Stuns" },
+        { BarColumn.RaidDps, "Raid DPS" },
+        { BarColumn.RaidHps, "Raid HPS" },
+    };
+
+    public Vector4 DetailBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
     public float DetailFontSize { get; set; } = FontDefaults.BaseSizePt;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public HashSet<BarColumn> DetailVisibleColumns { get; set; } = new(Enum.GetValues<BarColumn>());
-    public bool DetailShowDpsTrend { get; set; } = true;
+    public bool DetailShowDetailsTab { get; set; } = true;
+    public bool DetailShowSkillsTab { get; set; } = true;
+    public bool DetailShowGraphTab { get; set; } = true;
     public bool DetailShowSkillBreakdown { get; set; } = true;
     public int MaxSkillBreakdownCount { get; set; } = 0;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public HashSet<string> DetailExpandedSections { get; set; } = new();
+
+    public SkillMarkerConfig DetailDpsMarkers { get; set; } = new();
+    public SkillMarkerConfig DetailHpsMarkers { get; set; } = new();
+    public SkillMarkerConfig DetailDtpsMarkers { get; set; } = new();
 
     public bool ShowTooltip { get; set; } = true;
     public float TooltipDelay { get; set; } = 0.3f;
@@ -219,6 +296,8 @@ public class Configuration : IPluginConfiguration
         TooltipField.Deaths,
     };
 
+    public int TooltipTopSkillCount { get; set; } = 3;
+
     public Vector4 TooltipBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.95f);
     public Vector4 TooltipTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 TooltipLabelColor { get; set; } = new(0.6f, 0.6f, 0.6f, 1f);
@@ -226,7 +305,6 @@ public class Configuration : IPluginConfiguration
     public float TooltipRounding { get; set; } = 4f;
     public float TooltipPadding { get; set; } = 6f;
 
-    public bool GraphAutoHeight { get; set; } = true;
     public float GraphHeight { get; set; } = 120f;
     public float GraphLineThickness { get; set; } = 2f;
     public Vector4 GraphDpsColor { get; set; } = new(0.9f, 0.4f, 0.4f, 1f);
@@ -280,6 +358,10 @@ public class Configuration : IPluginConfiguration
     public int GraphViewYAxisTickCount { get; set; } = 8;
     public float GraphViewMouseTextOpacity { get; set; } = 0.6f;
 
+    public SkillMarkerConfig GraphViewDpsMarkers { get; set; } = new();
+    public SkillMarkerConfig GraphViewHpsMarkers { get; set; } = new();
+    public SkillMarkerConfig GraphViewDtpsMarkers { get; set; } = new();
+
     public Vector4 SkillDamageFillColor { get; set; } = new(0.35f, 0.35f, 0.55f, 0.7f);
     public Vector4 SkillPhysicalFillColor { get; set; } = new(0.55f, 0.30f, 0.25f, 0.7f);
     public Vector4 SkillMagicFillColor { get; set; } = new(0.30f, 0.30f, 0.65f, 0.7f);
@@ -295,8 +377,8 @@ public class Configuration : IPluginConfiguration
 
     public bool ShowStatusBar { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
-    public bool ShowStatusBarPersonalDps { get; set; } = true;
-    public bool ShowStatusBarRaidDps { get; set; } = true;
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.RaidDps };
     public float StatusBarFontSize { get; set; } = FontDefaults.BaseSizePt;
     public float StatusBarHeight { get; set; } = 20f;
     public float StatusBarPadding { get; set; } = 6f;
