@@ -47,7 +47,16 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         ECommonsMain.Init(pluginInterface, this);
         ServiceManager.Initialize(pluginInterface, playerState, dataManager, pluginLog, textureProvider);
 
-        var cfg = this.PluginInterface.GetPluginConfig() as Configuration;
+        Configuration? cfg = null;
+        try
+        {
+            cfg = this.PluginInterface.GetPluginConfig() as Configuration;
+        }
+        catch (Exception ex)
+        {
+            pluginLog.Error(ex, "Failed to load plugin config (possibly outdated enum values). Creating fresh config.");
+        }
+
         if (cfg == null)
         {
             cfg = new Configuration();
