@@ -238,7 +238,7 @@ public static class MeterTabsPage
 
         ImGui.Separator();
 
-        if (ImGui.CollapsingHeader("Sort", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Sort", ImGuiTreeNodeFlags.None))
         {
         var sortOptions = Enum.GetNames(typeof(SortField));
         var currentSort = (int)tab.SortBy;
@@ -260,7 +260,7 @@ public static class MeterTabsPage
 
         ImGui.Separator();
 
-        if (ImGui.CollapsingHeader("Meter/Graph Content", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Meter/Graph Content", ImGuiTreeNodeFlags.None))
         {
         var viewModeLabels = new[] { "Bars", "Line Graph" };
         var viewModeIdx = (int)tab.ViewMode;
@@ -308,18 +308,73 @@ public static class MeterTabsPage
 
             tab.ColumnOrder ??= new List<BarColumn>();
             CombatantBarComponent.EnsureColumnOrderComplete(tab.ColumnOrder);
-            changed |= DisplayTab.DrawBarColumns(tab.ColumnOrder,
-                col => DisplayTab.GetTabColumnEnabled(tab, col),
-                (col, v) => DisplayTab.SetTabColumnEnabled(tab, col, v),
-                tab.ColumnHeaderLabels,
-                tab.ColumnFormatOverrides);
+
+            var enabledCols = tab.ColumnOrder.Where(c => tab.IsColumnVisible(c)).ToList();
+
+            Func<BarColumn, bool> barColExtras = col =>
+            {
+                var extChanged = false;
+
+                ImGui.SameLine();
+                var defaultLabel = Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+                tab.ColumnHeaderLabels.TryGetValue(col, out var currentHeader);
+                currentHeader ??= "";
+                ImGui.SetNextItemWidth(60);
+                if (ImGui.InputTextWithHint($"##hdr_{col}", defaultLabel, ref currentHeader, 32))
+                {
+                    if (string.IsNullOrEmpty(currentHeader))
+                        tab.ColumnHeaderLabels.Remove(col);
+                    else
+                        tab.ColumnHeaderLabels[col] = currentHeader;
+                    extChanged = true;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(MetricPicker.GetBarColumnLabel(col));
+
+                if (tab.ColumnFormatOverrides != null && ColumnFormatOverride.SupportsFormatting(col))
+                {
+                    ImGui.SameLine();
+                    var hasOverride = tab.ColumnFormatOverrides.ContainsKey(col);
+                    if (hasOverride)
+                        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.4f, 0.8f, 1.0f, 1.0f));
+                    if (ImGui.SmallButton($"F##fmt_{col}"))
+                        ImGui.OpenPopup($"##fmtPopup_{col}");
+                    if (hasOverride)
+                        ImGui.PopStyleColor();
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip(hasOverride ? "Custom format (click to edit)" : "Set custom format");
+
+                    if (ImGui.BeginPopup($"##fmtPopup_{col}"))
+                    {
+                        extChanged |= DisplayTab.DrawColumnFormatPopup(col, tab.ColumnFormatOverrides);
+                        ImGui.EndPopup();
+                    }
+                }
+
+                return extChanged;
+            };
+
+            if (MetricPicker.Draw("barCols", enabledCols,
+                MetricPicker.GetBarColumnLabel,
+                MetricPicker.BarColumnCategories,
+                barColExtras))
+            {
+                var newEnabledSet = new HashSet<BarColumn>(enabledCols);
+                var disabledOrder = tab.ColumnOrder.Where(c => !newEnabledSet.Contains(c)).ToList();
+                tab.ColumnOrder.Clear();
+                tab.ColumnOrder.AddRange(enabledCols);
+                tab.ColumnOrder.AddRange(disabledOrder);
+                CombatantBarComponent.EnsureColumnOrderComplete(tab.ColumnOrder);
+                tab.VisibleColumns = newEnabledSet;
+                changed = true;
+            }
         }
 
         }
 
         ImGui.Separator();
 
-        if (ImGui.CollapsingHeader("Status Bar Content", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Status Bar Content", ImGuiTreeNodeFlags.None))
         {
         var sbTimer = tab.ShowStatusBarTimer;
         if (ImGui.Checkbox("Show combat timer##sbtab", ref sbTimer))
@@ -331,12 +386,14 @@ public static class MeterTabsPage
         ImGui.Spacing();
         ImGui.TextDisabled("Metrics");
         tab.StatusBarMetrics ??= new List<BarColumn> { BarColumn.Dps, BarColumn.RaidDps };
-        changed |= DrawStatusBarMetrics(tab.StatusBarMetrics);
+        changed |= MetricPicker.Draw("statusBar", tab.StatusBarMetrics,
+            MetricPicker.GetBarColumnLabel,
+            MetricPicker.BarColumnCategories);
         }
 
         ImGui.Separator();
 
-        if (ImGui.CollapsingHeader("Tooltip Content", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Tooltip Content", ImGuiTreeNodeFlags.None))
         {
             ImGui.TextDisabled("Choose which fields to show in the tooltip and their order.");
             ImGui.Spacing();
@@ -350,105 +407,14 @@ public static class MeterTabsPage
             }
             ImGui.Spacing();
 
-            var fields = tab.TooltipFields;
-            var allFields = Enum.GetValues<TooltipField>();
-            var disabledFields = allFields.Where(f => !fields.Contains(f)).ToList();
-            disabledFields.Sort((a, b) =>
-                string.Compare(
-                    AppearanceTab.TooltipFieldLabels.GetValueOrDefault(a, a.ToString()),
-                    AppearanceTab.TooltipFieldLabels.GetValueOrDefault(b, b.ToString()),
-                    StringComparison.OrdinalIgnoreCase));
-
-            for (var i = 0; i < fields.Count; i++)
-            {
-                var field = fields[i];
-                var label = AppearanceTab.TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
-
-                ImGui.PushID($"ttf_{i}");
-
-                var canUp = i > 0;
-                if (!canUp) ImGui.BeginDisabled();
-                if (ImGui.ArrowButton("##up", ImGuiDir.Up))
-                {
-                    (fields[i - 1], fields[i]) = (fields[i], fields[i - 1]);
-                    changed = true;
-                }
-                if (!canUp) ImGui.EndDisabled();
-
-                ImGui.SameLine();
-
-                var canDown = i < fields.Count - 1;
-                if (!canDown) ImGui.BeginDisabled();
-                if (ImGui.ArrowButton("##down", ImGuiDir.Down))
-                {
-                    (fields[i], fields[i + 1]) = (fields[i + 1], fields[i]);
-                    changed = true;
-                }
-                if (!canDown) ImGui.EndDisabled();
-
-                ImGui.SameLine();
-
-                var enabled = true;
-                if (ImGui.Checkbox(label, ref enabled))
-                {
-                    fields.RemoveAt(i);
-                    changed = true;
-                    ImGui.PopID();
-                    i--;
-                    continue;
-                }
-
-                ImGui.PopID();
-            }
-
-            ImGui.Spacing();
-            ImGui.Separator();
-            ImGui.TextDisabled("Disabled");
-            ImGui.Spacing();
-
-            if (disabledFields.Count > 0 && ImGui.BeginTabBar("##disabledTooltipFields"))
-            {
-                foreach (var (catName, catFields) in AppearanceTab.DisabledTooltipCategories)
-                {
-                    var catDisabled = catFields.Where(f => disabledFields.Contains(f)).ToList();
-
-                    if (catDisabled.Count == 0)
-                        continue;
-
-                    if (ImGui.BeginTabItem(catName))
-                    {
-                        catDisabled.Sort((a, b) =>
-                            string.Compare(
-                                AppearanceTab.TooltipFieldLabels.GetValueOrDefault(a, a.ToString()),
-                                AppearanceTab.TooltipFieldLabels.GetValueOrDefault(b, b.ToString()),
-                                StringComparison.OrdinalIgnoreCase));
-
-                        foreach (var field in catDisabled)
-                        {
-                            var label = AppearanceTab.TooltipFieldLabels.GetValueOrDefault(field, field.ToString());
-                            ImGui.PushID($"disabled_tt_{field}");
-
-                            var off = false;
-                            if (ImGui.Checkbox(label, ref off))
-                            {
-                                fields.Add(field);
-                                changed = true;
-                            }
-
-                            ImGui.PopID();
-                        }
-
-                        ImGui.EndTabItem();
-                    }
-                }
-
-                ImGui.EndTabBar();
-            }
+            changed |= MetricPicker.Draw("tooltip", tab.TooltipFields,
+                MetricPicker.GetTooltipFieldLabel,
+                MetricPicker.TooltipFieldCategories);
         }
 
         ImGui.Separator();
 
-        if (ImGui.CollapsingHeader("Details Panel Content", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Details Panel Content", ImGuiTreeNodeFlags.None))
         {
             ImGui.TextDisabled("Choose what to show in the expanded detail view.");
             ImGui.Spacing();
@@ -490,7 +456,9 @@ public static class MeterTabsPage
 
             if (ImGui.Button("Enable All##detailVis"))
             {
-                tab.DetailVisibleColumns = new HashSet<BarColumn>(Enum.GetValues<BarColumn>());
+                foreach (var (_, items) in MetricPicker.BarColumnCategories)
+                    foreach (var col in items)
+                        tab.DetailVisibleColumns.Add(col);
                 changed = true;
             }
             ImGui.SameLine();
@@ -502,78 +470,10 @@ public static class MeterTabsPage
 
             ImGui.Spacing();
 
-            foreach (var (catName, catColumns) in AppearanceTab.DetailCategories)
-            {
-                if (ImGui.TreeNodeEx(catName + "##detailVis", ImGuiTreeNodeFlags.DefaultOpen))
-                {
-                    if (!tab.DetailSectionOrder.TryGetValue(catName, out var sectionOrder) || sectionOrder.Count == 0)
-                    {
-                        sectionOrder = new List<BarColumn>(catColumns);
-                        tab.DetailSectionOrder[catName] = sectionOrder;
-                    }
-
-                    foreach (var col in catColumns)
-                    {
-                        if (!sectionOrder.Contains(col))
-                            sectionOrder.Add(col);
-                    }
-
-                    // Remove columns no longer in the default
-                    var validCols = new HashSet<BarColumn>(catColumns);
-                    sectionOrder.RemoveAll(c => !validCols.Contains(c));
-
-                    // Render ordered list with visibility toggle + arrow button reorder
-                    for (var i = 0; i < sectionOrder.Count; i++)
-                    {
-                        var col = sectionOrder[i];
-                        var label = DisplayTab.ColumnLabels.GetValueOrDefault(col, col.ToString());
-                        var enabled = tab.DetailVisibleColumns.Contains(col);
-
-                        ImGui.PushID($"detailOrd_{catName}_{i}");
-
-                        var canUp = i > 0;
-                        if (!canUp) ImGui.BeginDisabled();
-                        if (ImGui.ArrowButton("##up", ImGuiDir.Up))
-                        {
-                            (sectionOrder[i], sectionOrder[i - 1]) = (sectionOrder[i - 1], sectionOrder[i]);
-                            changed = true;
-                        }
-                        if (!canUp) ImGui.EndDisabled();
-
-                        ImGui.SameLine();
-
-                        var canDown = i < sectionOrder.Count - 1;
-                        if (!canDown) ImGui.BeginDisabled();
-                        if (ImGui.ArrowButton("##down", ImGuiDir.Down))
-                        {
-                            (sectionOrder[i], sectionOrder[i + 1]) = (sectionOrder[i + 1], sectionOrder[i]);
-                            changed = true;
-                        }
-                        if (!canDown) ImGui.EndDisabled();
-
-                        ImGui.SameLine();
-
-                        if (ImGui.Checkbox(label, ref enabled))
-                        {
-                            if (enabled)
-                                tab.DetailVisibleColumns.Add(col);
-                            else
-                                tab.DetailVisibleColumns.Remove(col);
-                            changed = true;
-                        }
-
-                        ImGui.PopID();
-                    }
-
-                    if (ImGui.Button($"Reset Order##{catName}"))
-                    {
-                        tab.DetailSectionOrder[catName] = new List<BarColumn>(catColumns);
-                        changed = true;
-                    }
-
-                    ImGui.TreePop();
-                }
-            }
+            changed |= MetricPicker.DrawCategorized("detailVis", tab.DetailVisibleColumns,
+                MetricPicker.GetBarColumnLabel,
+                MetricPicker.BarColumnCategories,
+                tab.DetailSectionOrder);
 
             ImGui.Spacing();
 
@@ -594,77 +494,6 @@ public static class MeterTabsPage
                 {
                     tab.MaxSkillBreakdownCount = maxSkills;
                     changed = true;
-                }
-            }
-        }
-
-        return changed;
-    }
-
-    private static readonly (string Name, BarColumn[] Columns)[] StatusBarCategories =
-    {
-        ("Dmg", new[] { BarColumn.Dps, BarColumn.Damage, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.MaxHitValue, BarColumn.DamageShield, BarColumn.RaidDps }),
-        ("Heal", new[] { BarColumn.Hps, BarColumn.Healed, BarColumn.InstantHps, BarColumn.MaxHealValue, BarColumn.OverhealAmount, BarColumn.RaidHps }),
-        ("D%", new[] { BarColumn.DamagePercent, BarColumn.DirectHit, BarColumn.Crit, BarColumn.CritDirectHit }),
-        ("H%", new[] { BarColumn.HealPercent, BarColumn.Overheal, BarColumn.CritHealPct }),
-        ("Taken", new[] { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.HealsTaken }),
-        ("Counts", new[] { BarColumn.Swings, BarColumn.Hits, BarColumn.Misses, BarColumn.HitRate, BarColumn.Deaths, BarColumn.Kills }),
-        ("Other", new[] { BarColumn.CombatantDuration, BarColumn.HealCount, BarColumn.BlockPct, BarColumn.ParryPct }),
-    };
-
-    private static bool DrawStatusBarMetrics(List<BarColumn> metrics)
-    {
-        var changed = false;
-
-        if (ImGui.BeginTabBar("##sb_cats"))
-        {
-            foreach (var (name, columns) in StatusBarCategories)
-            {
-                if (ImGui.BeginTabItem(name))
-                {
-                    foreach (var col in columns)
-                    {
-                        var label = DisplayTab.ColumnLabels.GetValueOrDefault(col, col.ToString());
-                        var enabled = metrics.Contains(col);
-                        if (ImGui.Checkbox($"{label}##sb_{col}", ref enabled))
-                        {
-                            if (enabled)
-                                metrics.Add(col);
-                            else
-                                metrics.Remove(col);
-                            changed = true;
-                        }
-                    }
-                    ImGui.EndTabItem();
-                }
-            }
-            ImGui.EndTabBar();
-        }
-
-        if (metrics.Count > 0)
-        {
-            ImGui.Spacing();
-            ImGui.TextDisabled("Order (drag to reorder)");
-            for (var i = 0; i < metrics.Count; i++)
-            {
-                var col = metrics[i];
-                var label = DisplayTab.ColumnLabels.GetValueOrDefault(col, col.ToString());
-                ImGui.Selectable($"{label}##sbord_{i}");
-                if (ImGui.IsItemActive() && !ImGui.IsItemHovered())
-                {
-                    var delta = ImGui.GetMouseDragDelta(ImGuiMouseButton.Left).Y;
-                    if (delta < -ImGui.GetTextLineHeightWithSpacing() * 0.5f && i > 0)
-                    {
-                        (metrics[i], metrics[i - 1]) = (metrics[i - 1], metrics[i]);
-                        ImGui.ResetMouseDragDelta(ImGuiMouseButton.Left);
-                        changed = true;
-                    }
-                    else if (delta > ImGui.GetTextLineHeightWithSpacing() * 0.5f && i < metrics.Count - 1)
-                    {
-                        (metrics[i], metrics[i + 1]) = (metrics[i + 1], metrics[i]);
-                        ImGui.ResetMouseDragDelta(ImGuiMouseButton.Left);
-                        changed = true;
-                    }
                 }
             }
         }
