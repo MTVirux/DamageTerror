@@ -183,4 +183,43 @@ internal static class MeterWindowHelper
 
         ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + headerHeight + config.BarSpacing));
     }
+
+    public static float CalculateAfterBarsHeight(
+        Configuration config, 
+        Func<float> getStatusBarHeight,
+        Func<float> getHeaderHeight,
+        bool hasEncounter,
+        bool useTabBar,
+        HashSet<LayoutElement>? skipElements = null)
+    {
+        float height = 0f;
+        bool passedBars = false;
+        var modifierHeld = IsModifierActive(config);
+        foreach (var el in config.Layout)
+        {
+            if (skipElements?.Contains(el) == true) continue;
+            if (config.CtrlShiftOnlyElements.Contains(el) && !modifierHeld)
+                continue;
+            if (passedBars)
+            {
+                switch (el)
+                {
+                    case LayoutElement.StatusBar when hasEncounter:
+                        height += getStatusBarHeight();
+                        break;
+                    case LayoutElement.EncounterSelect:
+                        height += getHeaderHeight();
+                        break;
+                    case LayoutElement.MeterTabs when useTabBar && hasEncounter:
+                        height += config.TabButtonHeight;
+                        break;
+                }
+            }
+            else if (el == LayoutElement.CombatantBars)
+            {
+                passedBars = true;
+            }
+        }
+        return height;
+    }
 }

@@ -200,36 +200,12 @@ public class PopoutTabWindow : Window, IDisposable
                 maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
         }
 
-        // Calculate height reserved for elements rendered after CombatantBars
-        float afterBarsHeight = 0f;
-        bool passedBars = false;
+        var skipElements = new HashSet<LayoutElement> { LayoutElement.MeterTabs };
+        var afterBarsHeight = MeterWindowHelper.CalculateAfterBarsHeight(
+            config, statusBarComponent.GetHeight, headerComponent.GetHeight,
+            encounter != null, false, skipElements);
         var modifierHeld = MeterWindowHelper.IsModifierActive(config);
-        foreach (var el in config.Layout)
-        {
-            // Skip MeterTabs in popout — this window is already a single tab
-            if (el == LayoutElement.MeterTabs)
-                continue;
-            if (config.CtrlShiftOnlyElements.Contains(el) && !modifierHeld)
-                continue;
-            if (passedBars)
-            {
-                switch (el)
-                {
-                    case LayoutElement.StatusBar when encounter != null:
-                        afterBarsHeight += statusBarComponent.GetHeight();
-                        break;
-                    case LayoutElement.EncounterSelect:
-                        afterBarsHeight += headerComponent.GetHeight();
-                        break;
-                }
-            }
-            else if (el == LayoutElement.CombatantBars)
-            {
-                passedBars = true;
-            }
-        }
 
-        // --- Force disconnected message even if EncounterSelect is hidden ---
         if (!plugin.DataService.IsConnected && encounter == null)
         {
             ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");

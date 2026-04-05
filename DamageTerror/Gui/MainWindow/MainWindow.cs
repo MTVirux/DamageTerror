@@ -271,37 +271,11 @@ public class MainWindow : Window, IDisposable
                 maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
         }
 
-        // Calculate height reserved for elements rendered after CombatantBars
-        float afterBarsHeight = 0f;
-        bool passedBars = false;
+        var afterBarsHeight = MeterWindowHelper.CalculateAfterBarsHeight(
+            config, statusBarComponent.GetHeight, headerComponent.GetHeight,
+            encounter != null, useTabBar);
         var modifierHeld = MeterWindowHelper.IsModifierActive(config);
-        foreach (var el in config.Layout)
-        {
-            if (config.CtrlShiftOnlyElements.Contains(el) && !modifierHeld
-                && !(el == LayoutElement.EncounterSelect && headerComponent.IsComboOpen))
-                continue;
-            if (passedBars)
-            {
-                switch (el)
-                {
-                    case LayoutElement.StatusBar when encounter != null:
-                        afterBarsHeight += statusBarComponent.GetHeight();
-                        break;
-                    case LayoutElement.EncounterSelect:
-                        afterBarsHeight += headerComponent.GetHeight();
-                        break;
-                    case LayoutElement.MeterTabs when useTabBar && encounter != null:
-                        afterBarsHeight += config.TabButtonHeight;
-                        break;
-                }
-            }
-            else if (el == LayoutElement.CombatantBars)
-            {
-                passedBars = true;
-            }
-        }
 
-        // --- Force disconnected message even if EncounterSelect is hidden ---
         if (!plugin.DataService.IsConnected && encounter == null)
         {
             ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
