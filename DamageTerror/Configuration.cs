@@ -378,6 +378,16 @@ public class Configuration : IPluginConfiguration
     public float SkillBarRounding { get; set; } = 0f;
     public float SkillFontSize { get; set; } = FontDefaults.BaseSizePt;
 
+    public Vector4 BuffFillColor { get; set; } = new(0.30f, 0.50f, 0.60f, 0.7f);
+    public Vector4 DebuffFillColor { get; set; } = new(0.60f, 0.30f, 0.30f, 0.7f);
+    public Vector4 BuffRowBackgroundColor { get; set; } = new(0.12f, 0.12f, 0.12f, 0.6f);
+    public Vector4 BuffTextColor { get; set; } = new(1f, 1f, 1f, 0.9f);
+    public Vector4 BuffHeaderTextColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
+    public float BuffRowHeight { get; set; } = 14f;
+    public float BuffColumnPadding { get; set; } = 6f;
+    public float BuffBarRounding { get; set; } = 0f;
+    public float BuffFontSize { get; set; } = FontDefaults.BaseSizePt;
+
     public bool ShowStatusBar { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]

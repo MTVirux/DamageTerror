@@ -1687,6 +1687,58 @@ public class AppearanceTab
             changed |= ConfigHelpers.DrawSkillMarkerSection("dt_dtps", "DTPS Markers", config.DetailDtpsMarkers);
         }
 
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Buffs / Debuffs — Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            var buffRowHeight = config.BuffRowHeight;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Row height##buffs", ref buffRowHeight, 10.0f, 30.0f, "%.0f px"))
+            {
+                config.BuffRowHeight = buffRowHeight;
+                changed = true;
+            }
+
+            var buffColPad = config.BuffColumnPadding;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Column padding##buffs", ref buffColPad, 0.0f, 16.0f, "%.0f px"))
+            {
+                config.BuffColumnPadding = buffColPad;
+                changed = true;
+            }
+
+            var buffRounding = config.BuffBarRounding;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Bar rounding##buffs", ref buffRounding, 0.0f, 12.0f, "%.1f"))
+            {
+                config.BuffBarRounding = buffRounding;
+                changed = true;
+            }
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Buffs / Debuffs — Colors", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            changed |= ConfigHelpers.ColorEditProp("Buff fill", config.BuffFillColor, v => config.BuffFillColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Debuff fill", config.DebuffFillColor, v => config.DebuffFillColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Row background##buffs", config.BuffRowBackgroundColor, v => config.BuffRowBackgroundColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Text##buffs", config.BuffTextColor, v => config.BuffTextColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Header text##buffs", config.BuffHeaderTextColor, v => config.BuffHeaderTextColor = v);
+
+            ImGui.Spacing();
+
+            if (ImGui.Button("Reset Buff Colors"))
+            {
+                config.BuffFillColor = new Vector4(0.30f, 0.50f, 0.60f, 0.7f);
+                config.DebuffFillColor = new Vector4(0.60f, 0.30f, 0.30f, 0.7f);
+                config.BuffRowBackgroundColor = new Vector4(0.12f, 0.12f, 0.12f, 0.6f);
+                config.BuffTextColor = new Vector4(1f, 1f, 1f, 0.9f);
+                config.BuffHeaderTextColor = new Vector4(0.6f, 0.6f, 0.6f, 0.9f);
+                changed = true;
+            }
+        }
+
         return changed;
     }
 
@@ -2061,6 +2113,14 @@ public class AppearanceTab
             changed = true;
         }
 
+        var buffFont = config.BuffFontSize;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Buff/debuff text", ref buffFont, 6f, 40f, "%.1fpt"))
+        {
+            config.BuffFontSize = buffFont;
+            changed = true;
+        }
+
         var graphFont = config.GraphFontSize;
         ImGui.SetNextItemWidth(200);
         if (ImGui.SliderFloat("Graph labels (detail)", ref graphFont, 6f, 40f, "%.1fpt"))
@@ -2086,6 +2146,7 @@ public class AppearanceTab
             config.StatusBarFontSize = 14f;
             config.DetailFontSize = 14f;
             config.SkillFontSize = 14f;
+            config.BuffFontSize = 14f;
             config.GraphFontSize = 14f;
             config.GraphViewFontSize = 14f;
             changed = true;

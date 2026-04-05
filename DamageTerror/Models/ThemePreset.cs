@@ -104,6 +104,17 @@ public class ThemePreset
     public float SkillBarRounding { get; set; } = 0f;
     public float SkillFontSize { get; set; } = 14f;
 
+    // Buff/Debuff styling
+    public Vector4 BuffFillColor { get; set; } = new(0.30f, 0.50f, 0.60f, 0.7f);
+    public Vector4 DebuffFillColor { get; set; } = new(0.60f, 0.30f, 0.30f, 0.7f);
+    public Vector4 BuffRowBackgroundColor { get; set; } = new(0.12f, 0.12f, 0.12f, 0.6f);
+    public Vector4 BuffTextColor { get; set; } = new(1f, 1f, 1f, 0.9f);
+    public Vector4 BuffHeaderTextColor { get; set; } = new(0.6f, 0.6f, 0.6f, 0.9f);
+    public float BuffRowHeight { get; set; } = 14f;
+    public float BuffColumnPadding { get; set; } = 6f;
+    public float BuffBarRounding { get; set; } = 0f;
+    public float BuffFontSize { get; set; } = 14f;
+
     // Detail inline graph
     public float GraphHeight { get; set; } = 120f;
     public float GraphLineThickness { get; set; } = 2f;
@@ -297,6 +308,16 @@ public class ThemePreset
         config.SkillColumnPadding = SkillColumnPadding;
         config.SkillBarRounding = SkillBarRounding;
         config.SkillFontSize = SkillFontSize;
+
+        config.BuffFillColor = BuffFillColor;
+        config.DebuffFillColor = DebuffFillColor;
+        config.BuffRowBackgroundColor = BuffRowBackgroundColor;
+        config.BuffTextColor = BuffTextColor;
+        config.BuffHeaderTextColor = BuffHeaderTextColor;
+        config.BuffRowHeight = BuffRowHeight;
+        config.BuffColumnPadding = BuffColumnPadding;
+        config.BuffBarRounding = BuffBarRounding;
+        config.BuffFontSize = BuffFontSize;
 
         // Detail inline graph
         config.GraphHeight = GraphHeight;
@@ -498,6 +519,16 @@ public class ThemePreset
             SkillColumnPadding = config.SkillColumnPadding,
             SkillBarRounding = config.SkillBarRounding,
             SkillFontSize = config.SkillFontSize,
+
+            BuffFillColor = config.BuffFillColor,
+            DebuffFillColor = config.DebuffFillColor,
+            BuffRowBackgroundColor = config.BuffRowBackgroundColor,
+            BuffTextColor = config.BuffTextColor,
+            BuffHeaderTextColor = config.BuffHeaderTextColor,
+            BuffRowHeight = config.BuffRowHeight,
+            BuffColumnPadding = config.BuffColumnPadding,
+            BuffBarRounding = config.BuffBarRounding,
+            BuffFontSize = config.BuffFontSize,
 
             // Detail inline graph
             GraphHeight = config.GraphHeight,
