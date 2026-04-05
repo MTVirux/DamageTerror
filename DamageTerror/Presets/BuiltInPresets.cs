@@ -18,6 +18,7 @@ public static class BuiltInPresets
         Description = "Classic MiniParse style — sharp bars, dark background, compact layout.",
         IsBuiltIn = true,
 
+        // Bar Styling
         BarHeight = 20f,
         BarSpacing = 1f,
         BarRounding = 0f,
@@ -29,37 +30,49 @@ public static class BuiltInPresets
         BarColumnSpacing = 5f,
         IconTextPadding = 3f,
 
-
+        // Self Highlighting
         SelfBarHighlight = true,
         SelfBarHighlightColor = new(0.35f, 0.55f, 0.95f, 0.9f),
         UseSelfNameColor = false,
         SelfNameColor = new(1.0f, 0.9f, 0.4f, 1.0f),
 
-
+        // Value Formatting
         ValueDisplayFormat = ValueDisplayFormat.Commas,
+        AbbreviatedDecimalPlaces = 1,
+        RawDecimalPlaces = 0,
+        PercentDecimalPlaces = 1,
+        AbbreviatedKThreshold = 10_000,
+        AbbreviatedMThreshold = 1_000_000,
 
-
+        // Role Colors
         UsePerJobColors = false,
         TankColor = new(0.24f, 0.32f, 0.71f, 1.0f),
         HealerColor = new(0.30f, 0.64f, 0.31f, 1.0f),
         MeleeDpsColor = new(0.90f, 0.22f, 0.21f, 1.0f),
         RangedDpsColor = new(1.00f, 0.60f, 0.0f, 1.0f),
         CasterDpsColor = new(0.49f, 0.34f, 0.76f, 1.0f),
+        LimitBreakColor = new(0.90f, 0.75f, 0.10f, 1.0f),
         DefaultJobColor = new(0.46f, 0.46f, 0.46f, 1.0f),
 
+        // Background & Text
         BarBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.85f),
         NameTextColor = new(1f, 1f, 1f, 1f),
         ValueTextColor = new(1f, 1f, 1f, 1f),
         WindowBackgroundColor = new(0.055f, 0.055f, 0.055f, 0.95f),
+        WindowPaddingLeft = 8f,
+        WindowPaddingRight = 8f,
+        WindowPaddingTop = 8f,
+        WindowPaddingBottom = 8f,
 
+        // Selection Bar
+        ShowEncounterPicker = true,
         SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f),
         SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.6f),
         SelectionBarHeight = 0f,
-        ShowEncounterPicker = true,
         ShowSelectionBarSeparator = true,
         SelectionBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.5f),
 
-
+        // Header
         ShowMeterHeader = true,
         HeaderTextColor = new(0.6f, 0.6f, 0.6f, 0.8f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
@@ -68,7 +81,7 @@ public static class BuiltInPresets
         HeaderSeparator = true,
         HeaderSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.4f),
 
-
+        // Status Bar
         ShowStatusBar = true,
         ShowStatusBarTimer = true,
         StatusBarHeight = 18f,
@@ -81,7 +94,10 @@ public static class BuiltInPresets
         StatusBarLabelColor = new(0.5f, 0.5f, 0.5f, 0.8f),
         StatusBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.4f),
 
+        // Skill Breakdown
         SkillDamageFillColor = new(0.30f, 0.30f, 0.50f, 0.7f),
+        SkillPhysicalFillColor = new(0.50f, 0.25f, 0.20f, 0.7f),
+        SkillMagicFillColor = new(0.25f, 0.25f, 0.55f, 0.7f),
         SkillHealingFillColor = new(0.20f, 0.45f, 0.25f, 0.7f),
         SkillRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f),
         SkillTextColor = new(1f, 1f, 1f, 0.9f),
@@ -90,13 +106,33 @@ public static class BuiltInPresets
         SkillColumnPadding = 5f,
         SkillBarRounding = 0f,
         SkillFontSize = 11.9f,
+
+        // Buff/Debuff
+        BuffFillColor = new(0.25f, 0.40f, 0.55f, 0.7f),
+        DebuffFillColor = new(0.55f, 0.25f, 0.25f, 0.7f),
+        BuffRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f),
+        BuffTextColor = new(1f, 1f, 1f, 0.9f),
+        BuffHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.9f),
+        BuffRowHeight = 13f,
+        BuffColumnPadding = 5f,
+        BuffBarRounding = 0f,
+        BuffFontSize = 11.9f,
+
+        // Detail Panel
+        DetailBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.85f),
+        DetailLabelColor = new(0.6f, 0.6f, 0.6f, 1f),
+        DetailDeathColor = new(1f, 0.3f, 0.3f, 1f),
+        DetailIndent = 6f,
         DetailFontSize = 12.3f,
 
-
+        // Display Flags
         ShowJobIcons = true,
         ShowNameOnBar = true,
         ShowRankNumber = true,
+        ShowJobAbbrevOnBar = false,
 
+        // Tab Buttons
+        ShowTabBar = true,
         TabButtonColor = new(0.10f, 0.10f, 0.10f, 0.85f),
         TabButtonHoveredColor = new(0.18f, 0.18f, 0.18f, 0.9f),
         TabButtonActiveColor = new(0.24f, 0.32f, 0.71f, 0.9f),
@@ -106,8 +142,11 @@ public static class BuiltInPresets
         TabButtonSpacing = 1f,
         TabButtonRounding = 0f,
         TabButtonFontSize = 12.3f,
+        TabButtonWidth = 70f,
+        TabButtonStretchToFit = true,
 
         // Tooltip
+        ShowTooltip = true,
         TooltipDelay = 0.3f,
         TooltipBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.95f),
         TooltipTextColor = new(1f, 1f, 1f, 1f),
@@ -115,6 +154,48 @@ public static class BuiltInPresets
         TooltipFontSize = 12.3f,
         TooltipRounding = 0f,
         TooltipPadding = 4f,
+
+        // Detail Graph
+        GraphHeight = 130f,
+        GraphLineThickness = 1.5f,
+        GraphDpsColor = new(0.85f, 0.30f, 0.30f, 1f),
+        GraphHpsColor = new(0.30f, 0.80f, 0.30f, 1f),
+        GraphDtpsColor = new(0.35f, 0.50f, 0.85f, 1f),
+        GraphBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.95f),
+        GraphGridColor = new(0.25f, 0.25f, 0.25f, 0.3f),
+        GraphShowLegend = true,
+        GraphShowGrid = true,
+        GraphShowXAxisLabels = false,
+        GraphShowYAxisLabels = true,
+        GraphShowLabels = true,
+        GraphLabelOffsetX = 16f,
+        GraphLabelOffsetY = 0f,
+        GraphMouseTextOpacity = 0.6f,
+        GraphYAxisHeadroom = 1.1f,
+        GraphYAxisTickCount = 8,
+        GraphXAxisPadding = 1.25f,
+        GraphFontSize = 11.9f,
+
+        // Graph View
+        GraphViewAutoHeight = false,
+        GraphViewHeight = 240f,
+        GraphViewLineThickness = 1.5f,
+        GraphViewBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.6f),
+        GraphViewGridColor = new(0.25f, 0.25f, 0.25f, 0.3f),
+        GraphViewShowLegend = true,
+        GraphViewShowGrid = true,
+        GraphViewShowXAxisLabels = false,
+        GraphViewShowYAxisLabels = true,
+        GraphViewHighlightSelf = true,
+        GraphViewSelfLineThickness = 3f,
+        GraphViewShowLabels = true,
+        GraphViewLabelOffsetX = 18f,
+        GraphViewLabelOffsetY = 0f,
+        GraphViewFontSize = 11.9f,
+        GraphViewXAxisPadding = 1.25f,
+        GraphViewYAxisHeadroom = 1.1f,
+        GraphViewYAxisTickCount = 8,
+        GraphViewMouseTextOpacity = 0.6f,
     };
 
 
@@ -124,6 +205,7 @@ public static class BuiltInPresets
         Description = "Modern compact bars with warm tones and slight rounding.",
         IsBuiltIn = true,
 
+        // Bar Styling
         BarHeight = 20f,
         BarSpacing = 2f,
         BarRounding = 3f,
@@ -135,25 +217,49 @@ public static class BuiltInPresets
         BarColumnSpacing = 6f,
         IconTextPadding = 4f,
 
+        // Self Highlighting
         SelfBarHighlight = true,
         SelfBarHighlightColor = new(1.0f, 0.55f, 0.15f, 0.85f),
         UseSelfNameColor = false,
         SelfNameColor = new(1.0f, 0.85f, 0.3f, 1.0f),
 
+        // Value Formatting
         ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
+        AbbreviatedDecimalPlaces = 1,
+        RawDecimalPlaces = 1,
+        PercentDecimalPlaces = 1,
+        AbbreviatedKThreshold = 10_000,
+        AbbreviatedMThreshold = 1_000_000,
 
+        // Role Colors
+        UsePerJobColors = false,
+        TankColor = new(0.26f, 0.38f, 0.72f, 1.0f),
+        HealerColor = new(0.30f, 0.60f, 0.32f, 1.0f),
+        MeleeDpsColor = new(0.88f, 0.24f, 0.22f, 1.0f),
+        RangedDpsColor = new(1.00f, 0.55f, 0.15f, 1.0f),
+        CasterDpsColor = new(0.52f, 0.35f, 0.72f, 1.0f),
+        LimitBreakColor = new(1.0f, 0.70f, 0.15f, 1.0f),
+        DefaultJobColor = new(0.48f, 0.48f, 0.48f, 1.0f),
+
+        // Background & Text
         BarBackgroundColor = new(0.12f, 0.12f, 0.12f, 0.90f),
         NameTextColor = new(1f, 1f, 1f, 1f),
         ValueTextColor = new(1f, 1f, 1f, 0.95f),
         WindowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.92f),
+        WindowPaddingLeft = 8f,
+        WindowPaddingRight = 8f,
+        WindowPaddingTop = 8f,
+        WindowPaddingBottom = 8f,
 
+        // Selection Bar
+        ShowEncounterPicker = true,
         SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f),
         SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f),
         SelectionBarHeight = 2f,
-        ShowEncounterPicker = true,
         ShowSelectionBarSeparator = true,
         SelectionBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.5f),
 
+        // Header
         ShowMeterHeader = true,
         HeaderTextColor = new(0.65f, 0.65f, 0.65f, 0.85f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
@@ -162,6 +268,7 @@ public static class BuiltInPresets
         HeaderSeparator = false,
         HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.5f),
 
+        // Status Bar
         ShowStatusBar = true,
         ShowStatusBarTimer = true,
         StatusBarHeight = 20f,
@@ -174,7 +281,10 @@ public static class BuiltInPresets
         StatusBarLabelColor = new(0.55f, 0.55f, 0.55f, 0.85f),
         StatusBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.5f),
 
+        // Skill Breakdown
         SkillDamageFillColor = new(0.35f, 0.35f, 0.55f, 0.7f),
+        SkillPhysicalFillColor = new(0.55f, 0.28f, 0.18f, 0.7f),
+        SkillMagicFillColor = new(0.28f, 0.28f, 0.55f, 0.7f),
         SkillHealingFillColor = new(0.25f, 0.50f, 0.30f, 0.7f),
         SkillRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f),
         SkillTextColor = new(1f, 1f, 1f, 0.9f),
@@ -183,12 +293,33 @@ public static class BuiltInPresets
         SkillColumnPadding = 6f,
         SkillBarRounding = 3f,
         SkillFontSize = 12.6f,
+
+        // Buff/Debuff
+        BuffFillColor = new(0.30f, 0.42f, 0.55f, 0.7f),
+        DebuffFillColor = new(0.60f, 0.28f, 0.22f, 0.7f),
+        BuffRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f),
+        BuffTextColor = new(1f, 1f, 1f, 0.9f),
+        BuffHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f),
+        BuffRowHeight = 14f,
+        BuffColumnPadding = 6f,
+        BuffBarRounding = 3f,
+        BuffFontSize = 12.6f,
+
+        // Detail Panel
+        DetailBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.85f),
+        DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f),
+        DetailDeathColor = new(1f, 0.35f, 0.30f, 1f),
+        DetailIndent = 8f,
         DetailFontSize = 12.9f,
 
+        // Display Flags
         ShowJobIcons = true,
         ShowNameOnBar = true,
         ShowRankNumber = true,
+        ShowJobAbbrevOnBar = false,
 
+        // Tab Buttons
+        ShowTabBar = true,
         TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.9f),
         TabButtonHoveredColor = new(0.20f, 0.18f, 0.15f, 0.95f),
         TabButtonActiveColor = new(1.0f, 0.55f, 0.10f, 0.85f),
@@ -198,8 +329,11 @@ public static class BuiltInPresets
         TabButtonSpacing = 2f,
         TabButtonRounding = 3f,
         TabButtonFontSize = 13.3f,
+        TabButtonWidth = 80f,
+        TabButtonStretchToFit = true,
 
         // Tooltip
+        ShowTooltip = true,
         TooltipDelay = 0.3f,
         TooltipBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.92f),
         TooltipTextColor = new(1f, 1f, 1f, 1f),
@@ -207,6 +341,48 @@ public static class BuiltInPresets
         TooltipFontSize = 12.9f,
         TooltipRounding = 3f,
         TooltipPadding = 6f,
+
+        // Detail Graph
+        GraphHeight = 140f,
+        GraphLineThickness = 2f,
+        GraphDpsColor = new(0.95f, 0.45f, 0.20f, 1f),
+        GraphHpsColor = new(0.35f, 0.80f, 0.35f, 1f),
+        GraphDtpsColor = new(0.40f, 0.55f, 0.90f, 1f),
+        GraphBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.92f),
+        GraphGridColor = new(0.30f, 0.30f, 0.30f, 0.3f),
+        GraphShowLegend = true,
+        GraphShowGrid = true,
+        GraphShowXAxisLabels = false,
+        GraphShowYAxisLabels = true,
+        GraphShowLabels = true,
+        GraphLabelOffsetX = 18f,
+        GraphLabelOffsetY = 0f,
+        GraphMouseTextOpacity = 0.6f,
+        GraphYAxisHeadroom = 1.1f,
+        GraphYAxisTickCount = 8,
+        GraphXAxisPadding = 1.25f,
+        GraphFontSize = 12.6f,
+
+        // Graph View
+        GraphViewAutoHeight = false,
+        GraphViewHeight = 260f,
+        GraphViewLineThickness = 2f,
+        GraphViewBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.6f),
+        GraphViewGridColor = new(0.30f, 0.30f, 0.30f, 0.3f),
+        GraphViewShowLegend = true,
+        GraphViewShowGrid = true,
+        GraphViewShowXAxisLabels = false,
+        GraphViewShowYAxisLabels = true,
+        GraphViewHighlightSelf = true,
+        GraphViewSelfLineThickness = 3.5f,
+        GraphViewShowLabels = true,
+        GraphViewLabelOffsetX = 21f,
+        GraphViewLabelOffsetY = 0f,
+        GraphViewFontSize = 12.6f,
+        GraphViewXAxisPadding = 1.18f,
+        GraphViewYAxisHeadroom = 1.0f,
+        GraphViewYAxisTickCount = 14,
+        GraphViewMouseTextOpacity = 0.6f,
     };
 
 
@@ -216,6 +392,7 @@ public static class BuiltInPresets
         Description = "Minimal horizontal bars — thin, rounded, highly transparent.",
         IsBuiltIn = true,
 
+        // Bar Styling
         BarHeight = 16f,
         BarSpacing = 1f,
         BarRounding = 8f,
@@ -227,33 +404,49 @@ public static class BuiltInPresets
         BarColumnSpacing = 4f,
         IconTextPadding = 3f,
 
+        // Self Highlighting
         SelfBarHighlight = false,
         SelfBarHighlightColor = new(0.9f, 0.6f, 0.1f, 0.8f),
         UseSelfNameColor = true,
         SelfNameColor = new(0.95f, 0.85f, 0.5f, 1.0f),
 
+        // Value Formatting
         ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
+        AbbreviatedDecimalPlaces = 1,
+        RawDecimalPlaces = 0,
+        PercentDecimalPlaces = 0,
+        AbbreviatedKThreshold = 10_000,
+        AbbreviatedMThreshold = 1_000_000,
 
+        // Role Colors
         UsePerJobColors = false,
         TankColor = new(0.30f, 0.45f, 0.75f, 1.0f),
         HealerColor = new(0.30f, 0.65f, 0.35f, 1.0f),
         MeleeDpsColor = new(0.75f, 0.25f, 0.25f, 1.0f),
         RangedDpsColor = new(0.85f, 0.50f, 0.20f, 1.0f),
         CasterDpsColor = new(0.55f, 0.35f, 0.70f, 1.0f),
+        LimitBreakColor = new(0.90f, 0.75f, 0.20f, 1.0f),
         DefaultJobColor = new(0.45f, 0.45f, 0.45f, 1.0f),
 
+        // Background & Text
         BarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.50f),
         NameTextColor = new(1f, 1f, 1f, 0.90f),
         ValueTextColor = new(1f, 1f, 1f, 0.90f),
         WindowBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.70f),
+        WindowPaddingLeft = 8f,
+        WindowPaddingRight = 8f,
+        WindowPaddingTop = 8f,
+        WindowPaddingBottom = 8f,
 
+        // Selection Bar
+        ShowEncounterPicker = true,
         SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 0.9f),
         SelectionBarBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
         SelectionBarHeight = 0f,
-        ShowEncounterPicker = true,
         ShowSelectionBarSeparator = false,
         SelectionBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f),
 
+        // Header
         ShowMeterHeader = false,
         HeaderTextColor = new(0.6f, 0.6f, 0.6f, 0.8f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
@@ -262,6 +455,7 @@ public static class BuiltInPresets
         HeaderSeparator = false,
         HeaderSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f),
 
+        // Status Bar
         ShowStatusBar = false,
         ShowStatusBarTimer = true,
         StatusBarHeight = 18f,
@@ -274,7 +468,10 @@ public static class BuiltInPresets
         StatusBarLabelColor = new(0.5f, 0.5f, 0.5f, 0.7f),
         StatusBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f),
 
+        // Skill Breakdown
         SkillDamageFillColor = new(0.30f, 0.30f, 0.50f, 0.6f),
+        SkillPhysicalFillColor = new(0.45f, 0.22f, 0.18f, 0.6f),
+        SkillMagicFillColor = new(0.22f, 0.22f, 0.50f, 0.6f),
         SkillHealingFillColor = new(0.20f, 0.45f, 0.25f, 0.6f),
         SkillRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f),
         SkillTextColor = new(1f, 1f, 1f, 0.85f),
@@ -283,13 +480,33 @@ public static class BuiltInPresets
         SkillColumnPadding = 4f,
         SkillBarRounding = 6f,
         SkillFontSize = 11.2f,
+
+        // Buff/Debuff
+        BuffFillColor = new(0.25f, 0.38f, 0.50f, 0.6f),
+        DebuffFillColor = new(0.50f, 0.22f, 0.22f, 0.6f),
+        BuffRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f),
+        BuffTextColor = new(1f, 1f, 1f, 0.85f),
+        BuffHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f),
+        BuffRowHeight = 12f,
+        BuffColumnPadding = 4f,
+        BuffBarRounding = 6f,
+        BuffFontSize = 11.2f,
+
+        // Detail Panel
+        DetailBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.75f),
+        DetailLabelColor = new(0.6f, 0.6f, 0.6f, 1f),
+        DetailDeathColor = new(1f, 0.3f, 0.3f, 1f),
+        DetailIndent = 6f,
         DetailFontSize = 11.5f,
 
+        // Display Flags
         ShowJobIcons = true,
         ShowNameOnBar = true,
+        ShowRankNumber = false,
+        ShowJobAbbrevOnBar = false,
 
+        // Tab Buttons
         ShowTabBar = false,
-
         TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.5f),
         TabButtonHoveredColor = new(0.15f, 0.15f, 0.15f, 0.6f),
         TabButtonActiveColor = new(0.9f, 0.6f, 0.1f, 0.7f),
@@ -299,8 +516,11 @@ public static class BuiltInPresets
         TabButtonSpacing = 1f,
         TabButtonRounding = 8f,
         TabButtonFontSize = 11.9f,
+        TabButtonWidth = 60f,
+        TabButtonStretchToFit = true,
 
         // Tooltip
+        ShowTooltip = true,
         TooltipDelay = 0.2f,
         TooltipBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.85f),
         TooltipTextColor = new(1f, 1f, 1f, 0.9f),
@@ -308,6 +528,48 @@ public static class BuiltInPresets
         TooltipFontSize = 11.5f,
         TooltipRounding = 8f,
         TooltipPadding = 6f,
+
+        // Detail Graph
+        GraphHeight = 100f,
+        GraphLineThickness = 1.5f,
+        GraphDpsColor = new(0.80f, 0.35f, 0.35f, 0.9f),
+        GraphHpsColor = new(0.35f, 0.75f, 0.35f, 0.9f),
+        GraphDtpsColor = new(0.35f, 0.50f, 0.80f, 0.9f),
+        GraphBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.70f),
+        GraphGridColor = new(0.25f, 0.25f, 0.25f, 0.2f),
+        GraphShowLegend = false,
+        GraphShowGrid = true,
+        GraphShowXAxisLabels = false,
+        GraphShowYAxisLabels = true,
+        GraphShowLabels = true,
+        GraphLabelOffsetX = 14f,
+        GraphLabelOffsetY = 0f,
+        GraphMouseTextOpacity = 0.5f,
+        GraphYAxisHeadroom = 1.1f,
+        GraphYAxisTickCount = 6,
+        GraphXAxisPadding = 1.25f,
+        GraphFontSize = 11.2f,
+
+        // Graph View
+        GraphViewAutoHeight = true,
+        GraphViewHeight = 200f,
+        GraphViewLineThickness = 1.5f,
+        GraphViewBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.5f),
+        GraphViewGridColor = new(0.25f, 0.25f, 0.25f, 0.2f),
+        GraphViewShowLegend = false,
+        GraphViewShowGrid = true,
+        GraphViewShowXAxisLabels = false,
+        GraphViewShowYAxisLabels = true,
+        GraphViewHighlightSelf = true,
+        GraphViewSelfLineThickness = 3f,
+        GraphViewShowLabels = true,
+        GraphViewLabelOffsetX = 16f,
+        GraphViewLabelOffsetY = 0f,
+        GraphViewFontSize = 11.2f,
+        GraphViewXAxisPadding = 1.25f,
+        GraphViewYAxisHeadroom = 1.1f,
+        GraphViewYAxisTickCount = 6,
+        GraphViewMouseTextOpacity = 0.5f,
     };
 
 
@@ -317,6 +579,7 @@ public static class BuiltInPresets
         Description = "Colorful rounded bars with unique per-job colors and vibrant styling.",
         IsBuiltIn = true,
 
+        // Bar Styling
         BarHeight = 22f,
         BarSpacing = 2f,
         BarRounding = 6f,
@@ -328,19 +591,28 @@ public static class BuiltInPresets
         BarColumnSpacing = 6f,
         IconTextPadding = 4f,
 
+        // Self Highlighting
         SelfBarHighlight = true,
         SelfBarHighlightColor = new(1.0f, 0.85f, 0.3f, 0.9f),
         UseSelfNameColor = true,
         SelfNameColor = new(1.0f, 0.95f, 0.6f, 1.0f),
 
+        // Value Formatting
         ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
+        AbbreviatedDecimalPlaces = 1,
+        RawDecimalPlaces = 1,
+        PercentDecimalPlaces = 1,
+        AbbreviatedKThreshold = 10_000,
+        AbbreviatedMThreshold = 1_000_000,
 
+        // Role Colors
         UsePerJobColors = true,
         TankColor = new(0.25f, 0.40f, 0.80f, 1.0f),
         HealerColor = new(0.25f, 0.70f, 0.35f, 1.0f),
         MeleeDpsColor = new(0.80f, 0.25f, 0.25f, 1.0f),
         RangedDpsColor = new(0.90f, 0.55f, 0.15f, 1.0f),
         CasterDpsColor = new(0.60f, 0.30f, 0.80f, 1.0f),
+        LimitBreakColor = new(1.0f, 0.80f, 0.0f, 1.0f),
         DefaultJobColor = new(0.50f, 0.50f, 0.50f, 1.0f),
         JobColors = new Dictionary<string, Vector4>
         {
@@ -368,18 +640,25 @@ public static class BuiltInPresets
             { "Blu", new(0.35f, 0.60f, 0.95f, 1.0f) },
         },
 
+        // Background & Text
         BarBackgroundColor = new(0.10f, 0.10f, 0.12f, 0.85f),
         NameTextColor = new(1f, 1f, 1f, 1f),
         ValueTextColor = new(1f, 1f, 1f, 1f),
         WindowBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.92f),
+        WindowPaddingLeft = 8f,
+        WindowPaddingRight = 8f,
+        WindowPaddingTop = 8f,
+        WindowPaddingBottom = 8f,
 
+        // Selection Bar
+        ShowEncounterPicker = true,
         SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f),
         SelectionBarBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.4f),
         SelectionBarHeight = 2f,
-        ShowEncounterPicker = true,
         ShowSelectionBarSeparator = true,
         SelectionBarSeparatorColor = new(0.4f, 0.4f, 0.4f, 0.4f),
 
+        // Header
         ShowMeterHeader = true,
         HeaderTextColor = new(0.65f, 0.65f, 0.70f, 0.9f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
@@ -388,6 +667,7 @@ public static class BuiltInPresets
         HeaderSeparator = false,
         HeaderSeparatorColor = new(0.4f, 0.4f, 0.4f, 0.4f),
 
+        // Status Bar
         ShowStatusBar = true,
         ShowStatusBarTimer = true,
         StatusBarHeight = 20f,
@@ -400,7 +680,10 @@ public static class BuiltInPresets
         StatusBarLabelColor = new(0.55f, 0.55f, 0.60f, 0.9f),
         StatusBarSeparatorColor = new(0.4f, 0.4f, 0.4f, 0.4f),
 
+        // Skill Breakdown
         SkillDamageFillColor = new(0.40f, 0.35f, 0.60f, 0.7f),
+        SkillPhysicalFillColor = new(0.55f, 0.28f, 0.22f, 0.7f),
+        SkillMagicFillColor = new(0.28f, 0.28f, 0.58f, 0.7f),
         SkillHealingFillColor = new(0.25f, 0.55f, 0.30f, 0.7f),
         SkillRowBackgroundColor = new(0.10f, 0.10f, 0.12f, 0.6f),
         SkillTextColor = new(1f, 1f, 1f, 0.9f),
@@ -409,12 +692,33 @@ public static class BuiltInPresets
         SkillColumnPadding = 6f,
         SkillBarRounding = 4f,
         SkillFontSize = 12.9f,
+
+        // Buff/Debuff
+        BuffFillColor = new(0.30f, 0.45f, 0.58f, 0.7f),
+        DebuffFillColor = new(0.58f, 0.28f, 0.28f, 0.7f),
+        BuffRowBackgroundColor = new(0.10f, 0.10f, 0.12f, 0.6f),
+        BuffTextColor = new(1f, 1f, 1f, 0.9f),
+        BuffHeaderTextColor = new(0.60f, 0.60f, 0.65f, 0.9f),
+        BuffRowHeight = 14f,
+        BuffColumnPadding = 6f,
+        BuffBarRounding = 4f,
+        BuffFontSize = 12.9f,
+
+        // Detail Panel
+        DetailBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.85f),
+        DetailLabelColor = new(0.65f, 0.65f, 0.70f, 1f),
+        DetailDeathColor = new(1f, 0.30f, 0.35f, 1f),
+        DetailIndent = 8f,
         DetailFontSize = 13.3f,
 
+        // Display Flags
         ShowJobIcons = true,
         ShowNameOnBar = true,
         ShowRankNumber = true,
+        ShowJobAbbrevOnBar = false,
 
+        // Tab Buttons
+        ShowTabBar = true,
         TabButtonColor = new(0.10f, 0.10f, 0.12f, 0.85f),
         TabButtonHoveredColor = new(0.20f, 0.20f, 0.25f, 0.9f),
         TabButtonActiveColor = new(0.60f, 0.30f, 0.80f, 0.85f),
@@ -424,8 +728,11 @@ public static class BuiltInPresets
         TabButtonSpacing = 2f,
         TabButtonRounding = 6f,
         TabButtonFontSize = 14f,
+        TabButtonWidth = 84f,
+        TabButtonStretchToFit = true,
 
         // Tooltip
+        ShowTooltip = true,
         TooltipDelay = 0.3f,
         TooltipBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.95f),
         TooltipTextColor = new(1f, 1f, 1f, 1f),
@@ -433,6 +740,48 @@ public static class BuiltInPresets
         TooltipFontSize = 12.9f,
         TooltipRounding = 6f,
         TooltipPadding = 6f,
+
+        // Detail Graph
+        GraphHeight = 145f,
+        GraphLineThickness = 2f,
+        GraphDpsColor = new(0.90f, 0.35f, 0.35f, 1f),
+        GraphHpsColor = new(0.30f, 0.85f, 0.40f, 1f),
+        GraphDtpsColor = new(0.40f, 0.55f, 0.90f, 1f),
+        GraphBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.92f),
+        GraphGridColor = new(0.30f, 0.30f, 0.35f, 0.3f),
+        GraphShowLegend = true,
+        GraphShowGrid = true,
+        GraphShowXAxisLabels = false,
+        GraphShowYAxisLabels = true,
+        GraphShowLabels = true,
+        GraphLabelOffsetX = 18f,
+        GraphLabelOffsetY = 0f,
+        GraphMouseTextOpacity = 0.6f,
+        GraphYAxisHeadroom = 1.1f,
+        GraphYAxisTickCount = 8,
+        GraphXAxisPadding = 1.25f,
+        GraphFontSize = 12.9f,
+
+        // Graph View
+        GraphViewAutoHeight = false,
+        GraphViewHeight = 270f,
+        GraphViewLineThickness = 2f,
+        GraphViewBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.6f),
+        GraphViewGridColor = new(0.30f, 0.30f, 0.35f, 0.3f),
+        GraphViewShowLegend = true,
+        GraphViewShowGrid = true,
+        GraphViewShowXAxisLabels = false,
+        GraphViewShowYAxisLabels = true,
+        GraphViewHighlightSelf = true,
+        GraphViewSelfLineThickness = 3.5f,
+        GraphViewShowLabels = true,
+        GraphViewLabelOffsetX = 21f,
+        GraphViewLabelOffsetY = 0f,
+        GraphViewFontSize = 12.9f,
+        GraphViewXAxisPadding = 1.18f,
+        GraphViewYAxisHeadroom = 1.0f,
+        GraphViewYAxisTickCount = 14,
+        GraphViewMouseTextOpacity = 0.6f,
     };
 
 
@@ -442,6 +791,7 @@ public static class BuiltInPresets
         Description = "Data-dense table layout — all stats visible, compact rows, sharp edges.",
         IsBuiltIn = true,
 
+        // Bar Styling
         BarHeight = 18f,
         BarSpacing = 0f,
         BarRounding = 0f,
@@ -453,33 +803,49 @@ public static class BuiltInPresets
         BarColumnSpacing = 4f,
         IconTextPadding = 3f,
 
+        // Self Highlighting
         SelfBarHighlight = true,
         SelfBarHighlightColor = new(0.95f, 0.75f, 0.15f, 0.7f),
         UseSelfNameColor = false,
         SelfNameColor = new(1.0f, 0.9f, 0.4f, 1.0f),
 
+        // Value Formatting
         ValueDisplayFormat = ValueDisplayFormat.Commas,
+        AbbreviatedDecimalPlaces = 0,
+        RawDecimalPlaces = 0,
+        PercentDecimalPlaces = 0,
+        AbbreviatedKThreshold = 10_000,
+        AbbreviatedMThreshold = 1_000_000,
 
+        // Role Colors
         UsePerJobColors = false,
         TankColor = new(0.25f, 0.38f, 0.72f, 1.0f),
         HealerColor = new(0.28f, 0.62f, 0.32f, 1.0f),
         MeleeDpsColor = new(0.72f, 0.24f, 0.24f, 1.0f),
         RangedDpsColor = new(0.82f, 0.50f, 0.18f, 1.0f),
         CasterDpsColor = new(0.50f, 0.32f, 0.70f, 1.0f),
+        LimitBreakColor = new(0.90f, 0.72f, 0.10f, 1.0f),
         DefaultJobColor = new(0.42f, 0.42f, 0.42f, 1.0f),
 
+        // Background & Text
         BarBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.75f),
         NameTextColor = new(1f, 1f, 1f, 0.95f),
         ValueTextColor = new(1f, 1f, 1f, 0.95f),
         WindowBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
+        WindowPaddingLeft = 8f,
+        WindowPaddingRight = 8f,
+        WindowPaddingTop = 8f,
+        WindowPaddingBottom = 8f,
 
+        // Selection Bar
+        ShowEncounterPicker = true,
         SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 1f),
         SelectionBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.5f),
         SelectionBarHeight = 0f,
-        ShowEncounterPicker = true,
         ShowSelectionBarSeparator = true,
         SelectionBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f),
 
+        // Header
         ShowMeterHeader = true,
         HeaderTextColor = new(0.75f, 0.75f, 0.75f, 0.95f),
         HeaderBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.7f),
@@ -488,6 +854,7 @@ public static class BuiltInPresets
         HeaderSeparator = true,
         HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f),
 
+        // Status Bar
         ShowStatusBar = true,
         ShowStatusBarTimer = true,
         StatusBarHeight = 18f,
@@ -500,7 +867,10 @@ public static class BuiltInPresets
         StatusBarLabelColor = new(0.50f, 0.50f, 0.50f, 0.8f),
         StatusBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f),
 
+        // Skill Breakdown
         SkillDamageFillColor = new(0.30f, 0.30f, 0.48f, 0.65f),
+        SkillPhysicalFillColor = new(0.48f, 0.24f, 0.18f, 0.65f),
+        SkillMagicFillColor = new(0.22f, 0.22f, 0.52f, 0.65f),
         SkillHealingFillColor = new(0.22f, 0.45f, 0.28f, 0.65f),
         SkillRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.55f),
         SkillTextColor = new(1f, 1f, 1f, 0.9f),
@@ -509,13 +879,33 @@ public static class BuiltInPresets
         SkillColumnPadding = 5f,
         SkillBarRounding = 0f,
         SkillFontSize = 11.5f,
+
+        // Buff/Debuff
+        BuffFillColor = new(0.25f, 0.38f, 0.52f, 0.65f),
+        DebuffFillColor = new(0.52f, 0.25f, 0.25f, 0.65f),
+        BuffRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.55f),
+        BuffTextColor = new(1f, 1f, 1f, 0.9f),
+        BuffHeaderTextColor = new(0.60f, 0.60f, 0.60f, 0.9f),
+        BuffRowHeight = 13f,
+        BuffColumnPadding = 5f,
+        BuffBarRounding = 0f,
+        BuffFontSize = 11.5f,
+
+        // Detail Panel
+        DetailBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.85f),
+        DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f),
+        DetailDeathColor = new(1f, 0.3f, 0.3f, 1f),
+        DetailIndent = 4f,
         DetailFontSize = 11.9f,
 
+        // Display Flags
         ShowJobIcons = true,
         ShowNameOnBar = true,
         ShowJobAbbrevOnBar = true,
         ShowRankNumber = true,
 
+        // Tab Buttons
+        ShowTabBar = true,
         TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.7f),
         TabButtonHoveredColor = new(0.15f, 0.15f, 0.15f, 0.8f),
         TabButtonActiveColor = new(0.25f, 0.38f, 0.72f, 0.85f),
@@ -525,8 +915,11 @@ public static class BuiltInPresets
         TabButtonSpacing = 0f,
         TabButtonRounding = 0f,
         TabButtonFontSize = 11.9f,
+        TabButtonWidth = 65f,
+        TabButtonStretchToFit = true,
 
         // Tooltip
+        ShowTooltip = true,
         TooltipDelay = 0.2f,
         TooltipBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
         TooltipTextColor = new(1f, 1f, 1f, 0.95f),
@@ -534,6 +927,48 @@ public static class BuiltInPresets
         TooltipFontSize = 11.5f,
         TooltipRounding = 0f,
         TooltipPadding = 4f,
+
+        // Detail Graph
+        GraphHeight = 120f,
+        GraphLineThickness = 1.5f,
+        GraphDpsColor = new(0.80f, 0.30f, 0.30f, 1f),
+        GraphHpsColor = new(0.30f, 0.75f, 0.30f, 1f),
+        GraphDtpsColor = new(0.35f, 0.50f, 0.80f, 1f),
+        GraphBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
+        GraphGridColor = new(0.25f, 0.25f, 0.25f, 0.3f),
+        GraphShowLegend = true,
+        GraphShowGrid = true,
+        GraphShowXAxisLabels = false,
+        GraphShowYAxisLabels = true,
+        GraphShowLabels = true,
+        GraphLabelOffsetX = 15f,
+        GraphLabelOffsetY = 0f,
+        GraphMouseTextOpacity = 0.6f,
+        GraphYAxisHeadroom = 1.1f,
+        GraphYAxisTickCount = 8,
+        GraphXAxisPadding = 1.25f,
+        GraphFontSize = 11.5f,
+
+        // Graph View
+        GraphViewAutoHeight = false,
+        GraphViewHeight = 230f,
+        GraphViewLineThickness = 1.5f,
+        GraphViewBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.6f),
+        GraphViewGridColor = new(0.25f, 0.25f, 0.25f, 0.3f),
+        GraphViewShowLegend = true,
+        GraphViewShowGrid = true,
+        GraphViewShowXAxisLabels = false,
+        GraphViewShowYAxisLabels = true,
+        GraphViewHighlightSelf = true,
+        GraphViewSelfLineThickness = 3f,
+        GraphViewShowLabels = true,
+        GraphViewLabelOffsetX = 17f,
+        GraphViewLabelOffsetY = 0f,
+        GraphViewFontSize = 11.5f,
+        GraphViewXAxisPadding = 1.25f,
+        GraphViewYAxisHeadroom = 1.1f,
+        GraphViewYAxisTickCount = 8,
+        GraphViewMouseTextOpacity = 0.6f,
     };
 
 
@@ -543,6 +978,7 @@ public static class BuiltInPresets
         Description = "Game-integrated look — desaturated per-job colors, subtle rounding, HUD-like feel.",
         IsBuiltIn = true,
 
+        // Bar Styling
         BarHeight = 22f,
         BarSpacing = 1f,
         BarRounding = 2f,
@@ -554,19 +990,28 @@ public static class BuiltInPresets
         BarColumnSpacing = 5f,
         IconTextPadding = 4f,
 
+        // Self Highlighting
         SelfBarHighlight = true,
         SelfBarHighlightColor = new(0.7f, 0.55f, 0.25f, 0.75f),
         UseSelfNameColor = false,
         SelfNameColor = new(0.95f, 0.9f, 0.5f, 1.0f),
 
+        // Value Formatting
         ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
+        AbbreviatedDecimalPlaces = 1,
+        RawDecimalPlaces = 1,
+        PercentDecimalPlaces = 1,
+        AbbreviatedKThreshold = 10_000,
+        AbbreviatedMThreshold = 1_000_000,
 
+        // Role Colors
         UsePerJobColors = true,
         TankColor = new(0.25f, 0.40f, 0.72f, 1.0f),
         HealerColor = new(0.28f, 0.60f, 0.35f, 1.0f),
         MeleeDpsColor = new(0.70f, 0.25f, 0.25f, 1.0f),
         RangedDpsColor = new(0.80f, 0.50f, 0.20f, 1.0f),
         CasterDpsColor = new(0.52f, 0.32f, 0.68f, 1.0f),
+        LimitBreakColor = new(0.80f, 0.68f, 0.15f, 1.0f),
         DefaultJobColor = new(0.45f, 0.45f, 0.45f, 1.0f),
         JobColors = new Dictionary<string, Vector4>
         {
@@ -594,18 +1039,25 @@ public static class BuiltInPresets
             { "Blu", new(0.30f, 0.50f, 0.82f, 1.0f) },
         },
 
+        // Background & Text
         BarBackgroundColor = new(0.12f, 0.12f, 0.12f, 0.80f),
         NameTextColor = new(0.95f, 0.95f, 0.95f, 1f),
         ValueTextColor = new(0.95f, 0.95f, 0.95f, 1f),
         WindowBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.92f),
+        WindowPaddingLeft = 8f,
+        WindowPaddingRight = 8f,
+        WindowPaddingTop = 8f,
+        WindowPaddingBottom = 8f,
 
+        // Selection Bar
+        ShowEncounterPicker = true,
         SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f),
         SelectionBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.4f),
         SelectionBarHeight = 0f,
-        ShowEncounterPicker = true,
         ShowSelectionBarSeparator = true,
         SelectionBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.45f),
 
+        // Header
         ShowMeterHeader = true,
         HeaderTextColor = new(0.65f, 0.65f, 0.65f, 0.85f),
         HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
@@ -614,6 +1066,7 @@ public static class BuiltInPresets
         HeaderSeparator = true,
         HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.45f),
 
+        // Status Bar
         ShowStatusBar = true,
         ShowStatusBarTimer = true,
         StatusBarHeight = 20f,
@@ -626,7 +1079,10 @@ public static class BuiltInPresets
         StatusBarLabelColor = new(0.55f, 0.55f, 0.55f, 0.85f),
         StatusBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.45f),
 
+        // Skill Breakdown
         SkillDamageFillColor = new(0.32f, 0.32f, 0.52f, 0.65f),
+        SkillPhysicalFillColor = new(0.50f, 0.26f, 0.20f, 0.65f),
+        SkillMagicFillColor = new(0.25f, 0.25f, 0.52f, 0.65f),
         SkillHealingFillColor = new(0.22f, 0.48f, 0.28f, 0.65f),
         SkillRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.58f),
         SkillTextColor = new(0.95f, 0.95f, 0.95f, 0.9f),
@@ -635,11 +1091,33 @@ public static class BuiltInPresets
         SkillColumnPadding = 6f,
         SkillBarRounding = 2f,
         SkillFontSize = 12.6f,
+
+        // Buff/Debuff
+        BuffFillColor = new(0.28f, 0.42f, 0.55f, 0.65f),
+        DebuffFillColor = new(0.55f, 0.28f, 0.28f, 0.65f),
+        BuffRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.58f),
+        BuffTextColor = new(0.95f, 0.95f, 0.95f, 0.9f),
+        BuffHeaderTextColor = new(0.58f, 0.58f, 0.58f, 0.88f),
+        BuffRowHeight = 14f,
+        BuffColumnPadding = 6f,
+        BuffBarRounding = 2f,
+        BuffFontSize = 12.6f,
+
+        // Detail Panel
+        DetailBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.82f),
+        DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f),
+        DetailDeathColor = new(1f, 0.3f, 0.3f, 1f),
+        DetailIndent = 8f,
         DetailFontSize = 12.9f,
 
+        // Display Flags
         ShowJobIcons = true,
         ShowNameOnBar = true,
+        ShowRankNumber = false,
+        ShowJobAbbrevOnBar = false,
 
+        // Tab Buttons
+        ShowTabBar = true,
         TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.8f),
         TabButtonHoveredColor = new(0.20f, 0.20f, 0.20f, 0.85f),
         TabButtonActiveColor = new(0.25f, 0.40f, 0.72f, 0.8f),
@@ -649,8 +1127,11 @@ public static class BuiltInPresets
         TabButtonSpacing = 1f,
         TabButtonRounding = 2f,
         TabButtonFontSize = 12.9f,
+        TabButtonWidth = 80f,
+        TabButtonStretchToFit = true,
 
         // Tooltip
+        ShowTooltip = true,
         TooltipDelay = 0.3f,
         TooltipBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.92f),
         TooltipTextColor = new(0.95f, 0.95f, 0.95f, 1f),
@@ -658,5 +1139,47 @@ public static class BuiltInPresets
         TooltipFontSize = 12.6f,
         TooltipRounding = 2f,
         TooltipPadding = 5f,
+
+        // Detail Graph
+        GraphHeight = 140f,
+        GraphLineThickness = 2f,
+        GraphDpsColor = new(0.75f, 0.32f, 0.32f, 1f),
+        GraphHpsColor = new(0.32f, 0.70f, 0.35f, 1f),
+        GraphDtpsColor = new(0.35f, 0.48f, 0.78f, 1f),
+        GraphBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.90f),
+        GraphGridColor = new(0.28f, 0.28f, 0.28f, 0.3f),
+        GraphShowLegend = true,
+        GraphShowGrid = true,
+        GraphShowXAxisLabels = false,
+        GraphShowYAxisLabels = true,
+        GraphShowLabels = true,
+        GraphLabelOffsetX = 18f,
+        GraphLabelOffsetY = 0f,
+        GraphMouseTextOpacity = 0.6f,
+        GraphYAxisHeadroom = 1.1f,
+        GraphYAxisTickCount = 8,
+        GraphXAxisPadding = 1.25f,
+        GraphFontSize = 12.6f,
+
+        // Graph View
+        GraphViewAutoHeight = false,
+        GraphViewHeight = 260f,
+        GraphViewLineThickness = 2f,
+        GraphViewBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.6f),
+        GraphViewGridColor = new(0.28f, 0.28f, 0.28f, 0.3f),
+        GraphViewShowLegend = true,
+        GraphViewShowGrid = true,
+        GraphViewShowXAxisLabels = false,
+        GraphViewShowYAxisLabels = true,
+        GraphViewHighlightSelf = true,
+        GraphViewSelfLineThickness = 3.5f,
+        GraphViewShowLabels = true,
+        GraphViewLabelOffsetX = 21f,
+        GraphViewLabelOffsetY = 0f,
+        GraphViewFontSize = 12.6f,
+        GraphViewXAxisPadding = 1.18f,
+        GraphViewYAxisHeadroom = 1.0f,
+        GraphViewYAxisTickCount = 14,
+        GraphViewMouseTextOpacity = 0.6f,
     };
 }
