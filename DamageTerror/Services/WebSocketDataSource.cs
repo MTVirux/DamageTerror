@@ -18,6 +18,7 @@ public class WebSocketDataSource : IDataSource
     public event Action<EncounterSnapshot>? OnCombatData;
     public event Action<string, uint>? OnPrimaryPlayerChanged;
     public event Action<string[]>? OnLogLine;
+    public event Action? OnConnected;
 
     public bool IsConnected => ws?.State == WebSocketState.Open;
 
@@ -34,7 +35,18 @@ public class WebSocketDataSource : IDataSource
 
         cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-        await ConnectOnceAsync(cts.Token).ConfigureAwait(false);
+        try
+        {
+            await ConnectOnceAsync(cts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            log.Debug($"WebSocket initial connection failed, will retry: {ex.Message}");
+        }
 
         receiveTask = Task.Run(() => ReceiveAndReconnectLoopAsync(cts.Token), cts.Token);
     }
@@ -46,6 +58,7 @@ public class WebSocketDataSource : IDataSource
 
         await ws.ConnectAsync(new Uri(url), ct).ConfigureAwait(false);
         log.Information($"WebSocket connected to {url}");
+        OnConnected?.Invoke();
 
         var subscribeMsg = JsonConvert.SerializeObject(new
         {

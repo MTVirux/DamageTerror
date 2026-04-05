@@ -144,23 +144,20 @@ public class DataService : IDisposable
         ws.OnCombatData += OnCombatData;
         ws.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
         ws.OnLogLine += OnLogLine;
+        ws.OnConnected += () =>
+        {
+            ConnectionStatus = "Connected (WebSocket)";
+            log.Information("WebSocket connected");
+        };
 
         await ws.ConnectAsync(cts.Token).ConfigureAwait(false);
 
-        if (ws.IsConnected)
+        activeSource = ws;
+
+        if (!ws.IsConnected)
         {
-            activeSource = ws;
-            ConnectionStatus = "Connected (WebSocket)";
-            log.Information("Using WebSocket data source");
-        }
-        else
-        {
-            ws.OnCombatData -= OnCombatData;
-            ws.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
-            ws.OnLogLine -= OnLogLine;
-            ws.Dispose();
-            ConnectionStatus = "Not connected — IINACT not running?";
-            log.Warning("Failed to connect to any data source");
+            ConnectionStatus = "Waiting for IINACT (WebSocket reconnecting...)";
+            log.Information("WebSocket not yet connected, auto-reconnect is active");
         }
     }
 
