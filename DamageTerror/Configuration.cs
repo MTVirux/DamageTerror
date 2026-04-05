@@ -42,7 +42,7 @@ public class Configuration : IPluginConfiguration
     public bool EnableInPvP { get; set; } = true;
 
     public bool ShowJobIcons { get; set; } = true;
-    public JobIconStyle JobIconStyle { get; set; } = JobIconStyle.Framed;
+    public JobIconStyle JobIconStyle { get; set; } = JobIconStyle.Plain;
     public Dictionary<string, uint> CustomJobIcons { get; set; } = new();
 
     public bool ShowTabBar { get; set; } = true;
@@ -57,15 +57,15 @@ public class Configuration : IPluginConfiguration
         },
     };
 
-    public Vector4 TabButtonColor { get; set; } = new(0.20f, 0.22f, 0.27f, 1.0f);
-    public Vector4 TabButtonHoveredColor { get; set; } = new(0.28f, 0.30f, 0.36f, 1.0f);
-    public Vector4 TabButtonActiveColor { get; set; } = new(0.38f, 0.44f, 0.64f, 1.0f);
+    public Vector4 TabButtonColor { get; set; } = new(0.18f, 0.18f, 0.18f, 1.0f);
+    public Vector4 TabButtonHoveredColor { get; set; } = new(0.28f, 0.31f, 0.36f, 0.22f);
+    public Vector4 TabButtonActiveColor { get; set; } = new(0.64f, 0.19f, 0.19f, 1.0f);
     public Vector4 TabButtonTextColor { get; set; } = new(0.85f, 0.85f, 0.85f, 1.0f);
     public Vector4 TabButtonActiveTextColor { get; set; } = new(1.0f, 1.0f, 1.0f, 1.0f);
-    public float TabButtonHeight { get; set; } = 24f;
-    public float TabButtonSpacing { get; set; } = 2f;
+    public float TabButtonHeight { get; set; } = 19f;
+    public float TabButtonSpacing { get; set; } = 6f;
     public float TabButtonRounding { get; set; } = 4f;
-    public float TabButtonWidth { get; set; } = 80f;
+    public float TabButtonWidth { get; set; } = 84f;
     public float TabButtonFontSize { get; set; } = FontDefaults.BaseSizePt;
     public bool TabButtonStretchToFit { get; set; } = true;
 
@@ -87,7 +87,7 @@ public class Configuration : IPluginConfiguration
     public bool HideOutOfCombat { get; set; } = false;
     public float HideOutOfCombatDelay { get; set; } = 5f;
     public bool IgnoreEscClose { get; set; } = true;
-    public bool HideWindowHeader { get; set; } = false;
+    public bool HideWindowHeader { get; set; } = true;
     public float BarAlpha { get; set; } = 0.7f;
 
     public Vector4 TankColor { get; set; } = new(0.2f, 0.4f, 0.8f, 1.0f);
@@ -95,10 +95,10 @@ public class Configuration : IPluginConfiguration
     public Vector4 MeleeDpsColor { get; set; } = new(0.8f, 0.2f, 0.2f, 1.0f);
     public Vector4 RangedDpsColor { get; set; } = new(0.9f, 0.5f, 0.2f, 1.0f);
     public Vector4 CasterDpsColor { get; set; } = new(0.6f, 0.3f, 0.8f, 1.0f);
-    public Vector4 LimitBreakColor { get; set; } = new(1.0f, 0.5f, 0.0f, 1.0f);
+    public Vector4 LimitBreakColor { get; set; } = new(1.0f, 0.80f, 0.0f, 1.0f);
     public Vector4 DefaultJobColor { get; set; } = new(0.5f, 0.5f, 0.5f, 1.0f);
 
-    public bool UsePerJobColors { get; set; } = false;
+    public bool UsePerJobColors { get; set; } = true;
     public Dictionary<string, Vector4> JobColors { get; set; } = new();
     public Vector4 BarBackgroundColor { get; set; } = new(0.15f, 0.15f, 0.15f, 1.0f);
     public Vector4 NameTextColor { get; set; } = new(1f, 1f, 1f, 1f);
@@ -108,10 +108,10 @@ public class Configuration : IPluginConfiguration
     public float BackgroundImageOpacity { get; set; } = 1.0f;
     public Vector4 BackgroundImageTint { get; set; } = new(1f, 1f, 1f, 1f);
     public BackgroundImageScaleMode BackgroundImageScale { get; set; } = BackgroundImageScaleMode.Stretch;
-    public float WindowPaddingLeft { get; set; } = 8f;
-    public float WindowPaddingRight { get; set; } = 8f;
-    public float WindowPaddingTop { get; set; } = 8f;
-    public float WindowPaddingBottom { get; set; } = 8f;
+    public float WindowPaddingLeft { get; set; } = 0f;
+    public float WindowPaddingRight { get; set; } = 0f;
+    public float WindowPaddingTop { get; set; } = 0f;
+    public float WindowPaddingBottom { get; set; } = 0f;
 
     public Vector4 SelectionBarTextColor { get; set; } = new(1f, 1f, 1f, 1f);
     public Vector4 SelectionBarBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
@@ -121,10 +121,10 @@ public class Configuration : IPluginConfiguration
     public Vector4 SelectionBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
     public Vector4 HeaderTextColor { get; set; } = new(0.7f, 0.7f, 0.7f, 0.9f);
-    public Vector4 HeaderBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 0.0f);
-    public float HeaderHeight { get; set; } = 22.0f;
+    public Vector4 HeaderBackgroundColor { get; set; } = new(0.0f, 0.0f, 0.0f, 1.0f);
+    public float HeaderHeight { get; set; } = 24.0f;
     public float HeaderFontSize { get; set; } = FontDefaults.BaseSizePt;
-    public bool HeaderSeparator { get; set; } = false;
+    public bool HeaderSeparator { get; set; } = true;
     public Vector4 HeaderSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
 
     public bool EnableCustomFont { get; set; } = false;
@@ -137,7 +137,7 @@ public class Configuration : IPluginConfiguration
     public float BarHeight { get; set; } = 22.0f;
     public float BarSpacing { get; set; } = 1.0f;
     public float BarRounding { get; set; } = 0.0f;
-    public float IconSize { get; set; } = 16.0f;
+    public float IconSize { get; set; } = 20.0f;
     public float BarFontSize { get; set; } = FontDefaults.BaseSizePt;
     public float BarLeftPadding { get; set; } = 4.0f;
     public float BarRightPadding { get; set; } = 6.0f;
@@ -153,16 +153,16 @@ public class Configuration : IPluginConfiguration
     public ValueDisplayFormat ValueDisplayFormat { get; set; } = ValueDisplayFormat.Abbreviated;
     public int AbbreviatedDecimalPlaces { get; set; } = 1;
     public int RawDecimalPlaces { get; set; } = 1;
-    public int PercentDecimalPlaces { get; set; } = 0;
+    public int PercentDecimalPlaces { get; set; } = 1;
     public double AbbreviatedKThreshold { get; set; } = 10_000;
     public double AbbreviatedMThreshold { get; set; } = 1_000_000;
 
     public bool ShowMeterHeader { get; set; } = true;
     public bool ShowNameOnBar { get; set; } = true;
-    public bool ShowYouOnBar { get; set; } = true;
+    public bool ShowYouOnBar { get; set; } = false;
     public NameDisplayFormat SelfNameFormat { get; set; } = NameDisplayFormat.FullName;
     public NameDisplayFormat OthersNameFormat { get; set; } = NameDisplayFormat.FullName;
-    public bool ShowJobAbbrevOnBar { get; set; } = false;
+    public bool ShowJobAbbrevOnBar { get; set; } = true;
     public bool ShowRankNumber { get; set; } = false;
 
     public static readonly Dictionary<BarColumn, string> DefaultHeaderLabels = new()
@@ -261,7 +261,7 @@ public class Configuration : IPluginConfiguration
         { BarColumn.RaidHps, "Raid HPS" },
     };
 
-    public Vector4 DetailBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
+    public Vector4 DetailBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.80f);
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
     public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
@@ -308,16 +308,16 @@ public class Configuration : IPluginConfiguration
     public float TooltipRounding { get; set; } = 4f;
     public float TooltipPadding { get; set; } = 6f;
 
-    public float GraphHeight { get; set; } = 120f;
+    public float GraphHeight { get; set; } = 140f;
     public float GraphLineThickness { get; set; } = 2f;
     public Vector4 GraphDpsColor { get; set; } = new(0.9f, 0.4f, 0.4f, 1f);
     public Vector4 GraphHpsColor { get; set; } = new(0.4f, 0.85f, 0.4f, 1f);
     public Vector4 GraphDtpsColor { get; set; } = new(0.4f, 0.55f, 0.9f, 1f);
-    public Vector4 GraphBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
+    public Vector4 GraphBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 1.0f);
     public Vector4 GraphGridColor { get; set; } = new(0.3f, 0.3f, 0.3f, 0.3f);
     public bool GraphShowLegend { get; set; } = true;
     public bool GraphShowGrid { get; set; } = true;
-    public bool GraphShowXAxisLabels { get; set; } = true;
+    public bool GraphShowXAxisLabels { get; set; } = false;
     public bool GraphShowYAxisLabels { get; set; } = true;
     public bool GraphShowDps { get; set; } = true;
     public bool GraphShowHps { get; set; } = true;
@@ -325,7 +325,7 @@ public class Configuration : IPluginConfiguration
     public float GraphSmoothingWindow { get; set; } = 5f;
     public float GraphUpdateInterval { get; set; } = 0.25f;
     public bool GraphShowLabels { get; set; } = true;
-    public float GraphLabelOffsetX { get; set; } = 8f;
+    public float GraphLabelOffsetX { get; set; } = 18f;
     public float GraphLabelOffsetY { get; set; } = 0f;
     public float GraphMouseTextOpacity { get; set; } = 0.6f;
     public float GraphYAxisHeadroom { get; set; } = 1.1f;
@@ -336,8 +336,8 @@ public class Configuration : IPluginConfiguration
     public float GraphAutoScrollSmoothing { get; set; } = 8f;
     public float GraphFontSize { get; set; } = 14f;
 
-    public bool GraphViewAutoHeight { get; set; } = true;
-    public float GraphViewHeight { get; set; } = 300f;
+    public bool GraphViewAutoHeight { get; set; } = false;
+    public float GraphViewHeight { get; set; } = 260f;
     public float GraphViewLineThickness { get; set; } = 2f;
     public Vector4 GraphViewBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.6f);
     public Vector4 GraphViewGridColor { get; set; } = new(0.3f, 0.3f, 0.3f, 0.3f);
@@ -345,20 +345,20 @@ public class Configuration : IPluginConfiguration
     public float GraphViewUpdateInterval { get; set; } = 0.25f;
     public bool GraphViewShowLegend { get; set; } = true;
     public bool GraphViewShowGrid { get; set; } = true;
-    public bool GraphViewShowXAxisLabels { get; set; } = true;
+    public bool GraphViewShowXAxisLabels { get; set; } = false;
     public bool GraphViewShowYAxisLabels { get; set; } = true;
     public bool GraphViewHighlightSelf { get; set; } = true;
     public float GraphViewSelfLineThickness { get; set; } = 3.5f;
     public bool GraphViewShowLabels { get; set; } = true;
-    public float GraphViewLabelOffsetX { get; set; } = 8f;
+    public float GraphViewLabelOffsetX { get; set; } = 21f;
     public float GraphViewLabelOffsetY { get; set; } = 0f;
     public float GraphViewFontSize { get; set; } = 14f;
-    public float GraphViewXAxisPadding { get; set; } = 1.25f;
-    public bool GraphViewAutoScroll { get; set; } = false;
-    public float GraphViewAutoScrollWindow { get; set; } = 60f;
+    public float GraphViewXAxisPadding { get; set; } = 1.18f;
+    public bool GraphViewAutoScroll { get; set; } = true;
+    public float GraphViewAutoScrollWindow { get; set; } = 15f;
     public float GraphViewAutoScrollSmoothing { get; set; } = 8f;
-    public float GraphViewYAxisHeadroom { get; set; } = 1.1f;
-    public int GraphViewYAxisTickCount { get; set; } = 8;
+    public float GraphViewYAxisHeadroom { get; set; } = 1.0f;
+    public int GraphViewYAxisTickCount { get; set; } = 14;
     public float GraphViewMouseTextOpacity { get; set; } = 0.6f;
 
     public SkillMarkerConfig GraphViewDpsMarkers { get; set; } = new();
@@ -392,9 +392,9 @@ public class Configuration : IPluginConfiguration
     public bool ShowStatusBarTimer { get; set; } = true;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.RaidDps };
-    public float StatusBarFontSize { get; set; } = FontDefaults.BaseSizePt;
+    public float StatusBarFontSize { get; set; } = 14.1f;
     public float StatusBarHeight { get; set; } = 20f;
-    public float StatusBarPadding { get; set; } = 6f;
+    public float StatusBarPadding { get; set; } = 4f;
     public bool ShowStatusBarSeparator { get; set; } = true;
     public Vector4 StatusBarSeparatorColor { get; set; } = new(0.4f, 0.4f, 0.4f, 0.5f);
     public Vector4 StatusBarBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.9f);
