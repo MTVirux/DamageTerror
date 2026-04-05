@@ -306,6 +306,9 @@ public class EncounterStore
 
             System.IO.File.WriteAllText(savePath, json);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ServiceManager.PluginLog.Warning($"Failed to save encounter history: {ex.Message}");
+        }
     }
 }

@@ -1969,7 +1969,7 @@ public class AppearanceTab
             if (enableFont && fontService != null && uiBuilder != null && !fontService.IsInitialized)
             {
                 try { fontService.Initialize(uiBuilder); }
-                catch { }
+                catch (Exception ex) { ServiceManager.PluginLog.Error($"Failed to initialize font service: {ex.Message}"); }
             }
         }
 

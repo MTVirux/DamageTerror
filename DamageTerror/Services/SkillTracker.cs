@@ -243,7 +243,10 @@ public class SkillTracker
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ServiceManager.PluginLog.Debug($"Failed to look up damage type for action {actionId}: {ex.Message}");
+        }
 
         damageTypeCache[actionId] = result;
         return result;

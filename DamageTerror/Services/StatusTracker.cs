@@ -336,7 +336,10 @@ public class StatusTracker
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ServiceManager.PluginLog.Debug($"Failed to classify status {statusId}: {ex.Message}");
+        }
 
         classificationCache[statusId] = result;
         return result;

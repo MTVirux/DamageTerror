@@ -99,9 +99,9 @@ public class PartyMembershipService
                         cachedPartyNames.Add(name);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // If ECommons/party query fails (e.g. not logged in), return empty sets.
+                ServiceManager.PluginLog.Debug($"Party query failed: {ex.Message}");
             }
         }
     }

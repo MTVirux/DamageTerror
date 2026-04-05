@@ -88,7 +88,7 @@ public class DataService : IDisposable
                 }
             }
         }
-        catch { /* IPlayerState may not be available yet */ }
+        catch (Exception ex) { log.Debug($"IPlayerState not available yet: {ex.Message}"); }
     }
 
     public async Task StartAsync()
@@ -247,7 +247,7 @@ public class DataService : IDisposable
                     }
                 }
             }
-            catch { /* IPlayerState may not be available yet */ }
+            catch (Exception ex) { log.Debug($"IPlayerState not available yet: {ex.Message}"); }
         }
 
         if (!string.IsNullOrEmpty(PlayerName))
@@ -442,7 +442,7 @@ public class DataService : IDisposable
                     map[member.Name] = worldName;
             }
         }
-        catch { /* Party list unavailable */ }
+        catch (Exception ex) { log.Debug($"Party list unavailable: {ex.Message}"); }
 
         return map;
     }

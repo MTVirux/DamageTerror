@@ -145,7 +145,10 @@ public class WebSocketDataSource : IDataSource
                     CancellationToken.None).Wait(TimeSpan.FromSeconds(2));
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ServiceManager.PluginLog.Debug($"WebSocket disconnect error: {ex.Message}");
+        }
         finally
         {
             ws?.Dispose();
