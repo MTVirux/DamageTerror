@@ -490,16 +490,7 @@ public class SkillTracker
     /// Parse ACT log line types 26 (GainsEffect) and 30 (LosesEffect)
     /// and forward to the StatusTracker for DoT/HoT lifecycle tracking.
     ///
-    /// Type 26 (GainsEffect) field layout:
-    ///   [0]=type, [1]=timestamp, [2]=targetId, [3]=targetName,
-    ///   [4]=statusName, [5]=statusId(hex), [6]=duration(float),
-    ///   [7]=sourceId, [8]=sourceName, ...
-    ///
-    /// Type 30 (LosesEffect) field layout:
-    /// Parse ACT log line types 26 (GainsEffect) and 30 (LosesEffect)
-    /// and forward to the StatusTracker for DoT/HoT lifecycle tracking.
-    ///
-    /// Actual IINACT field layout (verified in-game):
+    /// IINACT field layout:
     ///   [0]=type, [1]=timestamp, [2]=statusId(hex), [3]=statusName,
     ///   [4]=duration(float), [5]=sourceId(hex), [6]=sourceName,
     ///   [7]=targetId(hex), [8]=targetName, [9]=stacks, [10]=targetHP, ...
