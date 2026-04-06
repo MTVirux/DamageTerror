@@ -68,6 +68,9 @@ public class MeterTab
     [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.RaidDps };
 
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<BarColumn, string> StatusBarMetricLabels { get; set; } = new();
+
     /// <summary>Whether DPS graph line should be shown (independent of bar columns).</summary>
     public bool GraphShowDpsLine { get; set; } = true;
 
@@ -117,6 +120,27 @@ public class MeterTab
         return Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
     }
 
+    public string GetStatusBarLabel(BarColumn col)
+    {
+        if (StatusBarMetricLabels.TryGetValue(col, out var custom) && !string.IsNullOrEmpty(custom))
+            return custom;
+        return Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+    }
+
+    public string GetTooltipFieldLabel(TooltipField field)
+    {
+        if (TooltipFieldLabels.TryGetValue(field, out var custom) && !string.IsNullOrEmpty(custom))
+            return custom;
+        return Configuration.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+    }
+
+    public string GetDetailColumnLabel(BarColumn col)
+    {
+        if (DetailColumnLabels.TryGetValue(col, out var custom) && !string.IsNullOrEmpty(custom))
+            return custom;
+        return Configuration.DefaultDetailColumnLabels.GetValueOrDefault(col, col.ToString());
+    }
+
     public bool IsColumnVisible(BarColumn col) => VisibleColumns.Contains(col);
 
     public List<string> CustomJobFilter { get; set; } = new();
@@ -137,7 +161,13 @@ public class MeterTab
         TooltipField.Deaths,
     };
 
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<TooltipField, string> TooltipFieldLabels { get; set; } = new();
+
     public int TooltipTopSkillCount { get; set; } = 3;
+
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<BarColumn, string> DetailColumnLabels { get; set; } = new();
 
     /// <summary>Set of visible columns in the expanded detail panel for this tab.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
@@ -269,9 +299,12 @@ public class MeterTab
             ColumnFormatOverrides = ColumnFormatOverrides.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()),
             CustomJobFilter = new List<string>(CustomJobFilter),
             TooltipFields = new List<TooltipField>(TooltipFields),
+            TooltipFieldLabels = new Dictionary<TooltipField, string>(TooltipFieldLabels),
             TooltipTopSkillCount = TooltipTopSkillCount,
             ShowStatusBarTimer = ShowStatusBarTimer,
             StatusBarMetrics = new List<BarColumn>(StatusBarMetrics),
+            StatusBarMetricLabels = new Dictionary<BarColumn, string>(StatusBarMetricLabels),
+            DetailColumnLabels = new Dictionary<BarColumn, string>(DetailColumnLabels),
             DetailVisibleColumns = new HashSet<BarColumn>(DetailVisibleColumns),
             DetailShowDetailsTab = DetailShowDetailsTab,
             DetailShowSkillsTab = DetailShowSkillsTab,

@@ -734,20 +734,20 @@ public class CombatantDetailPanel
                 continue;
 
             var order = GetSectionOrder(sectionName, defaultOrder, activeTab);
-            DrawOrderedSection(order, combatant, vis, lc);
+            DrawOrderedSection(order, combatant, vis, lc, activeTab);
             ImGui.EndTabItem();
         }
 
         ImGui.EndTabBar();
     }
 
-    private void DrawOrderedSection(List<BarColumn> order, CombatantEntry combatant, HashSet<BarColumn> vis, Vector4 lc)
+    private void DrawOrderedSection(List<BarColumn> order, CombatantEntry combatant, HashSet<BarColumn> vis, Vector4 lc, MeterTab? activeTab)
     {
         var rowCount = 0;
         var first = true;
         foreach (var col in order)
         {
-            var data = GetDetailColumnData(col, combatant, vis);
+            var data = GetDetailColumnData(col, combatant, vis, activeTab);
             if (data == null)
                 continue;
 
@@ -761,8 +761,9 @@ public class CombatantDetailPanel
 
             if (col == BarColumn.Deaths)
             {
+                var deathLabel = activeTab != null ? activeTab.GetDetailColumnLabel(BarColumn.Deaths) : "Deaths";
                 if (!first) ImGui.SameLine();
-                ImGui.TextColored(lc, first ? "Deaths:" : "  Deaths:");
+                ImGui.TextColored(lc, first ? $"{deathLabel}:" : $"  {deathLabel}:");
                 ImGui.SameLine();
                 if (combatant.Deaths > 0)
                     ImGui.TextColored(config.DetailDeathColor, value);
@@ -788,66 +789,69 @@ public class CombatantDetailPanel
         }
     }
 
-    private (string label, string value)? GetDetailColumnData(BarColumn col, CombatantEntry c, HashSet<BarColumn> vis)
+    private (string label, string value)? GetDetailColumnData(BarColumn col, CombatantEntry c, HashSet<BarColumn> vis, MeterTab? activeTab)
     {
         if (!vis.Contains(col))
             return null;
 
+        string Label(BarColumn bc) => activeTab != null ? activeTab.GetDetailColumnLabel(bc)
+            : Configuration.DefaultDetailColumnLabels.GetValueOrDefault(bc, bc.ToString());
+
         return col switch
         {
             // Damage
-            BarColumn.Dps => ("DPS", Fmt(c.EncDps)),
-            BarColumn.InstantDps => ("iDPS", Fmt(c.InstantDps)),
-            BarColumn.PeakDps => ("Peak", Fmt(c.PeakDps)),
-            BarColumn.Damage => ("Total", Fmt(c.Damage)),
-            BarColumn.DamagePercent => ("Dmg %", c.DamagePercent),
-            BarColumn.MaxHit when !string.IsNullOrEmpty(c.MaxHit) => ("Max Hit", c.MaxHitSkillName),
-            BarColumn.MaxHitValue when c.MaxHitDamage > 0 => ("Max Hit Value", Fmt(c.MaxHitDamage)),
-            BarColumn.DamageShield => ("Shield", Fmt(c.DamageShield)),
-            BarColumn.RaidDps => ("Group DPS", Fmt(c.RaidDps)),
+            BarColumn.Dps => (Label(col), Fmt(c.EncDps)),
+            BarColumn.InstantDps => (Label(col), Fmt(c.InstantDps)),
+            BarColumn.PeakDps => (Label(col), Fmt(c.PeakDps)),
+            BarColumn.Damage => (Label(col), Fmt(c.Damage)),
+            BarColumn.DamagePercent => (Label(col), c.DamagePercent),
+            BarColumn.MaxHit when !string.IsNullOrEmpty(c.MaxHit) => (Label(col), c.MaxHitSkillName),
+            BarColumn.MaxHitValue when c.MaxHitDamage > 0 => (Label(col), Fmt(c.MaxHitDamage)),
+            BarColumn.DamageShield => (Label(col), Fmt(c.DamageShield)),
+            BarColumn.RaidDps => (Label(col), Fmt(c.RaidDps)),
 
             // Healing
-            BarColumn.Hps => ("HPS", Fmt(c.EncHps)),
-            BarColumn.InstantHps => ("iHPS", Fmt(c.InstantHps)),
-            BarColumn.Healed => ("Total", Fmt(c.Healed)),
-            BarColumn.HealPercent => ("Heal %", c.HealedPercent),
-            BarColumn.Overheal => ("Overheal", FmtPct(c.OverhealPct)),
-            BarColumn.OverhealAmount => ("OH Amt", Fmt(c.OverhealAmount)),
-            BarColumn.CritHealPct => ("Crit Heal", FmtPct(c.CritHealPct)),
-            BarColumn.MaxHeal when !string.IsNullOrEmpty(c.MaxHeal) => ("Max Heal", c.MaxHealSkillName),
-            BarColumn.MaxHealValue when c.MaxHealAmount > 0 => ("Max Heal Value", Fmt(c.MaxHealAmount)),
-            BarColumn.HealCount => ("Heals", c.HealCount.ToString()),
-            BarColumn.RaidHps => ("Group HPS", Fmt(c.RaidHps)),
+            BarColumn.Hps => (Label(col), Fmt(c.EncHps)),
+            BarColumn.InstantHps => (Label(col), Fmt(c.InstantHps)),
+            BarColumn.Healed => (Label(col), Fmt(c.Healed)),
+            BarColumn.HealPercent => (Label(col), c.HealedPercent),
+            BarColumn.Overheal => (Label(col), FmtPct(c.OverhealPct)),
+            BarColumn.OverhealAmount => (Label(col), Fmt(c.OverhealAmount)),
+            BarColumn.CritHealPct => (Label(col), FmtPct(c.CritHealPct)),
+            BarColumn.MaxHeal when !string.IsNullOrEmpty(c.MaxHeal) => (Label(col), c.MaxHealSkillName),
+            BarColumn.MaxHealValue when c.MaxHealAmount > 0 => (Label(col), Fmt(c.MaxHealAmount)),
+            BarColumn.HealCount => (Label(col), c.HealCount.ToString()),
+            BarColumn.RaidHps => (Label(col), Fmt(c.RaidHps)),
 
             // Hit Stats
-            BarColumn.Crit => ("Crit", FmtPct(c.CritPct)),
-            BarColumn.DirectHit => ("DH", FmtPct(c.DirectHitPct)),
-            BarColumn.CritDirectHit => ("CDH", FmtPct(c.CritDirectHitPct)),
-            BarColumn.CritHitCount => ("Crit#", c.CritHitCount.ToString()),
-            BarColumn.DirectHitCount => ("DH#", c.DirectHitCount.ToString()),
-            BarColumn.CritDirectHitCount => ("CDH#", c.CritDirectHitCount.ToString()),
-            BarColumn.HitRate => ("Hit Rate", FmtPct(c.HitRate)),
-            BarColumn.Swings => ("Swings", c.Swings.ToString()),
-            BarColumn.Hits => ("Hits", c.Hits.ToString()),
-            BarColumn.Misses => ("Misses", c.Misses.ToString()),
+            BarColumn.Crit => (Label(col), FmtPct(c.CritPct)),
+            BarColumn.DirectHit => (Label(col), FmtPct(c.DirectHitPct)),
+            BarColumn.CritDirectHit => (Label(col), FmtPct(c.CritDirectHitPct)),
+            BarColumn.CritHitCount => (Label(col), c.CritHitCount.ToString()),
+            BarColumn.DirectHitCount => (Label(col), c.DirectHitCount.ToString()),
+            BarColumn.CritDirectHitCount => (Label(col), c.CritDirectHitCount.ToString()),
+            BarColumn.HitRate => (Label(col), FmtPct(c.HitRate)),
+            BarColumn.Swings => (Label(col), c.Swings.ToString()),
+            BarColumn.Hits => (Label(col), c.Hits.ToString()),
+            BarColumn.Misses => (Label(col), c.Misses.ToString()),
 
             // Defense
-            BarColumn.DamageTaken => ("Taken", Fmt(c.DamageTaken)),
-            BarColumn.DamageTakenPercent => ("Taken %", c.DamageTakenPercent),
-            BarColumn.BlockPct => ("Block", FmtPct(c.BlockPct)),
-            BarColumn.ParryPct => ("Parry", FmtPct(c.ParryPct)),
-            BarColumn.HealsTaken => ("Heals Taken", Fmt(c.HealsTaken)),
+            BarColumn.DamageTaken => (Label(col), Fmt(c.DamageTaken)),
+            BarColumn.DamageTakenPercent => (Label(col), c.DamageTakenPercent),
+            BarColumn.BlockPct => (Label(col), FmtPct(c.BlockPct)),
+            BarColumn.ParryPct => (Label(col), FmtPct(c.ParryPct)),
+            BarColumn.HealsTaken => (Label(col), Fmt(c.HealsTaken)),
 
             // Other
-            BarColumn.Deaths => ("Deaths", c.Deaths.ToString()),
-            BarColumn.Kills => ("Kills", c.Kills.ToString()),
-            BarColumn.CombatantDuration => ("Duration", c.CombatantDuration),
-            BarColumn.PowerHeal => ("MP Recovery", Fmt(c.PowerHeal)),
+            BarColumn.Deaths => (Label(col), c.Deaths.ToString()),
+            BarColumn.Kills => (Label(col), c.Kills.ToString()),
+            BarColumn.CombatantDuration => (Label(col), c.CombatantDuration),
+            BarColumn.PowerHeal => (Label(col), Fmt(c.PowerHeal)),
 
             // Debug
-            BarColumn.PowerDrain => ("MP Drain", Fmt(c.PowerDrain)),
-            BarColumn.AbsorbHeal => ("Absorb", Fmt(c.AbsorbHeal)),
-            BarColumn.MaxHealWard when !string.IsNullOrEmpty(c.MaxHealWardName) => ("Max Ward", $"{c.MaxHealWardName} ({Fmt(c.MaxHealWardAmount)})"),
+            BarColumn.PowerDrain => (Label(col), Fmt(c.PowerDrain)),
+            BarColumn.AbsorbHeal => (Label(col), Fmt(c.AbsorbHeal)),
+            BarColumn.MaxHealWard when !string.IsNullOrEmpty(c.MaxHealWardName) => (Label(col), $"{c.MaxHealWardName} ({Fmt(c.MaxHealWardAmount)})"),
 
             _ => null,
         };

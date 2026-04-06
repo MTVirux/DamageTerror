@@ -387,10 +387,31 @@ public static class MeterTabsPage
         ImGui.Spacing();
         ImGui.TextDisabled("Metrics");
         tab.StatusBarMetrics ??= new List<BarColumn> { BarColumn.Dps, BarColumn.RaidDps };
+        Func<BarColumn, bool> sbExtras = col =>
+        {
+            var extChanged = false;
+            ImGui.SameLine();
+            var defaultLabel = Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+            tab.StatusBarMetricLabels.TryGetValue(col, out var current);
+            current ??= "";
+            ImGui.SetNextItemWidth(60);
+            if (ImGui.InputTextWithHint($"##sbLbl_{col}", defaultLabel, ref current, 32))
+            {
+                if (string.IsNullOrEmpty(current))
+                    tab.StatusBarMetricLabels.Remove(col);
+                else
+                    tab.StatusBarMetricLabels[col] = current;
+                extChanged = true;
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(MetricPicker.GetBarColumnLabel(col));
+            return extChanged;
+        };
         changed |= MetricPicker.Draw("statusBar", tab.StatusBarMetrics,
             MetricPicker.GetBarColumnLabel,
             MetricPicker.BarColumnCategories,
-            getDescription: c => MetricPicker.BarColumnDescriptions.GetValueOrDefault(c));
+            sbExtras,
+            c => MetricPicker.BarColumnDescriptions.GetValueOrDefault(c));
         }
 
         ImGui.Separator();
@@ -409,10 +430,31 @@ public static class MeterTabsPage
             }
             ImGui.Spacing();
 
+            Func<TooltipField, bool> tooltipExtras = field =>
+            {
+                var extChanged = false;
+                ImGui.SameLine();
+                var defaultLabel = Configuration.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+                tab.TooltipFieldLabels.TryGetValue(field, out var current);
+                current ??= "";
+                ImGui.SetNextItemWidth(60);
+                if (ImGui.InputTextWithHint($"##ttLbl_{field}", defaultLabel, ref current, 32))
+                {
+                    if (string.IsNullOrEmpty(current))
+                        tab.TooltipFieldLabels.Remove(field);
+                    else
+                        tab.TooltipFieldLabels[field] = current;
+                    extChanged = true;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(MetricPicker.GetTooltipFieldLabel(field));
+                return extChanged;
+            };
             changed |= MetricPicker.Draw("tooltip", tab.TooltipFields,
                 MetricPicker.GetTooltipFieldLabel,
                 MetricPicker.TooltipFieldCategories,
-                getDescription: f => MetricPicker.TooltipFieldDescriptions.GetValueOrDefault(f));
+                tooltipExtras,
+                f => MetricPicker.TooltipFieldDescriptions.GetValueOrDefault(f));
         }
 
         ImGui.Separator();
@@ -473,10 +515,31 @@ public static class MeterTabsPage
 
             ImGui.Spacing();
 
+            Func<BarColumn, bool> detailExtras = col =>
+            {
+                var extChanged = false;
+                ImGui.SameLine();
+                var defaultLabel = Configuration.DefaultDetailColumnLabels.GetValueOrDefault(col, col.ToString());
+                tab.DetailColumnLabels.TryGetValue(col, out var current);
+                current ??= "";
+                ImGui.SetNextItemWidth(60);
+                if (ImGui.InputTextWithHint($"##dtLbl_{col}", defaultLabel, ref current, 32))
+                {
+                    if (string.IsNullOrEmpty(current))
+                        tab.DetailColumnLabels.Remove(col);
+                    else
+                        tab.DetailColumnLabels[col] = current;
+                    extChanged = true;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(MetricPicker.GetBarColumnLabel(col));
+                return extChanged;
+            };
             changed |= MetricPicker.DrawCategorized("detailVis", tab.DetailVisibleColumns,
                 MetricPicker.GetBarColumnLabel,
                 MetricPicker.BarColumnCategories,
                 tab.DetailSectionOrder,
+                detailExtras,
                 c => MetricPicker.BarColumnDescriptions.GetValueOrDefault(c));
 
             ImGui.Spacing();

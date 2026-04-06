@@ -284,6 +284,7 @@ public static class MetricPicker
         Func<T, string> getLabel,
         (string Name, T[] Items)[] categories,
         Dictionary<string, List<T>>? sectionOrder = null,
+        Func<T, bool>? drawItemExtras = null,
         Func<T, string?>? getDescription = null) where T : struct, Enum
     {
         var changed = false;
@@ -365,6 +366,9 @@ public static class MetricPicker
                     if (desc != null && ImGui.IsItemHovered())
                         ImGui.SetTooltip(desc);
                 }
+
+                if (drawItemExtras != null)
+                    changed |= drawItemExtras(item);
 
                 ImGui.PopID();
             }
