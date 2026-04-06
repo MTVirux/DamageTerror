@@ -211,10 +211,30 @@ public class Configuration : IPluginConfiguration
         { BarColumn.PowerHeal, "MPR" },
         { BarColumn.LegsSweeped, "Stun" },
         { BarColumn.SkillIssue, "SI" },
-        { BarColumn.RaidDps, "gDPS" },
-        { BarColumn.RaidHps, "gHPS" },
+        { BarColumn.EncDps, "eDPS" },
+        { BarColumn.EncHps, "eHPS" },
         { BarColumn.DpsRank, "Rank" },
         { BarColumn.HpsRank, "Rank" },
+        { BarColumn.GroupDps, "gΣDPS" },
+        { BarColumn.GroupHps, "gΣHPS" },
+        { BarColumn.GroupDamage, "gΣDmg" },
+        { BarColumn.GroupHealed, "gΣHeal" },
+        { BarColumn.GroupDamageTaken, "gΣTkn" },
+        { BarColumn.GroupDeaths, "gΣD" },
+        { BarColumn.GroupOverheal, "gΣOH" },
+        { BarColumn.GroupInstantDps, "gΣiDPS" },
+        { BarColumn.GroupInstantHps, "gΣiHPS" },
+        { BarColumn.GroupAvgDps, "gx̄DPS" },
+        { BarColumn.GroupAvgHps, "gx̄HPS" },
+        { BarColumn.GroupAvgCrit, "gx̄!!" },
+        { BarColumn.GroupAvgDirectHit, "gx̄!" },
+        { BarColumn.GroupAvgCritDirectHit, "gx̄!!!" },
+        { BarColumn.GroupAvgOverhealPct, "gx̄OH%" },
+        { BarColumn.GroupAvgCritHealPct, "gx̄CH%" },
+        { BarColumn.GroupAvgHitRate, "gx̄Acc" },
+        { BarColumn.GroupPeakDps, "gPeak" },
+        { BarColumn.GroupMaxHitValue, "gMaxV" },
+        { BarColumn.GroupMaxHealValue, "gMHV" },
     };
 
     public static readonly Dictionary<TooltipField, string> DefaultTooltipFieldLabels = new()
@@ -254,8 +274,8 @@ public class Configuration : IPluginConfiguration
         { TooltipField.MaxHealWard, "Max Heal Ward" },
         { TooltipField.LegsSweeped, "Legs Sweeped" },
         { TooltipField.SkillIssue, "Skill Issue" },
-        { TooltipField.RaidDps, "Group DPS" },
-        { TooltipField.RaidHps, "Group HPS" },
+        { TooltipField.EncDps, "Encounter DPS" },
+        { TooltipField.EncHps, "Encounter HPS" },
         { TooltipField.TopDamageSkills, "Top Damage Skills" },
         { TooltipField.TopHealingSkills, "Top Healing Skills" },
     };
@@ -270,7 +290,7 @@ public class Configuration : IPluginConfiguration
         { BarColumn.MaxHit, "Max Hit" },
         { BarColumn.MaxHitValue, "Max Hit Value" },
         { BarColumn.DamageShield, "Shield" },
-        { BarColumn.RaidDps, "Group DPS" },
+        { BarColumn.EncDps, "Encounter DPS" },
         { BarColumn.Hps, "HPS" },
         { BarColumn.InstantHps, "iHPS" },
         { BarColumn.Healed, "Total" },
@@ -281,7 +301,7 @@ public class Configuration : IPluginConfiguration
         { BarColumn.MaxHeal, "Max Heal" },
         { BarColumn.MaxHealValue, "Max Heal Value" },
         { BarColumn.HealCount, "Heals" },
-        { BarColumn.RaidHps, "Group HPS" },
+        { BarColumn.EncHps, "Encounter HPS" },
         { BarColumn.Crit, "Crit" },
         { BarColumn.DirectHit, "DH" },
         { BarColumn.CritDirectHit, "CDH" },
@@ -350,8 +370,8 @@ public class Configuration : IPluginConfiguration
         { BarColumn.PowerHeal, "MP Restore" },
         { BarColumn.LegsSweeped, "Legs Sweeped" },
         { BarColumn.SkillIssue, "Skill Issue" },
-        { BarColumn.RaidDps, "Raid DPS" },
-        { BarColumn.RaidHps, "Raid HPS" },
+        { BarColumn.EncDps, "Encounter DPS" },
+        { BarColumn.EncHps, "Encounter HPS" },
         { BarColumn.DpsRank, "DPS Rank" },
         { BarColumn.HpsRank, "HPS Rank" },
     };
@@ -489,7 +509,7 @@ public class Configuration : IPluginConfiguration
     public bool ShowStatusBarTimer { get; set; } = true;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumCollectionConverter))]
-    public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.RaidDps };
+    public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.EncDps };
     public float StatusBarFontSize { get; set; } = 14.1f;
     public float StatusBarHeight { get; set; } = 20f;
     public float StatusBarPadding { get; set; } = 4f;

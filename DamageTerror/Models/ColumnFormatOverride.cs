@@ -27,7 +27,12 @@ public class ColumnFormatOverride
         BarColumn.PeakDps, BarColumn.MaxHealValue, BarColumn.HealsTaken,
         BarColumn.AbsorbHeal, BarColumn.InstantDps, BarColumn.InstantHps,
         BarColumn.DamageShield, BarColumn.MaxHealWard, BarColumn.PowerDrain,
-        BarColumn.PowerHeal, BarColumn.RaidDps, BarColumn.RaidHps,
+        BarColumn.PowerHeal, BarColumn.EncDps, BarColumn.EncHps,
+        BarColumn.GroupDps, BarColumn.GroupHps, BarColumn.GroupDamage,
+        BarColumn.GroupHealed, BarColumn.GroupDamageTaken, BarColumn.GroupOverheal,
+        BarColumn.GroupInstantDps, BarColumn.GroupInstantHps,
+        BarColumn.GroupAvgDps, BarColumn.GroupAvgHps,
+        BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue, BarColumn.GroupMaxHealValue,
     };
 
     /// <summary>Columns whose values go through ValueFormatter.FormatPercent.</summary>
@@ -36,6 +41,8 @@ public class ColumnFormatOverride
         BarColumn.CritDirectHit, BarColumn.Crit, BarColumn.DirectHit,
         BarColumn.Overheal, BarColumn.HitRate, BarColumn.BlockPct,
         BarColumn.ParryPct, BarColumn.CritHealPct,
+        BarColumn.GroupAvgCrit, BarColumn.GroupAvgDirectHit, BarColumn.GroupAvgCritDirectHit,
+        BarColumn.GroupAvgOverhealPct, BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate,
     };
 
     public static bool SupportsFormatting(BarColumn col)

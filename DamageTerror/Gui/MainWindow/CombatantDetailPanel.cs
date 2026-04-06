@@ -808,7 +808,7 @@ public class CombatantDetailPanel
             BarColumn.MaxHit when !string.IsNullOrEmpty(c.MaxHit) => (Label(col), c.MaxHitSkillName),
             BarColumn.MaxHitValue when c.MaxHitDamage > 0 => (Label(col), Fmt(c.MaxHitDamage)),
             BarColumn.DamageShield => (Label(col), Fmt(c.DamageShield)),
-            BarColumn.RaidDps => (Label(col), Fmt(c.RaidDps)),
+            BarColumn.EncDps => (Label(col), Fmt(c.RaidDps)),
 
             // Healing
             BarColumn.Hps => (Label(col), Fmt(c.EncHps)),
@@ -821,7 +821,7 @@ public class CombatantDetailPanel
             BarColumn.MaxHeal when !string.IsNullOrEmpty(c.MaxHeal) => (Label(col), c.MaxHealSkillName),
             BarColumn.MaxHealValue when c.MaxHealAmount > 0 => (Label(col), Fmt(c.MaxHealAmount)),
             BarColumn.HealCount => (Label(col), c.HealCount.ToString()),
-            BarColumn.RaidHps => (Label(col), Fmt(c.RaidHps)),
+            BarColumn.EncHps => (Label(col), Fmt(c.RaidHps)),
 
             // Hit Stats
             BarColumn.Crit => (Label(col), FmtPct(c.CritPct)),

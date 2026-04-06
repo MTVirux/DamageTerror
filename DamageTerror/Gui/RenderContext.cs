@@ -15,4 +15,5 @@ public sealed class RenderContext
     public required bool SortDescending { get; init; }
     public required List<CombatantEntry>? Combatants { get; init; }
     public required double MaxValue { get; init; }
+    public GroupAggregates? GroupAggregates { get; init; }
 }

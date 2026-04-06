@@ -44,8 +44,34 @@ public enum BarColumn
     PowerHeal,
     LegsSweeped,
     SkillIssue,
-    RaidDps,
-    RaidHps,
+    EncDps,
+    EncHps,
     DpsRank,
     HpsRank,
+
+    // Group totals (sum of filtered combatants)
+    GroupDps,
+    GroupHps,
+    GroupDamage,
+    GroupHealed,
+    GroupDamageTaken,
+    GroupDeaths,
+    GroupOverheal,
+    GroupInstantDps,
+    GroupInstantHps,
+
+    // Group averages (mean of filtered combatants)
+    GroupAvgDps,
+    GroupAvgHps,
+    GroupAvgCrit,
+    GroupAvgDirectHit,
+    GroupAvgCritDirectHit,
+    GroupAvgOverhealPct,
+    GroupAvgCritHealPct,
+    GroupAvgHitRate,
+
+    // Group max (best in filtered combatants)
+    GroupPeakDps,
+    GroupMaxHitValue,
+    GroupMaxHealValue,
 }

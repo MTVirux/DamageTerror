@@ -82,9 +82,11 @@ public class StatusBarComponent
                     x += ImGui.CalcTextSize(sep).X;
                 }
 
-                var valueText = localPlayer != null
-                    ? CombatantBarComponent.GetColumnDisplayValue(localPlayer, col, config, tab)
-                    : "0";
+                var valueText = CombatantBarComponent.IsGroupColumn(col)
+                    ? CombatantBarComponent.GetGroupColumnDisplayValue(col, config, tab, null)
+                    : localPlayer != null
+                        ? CombatantBarComponent.GetColumnDisplayValue(localPlayer, col, config, tab)
+                        : "0";
                 drawList.AddText(new Vector2(x, textY), textColor, valueText);
                 x += ImGui.CalcTextSize(valueText).X;
 

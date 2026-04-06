@@ -386,7 +386,7 @@ public static class MeterTabsPage
 
         ImGui.Spacing();
         ImGui.TextDisabled("Metrics");
-        tab.StatusBarMetrics ??= new List<BarColumn> { BarColumn.Dps, BarColumn.RaidDps };
+        tab.StatusBarMetrics ??= new List<BarColumn> { BarColumn.Dps, BarColumn.EncDps };
         Func<BarColumn, bool> sbExtras = col =>
         {
             var extChanged = false;

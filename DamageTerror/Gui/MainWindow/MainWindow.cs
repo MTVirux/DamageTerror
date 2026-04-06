@@ -263,11 +263,13 @@ public class MainWindow : Window, IDisposable
 
         List<CombatantEntry>? combatants = null;
         double maxVal = 0;
+        GroupAggregates? groupAggregates = null;
 
         if (encounter != null)
         {
             combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
             StampRanks(combatants);
+            groupAggregates = GroupAggregates.Compute(combatants);
             if (combatants.Count > 0)
                 maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
         }
@@ -335,6 +337,7 @@ public class MainWindow : Window, IDisposable
 
                             combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
                             StampRanks(combatants);
+                            groupAggregates = GroupAggregates.Compute(combatants);
                             maxVal = combatants.Count > 0
                                 ? combatants.Sum(c => CombatantBarComponent.GetSortValue(c, sortBy))
                                 : 0;
@@ -355,7 +358,7 @@ public class MainWindow : Window, IDisposable
                     }
                     else
                     {
-                        DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, activeTab, currentPlayerName, encounter, headerComponent.IsViewingLive);
+                        DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, activeTab, currentPlayerName, encounter, headerComponent.IsViewingLive, groupAggregates);
                     }
                     // Anchor post-bars elements to the bottom of the content area
                     if (afterBarsHeight > 0)
@@ -529,7 +532,7 @@ public class MainWindow : Window, IDisposable
         ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().X, cursor.Y + buttonHeight));
     }
 
-    private void DrawCombatantBars(List<CombatantEntry> combatants, double maxVal, SortField sortBy, float reservedHeight, MeterTab? activeTab, string currentPlayerName, EncounterSnapshot? snapshot, bool isLive)
+    private void DrawCombatantBars(List<CombatantEntry> combatants, double maxVal, SortField sortBy, float reservedHeight, MeterTab? activeTab, string currentPlayerName, EncounterSnapshot? snapshot, bool isLive, GroupAggregates? groupAggregates = null)
     {
         var availY = ImGui.GetContentRegionAvail().Y;
         var childHeight = reservedHeight > 0 ? Math.Max(0f, availY - reservedHeight) : 0f;
@@ -552,7 +555,7 @@ public class MainWindow : Window, IDisposable
                 for (int i = 0; i < combatants.Count; i++)
                 {
                     var combatant = combatants[i];
-                    if (barComponent.Render(combatant, maxVal, i, sortBy, activeTab, currentPlayerName))
+                    if (barComponent.Render(combatant, maxVal, i, sortBy, activeTab, currentPlayerName, groupAggregates))
                     {
                         detailPanel.Toggle(i);
                     }

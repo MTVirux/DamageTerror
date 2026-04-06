@@ -66,7 +66,7 @@ public class MeterTab
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumCollectionConverter))]
-    public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.RaidDps };
+    public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.EncDps };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public Dictionary<BarColumn, string> StatusBarMetricLabels { get; set; } = new();

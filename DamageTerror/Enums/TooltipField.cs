@@ -37,8 +37,8 @@ public enum TooltipField
     MaxHealWard,
     LegsSweeped,
     SkillIssue,
-    RaidDps,
-    RaidHps,
+    EncDps,
+    EncHps,
     TopDamageSkills,
     TopHealingSkills,
 }

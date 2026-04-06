@@ -63,10 +63,33 @@ public class CombatantBarComponent
         { BarColumn.PowerHeal, "000.0K" },
         { BarColumn.LegsSweeped, "00" },
         { BarColumn.SkillIssue, "00" },
-        { BarColumn.RaidDps, "000.0K" },
-        { BarColumn.RaidHps, "000.0K" },
+        { BarColumn.EncDps, "000.0K" },
+        { BarColumn.EncHps, "000.0K" },
         { BarColumn.DpsRank, "00/00" },
         { BarColumn.HpsRank, "00/00" },
+        // Group totals
+        { BarColumn.GroupDps, "000.0K" },
+        { BarColumn.GroupHps, "000.0K" },
+        { BarColumn.GroupDamage, "000.0K" },
+        { BarColumn.GroupHealed, "000.0K" },
+        { BarColumn.GroupDamageTaken, "000.0K" },
+        { BarColumn.GroupDeaths, "00" },
+        { BarColumn.GroupOverheal, "000.0K" },
+        { BarColumn.GroupInstantDps, "000.0K" },
+        { BarColumn.GroupInstantHps, "000.0K" },
+        // Group averages
+        { BarColumn.GroupAvgDps, "000.0K" },
+        { BarColumn.GroupAvgHps, "000.0K" },
+        { BarColumn.GroupAvgCrit, "100%" },
+        { BarColumn.GroupAvgDirectHit, "100%" },
+        { BarColumn.GroupAvgCritDirectHit, "100%" },
+        { BarColumn.GroupAvgOverhealPct, "100%" },
+        { BarColumn.GroupAvgCritHealPct, "100%" },
+        { BarColumn.GroupAvgHitRate, "100%" },
+        // Group max
+        { BarColumn.GroupPeakDps, "000.0K" },
+        { BarColumn.GroupMaxHitValue, "000.0K" },
+        { BarColumn.GroupMaxHealValue, "000.0K" },
     };
 
     public static string GetColumnDisplayValue(CombatantEntry combatant, BarColumn col,
@@ -114,19 +137,61 @@ public class CombatantBarComponent
         BarColumn.PowerHeal => ValueFormatter.FormatColumn(combatant.PowerHeal, config, BarColumn.PowerHeal, activeTab),
         BarColumn.LegsSweeped => $"{combatant.Stuns}",
         BarColumn.SkillIssue => $"{combatant.SkillIssue}",
-        BarColumn.RaidDps => ValueFormatter.FormatColumn(combatant.RaidDps, config, BarColumn.RaidDps, activeTab),
-        BarColumn.RaidHps => ValueFormatter.FormatColumn(combatant.RaidHps, config, BarColumn.RaidHps, activeTab),
+        BarColumn.EncDps => ValueFormatter.FormatColumn(combatant.RaidDps, config, BarColumn.EncDps, activeTab),
+        BarColumn.EncHps => ValueFormatter.FormatColumn(combatant.RaidHps, config, BarColumn.EncHps, activeTab),
         BarColumn.DpsRank => $"{combatant.DpsRank}/{combatant.DpsRankTotal}",
         BarColumn.HpsRank => $"{combatant.HpsRank}/{combatant.HpsRankTotal}",
         _ => string.Empty,
     };
 
-    public bool Render(RenderContext ctx, CombatantEntry combatant, int index)
+    public static string GetGroupColumnDisplayValue(BarColumn col, Configuration config, MeterTab? activeTab, GroupAggregates? group)
     {
-        return Render(combatant, ctx.MaxValue, index, ctx.SortBy, ctx.ActiveTab, ctx.CurrentPlayerName);
+        if (group == null) return "\u2014";
+        return col switch
+        {
+            BarColumn.GroupDps => ValueFormatter.FormatColumn(group.Dps, config, BarColumn.GroupDps, activeTab),
+            BarColumn.GroupHps => ValueFormatter.FormatColumn(group.Hps, config, BarColumn.GroupHps, activeTab),
+            BarColumn.GroupDamage => ValueFormatter.FormatColumn(group.Damage, config, BarColumn.GroupDamage, activeTab),
+            BarColumn.GroupHealed => ValueFormatter.FormatColumn(group.Healed, config, BarColumn.GroupHealed, activeTab),
+            BarColumn.GroupDamageTaken => ValueFormatter.FormatColumn(group.DamageTaken, config, BarColumn.GroupDamageTaken, activeTab),
+            BarColumn.GroupDeaths => $"{group.Deaths}",
+            BarColumn.GroupOverheal => ValueFormatter.FormatColumn(group.Overheal, config, BarColumn.GroupOverheal, activeTab),
+            BarColumn.GroupInstantDps => ValueFormatter.FormatColumn(group.InstantDps, config, BarColumn.GroupInstantDps, activeTab),
+            BarColumn.GroupInstantHps => ValueFormatter.FormatColumn(group.InstantHps, config, BarColumn.GroupInstantHps, activeTab),
+            BarColumn.GroupAvgDps => ValueFormatter.FormatColumn(group.AvgDps, config, BarColumn.GroupAvgDps, activeTab),
+            BarColumn.GroupAvgHps => ValueFormatter.FormatColumn(group.AvgHps, config, BarColumn.GroupAvgHps, activeTab),
+            BarColumn.GroupAvgCrit => ValueFormatter.FormatPercentColumn(group.AvgCrit, config, BarColumn.GroupAvgCrit, activeTab),
+            BarColumn.GroupAvgDirectHit => ValueFormatter.FormatPercentColumn(group.AvgDirectHit, config, BarColumn.GroupAvgDirectHit, activeTab),
+            BarColumn.GroupAvgCritDirectHit => ValueFormatter.FormatPercentColumn(group.AvgCritDirectHit, config, BarColumn.GroupAvgCritDirectHit, activeTab),
+            BarColumn.GroupAvgOverhealPct => ValueFormatter.FormatPercentColumn(group.AvgOverhealPct, config, BarColumn.GroupAvgOverhealPct, activeTab),
+            BarColumn.GroupAvgCritHealPct => ValueFormatter.FormatPercentColumn(group.AvgCritHealPct, config, BarColumn.GroupAvgCritHealPct, activeTab),
+            BarColumn.GroupAvgHitRate => ValueFormatter.FormatPercentColumn(group.AvgHitRate, config, BarColumn.GroupAvgHitRate, activeTab),
+            BarColumn.GroupPeakDps => ValueFormatter.FormatColumn(group.PeakDps, config, BarColumn.GroupPeakDps, activeTab),
+            BarColumn.GroupMaxHitValue => ValueFormatter.FormatColumn(group.MaxHitValue, config, BarColumn.GroupMaxHitValue, activeTab),
+            BarColumn.GroupMaxHealValue => ValueFormatter.FormatColumn(group.MaxHealValue, config, BarColumn.GroupMaxHealValue, activeTab),
+            _ => string.Empty,
+        };
     }
 
-    public bool Render(CombatantEntry combatant, double maxValue, int index, SortField sortBy, MeterTab? activeTab, string currentPlayerName = "")
+    private static readonly HashSet<BarColumn> GroupColumns = new()
+    {
+        BarColumn.GroupDps, BarColumn.GroupHps, BarColumn.GroupDamage,
+        BarColumn.GroupHealed, BarColumn.GroupDamageTaken, BarColumn.GroupDeaths,
+        BarColumn.GroupOverheal, BarColumn.GroupInstantDps, BarColumn.GroupInstantHps,
+        BarColumn.GroupAvgDps, BarColumn.GroupAvgHps, BarColumn.GroupAvgCrit,
+        BarColumn.GroupAvgDirectHit, BarColumn.GroupAvgCritDirectHit, BarColumn.GroupAvgOverhealPct,
+        BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate,
+        BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue, BarColumn.GroupMaxHealValue,
+    };
+
+    public static bool IsGroupColumn(BarColumn col) => GroupColumns.Contains(col);
+
+    public bool Render(RenderContext ctx, CombatantEntry combatant, int index)
+    {
+        return Render(combatant, ctx.MaxValue, index, ctx.SortBy, ctx.ActiveTab, ctx.CurrentPlayerName, ctx.GroupAggregates);
+    }
+
+    public bool Render(CombatantEntry combatant, double maxValue, int index, SortField sortBy, MeterTab? activeTab, string currentPlayerName = "", GroupAggregates? groupAggregates = null)
     {
         var barHeight = config.BarHeight;
         var iconSize = config.IconSize;
@@ -235,7 +300,9 @@ public class CombatantBarComponent
             var col = columnOrder[ci];
             if (activeTab == null || !activeTab.IsColumnVisible(col)) continue;
 
-            var text = GetColumnDisplayValue(combatant, col, config, activeTab);
+            var text = IsGroupColumn(col)
+                ? GetGroupColumnDisplayValue(col, config, activeTab, groupAggregates)
+                : GetColumnDisplayValue(combatant, col, config, activeTab);
             if (!ColumnWidthTemplates.TryGetValue(col, out var template)) continue;
             var colW = ImGui.CalcTextSize(template).X;
             rightX -= colW;
@@ -365,8 +432,8 @@ public class CombatantBarComponent
             TooltipField.MaxHealWard => GetColumnDisplayValue(combatant, BarColumn.MaxHealWard, config, activeTab),
             TooltipField.LegsSweeped => $"{combatant.Stuns}",
             TooltipField.SkillIssue => $"{combatant.SkillIssue}",
-            TooltipField.RaidDps => GetColumnDisplayValue(combatant, BarColumn.RaidDps, config, activeTab),
-            TooltipField.RaidHps => GetColumnDisplayValue(combatant, BarColumn.RaidHps, config, activeTab),
+            TooltipField.EncDps => GetColumnDisplayValue(combatant, BarColumn.EncDps, config, activeTab),
+            TooltipField.EncHps => GetColumnDisplayValue(combatant, BarColumn.EncHps, config, activeTab),
             TooltipField.TopDamageSkills => "",
             TooltipField.TopHealingSkills => "",
             _ => "",
