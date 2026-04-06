@@ -17,6 +17,7 @@ public class SkillTracker
     private readonly Dictionary<string, List<SkillUseEvent>> damageTakenEvents = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> stunCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> skillIssueCounts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<(string Target, string Status), int> skillIssueStacks = new();
 
     private Dictionary<string, List<SkillUseEvent>>? seededEvents;
     private Dictionary<string, List<SkillUseEvent>>? seededDamageTakenEvents;
@@ -312,6 +313,7 @@ public class SkillTracker
             damageTakenEvents.Clear();
             stunCounts.Clear();
             skillIssueCounts.Clear();
+            skillIssueStacks.Clear();
             seededEvents = null;
             seededDamageTakenEvents = null;
             damageTypeCache.Clear();
@@ -540,9 +542,17 @@ public class SkillTracker
             if (string.Equals(statusName, "Vulnerability Up", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(statusName, "Damage Down", StringComparison.OrdinalIgnoreCase))
             {
+                int newStacks = 1;
+                if (line.Length > 9 && int.TryParse(line[9], out var parsed) && parsed > 0)
+                    newStacks = parsed;
+
                 lock (syncLock)
                 {
-                    skillIssueCounts[targetName] = skillIssueCounts.GetValueOrDefault(targetName) + 1;
+                    var key = (targetName.ToLowerInvariant(), statusName.ToLowerInvariant());
+                    var prevStacks = skillIssueStacks.GetValueOrDefault(key);
+                    var delta = newStacks - prevStacks;
+                    skillIssueCounts[targetName] = skillIssueCounts.GetValueOrDefault(targetName) + Math.Max(delta, 1);
+                    skillIssueStacks[key] = newStacks;
                 }
             }
         }
@@ -551,6 +561,15 @@ public class SkillTracker
             // LosesEffect
             var removalTime = timer?.ElapsedSeconds ?? 0f;
             statusTracker.OnStatusLost(sourceName, targetName, statusId, removalTime);
+
+            if (string.Equals(statusName, "Vulnerability Up", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(statusName, "Damage Down", StringComparison.OrdinalIgnoreCase))
+            {
+                lock (syncLock)
+                {
+                    skillIssueStacks.Remove((targetName.ToLowerInvariant(), statusName.ToLowerInvariant()));
+                }
+            }
         }
     }
 
