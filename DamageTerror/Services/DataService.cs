@@ -462,7 +462,7 @@ public class DataService : IDisposable
                     map[member.Name] = worldName;
             }
         }
-        catch (Exception ex) { log.Debug($"Party list unavailable: {ex.Message}"); }
+        catch { /* Expected when not on main thread */ }
 
         return map;
     }
