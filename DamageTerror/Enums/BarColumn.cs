@@ -42,7 +42,7 @@ public enum BarColumn
     MaxHealWard,
     PowerDrain,
     PowerHeal,
-    Stuns,
+    LegsSweeped,
     SkillIssue,
     RaidDps,
     RaidHps,

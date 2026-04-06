@@ -13,7 +13,7 @@ public static class MetricPicker
         ("Hit Stats", new[] { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses }),
         ("Defense", new[] { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct, BarColumn.HealsTaken }),
         ("Other", new[] { BarColumn.Deaths, BarColumn.Kills, BarColumn.CombatantDuration, BarColumn.PowerHeal }),
-        ("Brainrot", new[] { BarColumn.Stuns, BarColumn.SkillIssue }),
+        ("High-end Raiding", new[] { BarColumn.LegsSweeped, BarColumn.SkillIssue }),
 #if DEBUG
         ("Unknown", new[] { BarColumn.PowerDrain, BarColumn.AbsorbHeal, BarColumn.MaxHealWard }),
 #endif
@@ -26,7 +26,7 @@ public static class MetricPicker
         ("Hit Stats", new[] { TooltipField.Crit, TooltipField.DirectHit, TooltipField.CritDirectHit, TooltipField.HitRate, TooltipField.Swings, TooltipField.Hits, TooltipField.Misses }),
         ("Defense", new[] { TooltipField.DamageTaken, TooltipField.HealsTaken }),
         ("Other", new[] { TooltipField.Name, TooltipField.Job, TooltipField.Deaths, TooltipField.Kills, TooltipField.CombatantDuration }),
-        ("Brainrot", new[] { TooltipField.Stuns, TooltipField.SkillIssue }),
+        ("High-end Raiding", new[] { TooltipField.LegsSweeped, TooltipField.SkillIssue }),
     };
 
     public static readonly Dictionary<BarColumn, string> BarColumnLabels = new()
@@ -71,7 +71,7 @@ public static class MetricPicker
         { BarColumn.MaxHealWard, "Max Heal Ward" },
         { BarColumn.PowerDrain, "MP Drain" },
         { BarColumn.PowerHeal, "MP Recovery" },
-        { BarColumn.Stuns, "Stuns" },
+        { BarColumn.LegsSweeped, "Legs Sweeped" },
         { BarColumn.SkillIssue, "Skill Issue" },
         { BarColumn.RaidDps, "Group DPS" },
         { BarColumn.RaidHps, "Group HPS" },
@@ -112,12 +112,24 @@ public static class MetricPicker
         { TooltipField.HealCount, "Heal Count" },
         { TooltipField.DamageShield, "Damage Shield" },
         { TooltipField.MaxHealWard, "Max Heal Ward" },
-        { TooltipField.Stuns, "Stuns" },
+        { TooltipField.LegsSweeped, "Legs Sweeped" },
         { TooltipField.SkillIssue, "Skill Issue" },
         { TooltipField.RaidDps, "Group DPS" },
         { TooltipField.RaidHps, "Group HPS" },
         { TooltipField.TopDamageSkills, "Top Damage Skills" },
         { TooltipField.TopHealingSkills, "Top Healing Skills" },
+    };
+
+    public static readonly Dictionary<BarColumn, string> BarColumnDescriptions = new()
+    {
+        { BarColumn.LegsSweeped, "That move was a low blow..." },
+        { BarColumn.SkillIssue, "Ratio of damage taken to damage dealt. Higher values indicate taking more damage relative to output." },
+    };
+
+    public static readonly Dictionary<TooltipField, string> TooltipFieldDescriptions = new()
+    {
+        { TooltipField.LegsSweeped, "That move was a low blow..." },
+        { TooltipField.SkillIssue, "Ratio of damage taken to damage dealt. Higher values indicate taking more damage relative to output." },
     };
 
     public static string GetBarColumnLabel(BarColumn col) =>
@@ -135,7 +147,8 @@ public static class MetricPicker
         List<T> enabledItems,
         Func<T, string> getLabel,
         (string Name, T[] Items)[] categories,
-        Func<T, bool>? drawItemExtras = null) where T : struct, Enum
+        Func<T, bool>? drawItemExtras = null,
+        Func<T, string?>? getDescription = null) where T : struct, Enum
     {
         var changed = false;
 
@@ -179,6 +192,13 @@ public static class MetricPicker
                 changed = true;
                 ImGui.PopID();
                 continue;
+            }
+
+            if (getDescription != null)
+            {
+                var desc = getDescription(item);
+                if (desc != null && ImGui.IsItemHovered())
+                    ImGui.SetTooltip(desc);
             }
 
             if (drawItemExtras != null)
@@ -231,6 +251,13 @@ public static class MetricPicker
                             changed = true;
                         }
 
+                        if (getDescription != null)
+                        {
+                            var desc = getDescription(item);
+                            if (desc != null && ImGui.IsItemHovered())
+                                ImGui.SetTooltip(desc);
+                        }
+
                         ImGui.PopID();
                     }
 
@@ -253,7 +280,8 @@ public static class MetricPicker
         HashSet<T> enabledSet,
         Func<T, string> getLabel,
         (string Name, T[] Items)[] categories,
-        Dictionary<string, List<T>>? sectionOrder = null) where T : struct, Enum
+        Dictionary<string, List<T>>? sectionOrder = null,
+        Func<T, string?>? getDescription = null) where T : struct, Enum
     {
         var changed = false;
 
@@ -326,6 +354,13 @@ public static class MetricPicker
                     else
                         enabledSet.Remove(item);
                     changed = true;
+                }
+
+                if (getDescription != null)
+                {
+                    var desc = getDescription(item);
+                    if (desc != null && ImGui.IsItemHovered())
+                        ImGui.SetTooltip(desc);
                 }
 
                 ImGui.PopID();

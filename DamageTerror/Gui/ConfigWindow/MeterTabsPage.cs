@@ -357,7 +357,8 @@ public static class MeterTabsPage
             if (MetricPicker.Draw("barCols", enabledCols,
                 MetricPicker.GetBarColumnLabel,
                 MetricPicker.BarColumnCategories,
-                barColExtras))
+                barColExtras,
+                c => MetricPicker.BarColumnDescriptions.GetValueOrDefault(c)))
             {
                 var newEnabledSet = new HashSet<BarColumn>(enabledCols);
                 var disabledOrder = tab.ColumnOrder.Where(c => !newEnabledSet.Contains(c)).ToList();
@@ -388,7 +389,8 @@ public static class MeterTabsPage
         tab.StatusBarMetrics ??= new List<BarColumn> { BarColumn.Dps, BarColumn.RaidDps };
         changed |= MetricPicker.Draw("statusBar", tab.StatusBarMetrics,
             MetricPicker.GetBarColumnLabel,
-            MetricPicker.BarColumnCategories);
+            MetricPicker.BarColumnCategories,
+            getDescription: c => MetricPicker.BarColumnDescriptions.GetValueOrDefault(c));
         }
 
         ImGui.Separator();
@@ -409,7 +411,8 @@ public static class MeterTabsPage
 
             changed |= MetricPicker.Draw("tooltip", tab.TooltipFields,
                 MetricPicker.GetTooltipFieldLabel,
-                MetricPicker.TooltipFieldCategories);
+                MetricPicker.TooltipFieldCategories,
+                getDescription: f => MetricPicker.TooltipFieldDescriptions.GetValueOrDefault(f));
         }
 
         ImGui.Separator();
@@ -473,7 +476,8 @@ public static class MeterTabsPage
             changed |= MetricPicker.DrawCategorized("detailVis", tab.DetailVisibleColumns,
                 MetricPicker.GetBarColumnLabel,
                 MetricPicker.BarColumnCategories,
-                tab.DetailSectionOrder);
+                tab.DetailSectionOrder,
+                c => MetricPicker.BarColumnDescriptions.GetValueOrDefault(c));
 
             ImGui.Spacing();
 
