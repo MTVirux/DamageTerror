@@ -77,9 +77,7 @@ public class CombatantDetailPanel
 
         ImGui.Indent(config.DetailIndent);
 
-        var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.GetFontScale(config.DetailFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var detailFont = FontScope.Push(config.GetFontScale(config.DetailFontSize));
 
         var showDetailsTab = activeTab?.DetailShowDetailsTab ?? config.DetailShowDetailsTab;
         var showSkillsTab = activeTab?.DetailShowSkillsTab ?? config.DetailShowSkillsTab;
@@ -115,8 +113,7 @@ public class CombatantDetailPanel
             ImGui.EndTabBar();
         }
 
-        ImGui.GetFont().Scale = prevScale;
-        ImGui.PopFont();
+        detailFont.Dispose();
 
         ImGui.Unindent(config.DetailIndent);
 
@@ -169,9 +166,7 @@ public class CombatantDetailPanel
         var graphH = config.GraphHeight;
         var thickness = config.GraphLineThickness;
 
-        var prevGraphScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.GetFontScale(config.GraphFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var graphFont = FontScope.Push(config.GetFontScale(config.GraphFontSize));
 
         var times = new float[samples.Count];
         var dpsVals = config.GraphShowDps ? new float[samples.Count] : null;
@@ -486,9 +481,6 @@ public class CombatantDetailPanel
 
         ImPlot.PopStyleColor(2); // PlotBg, FrameBg
 
-        ImGui.PopFont();
-        ImGui.GetFont().Scale = prevGraphScale;
-
         ImGui.Spacing();
     }
 
@@ -607,9 +599,7 @@ public class CombatantDetailPanel
         var rounding = config.BuffBarRounding;
         var colPad = config.BuffColumnPadding;
 
-        var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.GetFontScale(config.BuffFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var buffFont = FontScope.Push(config.GetFontScale(config.BuffFontSize));
 
         var textHeight = ImGui.CalcTextSize("X").Y;
         var textYOff = (rowHeight - textHeight) * 0.5f;
@@ -688,9 +678,6 @@ public class CombatantDetailPanel
 
             rowIdx++;
         }
-
-        ImGui.GetFont().Scale = prevScale;
-        ImGui.PopFont();
     }
 
     private void DrawSkillsTab(CombatantEntry combatant, int index, MeterTab? activeTab)
@@ -929,9 +916,7 @@ public class CombatantDetailPanel
         var textColor = ImGui.ColorConvertFloat4ToU32(config.SkillTextColor);
         var skillRounding = config.SkillBarRounding;
 
-        var prevSkillScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.GetFontScale(config.SkillFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var skillFont = FontScope.Push(config.GetFontScale(config.SkillFontSize));
 
         var maxCount = activeTab?.MaxSkillBreakdownCount ?? config.MaxSkillBreakdownCount;
         var topSkills = maxCount > 0 ? skills.Take(maxCount).ToList() : skills;
@@ -1075,8 +1060,6 @@ public class CombatantDetailPanel
             skillIdx++;
         }
 
-        ImGui.GetFont().Scale = prevSkillScale;
-        ImGui.PopFont();
     }
 
     public void CollapseAll()

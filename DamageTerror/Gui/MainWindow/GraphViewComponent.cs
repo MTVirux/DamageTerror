@@ -79,9 +79,7 @@ public class GraphViewComponent
             ? Math.Max(100f, ImGui.GetContentRegionAvail().Y)
             : config.GraphViewHeight;
 
-        var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.GetFontScale(config.GraphViewFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var fontScope = FontScope.Push(config.GetFontScale(config.GraphViewFontSize));
 
         var maxTime = 0f;
         var maxVal = 0f;
@@ -488,9 +486,6 @@ public class GraphViewComponent
             ImPlot.PopStyleColor(); // AxisGrid
 
         ImPlot.PopStyleColor(2); // PlotBg, FrameBg
-
-        ImGui.PopFont();
-        ImGui.GetFont().Scale = prevScale;
     }
 
     private static void FindNearest(SkillUseEvent ev, float[] times, float[] values,

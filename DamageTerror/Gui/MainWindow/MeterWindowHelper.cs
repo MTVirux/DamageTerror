@@ -99,9 +99,7 @@ internal static class MeterWindowHelper
                 ImGui.ColorConvertFloat4ToU32(headerBg));
         }
 
-        var prevHdrScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.GetFontScale(config.HeaderFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var headerFont = FontScope.Push(config.GetFontScale(config.HeaderFontSize));
 
         var textY = cursorPos.Y + (headerHeight - ImGui.GetTextLineHeight()) * 0.5f;
         var textStartX = cursorPos.X + config.BarLeftPadding;
@@ -130,20 +128,21 @@ internal static class MeterWindowHelper
         var columnOrder = activeTab?.ColumnOrder ?? new List<BarColumn>();
         CombatantBarComponent.EnsureColumnOrderComplete(columnOrder);
 
-        ImGui.PopFont();
-        ImGui.GetFont().Scale = config.GetFontScale(config.BarFontSize);
-        ImGui.PushFont(ImGui.GetFont());
-        var colWidths = new Dictionary<BarColumn, float>();
-        foreach (var col in columnOrder)
+        // Measure column widths at bar font size
+        headerFont.Dispose();
+        Dictionary<BarColumn, float> colWidths;
+        using (var barFont = FontScope.Push(config.GetFontScale(config.BarFontSize)))
         {
-            if (CombatantBarComponent.ColumnWidthTemplates.TryGetValue(col, out var template))
-                colWidths[col] = ImGui.CalcTextSize(template).X;
-            else
-                colWidths[col] = 0f;
+            colWidths = new Dictionary<BarColumn, float>();
+            foreach (var col in columnOrder)
+            {
+                if (CombatantBarComponent.ColumnWidthTemplates.TryGetValue(col, out var template))
+                    colWidths[col] = ImGui.CalcTextSize(template).X;
+                else
+                    colWidths[col] = 0f;
+            }
         }
-        ImGui.PopFont();
-        ImGui.GetFont().Scale = config.GetFontScale(config.HeaderFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var headerFont2 = FontScope.Push(config.GetFontScale(config.HeaderFontSize));
 
         for (var ci = columnOrder.Count - 1; ci >= 0; ci--)
         {
@@ -169,8 +168,7 @@ internal static class MeterWindowHelper
             rightX -= colSpacing;
         }
 
-        ImGui.PopFont();
-        ImGui.GetFont().Scale = prevHdrScale;
+        headerFont2.Dispose();
 
         if (config.HeaderSeparator)
         {

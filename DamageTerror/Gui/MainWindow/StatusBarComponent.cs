@@ -50,9 +50,7 @@ public class StatusBarComponent
                 ImGui.ColorConvertFloat4ToU32(bgColor));
         }
 
-        var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.GetFontScale(config.StatusBarFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var fontScope = FontScope.Push(config.GetFontScale(config.StatusBarFontSize));
 
         var isActive = encounter.Encounter.IsActive;
         var textColor = ImGui.ColorConvertFloat4ToU32(isActive ? config.StatusBarActiveColor : config.StatusBarInactiveColor);
@@ -101,8 +99,5 @@ public class StatusBarComponent
         }
 
         ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + height));
-
-        ImGui.GetFont().Scale = prevScale;
-        ImGui.PopFont();
     }
 }

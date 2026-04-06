@@ -463,9 +463,7 @@ public class MainWindow : Window, IDisposable
         var drawList = ImGui.GetWindowDrawList();
         var cursor = ImGui.GetCursorScreenPos();
 
-        var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.GetFontScale(config.TabButtonFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var tabFont = FontScope.Push(config.GetFontScale(config.TabButtonFontSize));
 
         for (var i = 0; i < tabCount; i++)
         {
@@ -524,8 +522,7 @@ public class MainWindow : Window, IDisposable
             cursor = new Vector2(cursor.X + w + spacing, cursor.Y);
         }
 
-        ImGui.GetFont().Scale = prevScale;
-        ImGui.PopFont();
+        tabFont.Dispose();
 
         ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().X, cursor.Y + buttonHeight));
     }

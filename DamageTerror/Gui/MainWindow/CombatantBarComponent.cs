@@ -164,9 +164,7 @@ public class CombatantBarComponent
         {
             DrawTooltip(combatant, activeTab);
         }
-        var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.GetFontScale(config.BarFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var fontScope = FontScope.Push(config.GetFontScale(config.BarFontSize));
 
         var textY = cursorPos.Y + (barHeight - ImGui.GetTextLineHeight()) * 0.5f;
         var textStartX = cursorPos.X + config.BarLeftPadding;
@@ -235,8 +233,7 @@ public class CombatantBarComponent
             rightX -= colSpacing;
         }
 
-        ImGui.GetFont().Scale = prevScale;
-        ImGui.PopFont();
+        fontScope.Dispose();
 
         if (config.BarSpacing > 0)
         {
@@ -280,9 +277,7 @@ public class CombatantBarComponent
 
         ImGui.BeginTooltip();
 
-        var prevScale = ImGui.GetFont().Scale;
-        ImGui.GetFont().Scale = config.GetFontScale(config.TooltipFontSize);
-        ImGui.PushFont(ImGui.GetFont());
+        using var tooltipFont = FontScope.Push(config.GetFontScale(config.TooltipFontSize));
 
         var labelColor = config.TooltipLabelColor;
         var textColor = config.TooltipTextColor;
@@ -290,8 +285,7 @@ public class CombatantBarComponent
         var tooltipFields = activeTab?.TooltipFields ?? config.TooltipFields;
         if (tooltipFields.Count == 0)
         {
-            ImGui.GetFont().Scale = prevScale;
-            ImGui.PopFont();
+            tooltipFont.Dispose();
             ImGui.EndTooltip();
             ImGui.PopStyleColor();
             ImGui.PopStyleVar(2);
@@ -312,8 +306,7 @@ public class CombatantBarComponent
             ImGui.TextColored(textColor, value);
         }
 
-        ImGui.GetFont().Scale = prevScale;
-        ImGui.PopFont();
+        tooltipFont.Dispose();
 
         ImGui.EndTooltip();
 
