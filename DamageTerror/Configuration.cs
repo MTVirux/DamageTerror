@@ -213,6 +213,8 @@ public class Configuration : IPluginConfiguration
         { BarColumn.SkillIssue, "SI" },
         { BarColumn.RaidDps, "gDPS" },
         { BarColumn.RaidHps, "gHPS" },
+        { BarColumn.DpsRank, "Rank" },
+        { BarColumn.HpsRank, "Rank" },
     };
 
     public static readonly Dictionary<BarColumn, string> FullColumnNames = new()
@@ -261,6 +263,8 @@ public class Configuration : IPluginConfiguration
         { BarColumn.SkillIssue, "Skill Issue" },
         { BarColumn.RaidDps, "Raid DPS" },
         { BarColumn.RaidHps, "Raid HPS" },
+        { BarColumn.DpsRank, "DPS Rank" },
+        { BarColumn.HpsRank, "HPS Rank" },
     };
 
     public Vector4 DetailBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.80f);

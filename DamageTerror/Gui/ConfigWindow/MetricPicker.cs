@@ -12,6 +12,7 @@ public static class MetricPicker
         ("Healing", new[] { BarColumn.Hps, BarColumn.InstantHps, BarColumn.Healed, BarColumn.HealPercent, BarColumn.Overheal, BarColumn.OverhealAmount, BarColumn.CritHealPct, BarColumn.MaxHeal, BarColumn.MaxHealValue, BarColumn.HealCount, BarColumn.RaidHps }),
         ("Hit Stats", new[] { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses }),
         ("Defense", new[] { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct, BarColumn.HealsTaken }),
+        ("Group", new[] { BarColumn.DpsRank, BarColumn.HpsRank }),
         ("Other", new[] { BarColumn.Deaths, BarColumn.Kills, BarColumn.CombatantDuration, BarColumn.PowerHeal }),
         ("High-end Raiding", new[] { BarColumn.LegsSweeped, BarColumn.SkillIssue }),
 #if DEBUG
@@ -75,6 +76,8 @@ public static class MetricPicker
         { BarColumn.SkillIssue, "Skill Issue" },
         { BarColumn.RaidDps, "Group DPS" },
         { BarColumn.RaidHps, "Group HPS" },
+        { BarColumn.DpsRank, "DPS Rank" },
+        { BarColumn.HpsRank, "HPS Rank" },
     };
 
     public static readonly Dictionary<TooltipField, string> TooltipFieldLabels = new()

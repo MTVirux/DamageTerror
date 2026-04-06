@@ -46,4 +46,6 @@ public enum BarColumn
     SkillIssue,
     RaidDps,
     RaidHps,
+    DpsRank,
+    HpsRank,
 }

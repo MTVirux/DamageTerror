@@ -77,7 +77,7 @@ public class StatusBarComponent
             {
                 if (hasLeftContent)
                 {
-                    var sep = " / ";
+                    var sep = " | ";
                     drawList.AddText(new Vector2(x, textY), labelColor, sep);
                     x += ImGui.CalcTextSize(sep).X;
                 }

@@ -267,6 +267,7 @@ public class MainWindow : Window, IDisposable
         if (encounter != null)
         {
             combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
+            StampRanks(combatants);
             if (combatants.Count > 0)
                 maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
         }
@@ -333,6 +334,7 @@ public class MainWindow : Window, IDisposable
                             }
 
                             combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
+                            StampRanks(combatants);
                             maxVal = combatants.Count > 0
                                 ? combatants.Sum(c => CombatantBarComponent.GetSortValue(c, sortBy))
                                 : 0;
@@ -718,5 +720,24 @@ public class MainWindow : Window, IDisposable
         });
 
         return combatants;
+    }
+
+    internal static void StampRanks(List<CombatantEntry> combatants)
+    {
+        var total = combatants.Count;
+
+        var byDps = combatants.OrderByDescending(c => c.EncDps).ToList();
+        for (var i = 0; i < byDps.Count; i++)
+        {
+            byDps[i].DpsRank = i + 1;
+            byDps[i].DpsRankTotal = total;
+        }
+
+        var byHps = combatants.OrderByDescending(c => c.EncHps).ToList();
+        for (var i = 0; i < byHps.Count; i++)
+        {
+            byHps[i].HpsRank = i + 1;
+            byHps[i].HpsRankTotal = total;
+        }
     }
 }

@@ -113,6 +113,18 @@ public class CombatantEntry
 
     public bool IsLocalPlayer { get; set; }
 
+    [Newtonsoft.Json.JsonIgnore]
+    public int DpsRank { get; set; }
+
+    [Newtonsoft.Json.JsonIgnore]
+    public int DpsRankTotal { get; set; }
+
+    [Newtonsoft.Json.JsonIgnore]
+    public int HpsRank { get; set; }
+
+    [Newtonsoft.Json.JsonIgnore]
+    public int HpsRankTotal { get; set; }
+
     /// <summary>Home world name (e.g. "Spriggan"). Resolved from party list at parse time, persisted with encounter history.</summary>
     public string HomeWorld { get; set; } = string.Empty;
 }

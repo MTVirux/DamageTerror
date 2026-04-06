@@ -65,6 +65,8 @@ public class CombatantBarComponent
         { BarColumn.SkillIssue, "00" },
         { BarColumn.RaidDps, "000.0K" },
         { BarColumn.RaidHps, "000.0K" },
+        { BarColumn.DpsRank, "00/00" },
+        { BarColumn.HpsRank, "00/00" },
     };
 
     public static string GetColumnDisplayValue(CombatantEntry combatant, BarColumn col,
@@ -114,6 +116,8 @@ public class CombatantBarComponent
         BarColumn.SkillIssue => $"{combatant.SkillIssue}",
         BarColumn.RaidDps => ValueFormatter.FormatColumn(combatant.RaidDps, config, BarColumn.RaidDps, activeTab),
         BarColumn.RaidHps => ValueFormatter.FormatColumn(combatant.RaidHps, config, BarColumn.RaidHps, activeTab),
+        BarColumn.DpsRank => $"{combatant.DpsRank}/{combatant.DpsRankTotal}",
+        BarColumn.HpsRank => $"{combatant.HpsRank}/{combatant.HpsRankTotal}",
         _ => string.Empty,
     };
 
