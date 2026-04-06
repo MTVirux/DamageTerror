@@ -141,6 +141,14 @@ public class SkillTracker
             }
         }
 
+        // Count Leg Sweep / Low Blow uses regardless of whether they deal damage.
+        if (string.Equals(skillName, "Leg Sweep", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(skillName, "Low Blow", StringComparison.OrdinalIgnoreCase))
+        {
+            lock (syncLock)
+                stunCounts[sourceName] = stunCounts.GetValueOrDefault(sourceName) + 1;
+        }
+
         if (dmgAmount <= 0 && healAmount <= 0)
             return;
 
@@ -153,10 +161,6 @@ public class SkillTracker
 
                 if (!string.IsNullOrEmpty(targetName))
                     RecordDamageTakenEvent(targetName, skillName, dmgAmount, dmgSeverity);
-
-                if (string.Equals(skillName, "Leg Sweep", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(skillName, "Low Blow", StringComparison.OrdinalIgnoreCase))
-                    stunCounts[sourceName] = stunCounts.GetValueOrDefault(sourceName) + 1;
             }
             if (healAmount > 0)
             {
