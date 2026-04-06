@@ -15,6 +15,7 @@ public class DataService : IDisposable
     private bool playerChanged;
     private float lastPeriodicSaveTime;
     private DateTime lastCombatDataTime;
+    private readonly List<string[]> pendingLogLines = new();
 
     /// <summary>Interval in seconds between periodic graph data captures during active encounters.</summary>
     private const float PeriodicSaveInterval = 30f;
@@ -290,6 +291,14 @@ public class DataService : IDisposable
                 if (outgoing.DamageTakenEvents.Count > 0)
                     SkillTracker.SeedHistoricalDamageTakenEvents(outgoing.DamageTakenEvents);
             }
+
+            // Replay any log lines that arrived between the last CombatData
+            // and this one so the first skill of a new encounter is not lost.
+            lock (pendingLogLines)
+            {
+                foreach (var pending in pendingLogLines)
+                    SkillTracker.ProcessLogLine(pending);
+            }
         }
 
         wasActive = snapshot.Encounter.IsActive;
@@ -402,6 +411,9 @@ public class DataService : IDisposable
 
         if (archived)
             Store.Save();
+
+        lock (pendingLogLines)
+            pendingLogLines.Clear();
     }
 
     private void CaptureGraphData(EncounterSnapshot target)
@@ -457,6 +469,9 @@ public class DataService : IDisposable
 
     private void OnLogLine(string[] line)
     {
+        lock (pendingLogLines)
+            pendingLogLines.Add(line);
+
         SkillTracker.ProcessLogLine(line);
 
         // Extract player name from LogLine type 02 (ChangePrimaryPlayer) as a
