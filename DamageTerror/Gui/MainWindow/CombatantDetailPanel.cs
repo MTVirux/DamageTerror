@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Bindings.ImPlot;
+using DamageTerror.Gui;
 using DamageTerror.Gui.ConfigWindow;
 using DamageTerror.Services;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
@@ -58,6 +59,11 @@ public class CombatantDetailPanel
     }
 
     public bool IsExpanded(int index) => expandedIndex == index;
+
+    public void Render(RenderContext ctx, CombatantEntry combatant, int index)
+    {
+        Render(combatant, index, ctx.Encounter, ctx.IsLive, ctx.ActiveTab);
+    }
 
     public void Render(CombatantEntry combatant, int index, EncounterSnapshot? snapshot, bool isLive, MeterTab? activeTab = null)
     {

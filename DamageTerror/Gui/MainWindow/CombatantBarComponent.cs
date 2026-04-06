@@ -3,6 +3,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
+using DamageTerror.Gui;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
@@ -115,6 +116,11 @@ public class CombatantBarComponent
         BarColumn.RaidHps => ValueFormatter.FormatColumn(combatant.RaidHps, config, BarColumn.RaidHps, activeTab),
         _ => string.Empty,
     };
+
+    public bool Render(RenderContext ctx, CombatantEntry combatant, int index)
+    {
+        return Render(combatant, ctx.MaxValue, index, ctx.SortBy, ctx.ActiveTab, ctx.CurrentPlayerName);
+    }
 
     public bool Render(CombatantEntry combatant, double maxValue, int index, SortField sortBy, MeterTab? activeTab, string currentPlayerName = "")
     {
