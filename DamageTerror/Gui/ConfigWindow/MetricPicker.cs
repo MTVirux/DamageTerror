@@ -151,6 +151,8 @@ public static class MetricPicker
         { BarColumn.LegsSweeped, "That move was a low blow..." },
         { BarColumn.SkillIssue, "Stand in the fire DPS higher. Go for a High Score!" },
         { BarColumn.DamageDown, "Count of Damage Down debuffs received." },
+        { BarColumn.GroupSkillIssue, "Stand in the fire DPS higher. Go for a High Score!" },
+        { BarColumn.GroupDamageDown, "Count of Damage Down debuffs received." },
     };
 
     public static readonly Dictionary<TooltipField, string> TooltipFieldDescriptions = new()
