@@ -258,6 +258,7 @@ public class DataService : IDisposable
 
         // Detect new encounter boundary — ensure the outgoing encounter
         // has a final skills snapshot before resetting the tracker.
+        var isNewEncounter = false;
         if (snapshot.Encounter.IsActive && !wasActive)
         {
             var outgoing = Store.ActiveEncounter;
@@ -278,6 +279,7 @@ public class DataService : IDisposable
             EncounterTimer.Restart();
             lastPeriodicSaveTime = 0f;
 
+            isNewEncounter = true;
             OnNewEncounter?.Invoke();
 
             // Re-seed historical data so the graph remains visible while
@@ -376,7 +378,7 @@ public class DataService : IDisposable
         }
 
         // Track peak DPS as the highest instantaneous DPS achieved during the encounter.
-        if (prev != null)
+        if (prev != null && !isNewEncounter)
         {
             foreach (var c in snapshot.Combatants)
             {
