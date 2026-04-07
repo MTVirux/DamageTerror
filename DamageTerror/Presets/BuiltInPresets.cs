@@ -121,7 +121,6 @@ public static class BuiltInPresets
         // Detail Panel
         DetailBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.85f),
         DetailLabelColor = new(0.6f, 0.6f, 0.6f, 1f),
-        DetailDeathColor = new(1f, 0.3f, 0.3f, 1f),
         DetailIndent = 6f,
         DetailFontSize = 12.3f,
 
@@ -308,7 +307,6 @@ public static class BuiltInPresets
         // Detail Panel
         DetailBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.85f),
         DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f),
-        DetailDeathColor = new(1f, 0.35f, 0.30f, 1f),
         DetailIndent = 8f,
         DetailFontSize = 12.9f,
 
@@ -495,7 +493,6 @@ public static class BuiltInPresets
         // Detail Panel
         DetailBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.75f),
         DetailLabelColor = new(0.6f, 0.6f, 0.6f, 1f),
-        DetailDeathColor = new(1f, 0.3f, 0.3f, 1f),
         DetailIndent = 6f,
         DetailFontSize = 11.5f,
 
@@ -707,7 +704,6 @@ public static class BuiltInPresets
         // Detail Panel
         DetailBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.85f),
         DetailLabelColor = new(0.65f, 0.65f, 0.70f, 1f),
-        DetailDeathColor = new(1f, 0.30f, 0.35f, 1f),
         DetailIndent = 8f,
         DetailFontSize = 13.3f,
 
@@ -894,7 +890,6 @@ public static class BuiltInPresets
         // Detail Panel
         DetailBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.85f),
         DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f),
-        DetailDeathColor = new(1f, 0.3f, 0.3f, 1f),
         DetailIndent = 4f,
         DetailFontSize = 11.9f,
 
@@ -1106,7 +1101,6 @@ public static class BuiltInPresets
         // Detail Panel
         DetailBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.82f),
         DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f),
-        DetailDeathColor = new(1f, 0.3f, 0.3f, 1f),
         DetailIndent = 8f,
         DetailFontSize = 12.9f,
 

@@ -379,7 +379,6 @@ public class Configuration : IPluginConfiguration
 
     public Vector4 DetailBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.80f);
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
-    public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
     public float DetailFontSize { get; set; } = FontDefaults.BaseSizePt;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
