@@ -33,7 +33,7 @@ public static class JobColorHelper
         { "Pld", new Vector4(0.65882355f, 0.8235294f, 0.9019608f, 1.0f) },
         { "War", new Vector4(0.8117647f, 0.14901961f, 0.12941177f, 1.0f) },
         { "Drk", new Vector4(0.81960785f, 0.14901961f, 0.8f, 1.0f) },
-        { "Gnb", new Vector4(0.25f, 0.45f, 0.65f, 1.0f) },
+        { "Gnb", new Vector4(0.47450981f, 0.42745098f, 0.18823530f, 1.0f) },
 
         { "Whm", new Vector4(1.0f, 0.9411765f, 0.8627451f, 1.0f) },
         { "Sch", new Vector4(0.5254902f, 0.34117648f, 1.0f, 1.0f) },
