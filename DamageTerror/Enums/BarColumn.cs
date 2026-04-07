@@ -59,6 +59,7 @@ public enum BarColumn
     GroupOverheal,
     GroupInstantDps,
     GroupInstantHps,
+    GroupSkillIssue,
 
     // Group averages (mean of filtered combatants)
     GroupAvgDps,

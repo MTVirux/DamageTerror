@@ -12,6 +12,7 @@ public sealed class GroupAggregates
     public long Overheal { get; init; }
     public double InstantDps { get; init; }
     public double InstantHps { get; init; }
+    public int SkillIssue { get; init; }
 
     // Averages (mean)
     public double AvgDps { get; init; }
@@ -35,7 +36,7 @@ public sealed class GroupAggregates
 
         double sumDps = 0, sumHps = 0, sumInstantDps = 0, sumInstantHps = 0;
         long sumDamage = 0, sumHealed = 0, sumDamageTaken = 0, sumOverheal = 0;
-        int sumDeaths = 0;
+        int sumDeaths = 0, sumSkillIssue = 0;
         double sumCrit = 0, sumDH = 0, sumCDH = 0, sumOH = 0, sumCH = 0, sumHR = 0;
         double maxPeakDps = 0;
         long maxHit = 0, maxHeal = 0;
@@ -48,6 +49,7 @@ public sealed class GroupAggregates
             sumHealed += c.Healed;
             sumDamageTaken += c.DamageTaken;
             sumDeaths += c.Deaths;
+            sumSkillIssue += c.SkillIssue;
             sumOverheal += c.OverhealAmount;
             sumInstantDps += c.InstantDps;
             sumInstantHps += c.InstantHps;
@@ -73,6 +75,7 @@ public sealed class GroupAggregates
             Healed = sumHealed,
             DamageTaken = sumDamageTaken,
             Deaths = sumDeaths,
+            SkillIssue = sumSkillIssue,
             Overheal = sumOverheal,
             InstantDps = sumInstantDps,
             InstantHps = sumInstantHps,

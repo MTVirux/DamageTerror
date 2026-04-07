@@ -155,6 +155,7 @@ public class CombatantBarComponent
             BarColumn.GroupHealed => ValueFormatter.FormatColumn(group.Healed, config, BarColumn.GroupHealed, activeTab),
             BarColumn.GroupDamageTaken => ValueFormatter.FormatColumn(group.DamageTaken, config, BarColumn.GroupDamageTaken, activeTab),
             BarColumn.GroupDeaths => $"{group.Deaths}",
+            BarColumn.GroupSkillIssue => $"{group.SkillIssue}",
             BarColumn.GroupOverheal => ValueFormatter.FormatColumn(group.Overheal, config, BarColumn.GroupOverheal, activeTab),
             BarColumn.GroupInstantDps => ValueFormatter.FormatColumn(group.InstantDps, config, BarColumn.GroupInstantDps, activeTab),
             BarColumn.GroupInstantHps => ValueFormatter.FormatColumn(group.InstantHps, config, BarColumn.GroupInstantHps, activeTab),
@@ -181,6 +182,7 @@ public class CombatantBarComponent
         BarColumn.GroupAvgDps, BarColumn.GroupAvgHps, BarColumn.GroupAvgCrit,
         BarColumn.GroupAvgDirectHit, BarColumn.GroupAvgCritDirectHit, BarColumn.GroupAvgOverhealPct,
         BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate,
+        BarColumn.GroupSkillIssue,
         BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue, BarColumn.GroupMaxHealValue,
     };
 

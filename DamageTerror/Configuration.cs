@@ -222,6 +222,7 @@ public class Configuration : IPluginConfiguration
         { BarColumn.GroupDamageTaken, "gΣTkn" },
         { BarColumn.GroupDeaths, "gΣD" },
         { BarColumn.GroupOverheal, "gΣOH" },
+        { BarColumn.GroupSkillIssue, "gΣSI" },
         { BarColumn.GroupInstantDps, "gΣiDPS" },
         { BarColumn.GroupInstantHps, "gΣiHPS" },
         { BarColumn.GroupAvgDps, "gx̄DPS" },
