@@ -149,15 +149,15 @@ public static class MetricPicker
     public static readonly Dictionary<BarColumn, string> BarColumnDescriptions = new()
     {
         { BarColumn.LegsSweeped, "That move was a low blow..." },
-        { BarColumn.SkillIssue, "Ratio of damage taken to damage dealt. Higher values indicate taking more damage relative to output." },
-        { BarColumn.DamageDown, "Count of Damage Down debuffs received (excludes Vulnerability Up)." },
+        { BarColumn.SkillIssue, "Stand in the fire DPS higher. Go for an High Score!" },
+        { BarColumn.DamageDown, "Count of Damage Down debuffs received." },
     };
 
     public static readonly Dictionary<TooltipField, string> TooltipFieldDescriptions = new()
     {
         { TooltipField.LegsSweeped, "That move was a low blow..." },
-        { TooltipField.SkillIssue, "Ratio of damage taken to damage dealt. Higher values indicate taking more damage relative to output." },
-        { TooltipField.DamageDown, "Count of Damage Down debuffs received (excludes Vulnerability Up)." },
+        { TooltipField.SkillIssue, "Stand in the fire DPS higher. Go for an High Score!" },
+        { TooltipField.DamageDown, "Count of Damage Down debuffs received." },
     };
 
     public static string GetBarColumnLabel(BarColumn col) =>
