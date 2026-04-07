@@ -968,6 +968,28 @@ public class AppearanceTab
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.Spacing();
+        ImGui.TextDisabled("Skill Name Abbreviation");
+        ImGui.TextDisabled("Shorten Max Hit / Max Heal skill names when they exceed this length.");
+        ImGui.TextDisabled("Each word after the first is replaced by its initial. 0 = disabled.");
+
+        var skillLen = config.MaxHitSkillNameLength;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderInt("Max skill name length", ref skillLen, 0, 30))
+        {
+            config.MaxHitSkillNameLength = skillLen;
+            changed = true;
+        }
+
+        if (config.MaxHitSkillNameLength > 0)
+        {
+            ImGui.SameLine();
+            var preview = ValueFormatter.AbbreviateSkillName("Midare Setsugekka", config.MaxHitSkillNameLength);
+            ImGui.TextDisabled($"(e.g. Midare Setsugekka → {preview})");
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
         ImGui.TextDisabled("Preview");
 
         if (ImGui.BeginTable("##fmtPreview", 2, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp))

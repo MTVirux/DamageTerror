@@ -167,6 +167,8 @@ public class Configuration : IPluginConfiguration
     public bool ShowJobAbbrevOnBar { get; set; } = true;
     public bool ShowRankNumber { get; set; } = false;
 
+    public int MaxHitSkillNameLength { get; set; } = 0;
+
     public static readonly Dictionary<BarColumn, string> DefaultHeaderLabels = new()
     {
         { BarColumn.Dps, "DPS" },

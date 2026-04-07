@@ -40,6 +40,18 @@ public static class ValueFormatter
         return value.ToString($"F{decimals}") + "%";
     }
 
+    public static string AbbreviateSkillName(string name, int maxLength)
+    {
+        if (maxLength <= 0 || string.IsNullOrEmpty(name) || name.Length <= maxLength)
+            return name;
+
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length <= 1)
+            return name;
+
+        return string.Concat(words.Select(w => w[0]));
+    }
+
     public static string FormatColumn(double value, Configuration config, BarColumn column, MeterTab? activeTab)
     {
         if (activeTab?.ColumnFormatOverrides.TryGetValue(column, out var ov) == true)
