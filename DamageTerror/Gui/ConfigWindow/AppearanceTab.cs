@@ -407,7 +407,6 @@ public class AppearanceTab
             PresetRow("Font Size", $"{preset.DetailFontSize:0.#}pt");
             PresetRow("Indent", $"{preset.DetailIndent:0}px");
             PresetColor("Label Color", preset.DetailLabelColor);
-            PresetColor("Death Color", preset.DetailDeathColor);
             ImGui.Unindent();
         }
 
@@ -1305,6 +1304,94 @@ public class AppearanceTab
     {
         var changed = false;
 
+        if (ImGui.CollapsingHeader("Layout", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+        var detailIndent = config.DetailIndent;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Indent", ref detailIndent, 0.0f, 24.0f, "%.0f px"))
+        {
+            config.DetailIndent = detailIndent;
+            changed = true;
+        }
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Colors##details", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+        changed |= ConfigHelpers.ColorEditProp("Background", config.DetailBackgroundColor, v => config.DetailBackgroundColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Label color", config.DetailLabelColor, v => config.DetailLabelColor = v);
+
+        ImGui.Spacing();
+
+        if (ImGui.Button("Reset Details"))
+        {
+            config.DetailBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
+            config.DetailLabelColor = new Vector4(0.7f, 0.7f, 0.7f, 1f);
+            config.DetailIndent = 8.0f;
+            config.DetailFontSize = 14f;
+            changed = true;
+        }
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Skill Breakdown — Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+        var skillRowHeight = config.SkillRowHeight;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Row height", ref skillRowHeight, 10.0f, 30.0f, "%.0f px"))
+        {
+            config.SkillRowHeight = skillRowHeight;
+            changed = true;
+        }
+
+        var skillColPad = config.SkillColumnPadding;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Column padding", ref skillColPad, 0.0f, 16.0f, "%.0f px"))
+        {
+            config.SkillColumnPadding = skillColPad;
+            changed = true;
+        }
+
+        var skillRounding = config.SkillBarRounding;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.SliderFloat("Bar rounding##skills", ref skillRounding, 0.0f, 12.0f, "%.1f"))
+        {
+            config.SkillBarRounding = skillRounding;
+            changed = true;
+        }
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Skill Breakdown — Colors", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+        changed |= ConfigHelpers.ColorEditProp("Unknown damage fill", config.SkillDamageFillColor, v => config.SkillDamageFillColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Physical damage fill", config.SkillPhysicalFillColor, v => config.SkillPhysicalFillColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Magic damage fill", config.SkillMagicFillColor, v => config.SkillMagicFillColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Healing fill", config.SkillHealingFillColor, v => config.SkillHealingFillColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Row background", config.SkillRowBackgroundColor, v => config.SkillRowBackgroundColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Skill text", config.SkillTextColor, v => config.SkillTextColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Header text", config.SkillHeaderTextColor, v => config.SkillHeaderTextColor = v);
+
+        ImGui.Spacing();
+
+        if (ImGui.Button("Reset Skill Colors"))
+        {
+            config.SkillDamageFillColor = new Vector4(0.35f, 0.35f, 0.55f, 0.7f);
+            config.SkillHealingFillColor = new Vector4(0.25f, 0.50f, 0.30f, 0.7f);
+            config.SkillPhysicalFillColor = new Vector4(0.55f, 0.30f, 0.25f, 0.7f);
+            config.SkillMagicFillColor = new Vector4(0.30f, 0.30f, 0.65f, 0.7f);
+            config.SkillRowBackgroundColor = new Vector4(0.12f, 0.12f, 0.12f, 0.6f);
+            config.SkillTextColor = new Vector4(1f, 1f, 1f, 0.9f);
+            config.SkillHeaderTextColor = new Vector4(0.6f, 0.6f, 0.6f, 0.9f);
+            changed = true;
+        }
+        }
+
+        ImGui.Spacing();
+
         if (ImGui.CollapsingHeader("Graph", ImGuiTreeNodeFlags.DefaultOpen))
         {
             ImGui.TextDisabled("Configure the live instant DPS/HPS/DTPS graph.");
@@ -1538,96 +1625,6 @@ public class AppearanceTab
                 config.GraphFontSize = 14f;
                 changed = true;
             }
-        }
-
-        ImGui.Spacing();
-
-        if (ImGui.CollapsingHeader("Layout", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-        var detailIndent = config.DetailIndent;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Indent", ref detailIndent, 0.0f, 24.0f, "%.0f px"))
-        {
-            config.DetailIndent = detailIndent;
-            changed = true;
-        }
-        }
-
-        ImGui.Spacing();
-
-        if (ImGui.CollapsingHeader("Colors##details", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-        changed |= ConfigHelpers.ColorEditProp("Background", config.DetailBackgroundColor, v => config.DetailBackgroundColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Label color", config.DetailLabelColor, v => config.DetailLabelColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Death highlight", config.DetailDeathColor, v => config.DetailDeathColor = v);
-
-        ImGui.Spacing();
-
-        if (ImGui.Button("Reset Details"))
-        {
-            config.DetailBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
-            config.DetailLabelColor = new Vector4(0.7f, 0.7f, 0.7f, 1f);
-            config.DetailDeathColor = new Vector4(1f, 0.3f, 0.3f, 1f);
-            config.DetailIndent = 8.0f;
-            config.DetailFontSize = 14f;
-            changed = true;
-        }
-        }
-
-        ImGui.Spacing();
-
-        if (ImGui.CollapsingHeader("Skill Breakdown — Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-        var skillRowHeight = config.SkillRowHeight;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Row height", ref skillRowHeight, 10.0f, 30.0f, "%.0f px"))
-        {
-            config.SkillRowHeight = skillRowHeight;
-            changed = true;
-        }
-
-        var skillColPad = config.SkillColumnPadding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Column padding", ref skillColPad, 0.0f, 16.0f, "%.0f px"))
-        {
-            config.SkillColumnPadding = skillColPad;
-            changed = true;
-        }
-
-        var skillRounding = config.SkillBarRounding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar rounding##skills", ref skillRounding, 0.0f, 12.0f, "%.1f"))
-        {
-            config.SkillBarRounding = skillRounding;
-            changed = true;
-        }
-        }
-
-        ImGui.Spacing();
-
-        if (ImGui.CollapsingHeader("Skill Breakdown — Colors", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-        changed |= ConfigHelpers.ColorEditProp("Unknown damage fill", config.SkillDamageFillColor, v => config.SkillDamageFillColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Physical damage fill", config.SkillPhysicalFillColor, v => config.SkillPhysicalFillColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Magic damage fill", config.SkillMagicFillColor, v => config.SkillMagicFillColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Healing fill", config.SkillHealingFillColor, v => config.SkillHealingFillColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Row background", config.SkillRowBackgroundColor, v => config.SkillRowBackgroundColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Skill text", config.SkillTextColor, v => config.SkillTextColor = v);
-        changed |= ConfigHelpers.ColorEditProp("Header text", config.SkillHeaderTextColor, v => config.SkillHeaderTextColor = v);
-
-        ImGui.Spacing();
-
-        if (ImGui.Button("Reset Skill Colors"))
-        {
-            config.SkillDamageFillColor = new Vector4(0.35f, 0.35f, 0.55f, 0.7f);
-            config.SkillHealingFillColor = new Vector4(0.25f, 0.50f, 0.30f, 0.7f);
-            config.SkillPhysicalFillColor = new Vector4(0.55f, 0.30f, 0.25f, 0.7f);
-            config.SkillMagicFillColor = new Vector4(0.30f, 0.30f, 0.65f, 0.7f);
-            config.SkillRowBackgroundColor = new Vector4(0.12f, 0.12f, 0.12f, 0.6f);
-            config.SkillTextColor = new Vector4(1f, 1f, 1f, 0.9f);
-            config.SkillHeaderTextColor = new Vector4(0.6f, 0.6f, 0.6f, 0.9f);
-            changed = true;
-        }
         }
 
         ImGui.Spacing();

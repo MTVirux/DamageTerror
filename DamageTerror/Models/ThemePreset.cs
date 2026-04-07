@@ -185,7 +185,6 @@ public class ThemePreset
 
     public Vector4 DetailBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.80f);
     public Vector4 DetailLabelColor { get; set; } = new(0.7f, 0.7f, 0.7f, 1f);
-    public Vector4 DetailDeathColor { get; set; } = new(1f, 0.3f, 0.3f, 1f);
     public float DetailIndent { get; set; } = 8.0f;
     public float DetailFontSize { get; set; } = 14f;
 
@@ -403,7 +402,6 @@ public class ThemePreset
 
         config.DetailBackgroundColor = DetailBackgroundColor;
         config.DetailLabelColor = DetailLabelColor;
-        config.DetailDeathColor = DetailDeathColor;
         config.DetailIndent = DetailIndent;
         config.DetailFontSize = DetailFontSize;
 
@@ -613,7 +611,6 @@ public class ThemePreset
 
             DetailBackgroundColor = config.DetailBackgroundColor,
             DetailLabelColor = config.DetailLabelColor,
-            DetailDeathColor = config.DetailDeathColor,
             DetailIndent = config.DetailIndent,
             DetailFontSize = config.DetailFontSize,
 

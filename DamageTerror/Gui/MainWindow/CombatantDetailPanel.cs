@@ -765,10 +765,7 @@ public class CombatantDetailPanel
                 if (!first) ImGui.SameLine();
                 ImGui.TextColored(lc, first ? $"{deathLabel}:" : $"  {deathLabel}:");
                 ImGui.SameLine();
-                if (combatant.Deaths > 0)
-                    ImGui.TextColored(config.DetailDeathColor, value);
-                else
-                    ImGui.TextUnformatted("0");
+                ImGui.TextUnformatted(value);
             }
             else if (first)
             {
