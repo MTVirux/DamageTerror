@@ -850,6 +850,10 @@ public class CombatantDetailPanel
             BarColumn.AbsorbHeal => (Label(col), Fmt(c.AbsorbHeal)),
             BarColumn.MaxHealWard when !string.IsNullOrEmpty(c.MaxHealWardName) => (Label(col), $"{c.MaxHealWardName} ({Fmt(c.MaxHealWardAmount)})"),
 
+            // High-end Raiding
+            BarColumn.LegsSweeped => (Label(col), c.Stuns.ToString()),
+            BarColumn.SkillIssue => (Label(col), c.SkillIssue.ToString()),
+
             _ => null,
         };
     }
