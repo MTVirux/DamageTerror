@@ -305,6 +305,17 @@ public class DataService : IDisposable
 
         wasActive = snapshot.Encounter.IsActive;
 
+        // For continuing encounters, process buffered log lines so the
+        // tracker has up-to-date skill data for this CombatData tick.
+        if (!isNewEncounter)
+        {
+            lock (pendingLogLines)
+            {
+                foreach (var pending in pendingLogLines)
+                    SkillTracker.ProcessLogLine(pending);
+            }
+        }
+
         if (!string.IsNullOrEmpty(PlayerName))
             snapshot.PlayerName = PlayerName;
 
