@@ -347,7 +347,7 @@ public class MainWindow : Window, IDisposable
 
                 case LayoutElement.StatusBar:
                     if (encounter != null)
-                        statusBarComponent.Render(encounter, currentPlayerName, activeTab);
+                        statusBarComponent.Render(encounter, currentPlayerName, activeTab, groupAggregates);
                     break;
 
                 case LayoutElement.CombatantBars:

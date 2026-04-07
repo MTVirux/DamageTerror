@@ -22,10 +22,10 @@ public class StatusBarComponent
 
     public void Render(RenderContext ctx)
     {
-        Render(ctx.Encounter, ctx.CurrentPlayerName, ctx.ActiveTab);
+        Render(ctx.Encounter, ctx.CurrentPlayerName, ctx.ActiveTab, ctx.GroupAggregates);
     }
 
-    public void Render(EncounterSnapshot? encounter, string currentPlayerName = "", MeterTab? tab = null)
+    public void Render(EncounterSnapshot? encounter, string currentPlayerName = "", MeterTab? tab = null, GroupAggregates? groupAggregates = null)
     {
         if (!config.ShowStatusBar || encounter == null)
             return;
@@ -83,7 +83,7 @@ public class StatusBarComponent
                 }
 
                 var valueText = CombatantBarComponent.IsGroupColumn(col)
-                    ? CombatantBarComponent.GetGroupColumnDisplayValue(col, config, tab, null)
+                    ? CombatantBarComponent.GetGroupColumnDisplayValue(col, config, tab, groupAggregates)
                     : localPlayer != null
                         ? CombatantBarComponent.GetColumnDisplayValue(localPlayer, col, config, tab)
                         : "0";
