@@ -19,6 +19,23 @@ public class SkillTracker
     private readonly Dictionary<string, int> skillIssueCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<(string Target, string Status), int> skillIssueStacks = new();
 
+    /// <summary>Localized status names that count as "skill issues" (Vulnerability Up / Damage Down).</summary>
+    private static readonly HashSet<string> SkillIssueNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // EN
+        "Vulnerability Up",
+        "Damage Down",
+        // DE
+        "Erhöhte Verwundbarkeit",
+        "Schaden -",
+        // FR
+        "Vulnérabilité augmentée",
+        "Malus de dégâts",
+        // JA
+        "被ダメージ上昇",
+        "ダメージ低下",
+    };
+
     private Dictionary<string, List<SkillUseEvent>>? seededEvents;
     private Dictionary<string, List<SkillUseEvent>>? seededDamageTakenEvents;
 
@@ -539,8 +556,7 @@ public class SkillTracker
 
             statusTracker.OnStatusGained(sourceName, targetName, statusId, statusName, duration);
 
-            if (string.Equals(statusName, "Vulnerability Up", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(statusName, "Damage Down", StringComparison.OrdinalIgnoreCase))
+            if (SkillIssueNames.Contains(statusName))
             {
                 int newStacks = 1;
                 if (line.Length > 9 && int.TryParse(line[9], out var parsed) && parsed > 0)
@@ -562,8 +578,7 @@ public class SkillTracker
             var removalTime = timer?.ElapsedSeconds ?? 0f;
             statusTracker.OnStatusLost(sourceName, targetName, statusId, removalTime);
 
-            if (string.Equals(statusName, "Vulnerability Up", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(statusName, "Damage Down", StringComparison.OrdinalIgnoreCase))
+            if (SkillIssueNames.Contains(statusName))
             {
                 lock (syncLock)
                 {
