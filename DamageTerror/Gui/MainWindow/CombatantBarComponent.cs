@@ -75,6 +75,7 @@ public class CombatantBarComponent
         { BarColumn.GroupHealed, "000.0K" },
         { BarColumn.GroupDamageTaken, "000.0K" },
         { BarColumn.GroupDeaths, "00" },
+        { BarColumn.GroupSkillIssue, "00" },
         { BarColumn.GroupOverheal, "000.0K" },
         { BarColumn.GroupInstantDps, "000.0K" },
         { BarColumn.GroupInstantHps, "000.0K" },
