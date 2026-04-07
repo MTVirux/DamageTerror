@@ -149,7 +149,7 @@ public static class MetricPicker
     public static readonly Dictionary<BarColumn, string> BarColumnDescriptions = new()
     {
         { BarColumn.LegsSweeped, "That move was a low blow..." },
-        { BarColumn.SkillIssue, "Stand in the fire DPS higher. Go for an High Score!" },
+        { BarColumn.SkillIssue, "Stand in the fire DPS higher. Go for a High Score!" },
         { BarColumn.DamageDown, "Count of Damage Down debuffs received." },
     };
 
