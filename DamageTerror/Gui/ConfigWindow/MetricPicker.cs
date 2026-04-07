@@ -12,8 +12,8 @@ public static class MetricPicker
         ("Healing", new[] { BarColumn.Hps, BarColumn.InstantHps, BarColumn.Healed, BarColumn.HealPercent, BarColumn.Overheal, BarColumn.OverhealAmount, BarColumn.CritHealPct, BarColumn.MaxHeal, BarColumn.MaxHealValue, BarColumn.HealCount, BarColumn.EncHps }),
         ("Hit Stats", new[] { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses }),
         ("Defense", new[] { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct, BarColumn.HealsTaken }),
-        ("High-end Raiding", new[] { BarColumn.LegsSweeped, BarColumn.SkillIssue }),
-        ("Group", new[] { BarColumn.DpsRank, BarColumn.HpsRank, BarColumn.GroupDps, BarColumn.GroupHps, BarColumn.GroupDamage, BarColumn.GroupHealed, BarColumn.GroupDamageTaken, BarColumn.GroupDeaths, BarColumn.GroupOverheal, BarColumn.GroupInstantDps, BarColumn.GroupInstantHps, BarColumn.GroupAvgDps, BarColumn.GroupAvgHps, BarColumn.GroupAvgCrit, BarColumn.GroupAvgDirectHit, BarColumn.GroupAvgCritDirectHit, BarColumn.GroupAvgOverhealPct, BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate, BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue, BarColumn.GroupMaxHealValue }),
+        ("High-end Raiding", new[] { BarColumn.LegsSweeped, BarColumn.SkillIssue, BarColumn.DamageDown }),
+        ("Group", new[] { BarColumn.DpsRank, BarColumn.HpsRank, BarColumn.GroupDps, BarColumn.GroupHps, BarColumn.GroupDamage, BarColumn.GroupHealed, BarColumn.GroupDamageTaken, BarColumn.GroupDeaths, BarColumn.GroupOverheal, BarColumn.GroupDamageDown, BarColumn.GroupInstantDps, BarColumn.GroupInstantHps, BarColumn.GroupAvgDps, BarColumn.GroupAvgHps, BarColumn.GroupAvgCrit, BarColumn.GroupAvgDirectHit, BarColumn.GroupAvgCritDirectHit, BarColumn.GroupAvgOverhealPct, BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate, BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue, BarColumn.GroupMaxHealValue }),
         ("Other", new[] { BarColumn.Deaths, BarColumn.Kills, BarColumn.CombatantDuration, BarColumn.PowerHeal }),
 #if DEBUG
         ("Unknown", new[] { BarColumn.PowerDrain, BarColumn.AbsorbHeal, BarColumn.MaxHealWard }),
@@ -27,7 +27,7 @@ public static class MetricPicker
         ("Hit Stats", new[] { TooltipField.Crit, TooltipField.DirectHit, TooltipField.CritDirectHit, TooltipField.HitRate, TooltipField.Swings, TooltipField.Hits, TooltipField.Misses }),
         ("Defense", new[] { TooltipField.DamageTaken, TooltipField.HealsTaken }),
         ("Other", new[] { TooltipField.Name, TooltipField.Job, TooltipField.Deaths, TooltipField.Kills, TooltipField.CombatantDuration }),
-        ("High-end Raiding", new[] { TooltipField.LegsSweeped, TooltipField.SkillIssue }),
+        ("High-end Raiding", new[] { TooltipField.LegsSweeped, TooltipField.SkillIssue, TooltipField.DamageDown }),
     };
 
     public static readonly Dictionary<BarColumn, string> BarColumnLabels = new()
@@ -74,6 +74,7 @@ public static class MetricPicker
         { BarColumn.PowerHeal, "MP Recovery" },
         { BarColumn.LegsSweeped, "Legs Sweeped" },
         { BarColumn.SkillIssue, "Skill Issue" },
+        { BarColumn.DamageDown, "Damage Down" },
         { BarColumn.EncDps, "Encounter DPS" },
         { BarColumn.EncHps, "Encounter HPS" },
         { BarColumn.DpsRank, "DPS Rank" },
@@ -98,6 +99,7 @@ public static class MetricPicker
         { BarColumn.GroupPeakDps, "Group Peak DPS" },
         { BarColumn.GroupMaxHitValue, "Group Max Hit Value" },
         { BarColumn.GroupMaxHealValue, "Group Max Heal Value" },
+        { BarColumn.GroupDamageDown, "Group Damage Down" },
     };
 
     public static readonly Dictionary<TooltipField, string> TooltipFieldLabels = new()
@@ -137,6 +139,7 @@ public static class MetricPicker
         { TooltipField.MaxHealWard, "Max Heal Ward" },
         { TooltipField.LegsSweeped, "Legs Sweeped" },
         { TooltipField.SkillIssue, "Skill Issue" },
+        { TooltipField.DamageDown, "Damage Down" },
         { TooltipField.EncDps, "Encounter DPS" },
         { TooltipField.EncHps, "Encounter HPS" },
         { TooltipField.TopDamageSkills, "Top Damage Skills" },
@@ -147,12 +150,14 @@ public static class MetricPicker
     {
         { BarColumn.LegsSweeped, "That move was a low blow..." },
         { BarColumn.SkillIssue, "Ratio of damage taken to damage dealt. Higher values indicate taking more damage relative to output." },
+        { BarColumn.DamageDown, "Count of Damage Down debuffs received (excludes Vulnerability Up)." },
     };
 
     public static readonly Dictionary<TooltipField, string> TooltipFieldDescriptions = new()
     {
         { TooltipField.LegsSweeped, "That move was a low blow..." },
         { TooltipField.SkillIssue, "Ratio of damage taken to damage dealt. Higher values indicate taking more damage relative to output." },
+        { TooltipField.DamageDown, "Count of Damage Down debuffs received (excludes Vulnerability Up)." },
     };
 
     public static string GetBarColumnLabel(BarColumn col) =>

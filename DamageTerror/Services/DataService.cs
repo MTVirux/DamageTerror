@@ -357,6 +357,10 @@ public class DataService : IDisposable
             if (trackerSkillIssue > c.SkillIssue)
                 c.SkillIssue = trackerSkillIssue;
 
+            var trackerDamageDown = SkillTracker.GetDamageDownCount(c.Name);
+            if (trackerDamageDown > c.DamageDown)
+                c.DamageDown = trackerDamageDown;
+
             if (!string.IsNullOrEmpty(PlayerName) && string.Equals(c.Name, PlayerName, StringComparison.OrdinalIgnoreCase))
                 c.IsLocalPlayer = true;
 

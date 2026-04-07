@@ -44,6 +44,7 @@ public enum BarColumn
     PowerHeal,
     LegsSweeped,
     SkillIssue,
+    DamageDown,
     EncDps,
     EncHps,
     DpsRank,
@@ -60,6 +61,7 @@ public enum BarColumn
     GroupInstantDps,
     GroupInstantHps,
     GroupSkillIssue,
+    GroupDamageDown,
 
     // Group averages (mean of filtered combatants)
     GroupAvgDps,

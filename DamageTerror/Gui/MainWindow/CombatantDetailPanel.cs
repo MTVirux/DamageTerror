@@ -853,6 +853,7 @@ public class CombatantDetailPanel
             // High-end Raiding
             BarColumn.LegsSweeped => (Label(col), c.Stuns.ToString()),
             BarColumn.SkillIssue => (Label(col), c.SkillIssue.ToString()),
+            BarColumn.DamageDown => (Label(col), c.DamageDown.ToString()),
 
             _ => null,
         };

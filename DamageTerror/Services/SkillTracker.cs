@@ -18,6 +18,8 @@ public class SkillTracker
     private readonly Dictionary<string, int> stunCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> skillIssueCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<(string Target, string Status), int> skillIssueStacks = new();
+    private readonly Dictionary<string, int> damageDownCounts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<(string Target, string Status), int> damageDownStacks = new();
 
     /// <summary>Localized status names that count as "skill issues" (Vulnerability Up / Damage Down).</summary>
     private static readonly HashSet<string> SkillIssueNames = new(StringComparer.OrdinalIgnoreCase)
@@ -33,6 +35,19 @@ public class SkillTracker
         "Malus de dégâts",
         // JA
         "被ダメージ上昇",
+        "ダメージ低下",
+    };
+
+    /// <summary>Localized status names that count as "Damage Down" only (subset of skill issues).</summary>
+    private static readonly HashSet<string> DamageDownNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // EN
+        "Damage Down",
+        // DE
+        "Schaden -",
+        // FR
+        "Malus de dégâts",
+        // JA
         "ダメージ低下",
     };
 
@@ -318,6 +333,14 @@ public class SkillTracker
         }
     }
 
+    public int GetDamageDownCount(string combatantName)
+    {
+        lock (syncLock)
+        {
+            return damageDownCounts.GetValueOrDefault(combatantName);
+        }
+    }
+
     public void Reset()
     {
         lock (syncLock)
@@ -331,6 +354,8 @@ public class SkillTracker
             stunCounts.Clear();
             skillIssueCounts.Clear();
             skillIssueStacks.Clear();
+            damageDownCounts.Clear();
+            damageDownStacks.Clear();
             seededEvents = null;
             seededDamageTakenEvents = null;
             damageTypeCache.Clear();
@@ -571,6 +596,22 @@ public class SkillTracker
                     skillIssueStacks[key] = newStacks;
                 }
             }
+
+            if (DamageDownNames.Contains(statusName))
+            {
+                int newStacks = 1;
+                if (line.Length > 9 && int.TryParse(line[9], out var parsedDD) && parsedDD > 0)
+                    newStacks = parsedDD;
+
+                lock (syncLock)
+                {
+                    var key = (targetName.ToLowerInvariant(), statusName.ToLowerInvariant());
+                    var prevStacks = damageDownStacks.GetValueOrDefault(key);
+                    var delta = newStacks - prevStacks;
+                    damageDownCounts[targetName] = damageDownCounts.GetValueOrDefault(targetName) + Math.Max(delta, 1);
+                    damageDownStacks[key] = newStacks;
+                }
+            }
         }
         else if (type == "30")
         {
@@ -583,6 +624,14 @@ public class SkillTracker
                 lock (syncLock)
                 {
                     skillIssueStacks.Remove((targetName.ToLowerInvariant(), statusName.ToLowerInvariant()));
+                }
+            }
+
+            if (DamageDownNames.Contains(statusName))
+            {
+                lock (syncLock)
+                {
+                    damageDownStacks.Remove((targetName.ToLowerInvariant(), statusName.ToLowerInvariant()));
                 }
             }
         }
