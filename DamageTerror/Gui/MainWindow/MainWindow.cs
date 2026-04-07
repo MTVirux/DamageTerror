@@ -380,6 +380,10 @@ public class MainWindow : Window, IDisposable
         if (ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows) && ImGui.IsMouseClicked(ImGuiMouseButton.Right) && !ImGui.IsAnyItemHovered())
             ImGui.OpenPopup("##MainWindowContext");
 
+        // Cache main window pos/size before entering the popup (inside a popup, ImGui returns the popup's geometry)
+        var mainWindowPos = ImGui.GetWindowPos();
+        var mainWindowSize = ImGui.GetWindowSize();
+
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(3, 3));
         if (ImGui.BeginPopup("##MainWindowContext"))
         {
@@ -424,8 +428,8 @@ public class MainWindow : Window, IDisposable
             {
                 if (!plugin.Config.PinMainWindow)
                 {
-                    plugin.Config.MainWindowPos = ImGui.GetWindowPos();
-                    plugin.Config.MainWindowSize = ImGui.GetWindowSize();
+                    plugin.Config.MainWindowPos = mainWindowPos;
+                    plugin.Config.MainWindowSize = mainWindowSize;
                 }
                 plugin.Config.PinMainWindow = !plugin.Config.PinMainWindow;
                 plugin.SaveConfig();
