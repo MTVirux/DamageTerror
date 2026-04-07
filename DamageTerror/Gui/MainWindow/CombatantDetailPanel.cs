@@ -722,7 +722,7 @@ public class CombatantDetailPanel
     {
         ImGui.Spacing();
 
-        if (!ImGui.BeginTabBar($"##detailSections_{index}", ImGuiTabBarFlags.Reorderable))
+        if (!ImGui.BeginTabBar("##detailSections", ImGuiTabBarFlags.Reorderable))
             return;
 
         foreach (var (sectionName, defaultOrder) in Sections)
@@ -730,7 +730,7 @@ public class CombatantDetailPanel
             if (!HasAny(vis, defaultOrder))
                 continue;
 
-            if (!ImGui.BeginTabItem($"{sectionName}##{index}"))
+            if (!ImGui.BeginTabItem($"{sectionName}##detailSection"))
                 continue;
 
             var order = GetSectionOrder(sectionName, defaultOrder, activeTab);
