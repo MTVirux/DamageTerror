@@ -561,10 +561,10 @@ public class MainWindow : Window, IDisposable
                     var combatant = combatants[i];
                     if (barComponent.Render(combatant, maxVal, i, sortBy, activeTab, currentPlayerName, groupAggregates))
                     {
-                        detailPanel.Toggle(i);
+                        detailPanel.Toggle(combatant.Name);
                     }
 
-                    detailPanel.Render(combatant, i, snapshot, isLive, activeTab);
+                    detailPanel.Render(combatant, snapshot, isLive, activeTab);
                 }
             }
         }

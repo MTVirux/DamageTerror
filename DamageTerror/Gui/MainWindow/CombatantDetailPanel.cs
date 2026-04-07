@@ -14,7 +14,7 @@ public class CombatantDetailPanel
     private readonly GraphDataTracker graphTracker;
     private readonly SkillTracker skillTracker;
     private readonly StatusTracker statusTracker;
-    private int expandedIndex = -1;
+    private string? expandedName;
     private readonly HashSet<string> expandedSkills = new();
     private readonly HashSet<string> hiddenLegendEntries = new(StringComparer.Ordinal);
     private bool wasActivelyUpdating;
@@ -53,21 +53,21 @@ public class CombatantDetailPanel
         return nowOpen;
     }
 
-    public void Toggle(int index)
+    public void Toggle(string name)
     {
-        expandedIndex = expandedIndex == index ? -1 : index;
+        expandedName = expandedName == name ? null : name;
     }
 
-    public bool IsExpanded(int index) => expandedIndex == index;
+    public bool IsExpanded(string name) => expandedName == name;
 
-    public void Render(RenderContext ctx, CombatantEntry combatant, int index)
+    public void Render(RenderContext ctx, CombatantEntry combatant)
     {
-        Render(combatant, index, ctx.Encounter, ctx.IsLive, ctx.ActiveTab);
+        Render(combatant, ctx.Encounter, ctx.IsLive, ctx.ActiveTab);
     }
 
-    public void Render(CombatantEntry combatant, int index, EncounterSnapshot? snapshot, bool isLive, MeterTab? activeTab = null)
+    public void Render(CombatantEntry combatant, EncounterSnapshot? snapshot, bool isLive, MeterTab? activeTab = null)
     {
-        if (expandedIndex != index)
+        if (expandedName != combatant.Name)
             return;
 
         currentSnapshot = snapshot;
@@ -94,25 +94,25 @@ public class CombatantDetailPanel
         {
             if (showDetailsTab && ImGui.BeginTabItem($"Details##detail"))
             {
-                DrawDetailsTab(combatant, index, vis, lc, activeTab);
+                DrawDetailsTab(combatant, combatant.Name, vis, lc, activeTab);
                 ImGui.EndTabItem();
             }
 
             if (showSkillsTab && ImGui.BeginTabItem($"Skills##detail"))
             {
-                DrawSkillsTab(combatant, index, activeTab);
+                DrawSkillsTab(combatant, combatant.Name, activeTab);
                 ImGui.EndTabItem();
             }
 
             if (showGraphTab && ImGui.BeginTabItem($"Graph##detail"))
             {
-                DrawGraphTab(combatant, index, activeTab);
+                DrawGraphTab(combatant, combatant.Name, activeTab);
                 ImGui.EndTabItem();
             }
 
             if (showBuffsTab && ImGui.BeginTabItem($"Buffs/Debuffs##detail"))
             {
-                DrawBuffsTab(combatant, index);
+                DrawBuffsTab(combatant, combatant.Name);
                 ImGui.EndTabItem();
             }
 
@@ -131,7 +131,7 @@ public class CombatantDetailPanel
         ImGui.Spacing();
     }
 
-    private void DrawGraphTab(CombatantEntry combatant, int index, MeterTab? activeTab)
+    private void DrawGraphTab(CombatantEntry combatant, string index, MeterTab? activeTab)
     {
         List<GraphSample> samples;
         if (isLive)
@@ -492,7 +492,7 @@ public class CombatantDetailPanel
 
 
 
-    private void DrawBuffsTab(CombatantEntry combatant, int index)
+    private void DrawBuffsTab(CombatantEntry combatant, string index)
     {
         // Resolve status data: use live tracker if available, else fall back to snapshot
         List<StatusApplication> received;
@@ -594,7 +594,7 @@ public class CombatantDetailPanel
         return result;
     }
 
-    private void DrawStatusTable(List<AggregatedStatus> statuses, float encounterDuration, int index, string idPrefix, Vector4 defaultFillColor)
+    private void DrawStatusTable(List<AggregatedStatus> statuses, float encounterDuration, string index, string idPrefix, Vector4 defaultFillColor)
     {
         var availWidth = ImGui.GetContentRegionAvail().X;
         var rowHeight = config.BuffRowHeight;
@@ -686,7 +686,7 @@ public class CombatantDetailPanel
         }
     }
 
-    private void DrawSkillsTab(CombatantEntry combatant, int index, MeterTab? activeTab)
+    private void DrawSkillsTab(CombatantEntry combatant, string index, MeterTab? activeTab)
     {
         var showBreakdown = activeTab?.DetailShowSkillBreakdown ?? config.DetailShowSkillBreakdown;
 
@@ -718,7 +718,7 @@ public class CombatantDetailPanel
         }
     }
 
-    private void DrawDetailsTab(CombatantEntry combatant, int index, HashSet<BarColumn> vis, Vector4 lc, MeterTab? activeTab)
+    private void DrawDetailsTab(CombatantEntry combatant, string index, HashSet<BarColumn> vis, Vector4 lc, MeterTab? activeTab)
     {
         ImGui.Spacing();
 
@@ -915,7 +915,7 @@ public class CombatantDetailPanel
         }
     }
 
-    private void DrawSkillTable(List<SkillEntry> skills, int index, string idPrefix, Vector4 fillColorVec, MeterTab? activeTab)
+    private void DrawSkillTable(List<SkillEntry> skills, string index, string idPrefix, Vector4 fillColorVec, MeterTab? activeTab)
     {
         var availWidth = ImGui.GetContentRegionAvail().X;
         var skillBarHeight = config.SkillRowHeight;
@@ -1076,6 +1076,6 @@ public class CombatantDetailPanel
 
     public void CollapseAll()
     {
-        expandedIndex = -1;
+        expandedName = null;
     }
 }
