@@ -485,6 +485,7 @@ public class AppearanceTab
             "Initials (F. L.)",
             "Job Abbreviation",
             "Job Full Name",
+            "Truncated (Name...)",
         };
 
         var selfFmt = (int)config.SelfNameFormat;
@@ -499,6 +500,17 @@ public class AppearanceTab
         {
             config.OthersNameFormat = (NameDisplayFormat)othersFmt;
             changed = true;
+        }
+
+        if (config.SelfNameFormat == NameDisplayFormat.Truncated
+            || config.OthersNameFormat == NameDisplayFormat.Truncated)
+        {
+            var truncLen = config.NameTruncateLength;
+            if (ImGui.SliderInt("Max name length", ref truncLen, 3, 30))
+            {
+                config.NameTruncateLength = truncLen;
+                changed = true;
+            }
         }
 
         ImGui.Spacing();
@@ -982,8 +994,14 @@ public class AppearanceTab
 
         if (config.MaxHitSkillNameLength > 0)
         {
-            ImGui.SameLine();
-            var preview = ValueFormatter.AbbreviateSkillName("Midare Setsugekka", config.MaxHitSkillNameLength);
+            var truncSkill = config.TruncateSkillNames;
+            if (ImGui.Checkbox("Truncate instead of abbreviate", ref truncSkill))
+            {
+                config.TruncateSkillNames = truncSkill;
+                changed = true;
+            }
+
+            var preview = ValueFormatter.AbbreviateSkillName("Midare Setsugekka", config.MaxHitSkillNameLength, config.TruncateSkillNames);
             ImGui.TextDisabled($"(e.g. Midare Setsugekka → {preview})");
         }
 

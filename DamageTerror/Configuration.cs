@@ -164,10 +164,12 @@ public class Configuration : IPluginConfiguration
     public bool ShowYouOnBar { get; set; } = false;
     public NameDisplayFormat SelfNameFormat { get; set; } = NameDisplayFormat.FullName;
     public NameDisplayFormat OthersNameFormat { get; set; } = NameDisplayFormat.FullName;
+    public int NameTruncateLength { get; set; } = 12;
     public bool ShowJobAbbrevOnBar { get; set; } = true;
     public bool ShowRankNumber { get; set; } = false;
 
     public int MaxHitSkillNameLength { get; set; } = 0;
+    public bool TruncateSkillNames { get; set; } = false;
 
     public static readonly Dictionary<BarColumn, string> DefaultHeaderLabels = new()
     {

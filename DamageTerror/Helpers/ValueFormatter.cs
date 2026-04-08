@@ -40,10 +40,13 @@ public static class ValueFormatter
         return value.ToString($"F{decimals}") + "%";
     }
 
-    public static string AbbreviateSkillName(string name, int maxLength)
+    public static string AbbreviateSkillName(string name, int maxLength, bool truncate = false)
     {
         if (maxLength <= 0 || string.IsNullOrEmpty(name) || name.Length <= maxLength)
             return name;
+
+        if (truncate)
+            return name[..maxLength] + "...";
 
         var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (words.Length <= 1)

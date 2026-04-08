@@ -4,7 +4,7 @@ namespace DamageTerror.Helpers;
 
 public static class NameFormatHelper
 {
-    public static string FormatName(string name, string job, NameDisplayFormat fmt)
+    public static string FormatName(string name, string job, NameDisplayFormat fmt, int truncateLength = 12)
     {
         switch (fmt)
         {
@@ -29,6 +29,8 @@ public static class NameFormatHelper
                 return !string.IsNullOrEmpty(job) ? job.ToUpperInvariant() : name;
             case NameDisplayFormat.JobFullName:
                 return !string.IsNullOrEmpty(job) ? JobNameHelper.GetFullName(job) : name;
+            case NameDisplayFormat.Truncated:
+                return name.Length > truncateLength ? name[..truncateLength] + "..." : name;
             default:
                 return name;
         }
@@ -39,6 +41,6 @@ public static class NameFormatHelper
         if (isLocalPlayer && config.ShowYouOnBar)
             return "YOU";
         var fmt = isLocalPlayer ? config.SelfNameFormat : config.OthersNameFormat;
-        return FormatName(name, job, fmt);
+        return FormatName(name, job, fmt, config.NameTruncateLength);
     }
 }

@@ -8,4 +8,5 @@ public enum NameDisplayFormat
     Initials,
     JobAbbreviation,
     JobFullName,
+    Truncated,
 }
