@@ -31,11 +31,8 @@ public class SampleDataPage
         var sampleLoaded = store.IsSampleDataActive;
 
         ImGui.TextUnformatted("Sample Data");
+        ConfigHelpers.HelpMarker("Load a simulated encounter to preview and test your UI settings.\nSample data is temporary and will not be saved to history.");
         ImGui.Separator();
-        ImGui.Spacing();
-
-        ImGui.TextDisabled("Load a simulated encounter to preview and test your UI settings.");
-        ImGui.TextDisabled("Sample data is temporary and will not be saved to history.");
         ImGui.Spacing();
 
         ImGui.SetNextItemWidth(250);
@@ -47,7 +44,7 @@ public class SampleDataPage
             if (sampleLoaded)
                 store.SetSampleSimulation(simulateCombat);
         }
-        ImGui.TextDisabled("When enabled, numbers will fluctuate in real-time like a live encounter.");
+        ConfigHelpers.HelpMarker("When enabled, numbers will fluctuate in real-time like a live encounter.");
         ImGui.Spacing();
 
         if (ImGui.Button("Load Sample Encounter", new Vector2(220, 0)))

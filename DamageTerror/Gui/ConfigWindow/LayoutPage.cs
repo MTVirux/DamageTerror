@@ -27,8 +27,7 @@ public static class LayoutPage
 
         if (ImGui.CollapsingHeader("Element Order", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        ImGui.TextDisabled("Drag the components to change their rendering order in the meter window.");
-        ImGui.TextDisabled("Use the arrow buttons to move items up or down.");
+        ConfigHelpers.HelpMarker("Drag the components to change their rendering order in the meter window.\nUse the arrow buttons to move items up or down.");
         ImGui.Spacing();
 
         EnsureLayoutComplete(config);

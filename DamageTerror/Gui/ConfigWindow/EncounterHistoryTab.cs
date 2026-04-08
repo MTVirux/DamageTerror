@@ -29,8 +29,8 @@ public class EncounterHistoryTab
         var store = plugin.DataService.Store;
         var history = store.History;
 
-        ImGui.TextDisabled($"Encounter history is saved automatically and persists across restarts.");
         ImGui.TextDisabled($"{history.Count} encounter(s) stored.");
+        ConfigHelpers.HelpMarker("Encounter history is saved automatically and persists across restarts.");
         ImGui.Spacing();
 
         // --- History limit settings ---

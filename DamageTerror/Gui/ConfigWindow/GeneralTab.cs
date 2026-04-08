@@ -89,7 +89,6 @@ public class GeneralTab
 
             ImGui.Spacing();
             ImGui.Separator();
-            ImGui.TextDisabled("Modifier key used by hidden layout elements and header reveal.");
             ImGui.Spacing();
 
             var comboNames = new[] { "Ctrl + Shift", "Ctrl + Alt", "Shift + Alt", "Ctrl", "Shift", "Alt" };
@@ -100,6 +99,7 @@ public class GeneralTab
                 config.ModifierKeyCombo = (ModifierCombo)comboIndex;
                 changed = true;
             }
+            ConfigHelpers.HelpMarker("Modifier key used by hidden layout elements and header reveal.");
 
             var modeNames = new[] { "Hold", "Toggle" };
             var modeIndex = (int)config.ModifierKeyMode;
@@ -119,8 +119,6 @@ public class GeneralTab
 
         if (ImGui.CollapsingHeader("Duty Filters", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            ImGui.TextDisabled("Choose which content types show the meter.");
-
             var v = config.EnableInOverworld;
             if (ImGui.Checkbox("Overworld / Open World", ref v)) { config.EnableInOverworld = v; changed = true; }
             v = config.EnableInDungeons;

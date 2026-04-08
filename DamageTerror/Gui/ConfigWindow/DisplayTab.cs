@@ -14,8 +14,6 @@ public class DisplayTab
 
         if (ImGui.CollapsingHeader("Content", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            ImGui.TextDisabled("General bar display options.");
-
             ImGui.Spacing();
 
             var showJob = config.ShowJobAbbrevOnBar;
@@ -54,7 +52,8 @@ public class DisplayTab
                 if (config.JobIconStyle == JobIconStyle.Custom)
                 {
                     ImGui.Indent();
-                    ImGui.TextDisabled("Set a game icon ID per job (0 = default framed).");
+                    ImGui.TextUnformatted("Custom Icons");
+                    ConfigHelpers.HelpMarker("Set a game icon ID per job (0 = default framed).");
                     ImGui.Spacing();
 
                     foreach (var abbr in JobIconHelper.AllJobAbbreviations.OrderBy(a => a))

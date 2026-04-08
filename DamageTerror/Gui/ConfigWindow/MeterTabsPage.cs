@@ -465,9 +465,6 @@ public static class MeterTabsPage
 
         if (ImGui.CollapsingHeader("Tooltip Content", ImGuiTreeNodeFlags.None))
         {
-            ImGui.TextDisabled("Choose which fields to show in the tooltip and their order.");
-            ImGui.Spacing();
-
             var skillCount = tab.TooltipTopSkillCount;
             ImGui.SetNextItemWidth(200);
             if (ImGui.SliderInt("Top skills to show", ref skillCount, 1, 10))
@@ -508,9 +505,6 @@ public static class MeterTabsPage
 
         if (ImGui.CollapsingHeader("Details Panel Content", ImGuiTreeNodeFlags.None))
         {
-            ImGui.TextDisabled("Choose what to show in the expanded detail view.");
-            ImGui.Spacing();
-
             ImGui.TextDisabled("Tabs");
 
             var showDetails = tab.DetailShowDetailsTab;
@@ -653,7 +647,8 @@ public static class MeterTabsPage
     {
         var changed = false;
 
-        ImGui.TextDisabled("Select which jobs to include:");
+        ImGui.TextUnformatted("Custom job filter:");
+        ConfigHelpers.HelpMarker("Select which jobs to include.");
         ImGui.Indent();
 
         DrawJobGroup("Tanks", JobColorHelper.TankJobs, tab, ref changed);

@@ -134,8 +134,7 @@ public class AppearanceTab
             importError = null;
             ImGui.OpenPopup("##importPresetPopup");
         }
-
-        ImGui.TextDisabled("Tip: Right-click custom presets in the dropdown to delete or export them.");
+        ConfigHelpers.HelpMarker("Tip: Right-click custom presets in the dropdown to delete or export them.");
 
         if (ImGui.BeginPopup("##savePresetPopup"))
         {
@@ -457,15 +456,13 @@ public class AppearanceTab
     {
         var changed = false;
 
-        ImGui.TextDisabled("These settings apply everywhere player names are displayed.");
-        ImGui.Spacing();
-
         var showName = config.ShowNameOnBar;
         if (ImGui.Checkbox("Show player name on bars", ref showName))
         {
             config.ShowNameOnBar = showName;
             changed = true;
         }
+        ConfigHelpers.HelpMarker("These settings apply everywhere player names are displayed.");
 
         var showYou = config.ShowYouOnBar;
         if (ImGui.Checkbox("Show \"YOU\" instead of character name", ref showYou))
@@ -475,7 +472,6 @@ public class AppearanceTab
         }
 
         ImGui.Spacing();
-        ImGui.TextDisabled("Name display format.");
 
         var nameFormatLabels = new[]
         {
@@ -579,8 +575,7 @@ public class AppearanceTab
 
         if (ImGui.CollapsingHeader("Background Image", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            ImGui.TextDisabled("Display a custom image behind the meter window.");
-            ImGui.Spacing();
+            ConfigHelpers.HelpMarker("Display a custom image behind the meter window.");
 
             var hasImage = !string.IsNullOrEmpty(config.BackgroundImagePath);
             var pathDisplay = hasImage ? config.BackgroundImagePath! : "(none)";
@@ -653,8 +648,6 @@ public class AppearanceTab
 
         if (ImGui.CollapsingHeader("Naming", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            ImGui.TextDisabled("Bar-specific name display options.");
-
             ImGui.Spacing();
 
             var showJob = config.ShowJobAbbrevOnBar;
@@ -693,7 +686,8 @@ public class AppearanceTab
                 if (config.JobIconStyle == JobIconStyle.Custom)
                 {
                     ImGui.Indent();
-                    ImGui.TextDisabled("Set a game icon ID per job (0 = default framed).");
+                    ImGui.TextUnformatted("Custom Icons");
+                    ConfigHelpers.HelpMarker("Set a game icon ID per job (0 = default framed).");
                     ImGui.Spacing();
 
                     foreach (var abbr in JobIconHelper.AllJobAbbreviations.OrderBy(a => a))
@@ -928,8 +922,7 @@ public class AppearanceTab
             config.AbbreviatedDecimalPlaces = abbrevDec;
             changed = true;
         }
-        ImGui.SameLine();
-        ImGui.TextDisabled("(K / M suffixed values)");
+        ConfigHelpers.HelpMarker("K / M suffixed values");
 
         var rawDec = config.RawDecimalPlaces;
         ImGui.SetNextItemWidth(200);
@@ -938,8 +931,7 @@ public class AppearanceTab
             config.RawDecimalPlaces = rawDec;
             changed = true;
         }
-        ImGui.SameLine();
-        ImGui.TextDisabled("(Raw / Commas values)");
+        ConfigHelpers.HelpMarker("Raw / Commas values");
 
         var pctDec = config.PercentDecimalPlaces;
         ImGui.SetNextItemWidth(200);
@@ -963,8 +955,7 @@ public class AppearanceTab
                 config.AbbreviatedKThreshold = Math.Max(0, kThresh);
                 changed = true;
             }
-            ImGui.SameLine();
-            ImGui.TextDisabled("(values >= this show as K)");
+            ConfigHelpers.HelpMarker("Values >= this show as K");
 
             var mThresh = (float)config.AbbreviatedMThreshold;
             ImGui.SetNextItemWidth(200);
@@ -973,16 +964,13 @@ public class AppearanceTab
                 config.AbbreviatedMThreshold = Math.Max(0, mThresh);
                 changed = true;
             }
-            ImGui.SameLine();
-            ImGui.TextDisabled("(values >= this show as M)");
+            ConfigHelpers.HelpMarker("Values >= this show as M");
         }
 
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.Spacing();
         ImGui.TextDisabled("Skill Name Abbreviation");
-        ImGui.TextDisabled("Shorten Max Hit / Max Heal skill names when they exceed this length.");
-        ImGui.TextDisabled("Each word after the first is replaced by its initial. 0 = disabled.");
 
         var skillLen = config.MaxHitSkillNameLength;
         ImGui.SetNextItemWidth(200);
@@ -991,6 +979,7 @@ public class AppearanceTab
             config.MaxHitSkillNameLength = skillLen;
             changed = true;
         }
+        ConfigHelpers.HelpMarker("Shorten Max Hit / Max Heal skill names when they exceed this length.\nEach word after the first is replaced by its initial. 0 = disabled.");
 
         if (config.MaxHitSkillNameLength > 0)
         {
@@ -1002,7 +991,7 @@ public class AppearanceTab
             }
 
             var preview = ValueFormatter.AbbreviateSkillName("Midare Setsugekka", config.MaxHitSkillNameLength, config.TruncateSkillNames);
-            ImGui.TextDisabled($"(e.g. Midare Setsugekka → {preview})");
+            ConfigHelpers.HelpMarker($"e.g. Midare Setsugekka → {preview}");
         }
 
         ImGui.Spacing();
@@ -1317,10 +1306,6 @@ public class AppearanceTab
 
         if (ImGui.CollapsingHeader("Top Skills"))
         {
-            ImGui.TextDisabled("Number of top skills to show when \"Top Damage Skills\" or");
-            ImGui.TextDisabled("\"Top Healing Skills\" tooltip fields are enabled.");
-            ImGui.Spacing();
-
             var skillCount = config.TooltipTopSkillCount;
             ImGui.SetNextItemWidth(200);
             if (ImGui.SliderInt("Skills to show", ref skillCount, 1, 10))
@@ -1328,6 +1313,7 @@ public class AppearanceTab
                 config.TooltipTopSkillCount = skillCount;
                 changed = true;
             }
+            ConfigHelpers.HelpMarker("Number of top skills to show when \"Top Damage Skills\" or\n\"Top Healing Skills\" tooltip fields are enabled.");
         }
 
         if (!config.ShowTooltip)
@@ -1434,9 +1420,6 @@ public class AppearanceTab
 
         if (ImGui.CollapsingHeader("Graph", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            ImGui.TextDisabled("Configure the live instant DPS/HPS/DTPS graph.");
-            ImGui.Spacing();
-
             var graphHeight = config.GraphHeight;
             ImGui.SetNextItemWidth(200);
             if (ImGui.SliderFloat("Graph height", ref graphHeight, 60f, 300f, "%.0f px"))
@@ -2023,7 +2006,10 @@ public class AppearanceTab
 
         if (!config.EnableCustomFont)
         {
-            ImGui.TextDisabled("Enable custom font above to use font selection.");
+            ImGui.BeginDisabled();
+            ImGui.Button("Choose Font...");
+            ConfigHelpers.HelpMarker("Enable custom font above to use font selection.");
+            ImGui.EndDisabled();
         }
         else
         {

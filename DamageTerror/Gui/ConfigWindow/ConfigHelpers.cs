@@ -139,4 +139,12 @@ public static class ConfigHelpers
             ImGui.SetTooltip("Click while holding SHIFT to reset");
         return pressed;
     }
+
+    public static void HelpMarker(string description)
+    {
+        ImGui.SameLine();
+        ImGui.TextDisabled("(?)");
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(description);
+    }
 }
