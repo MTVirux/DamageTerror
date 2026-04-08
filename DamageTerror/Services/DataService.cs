@@ -168,6 +168,11 @@ public class DataService : IDisposable
         await StartAsync().ConfigureAwait(false);
     }
 
+    public void EndEncounter()
+    {
+        activeSource?.EndEncounter();
+    }
+
     public void Stop()
     {
         cts?.Cancel();
@@ -297,11 +302,16 @@ public class DataService : IDisposable
 
             // Replay any log lines that arrived between the last CombatData
             // and this one so the first skill of a new encounter is not lost.
+            // Atomically snapshot and clear so lines arriving during the rest of
+            // OnCombatData processing are not lost.
+            string[][] pendingSnapshot;
             lock (pendingLogLines)
             {
-                foreach (var pending in pendingLogLines)
-                    SkillTracker.ProcessLogLine(pending);
+                pendingSnapshot = pendingLogLines.ToArray();
+                pendingLogLines.Clear();
             }
+            foreach (var pending in pendingSnapshot)
+                SkillTracker.ProcessLogLine(pending);
         }
 
         wasActive = snapshot.Encounter.IsActive;
@@ -310,11 +320,14 @@ public class DataService : IDisposable
         // tracker has up-to-date skill data for this CombatData tick.
         if (!isNewEncounter)
         {
+            string[][] pendingSnapshot;
             lock (pendingLogLines)
             {
-                foreach (var pending in pendingLogLines)
-                    SkillTracker.ProcessLogLine(pending);
+                pendingSnapshot = pendingLogLines.ToArray();
+                pendingLogLines.Clear();
             }
+            foreach (var pending in pendingSnapshot)
+                SkillTracker.ProcessLogLine(pending);
         }
 
         if (!string.IsNullOrEmpty(PlayerName))
@@ -429,9 +442,6 @@ public class DataService : IDisposable
 
         if (archived)
             Store.Save();
-
-        lock (pendingLogLines)
-            pendingLogLines.Clear();
     }
 
     private void CaptureGraphData(EncounterSnapshot target)
@@ -490,7 +500,7 @@ public class DataService : IDisposable
         lock (pendingLogLines)
             pendingLogLines.Add(line);
 
-        SkillTracker.ProcessLogLine(line);
+        // Lines are processed in batch during OnCombatData replay.
 
         // Extract player name from LogLine type 02 (ChangePrimaryPlayer) as a
         // reliable fallback — the separate ChangePrimaryPlayer event is a cached

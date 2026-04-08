@@ -190,7 +190,7 @@ public class SkillTracker
             if (dmgAmount > 0)
             {
                 AccumulateSkill(damageData, sourceName, skillName, dmgAmount, dmgSeverity, damageType);
-                RecordEvent(sourceName, skillName, dmgAmount, false, dmgSeverity);
+                RecordEvent(sourceName, skillName, dmgAmount, false, dmgSeverity, targetName);
 
                 if (!string.IsNullOrEmpty(targetName))
                     RecordDamageTakenEvent(targetName, skillName, dmgAmount, dmgSeverity);
@@ -198,7 +198,7 @@ public class SkillTracker
             if (healAmount > 0)
             {
                 AccumulateSkill(healData, sourceName, skillName, healAmount, healSeverity, damageType);
-                RecordEvent(sourceName, skillName, healAmount, true, healSeverity);
+                RecordEvent(sourceName, skillName, healAmount, true, healSeverity, targetName);
             }
         }
 
@@ -363,7 +363,7 @@ public class SkillTracker
     }
 
     private void RecordEvent(string combatantName, string skillName, long amount, bool isHeal, byte severity,
-        bool isDoTTick = false, bool isHoTTick = false)
+        string? targetName = null, bool isDoTTick = false, bool isHoTTick = false)
     {
         if (!skillEvents.TryGetValue(combatantName, out var events))
         {
@@ -375,6 +375,7 @@ public class SkillTracker
         {
             TimeSec = timer?.ElapsedSeconds ?? 0f,
             SkillName = skillName,
+            TargetName = targetName,
             Amount = amount,
             IsHeal = isHeal,
             IsCrit = (severity & 0x20) != 0,
@@ -385,31 +386,38 @@ public class SkillTracker
     }
 
     /// <summary>
-    /// Retroactively tag the most recent skill event from a combatant as a DoT/HoT application.
-    /// Called by StatusTracker when a GainsEffect is received for a known DoT/HoT status,
-    /// since type 26 fires immediately after the type 21/22 that applied it.
-    /// Returns the action name of the tagged event, or null if no match.
+    /// Retroactively tag the most recent skill event as a DoT/HoT application.
+    /// Called by StatusTracker when a GainsEffect (type 26) arrives for a known DoT/HoT.
+    /// Sets IsDoTApplication/IsHoTApplication on the event for graph/timeline highlighting.
     /// </summary>
-    public string? MarkLastEventAsApplication(string combatantName, bool isDoT, bool isHoT)
+    public void MarkLastEventAsApplication(string combatantName, bool isDoT, bool isHoT)
     {
         lock (syncLock)
         {
             if (!skillEvents.TryGetValue(combatantName, out var events) || events.Count == 0)
-                return null;
-
-            var last = events[events.Count - 1];
-            // Only tag if it's a very recent event (within ~1s) and not already a tick
-            if (last.IsDoTTick || last.IsHoTTick)
-                return null;
+                return;
 
             var now = timer?.ElapsedSeconds ?? 0f;
-            if (now - last.TimeSec > 1.0f)
-                return null;
+            const int maxScan = 10;
+            const float maxAge = 3.0f;
 
-            if (isDoT) last.IsDoTApplication = true;
-            if (isHoT) last.IsHoTApplication = true;
-            events[events.Count - 1] = last;
-            return last.SkillName;
+            int start = Math.Max(0, events.Count - maxScan);
+            for (int i = events.Count - 1; i >= start; i--)
+            {
+                var evt = events[i];
+
+                if (evt.IsDoTTick || evt.IsHoTTick || evt.IsDoTApplication || evt.IsHoTApplication)
+                    continue;
+
+                if (now - evt.TimeSec > maxAge)
+                    break;
+
+                // Tag the first eligible event we find
+                if (isDoT) evt.IsDoTApplication = true;
+                if (isHoT) evt.IsHoTApplication = true;
+                events[i] = evt;
+                return;
+            }
         }
     }
 
@@ -666,11 +674,13 @@ public class SkillTracker
         bool isHoT = string.Equals(dotOrHot, "HoT", StringComparison.OrdinalIgnoreCase);
         bool isDoT = !isHoT;
 
-        // Resolve the status name and originating action from StatusTracker.
+        // Resolve the status name(s) and originating action from StatusTracker.
         // Type 24 doesn't include the status name, so we look up
         // what DoT/HoT the source currently has on the target.
-        string skillName = isHoT ? "HoT" : "DoT";
-        string? actionName = null;
+        // IMPORTANT: Type 24 lines are AGGREGATED — one line per (source, target)
+        // combining ALL DoTs/HoTs from that source. We must split the damage
+        // evenly across all matching statuses.
+        var matchedSkills = new List<string>();
         if (statusTracker != null)
         {
             var statuses = statusTracker.GetActiveStatuses(targetName);
@@ -680,29 +690,44 @@ public class SkillTracker
                     continue;
                 if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
                 {
-                    actionName = s.ApplyingActionName;
-                    skillName = actionName ?? s.StatusName;
-                    break;
+                    var name = s.ApplyingActionName ?? s.StatusName;
+                    matchedSkills.Add(name);
                 }
             }
         }
 
+        // Fallback: if no matching status was found, use a generic label.
+        if (matchedSkills.Count == 0)
+            matchedSkills.Add(isHoT ? "HoT" : "DoT");
+
+        // Split the aggregated tick amount evenly across all matched DoTs/HoTs.
+        var perSkillAmount = amount / matchedSkills.Count;
+        var remainder = amount - perSkillAmount * matchedSkills.Count;
+
         lock (syncLock)
         {
-            if (isDoT)
+            for (int i = 0; i < matchedSkills.Count; i++)
             {
-                AccumulateSkill(damageData, sourceName, skillName, amount, 0, SkillDamageType.Magic);
-                AccumulateSkill(dotTickData, sourceName, skillName, amount, 0, SkillDamageType.Magic);
-                RecordEvent(sourceName, skillName, amount, false, 0, isDoTTick: true);
+                var skillName = matchedSkills[i];
+                // Give any integer-division remainder to the first skill.
+                var share = perSkillAmount + (i == 0 ? remainder : 0);
+                if (share <= 0) continue;
 
-                if (!string.IsNullOrEmpty(targetName))
-                    RecordDamageTakenEvent(targetName, skillName, amount, 0);
-            }
-            else
-            {
-                AccumulateSkill(healData, sourceName, skillName, amount, 0, SkillDamageType.Magic);
-                AccumulateSkill(hotTickData, sourceName, skillName, amount, 0, SkillDamageType.Magic);
-                RecordEvent(sourceName, skillName, amount, true, 0, isHoTTick: true);
+                if (isDoT)
+                {
+                    AccumulateSkill(damageData, sourceName, skillName, share, 0, SkillDamageType.Magic);
+                    AccumulateSkill(dotTickData, sourceName, skillName, share, 0, SkillDamageType.Magic);
+                    RecordEvent(sourceName, skillName, share, false, 0, isDoTTick: true);
+
+                    if (!string.IsNullOrEmpty(targetName))
+                        RecordDamageTakenEvent(targetName, skillName, share, 0);
+                }
+                else
+                {
+                    AccumulateSkill(healData, sourceName, skillName, share, 0, SkillDamageType.Magic);
+                    AccumulateSkill(hotTickData, sourceName, skillName, share, 0, SkillDamageType.Magic);
+                    RecordEvent(sourceName, skillName, share, true, 0, isHoTTick: true);
+                }
             }
         }
 

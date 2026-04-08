@@ -95,6 +95,23 @@ public class IpcDataSource : IDataSource
         connected = false;
     }
 
+    public void EndEncounter()
+    {
+        if (!connected || sender == null)
+            return;
+
+        try
+        {
+            var endMsg = JObject.FromObject(new { call = "end" });
+            sender.InvokeFunc(endMsg);
+            log.Debug("Sent end encounter command via IPC");
+        }
+        catch (Exception ex)
+        {
+            log.Debug($"Failed to send end encounter via IPC: {ex.Message}");
+        }
+    }
+
     public void Dispose()
     {
         if (disposed) return;

@@ -169,6 +169,25 @@ public class WebSocketDataSource : IDataSource
         }
     }
 
+    public void EndEncounter()
+    {
+        if (ws?.State != WebSocketState.Open)
+            return;
+
+        try
+        {
+            var endMsg = JsonConvert.SerializeObject(new { call = "end" });
+            var bytes = Encoding.UTF8.GetBytes(endMsg);
+            ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None)
+                .Wait(TimeSpan.FromSeconds(2));
+            log.Debug("Sent end encounter command via WebSocket");
+        }
+        catch (Exception ex)
+        {
+            log.Debug($"Failed to send end encounter via WebSocket: {ex.Message}");
+        }
+    }
+
     public void Dispose()
     {
         if (disposed) return;

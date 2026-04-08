@@ -36,40 +36,84 @@ public class StatusTracker
 
     // Well-known DoT status IDs (FFXIV 7.x). Fallback when Lumina lookup is ambiguous.
     // These are the status effect IDs, NOT action IDs.
+    // Verified against xivanalysis data (src/data/STATUSES/root/*.ts).
     private static readonly HashSet<uint> KnownDotStatusIds = new()
     {
         // Healer / White Mage
-        0x74F, // Dia (1871)
+        1871, // Dia
+        143,  // Aero
+        144,  // Aero II
+        798,  // Aero III
 
         // Ranged / Bard
-        1881, // Caustic Bite
-        1200, // Stormbite
+        124,  // Venomous Bite
+        129,  // Windbite
+        1200, // Caustic Bite
+        1201, // Stormbite
 
         // Caster / Summoner
-        3089, // Slipstream (Garuda)
+        2706, // Slipstream (Garuda)
 
         // Healer / Scholar
         1895, // Biolysis
-        179,  // Bio II (old but might still appear in older content)
+        189,  // Bio II
 
         // Healer / Astrologian
-        838,  // Combust II
-        2041, // Combust III (7.x)
+        838,  // Combust
+        843,  // Combust II
+        1881, // Combust III
 
-        // Tank / various
-        248,  // Phlebotomize (legacy DRG)
+        // Healer / Sage
+        2614, // Eukrasian Dosis
+        2615, // Eukrasian Dosis II
+        2616, // Eukrasian Dosis III
+        3897, // Eukrasian Dyskrasia
+
         // Melee / Samurai
         1228, // Higanbana
+
+        // Melee / Dragoon
+        118,  // Chaos Thrust
+        2719, // Chaotic Spring
+
+        // Melee / Viper
+        3667, // Noxious Gnash
+
+        // Caster / Blue Mage
+        1714, // Bleeding (Song of Torment, Nightbloom, Aetherial Spark)
+        1736, // Dropsy (Aqua Breath)
+        18,   // Poison (Bad Breath)
+        1723, // Windburn (Feather Rain)
+        3712, // Breath of Magic
+        3643, // Mortal Flame
     };
 
     private static readonly HashSet<uint> KnownHotStatusIds = new()
     {
-        158,  // Regen (WHM)
-        150,  // Medica II HoT
-        1185, // Aspected Benefic (AST)
-        835,  // Aspected Helios (AST)
-        1874, // Whispering Dawn (SCH fairy)
-        2618, // Sacred Soil HoT (SCH)
+        // White Mage
+        158,  // Regen
+        150,  // Medica II
+        3880, // Medica III
+
+        // Astrologian
+        835,  // Aspected Benefic
+        836,  // Aspected Helios
+        3894, // Helios Conjunction
+
+        // Scholar
+        315,  // Whispering Dawn
+        1874, // Angel's Whisper (Seraph)
+        1944, // Sacred Soil
+        3885, // Seraphism HoT
+
+        // Sage
+        2617, // Physis
+        2620, // Physis II
+        2938, // Kerakeia
+        3898, // Philosophia
+
+        // Blue Mage
+        2495, // Angel's Snack
     };
 
     public StatusTracker(IDataManager dataManager, IPluginLog log)
@@ -160,22 +204,21 @@ public class StatusTracker
             received.Add(application);
         }
 
-        // Retroactively tag the type 21/22 event that applied this status
-        // and capture the originating action name for DoT/HoT tick attribution.
+        // Tag the originating skill event for graph/timeline highlighting
+        // and set the applying action name for DoT/HoT tick attribution.
+        // We use the status name directly as the skill label (following
+        // xivanalysis's approach) rather than heuristic backwards-search.
         if (classification.IsDoT || classification.IsHoT)
         {
-            var actionName = skillTracker?.MarkLastEventAsApplication(sourceName, classification.IsDoT, classification.IsHoT);
-            if (!string.IsNullOrEmpty(actionName))
+            skillTracker?.MarkLastEventAsApplication(sourceName, classification.IsDoT, classification.IsHoT);
+
+            lock (syncLock)
             {
-                // Update the ActiveStatus with the resolved action name
-                lock (syncLock)
+                var key2 = (targetName, statusId, sourceName);
+                if (activeStatuses.TryGetValue(key2, out var s))
                 {
-                    var key2 = (targetName, statusId, sourceName);
-                    if (activeStatuses.TryGetValue(key2, out var s))
-                    {
-                        s.ApplyingActionName = actionName;
-                        activeStatuses[key2] = s;
-                    }
+                    s.ApplyingActionName = statusName;
+                    activeStatuses[key2] = s;
                 }
             }
         }

@@ -4,6 +4,7 @@ public struct SkillUseEvent
 {
     public float TimeSec;
     public string SkillName;
+    public string? TargetName;
     public long Amount;
     public bool IsHeal;
     public bool IsCrit;
