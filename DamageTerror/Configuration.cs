@@ -88,6 +88,11 @@ public class Configuration : IPluginConfiguration
 
     public bool HideOutOfCombat { get; set; } = false;
     public float HideOutOfCombatDelay { get; set; } = 5f;
+
+    public HistoryLimitMode HistoryLimitMode { get; set; } = HistoryLimitMode.Count;
+    public int MaxEncounterHistory { get; set; } = 50;
+    public int MaxEncounterHistoryDays { get; set; } = 30;
+
     public bool IgnoreEscClose { get; set; } = true;
     public bool HideWindowHeader { get; set; } = true;
     public float BarAlpha { get; set; } = 0.7f;

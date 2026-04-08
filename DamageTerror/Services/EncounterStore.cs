@@ -77,6 +77,7 @@ public class EncounterStore
                     history.Add(active);
                     dirty = true;
                     archived = true;
+                    PruneHistoryLocked();
                 }
             }
             else if (!snapshot.Encounter.IsActive && !wasActive && active != null
@@ -258,6 +259,8 @@ public class EncounterStore
 
             loadedSuccessfully = true;
 
+            PruneHistory();
+
             // Persist repaired data back to disk so the rebuild is a one-time migration.
             Save();
         }
@@ -267,6 +270,40 @@ public class EncounterStore
             // loadedSuccessfully stays false so Save won't overwrite the
             // existing file with an empty list.
         }
+    }
+
+    public void PruneHistory()
+    {
+        lock (syncLock)
+            PruneHistoryLocked();
+    }
+
+    private void PruneHistoryLocked()
+    {
+        var config = DamageTerrorPlugin.Instance?.Config;
+        if (config == null)
+            return;
+
+        var removed = false;
+
+        if (config.HistoryLimitMode == HistoryLimitMode.Count)
+        {
+            while (history.Count > config.MaxEncounterHistory && config.MaxEncounterHistory > 0)
+            {
+                history.RemoveAt(0);
+                removed = true;
+            }
+        }
+        else if (config.HistoryLimitMode == HistoryLimitMode.Days)
+        {
+            var cutoff = DateTime.UtcNow.AddDays(-config.MaxEncounterHistoryDays);
+            var before = history.Count;
+            history.RemoveAll(s => s.Timestamp < cutoff);
+            removed = history.Count < before;
+        }
+
+        if (removed)
+            dirty = true;
     }
 
     public void Save(bool force = false)

@@ -7,19 +7,72 @@ public class EncounterHistoryTab
 {
     private readonly DamageTerrorPlugin plugin;
     private string historySearchFilter = string.Empty;
+    private int pendingLimitValue;
 
     public EncounterHistoryTab(DamageTerrorPlugin plugin)
     {
         this.plugin = plugin;
+        SyncPendingValue();
+    }
+
+    private void SyncPendingValue()
+    {
+        var config = plugin.Config;
+        pendingLimitValue = config.HistoryLimitMode == HistoryLimitMode.Count
+            ? config.MaxEncounterHistory
+            : config.MaxEncounterHistoryDays;
     }
 
     public void Draw()
     {
+        var config = plugin.Config;
         var store = plugin.DataService.Store;
         var history = store.History;
 
         ImGui.TextDisabled($"Encounter history is saved automatically and persists across restarts.");
         ImGui.TextDisabled($"{history.Count} encounter(s) stored.");
+        ImGui.Spacing();
+
+        // --- History limit settings ---
+        var modeInt = (int)config.HistoryLimitMode;
+        ImGui.TextUnformatted("Limit history by:");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(100);
+        if (ImGui.Combo("##historyLimitMode", ref modeInt, "Count\0Days\0"))
+        {
+            config.HistoryLimitMode = (HistoryLimitMode)modeInt;
+            config.Save?.Invoke();
+            SyncPendingValue();
+        }
+
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(100);
+        var inputLabel = config.HistoryLimitMode == HistoryLimitMode.Count ? "##historyMaxCount" : "##historyMaxDays";
+        if (ImGui.InputInt(inputLabel, ref pendingLimitValue))
+        {
+            pendingLimitValue = Math.Max(1, pendingLimitValue);
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Apply##historyLimitApply"))
+        {
+            if (config.HistoryLimitMode == HistoryLimitMode.Count)
+                config.MaxEncounterHistory = Math.Max(1, pendingLimitValue);
+            else
+                config.MaxEncounterHistoryDays = Math.Max(1, pendingLimitValue);
+
+            config.Save?.Invoke();
+            store.PruneHistory();
+            store.Save(force: true);
+        }
+
+        if (config.HistoryLimitMode == HistoryLimitMode.Count)
+            ImGui.TextDisabled($"Currently keeping up to {config.MaxEncounterHistory} encounter(s).");
+        else
+            ImGui.TextDisabled($"Currently keeping encounters from the last {config.MaxEncounterHistoryDays} day(s).");
+
+        ImGui.Spacing();
+        ImGui.Separator();
         ImGui.Spacing();
 
         if (history.Count == 0)
