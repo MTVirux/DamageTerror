@@ -111,10 +111,10 @@ internal static class SampleDataGenerator
         {
             MakeCombatant("Vermillion Terror", "Blm", 28200, 0, isLocal: true),
             MakeCombatant("Rtb Baytolachefe", "Pld", 14500, 0),
-            MakeCombatant("Marcelo Benevides", "Whm", 4800, 18500),
+            MakeCombatant("Marcelo Benevides", "Whm", 8000, 18500),
             MakeCombatant("Red Diamond", "Drg", 26500, 0),
             MakeCombatant("Atrina Vermillion", "Rpr", 29200, 0),
-            MakeCombatant("Nikita Airisu", "Pct", 27400, 0),
+            MakeCombatant("Nikita Airisu", "Sge", 7800, 0),
             MakeCombatant("Kotoshiro Dazaria", "War", 15600, 0),
             MakeCombatant("Nestfexia Reanna", "Rdm", 30100, 4200),
         };
