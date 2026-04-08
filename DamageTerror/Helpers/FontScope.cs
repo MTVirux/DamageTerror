@@ -2,11 +2,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Helpers;
 
-/// <summary>
-/// Disposable helper that pushes a font scale and restores the previous value on dispose.
-/// Usage: using var _ = FontScope.Push(config.GetFontScale(size));
-/// Safe to call Dispose() explicitly before scope exit — subsequent calls are no-ops.
-/// </summary>
 public struct FontScope : IDisposable
 {
     private readonly float previousScale;

@@ -138,15 +138,8 @@ public class StatusTracker
         skillTracker = tracker;
     }
 
-    /// <summary>Current encounter elapsed seconds from the shared timer, or 0 if not running.</summary>
     public float ElapsedSeconds => timer?.ElapsedSeconds ?? 0f;
 
-    /// <summary>
-    /// Process a GainsEffect event (ACT type 26).
-    /// Fields: [0]=type, [1]=timestamp, [2]=statusId(hex), [3]=statusName,
-    ///         [4]=duration(float), [5]=sourceId(hex), [6]=sourceName,
-    ///         [7]=targetId(hex), [8]=targetName, [9]=stacks, ...
-    /// </summary>
     public void OnStatusGained(string sourceName, string targetName, uint statusId, string statusName, float duration)
     {
         var classification = ClassifyStatus(statusId);
@@ -230,12 +223,6 @@ public class StatusTracker
         }
     }
 
-    /// <summary>
-    /// Process a LosesEffect event (ACT type 30).
-    /// Fields: [0]=type, [1]=timestamp, [2]=statusId(hex), [3]=statusName,
-    ///         [4]=duration, [5]=sourceId(hex), [6]=sourceName,
-    ///         [7]=targetId(hex), [8]=targetName, ...
-    /// </summary>
     public void OnStatusLost(string sourceName, string targetName, uint statusId, float removalTime)
     {
         lock (syncLock)
@@ -280,7 +267,6 @@ public class StatusTracker
         }
     }
 
-    /// <summary>Get all currently active statuses on a target.</summary>
     public List<ActiveStatus> GetActiveStatuses(string targetName)
     {
         lock (syncLock)
@@ -295,12 +281,6 @@ public class StatusTracker
         }
     }
 
-    /// <summary>
-    /// Get DoT/HoT statuses that were recently removed from a target.
-    /// Used by type 24 tick attribution to handle ticks arriving after status
-    /// removal (e.g. when one player's DoT was overwritten by another).
-    /// Prunes expired entries (older than grace period) as a side effect.
-    /// </summary>
     public List<ActiveStatus> GetRecentlyRemovedDoTs(string targetName)
     {
         var now = timer?.ElapsedSeconds ?? 0f;
@@ -319,7 +299,6 @@ public class StatusTracker
         }
     }
 
-    /// <summary>Get the full status application history for a source player.</summary>
     public List<StatusApplication> GetStatusHistory(string sourceName)
     {
         lock (syncLock)
@@ -330,7 +309,6 @@ public class StatusTracker
         }
     }
 
-    /// <summary>Get the full status received history for a target player (statuses applied TO them).</summary>
     public List<StatusApplication> GetStatusesReceived(string targetName)
     {
         lock (syncLock)
@@ -341,10 +319,6 @@ public class StatusTracker
         }
     }
 
-    /// <summary>
-    /// Calculate uptime percentage for a specific status applied by a source player
-    /// across all targets. Returns 0-100.
-    /// </summary>
     public double CalculateUptime(string sourceName, uint statusId, float encounterDuration)
     {
         if (encounterDuration <= 0f)
@@ -371,10 +345,7 @@ public class StatusTracker
         }
     }
 
-    /// <summary>Check whether a status ID is classified as a DoT.</summary>
     public bool IsDoT(uint statusId) => ClassifyStatus(statusId).IsDoT;
-
-    /// <summary>Check whether a status ID is classified as a HoT.</summary>
     public bool IsHoT(uint statusId) => ClassifyStatus(statusId).IsHoT;
 
     public void Reset()

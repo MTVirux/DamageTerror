@@ -3,11 +3,6 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Helpers;
 
-/// <summary>
-/// Disposable helper that pushes ImGui style colors and auto-pops them on dispose.
-/// Usage: using var _ = StyleScope.PushColor(ImGuiCol.Text, color);
-///        using var _ = StyleScope.PushColors((ImGuiCol.Text, c1), (ImGuiCol.WindowBg, c2));
-/// </summary>
 public readonly struct StyleScope : IDisposable
 {
     private readonly int colorCount;

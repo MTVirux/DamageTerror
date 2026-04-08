@@ -10,7 +10,6 @@ public struct GraphSample
     public float Dtps;
 }
 
-/// <summary>Tracks per-correction statistics for debugging graph validation.</summary>
 public struct ValidationStats
 {
     public int CorrectionCount;
@@ -34,16 +33,10 @@ public class GraphDataTracker
     private float lastEmitTime;
     private bool lastWasActive;
 
-    /// <summary>Validation diagnostics.</summary>
     public ValidationStats Validation;
 
-    /// <summary>Sliding window size in seconds for rate smoothing.</summary>
     public float WindowSeconds { get; set; } = 5f;
-
-    /// <summary>Minimum interval in seconds between emitted samples.</summary>
     public float SampleIntervalSeconds { get; set; } = 0.25f;
-
-    /// <summary>Divergence threshold (0–1) above which LogLine totals are snapped to CombatData.</summary>
     private const double ValidationThreshold = 0.05;
 
     public GraphDataTracker() { }
@@ -53,16 +46,8 @@ public class GraphDataTracker
         this.log = log;
     }
 
-    /// <summary>
-    /// Bind the shared encounter timer. Must be called before any recording.
-    /// </summary>
     public void SetTimer(EncounterTimer encounterTimer) => timer = encounterTimer;
 
-    /// <summary>
-    /// Pre-load historical graph data (e.g. from a restored encounter on disk)
-    /// so that <see cref="GetSamples"/> returns it until live data is available.
-    /// Cleared on the next <see cref="Reset"/> call.
-    /// </summary>
     public void SeedHistorical(Dictionary<string, List<GraphSample>> data)
     {
         lock (syncLock)
