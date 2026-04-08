@@ -390,7 +390,7 @@ public class MainWindow : Window, IDisposable
             // Go to Live (hide if already viewing live)
             if (!headerComponent.IsViewingLive)
             {
-                if (ImGui.MenuItem("Go to Live"))
+                if (IconMenuItem("Go to Live", FontAwesomeIcon.Play))
                     headerComponent.ResetSelection();
             }
 
@@ -398,7 +398,7 @@ public class MainWindow : Window, IDisposable
             var active = plugin.DataService.Store.ActiveEncounter;
             var isOngoing = active?.Encounter.IsActive == true;
             ImGui.BeginDisabled(!isOngoing);
-            if (ImGui.MenuItem("Cut Encounter"))
+            if (IconMenuItem("Cut Encounter", FontAwesomeIcon.Cut))
             {
                 plugin.DataService.Store.ArchiveActive();
                 plugin.DataService.Store.Save();
@@ -408,9 +408,10 @@ public class MainWindow : Window, IDisposable
             ImGui.Separator();
 
             // Swap view mode
+            var viewIcon = currentActiveTab?.ViewMode == ViewMode.LineGraph ? FontAwesomeIcon.ChartBar : FontAwesomeIcon.ChartLine;
             var viewLabel = currentActiveTab?.ViewMode == ViewMode.LineGraph ? "Swap to Bar View" : "Swap to Graph View";
             ImGui.BeginDisabled(currentActiveTab == null);
-            if (ImGui.MenuItem(viewLabel))
+            if (IconMenuItem(viewLabel, viewIcon))
             {
                 if (currentActiveTab != null)
                 {
@@ -423,8 +424,9 @@ public class MainWindow : Window, IDisposable
             ImGui.Separator();
 
             // Lock/Unlock window
+            var lockIcon = plugin.Config.PinMainWindow ? FontAwesomeIcon.LockOpen : FontAwesomeIcon.Lock;
             var lockLabel = plugin.Config.PinMainWindow ? "Unlock Window" : "Lock Window";
-            if (ImGui.MenuItem(lockLabel))
+            if (IconMenuItem(lockLabel, lockIcon))
             {
                 if (!plugin.Config.PinMainWindow)
                 {
@@ -438,7 +440,7 @@ public class MainWindow : Window, IDisposable
             }
 
             // Open settings
-            if (ImGui.MenuItem("Open Settings"))
+            if (IconMenuItem("Open Settings", FontAwesomeIcon.Cog))
                 plugin.OpenConfigUi();
 
             ImGui.EndPopup();
@@ -504,12 +506,12 @@ public class MainWindow : Window, IDisposable
             {
                 if (plugin.IsTabPoppedOut(tab.Id))
                 {
-                    if (ImGui.MenuItem("Close Popout Window"))
+                    if (IconMenuItem("Close Popout Window", FontAwesomeIcon.Times))
                         plugin.ClosePopoutTab(tab.Id);
                 }
                 else
                 {
-                    if (ImGui.MenuItem("Open in Window"))
+                    if (IconMenuItem("Open in Window", FontAwesomeIcon.ExternalLinkAlt))
                         plugin.OpenPopoutTab(tab.Id);
                 }
                 ImGui.EndPopup();
@@ -746,5 +748,15 @@ public class MainWindow : Window, IDisposable
             byHps[i].HpsRank = i + 1;
             byHps[i].HpsRankTotal = total;
         }
+    }
+
+    private static bool IconMenuItem(string label, FontAwesomeIcon icon)
+    {
+        var iconStr = icon.ToIconString();
+        ImGui.PushFont(UiBuilder.IconFont);
+        ImGui.Text(iconStr);
+        ImGui.PopFont();
+        ImGui.SameLine();
+        return ImGui.Selectable(label);
     }
 }

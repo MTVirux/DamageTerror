@@ -135,6 +135,10 @@ public class EncounterHeaderComponent
 
                         if (ImGui.BeginPopupContextItem("##enc_remove_active"))
                         {
+                            ImGui.PushFont(UiBuilder.IconFont);
+                            ImGui.Text(FontAwesomeIcon.TrashAlt.ToIconString());
+                            ImGui.PopFont();
+                            ImGui.SameLine();
                             if (ImGui.Selectable("Remove"))
                             {
                                 dataService.Store.RemoveActive();
@@ -162,6 +166,10 @@ public class EncounterHeaderComponent
 
                     if (ImGui.BeginPopupContextItem($"##enc_remove_{i}"))
                     {
+                        ImGui.PushFont(UiBuilder.IconFont);
+                        ImGui.Text(FontAwesomeIcon.TrashAlt.ToIconString());
+                        ImGui.PopFont();
+                        ImGui.SameLine();
                         if (ImGui.Selectable("Remove"))
                         {
                             dataService.Store.RemoveHistory(i);
