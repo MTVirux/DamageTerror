@@ -204,6 +204,7 @@ public class DataService : IDisposable
     public void CheckStaleness()
     {
         if (disposed) return;
+        if (Store.IsSampleDataActive) return;
 
         var active = Store.ActiveEncounter;
         if (active == null || !active.Encounter.IsActive) return;

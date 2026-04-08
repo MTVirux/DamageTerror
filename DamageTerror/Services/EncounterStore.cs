@@ -13,6 +13,10 @@ public class EncounterStore
     private string? savePath;
     private bool dirty;
     private bool loadedSuccessfully;
+    private bool sampleDataActive;
+    private EncounterSnapshot? previewBackup;
+    private SampleCombatSimulator? sampleSimulator;
+    private Func<CombatantEntry?>? pendingFactory;
 
     public EncounterStore()
     {
@@ -52,10 +56,79 @@ public class EncounterStore
         }
     }
 
+    public bool IsSampleDataActive
+    {
+        get { lock (syncLock) return sampleDataActive; }
+    }
+
+    public bool IsSampleSimulating
+    {
+        get { lock (syncLock) return sampleSimulator?.IsRunning ?? false; }
+    }
+
+    public void LoadSampleData(EncounterSnapshot sample, bool simulate = false, Func<CombatantEntry?>? combatantFactory = null)
+    {
+        lock (syncLock)
+        {
+            sampleSimulator?.Stop();
+            sampleSimulator = null;
+
+            if (!sampleDataActive)
+                previewBackup = active;
+            sampleDataActive = true;
+            active = sample;
+            pendingFactory = combatantFactory;
+
+            if (simulate)
+                sampleSimulator = new SampleCombatSimulator(sample, combatantFactory);
+        }
+    }
+
+    public void SetSampleSimulation(bool enabled)
+    {
+        lock (syncLock)
+        {
+            if (!sampleDataActive || active == null) return;
+
+            if (enabled && sampleSimulator?.IsRunning != true)
+                sampleSimulator = new SampleCombatSimulator(active, pendingFactory);
+            else if (!enabled)
+            {
+                sampleSimulator?.Stop();
+                sampleSimulator = null;
+            }
+        }
+    }
+
+    public void TickSampleSimulation()
+    {
+        lock (syncLock)
+        {
+            sampleSimulator?.Tick();
+        }
+    }
+
+    public void ClearSampleData()
+    {
+        lock (syncLock)
+        {
+            if (!sampleDataActive) return;
+            sampleSimulator?.Stop();
+            sampleSimulator = null;
+            pendingFactory = null;
+            sampleDataActive = false;
+            active = previewBackup;
+            previewBackup = null;
+        }
+    }
+
     public bool Update(EncounterSnapshot snapshot)
     {
         lock (syncLock)
         {
+            if (sampleDataActive)
+                return false;
+
             var archived = false;
 
             if (suppressActive)
@@ -144,6 +217,7 @@ public class EncounterStore
     {
         lock (syncLock)
         {
+            if (sampleDataActive) return;
             active = null;
             wasActive = false;
             suppressActive = true;
@@ -155,7 +229,7 @@ public class EncounterStore
     {
         lock (syncLock)
         {
-            if (active == null)
+            if (active == null || sampleDataActive)
                 return false;
 
             active.Encounter.IsActive = false;

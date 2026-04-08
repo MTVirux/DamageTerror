@@ -210,6 +210,7 @@ public class MainWindow : Window, IDisposable
     {
         wasDrawnLastFrame = true;
         plugin.DataService.CheckStaleness();
+        plugin.DataService.Store.TickSampleSimulation();
 
         DrawBackgroundImage();
 

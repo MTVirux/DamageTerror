@@ -11,6 +11,7 @@ public class ConfigWindow : Window, IDisposable
     private readonly GeneralTab generalTab;
     private readonly AppearanceTab appearanceTab;
     private readonly EncounterHistoryTab historyTab;
+    private readonly SampleDataPage sampleDataPage;
 
     private ConfigPage selectedPage = ConfigPage.General;
 
@@ -33,6 +34,7 @@ public class ConfigWindow : Window, IDisposable
         Font,
         Formatting,
         History,
+        SampleData,
     }
 
     private static readonly (ConfigPage Page, string Label, string? Group, FontAwesomeIcon Icon)[] PageEntries =
@@ -54,6 +56,7 @@ public class ConfigWindow : Window, IDisposable
         (ConfigPage.GraphView,    "Graph View",             "Appearance",   FontAwesomeIcon.ChartLine),
         (ConfigPage.Font,         "Fonts",                  "Appearance",   FontAwesomeIcon.Font),
         (ConfigPage.History,      "History",                null,           FontAwesomeIcon.History),
+        (ConfigPage.SampleData,  "Sample Data",            null,           FontAwesomeIcon.Flask),
     };
 
     public ConfigWindow(DamageTerrorPlugin plugin, PresetManager presetManager)
@@ -63,6 +66,7 @@ public class ConfigWindow : Window, IDisposable
         this.generalTab = new GeneralTab(plugin);
         this.appearanceTab = new AppearanceTab(presetManager);
         this.historyTab = new EncounterHistoryTab(plugin);
+        this.sampleDataPage = new SampleDataPage(plugin);
         this.SizeConstraints = new WindowSizeConstraints()
         {
             MinimumSize = new Vector2(620, 480),
@@ -227,6 +231,10 @@ public class ConfigWindow : Window, IDisposable
 
             case ConfigPage.History:
                 historyTab.Draw();
+                break;
+
+            case ConfigPage.SampleData:
+                sampleDataPage.Draw();
                 break;
         }
 
