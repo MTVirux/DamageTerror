@@ -24,6 +24,9 @@ public struct ActiveStatus
     /// <summary>Duration in seconds as reported by the game.</summary>
     public float Duration;
 
+    /// <summary>True if this status has an effectively infinite duration (>= 9999s).</summary>
+    public bool IsPermanent;
+
     /// <summary>True if this status deals periodic damage (DoT).</summary>
     public bool IsDoT;
 

@@ -524,7 +524,9 @@ public class CombatantDetailPanel
                 ? savedA : [];
         }
 
-        var encounterDuration = DurationHelper.ParseDuration(currentSnapshot?.Encounter?.Duration, 60f);
+        var snapshotDuration = DurationHelper.ParseDuration(currentSnapshot?.Encounter?.Duration, 60f);
+        var encounterDuration = isLive ? Math.Max(snapshotDuration, statusTracker.ElapsedSeconds) : snapshotDuration;
+        var currentTime = isLive ? statusTracker.ElapsedSeconds : encounterDuration;
         var hasReceived = received.Count > 0;
         var hasApplied = applied.Count > 0;
 
@@ -540,13 +542,13 @@ public class CombatantDetailPanel
         {
             if (hasReceived && ImGui.BeginTabItem($"Received##{index}"))
             {
-                DrawStatusTable(AggregateStatuses(received), encounterDuration, index, "recv", config.BuffFillColor);
+                DrawStatusTable(AggregateStatuses(received, currentTime), encounterDuration, index, "recv", config.BuffFillColor);
                 ImGui.EndTabItem();
             }
 
             if (hasApplied && ImGui.BeginTabItem($"Applied##{index}"))
             {
-                DrawStatusTable(AggregateStatuses(applied), encounterDuration, index, "appl", config.DebuffFillColor);
+                DrawStatusTable(AggregateStatuses(applied, currentTime), encounterDuration, index, "appl", config.DebuffFillColor);
                 ImGui.EndTabItem();
             }
 
@@ -560,12 +562,13 @@ public class CombatantDetailPanel
         public uint StatusId;
         public int ApplicationCount;
         public float TotalUptime;
+        public bool IsPermanent;
         public bool IsDoT;
         public bool IsHoT;
         public bool IsBuff;
     }
 
-    private static List<AggregatedStatus> AggregateStatuses(List<StatusApplication> statuses)
+    private static List<AggregatedStatus> AggregateStatuses(List<StatusApplication> statuses, float currentTime)
     {
         var dict = new Dictionary<uint, AggregatedStatus>();
         foreach (var s in statuses)
@@ -576,6 +579,7 @@ public class CombatantDetailPanel
                 {
                     StatusName = s.StatusName,
                     StatusId = s.StatusId,
+                    IsPermanent = s.IsPermanent,
                     IsDoT = s.IsDoT,
                     IsHoT = s.IsHoT,
                     IsBuff = s.IsBuff,
@@ -584,7 +588,8 @@ public class CombatantDetailPanel
             }
 
             agg.ApplicationCount++;
-            var end = s.RemovedAtSec ?? (s.AppliedAtSec + s.Duration);
+            var fallbackEnd = s.IsPermanent ? currentTime : Math.Min(currentTime, s.AppliedAtSec + s.Duration);
+            var end = s.RemovedAtSec ?? fallbackEnd;
             var uptime = Math.Max(0f, end - s.AppliedAtSec);
             agg.TotalUptime += uptime;
         }
@@ -622,8 +627,8 @@ public class CombatantDetailPanel
             colUptimeW = Math.Max(colUptimeW, ImGui.CalcTextSize($"{s.TotalUptime:F1}s").X);
             var pct = encounterDuration > 0 ? Math.Min(100.0, s.TotalUptime / encounterDuration * 100.0) : 0.0;
             colPctW = Math.Max(colPctW, ImGui.CalcTextSize($"{pct:F1}%").X);
-            var avg = s.ApplicationCount > 0 ? s.TotalUptime / s.ApplicationCount : 0f;
-            colAvgW = Math.Max(colAvgW, ImGui.CalcTextSize($"{avg:F1}s").X);
+            var avgText0 = s.IsPermanent ? "\u221E" : $"{(s.ApplicationCount > 0 ? s.TotalUptime / s.ApplicationCount : 0f):F1}s";
+            colAvgW = Math.Max(colAvgW, ImGui.CalcTextSize(avgText0).X);
         }
 
         // Header row
@@ -668,8 +673,7 @@ public class CombatantDetailPanel
             // Right-aligned columns
             var x = max.X - 3;
 
-            var avg = status.ApplicationCount > 0 ? status.TotalUptime / status.ApplicationCount : 0f;
-            var avgText = $"{avg:F1}s";
+            var avgText = status.IsPermanent ? "\u221E" : $"{(status.ApplicationCount > 0 ? status.TotalUptime / status.ApplicationCount : 0f):F1}s";
             x -= colAvgW; drawList.AddText(new Vector2(x + (colAvgW - ImGui.CalcTextSize(avgText).X) * 0.5f, min.Y + textYOff), textColor, avgText); x -= colPad;
 
             var pct = encounterDuration > 0 ? Math.Min(100.0, status.TotalUptime / encounterDuration * 100.0) : 0.0;

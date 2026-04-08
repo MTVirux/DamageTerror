@@ -12,6 +12,8 @@ namespace DamageTerror.Services;
 /// </summary>
 public class StatusTracker
 {
+    public const float PermanentDurationThreshold = 9999f;
+
     private readonly object syncLock = new();
     private readonly IDataManager dataManager;
     private readonly IPluginLog log;
@@ -86,6 +88,9 @@ public class StatusTracker
         skillTracker = tracker;
     }
 
+    /// <summary>Current encounter elapsed seconds from the shared timer, or 0 if not running.</summary>
+    public float ElapsedSeconds => timer?.ElapsedSeconds ?? 0f;
+
     /// <summary>
     /// Process a GainsEffect event (ACT type 26).
     /// Fields: [0]=type, [1]=timestamp, [2]=statusId(hex), [3]=statusName,
@@ -97,6 +102,8 @@ public class StatusTracker
         var classification = ClassifyStatus(statusId);
         var now = timer?.ElapsedSeconds ?? 0f;
 
+        var isPermanent = duration >= PermanentDurationThreshold;
+
         var status = new ActiveStatus
         {
             SourceName = sourceName,
@@ -105,6 +112,7 @@ public class StatusTracker
             StatusName = statusName,
             AppliedAtSec = now,
             Duration = duration,
+            IsPermanent = isPermanent,
             IsDoT = classification.IsDoT,
             IsHoT = classification.IsHoT,
             IsBuff = classification.IsBuff,
@@ -135,6 +143,7 @@ public class StatusTracker
                 TargetName = targetName,
                 AppliedAtSec = now,
                 Duration = duration,
+                IsPermanent = isPermanent,
                 IsDoT = classification.IsDoT,
                 IsHoT = classification.IsHoT,
                 IsBuff = classification.IsBuff,
@@ -270,7 +279,8 @@ public class StatusTracker
                 if (app.StatusId != statusId)
                     continue;
 
-                var endTime = app.RemovedAtSec ?? Math.Min(app.AppliedAtSec + app.Duration, encounterDuration);
+                var fallbackEnd = app.IsPermanent ? encounterDuration : Math.Min(encounterDuration, app.AppliedAtSec + app.Duration);
+                var endTime = app.RemovedAtSec ?? fallbackEnd;
                 var activeTime = Math.Max(0f, endTime - app.AppliedAtSec);
                 totalActiveTime += activeTime;
             }

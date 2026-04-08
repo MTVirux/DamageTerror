@@ -12,6 +12,7 @@ public class StatusApplication
     public float AppliedAtSec;
     public float Duration;
     public float? RemovedAtSec;
+    public bool IsPermanent;
     public bool IsDoT;
     public bool IsHoT;
     public bool IsBuff;
