@@ -38,4 +38,8 @@ public struct ActiveStatus
 
     /// <summary>Name of the action (type 21/22) that applied this status, if resolved.</summary>
     public string? ApplyingActionName;
+
+    /// <summary>Encounter-relative time when this status was removed, if applicable (seconds).
+    /// Set when the status is moved to the recently-removed buffer.</summary>
+    public float RemovedAtSec;
 }

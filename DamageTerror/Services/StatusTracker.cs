@@ -25,6 +25,12 @@ public class StatusTracker
     // Key is (targetName, statusId, sourceName) to handle this.
     private readonly Dictionary<(string Target, uint StatusId, string Source), ActiveStatus> activeStatuses = new();
 
+    // Recently-removed DoT/HoT statuses, kept briefly so that type 24 ticks
+    // arriving after a status-lost event (e.g. overwrite by another player) can
+    // still be attributed to the correct source.
+    private readonly List<ActiveStatus> recentlyRemovedDots = new();
+    private const float RecentlyRemovedGraceSec = 6f; // ~2 server ticks
+
     // Historical record: all status applications this encounter (for uptime calculation)
     private readonly Dictionary<string, List<StatusApplication>> statusHistory = new(StringComparer.OrdinalIgnoreCase);
 
@@ -239,6 +245,15 @@ public class StatusTracker
             {
                 RecordRemoval(existing, removalTime);
                 activeStatuses.Remove(key);
+
+                // Keep DoT/HoT statuses in a grace-period buffer so that
+                // type 24 ticks arriving after status removal can still be
+                // attributed to the correct source.
+                if (existing.IsDoT || existing.IsHoT)
+                {
+                    existing.RemovedAtSec = removalTime;
+                    recentlyRemovedDots.Add(existing);
+                }
             }
         }
     }
@@ -275,6 +290,30 @@ public class StatusTracker
             {
                 if (string.Equals(kv.Key.Target, targetName, StringComparison.OrdinalIgnoreCase))
                     result.Add(kv.Value);
+            }
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Get DoT/HoT statuses that were recently removed from a target.
+    /// Used by type 24 tick attribution to handle ticks arriving after status
+    /// removal (e.g. when one player's DoT was overwritten by another).
+    /// Prunes expired entries (older than grace period) as a side effect.
+    /// </summary>
+    public List<ActiveStatus> GetRecentlyRemovedDoTs(string targetName)
+    {
+        var now = timer?.ElapsedSeconds ?? 0f;
+        lock (syncLock)
+        {
+            // Prune expired entries
+            recentlyRemovedDots.RemoveAll(s => now - s.RemovedAtSec > RecentlyRemovedGraceSec);
+
+            var result = new List<ActiveStatus>();
+            foreach (var s in recentlyRemovedDots)
+            {
+                if (string.Equals(s.TargetName, targetName, StringComparison.OrdinalIgnoreCase))
+                    result.Add(s);
             }
             return result;
         }
@@ -343,6 +382,7 @@ public class StatusTracker
         lock (syncLock)
         {
             activeStatuses.Clear();
+            recentlyRemovedDots.Clear();
             statusHistory.Clear();
             receivedHistory.Clear();
         }

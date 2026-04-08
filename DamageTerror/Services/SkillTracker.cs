@@ -58,6 +58,11 @@ public class SkillTracker
     private GraphDataTracker? graphTracker;
     private StatusTracker? statusTracker;
     private readonly ConcurrentDictionary<uint, SkillDamageType> damageTypeCache = new();
+    private readonly Dictionary<string, CombatantDotStats> combatantDotStats = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Estimated crit damage multiplier for level 100 (~3000 crit stat).</summary>
+    private const double EstimatedCritMulti = 1.6;
+
     private readonly IDataManager dataManager;
     private readonly IPluginLog log;
 
@@ -103,6 +108,23 @@ public class SkillTracker
         public int DirectHits;
         public int CritDirectHits;
         public SkillDamageType DamageType;
+    }
+
+    /// <summary>
+    /// Running stats for DoT/HoT tick simulation per combatant.
+    /// Tracks base damage (crit/DH stripped), crit rate, and DH rate from ability hits.
+    /// See: https://github.com/ravahn/FFXIV_ACT_Plugin/wiki/DoT---HoT-Simulation-details
+    /// </summary>
+    private struct CombatantDotStats
+    {
+        public double TotalBaseDamage;
+        public int TotalHits;
+        public int CritHits;
+        public int DHHits;
+        public readonly double AverageBaseDmgPerHit => TotalHits > 0 ? TotalBaseDamage / TotalHits : 0;
+        public readonly double CritRate => TotalHits > 0 ? (double)CritHits / TotalHits : 0;
+        public readonly double DHRate => TotalHits > 0 ? (double)DHHits / TotalHits : 0;
+        public readonly bool HasData => TotalHits >= 3;
     }
 
     public void ProcessLogLine(string[] line)
@@ -194,6 +216,10 @@ public class SkillTracker
 
                 if (!string.IsNullOrEmpty(targetName))
                     RecordDamageTakenEvent(targetName, skillName, dmgAmount, dmgSeverity);
+
+                // Feed per-combatant stats for DoT/HoT tick simulation (exclude auto-attacks).
+                if (!string.Equals(skillName, "Auto Attack", StringComparison.OrdinalIgnoreCase))
+                    AccumulateCombatantStats(sourceName, dmgAmount, dmgSeverity);
             }
             if (healAmount > 0)
             {
@@ -237,6 +263,66 @@ public class SkillTracker
             existing.DamageType = damageType;
 
         skills[skillName] = existing;
+    }
+
+    /// <summary>
+    /// Accumulate per-combatant damage stats for DoT/HoT tick simulation.
+    /// Strips crit/DH from observed damage to estimate the base per-potency
+    /// multiplier, and tracks running crit/DH rates.
+    /// Must be called under syncLock.
+    /// </summary>
+    private void AccumulateCombatantStats(string sourceName, long amount, byte severity)
+    {
+        bool isCrit = (severity & 0x20) != 0;
+        bool isDH = (severity & 0x40) != 0;
+
+        // Strip crit/DH multipliers to estimate base damage
+        double baseDmg = amount;
+        if (isCrit) baseDmg /= EstimatedCritMulti;
+        if (isDH) baseDmg /= 1.25;
+
+        if (!combatantDotStats.TryGetValue(sourceName, out var stats))
+            stats = default;
+
+        // Outlier filter: exclude hits outside 50%-200% of running average
+        // to avoid potency spikes from skewing the per-potency estimate.
+        // Skip filter when under 10 samples (similar to ACT's <50 swings rule).
+        if (stats.TotalHits >= 10)
+        {
+            var currentAvg = stats.AverageBaseDmgPerHit;
+            if (currentAvg > 0 && (baseDmg < currentAvg * 0.5 || baseDmg > currentAvg * 2.0))
+                return;
+        }
+
+        stats.TotalBaseDamage += baseDmg;
+        stats.TotalHits++;
+        if (isCrit) stats.CritHits++;
+        if (isDH) stats.DHHits++;
+        combatantDotStats[sourceName] = stats;
+    }
+
+    /// <summary>
+    /// Calculate the simulated tick weight for a source's DoT/HoT on a target.
+    /// Weight = baseDmgPerHit × tickPotency × expectedCritDHFactor.
+    /// Used to proportionally distribute aggregate type-24 tick damage.
+    /// Must be called under syncLock.
+    /// </summary>
+    private double CalculateTickWeight(string sourceName, uint statusId, bool isHoT)
+    {
+        var potency = DotPotencyTable.GetTickPotency(statusId);
+
+        if (!combatantDotStats.TryGetValue(sourceName, out var stats) || !stats.HasData)
+            return potency; // No stat data yet — weight by potency alone
+
+        var baseDmgPerHit = stats.AverageBaseDmgPerHit;
+
+        // Expected crit/DH multiplier applied to periodic ticks.
+        // DoTs: (1 + (critMulti - 1) × critRate) × (1 + (dhMulti - 1) × dhRate)
+        // HoTs: (1 + (critMulti - 1) × critRate) — heals cannot Direct Hit
+        double critFactor = 1.0 + (EstimatedCritMulti - 1.0) * stats.CritRate;
+        double dhFactor = isHoT ? 1.0 : 1.0 + 0.25 * stats.DHRate;
+
+        return baseDmgPerHit * potency * critFactor * dhFactor;
     }
 
     private SkillDamageType LookupDamageType(uint actionId)
@@ -359,6 +445,7 @@ public class SkillTracker
             seededEvents = null;
             seededDamageTakenEvents = null;
             damageTypeCache.Clear();
+            combatantDotStats.Clear();
         }
     }
 
@@ -648,6 +735,13 @@ public class SkillTracker
     /// <summary>
     /// Parse ACT log line type 24 (DoTHoT) — periodic damage/heal ticks.
     ///
+    /// Type 24 lines are AGGREGATED — one line per tick combining damage from
+    /// ALL DoTs/HoTs on the target from ALL sources. We simulate individual tick
+    /// amounts using a per-potency multiplier approach inspired by the
+    /// FFXIV_ACT_Plugin (see wiki link below) and distribute proportionally.
+    ///
+    /// https://github.com/ravahn/FFXIV_ACT_Plugin/wiki/DoT---HoT-Simulation-details
+    ///
     /// Verified IINACT field layout:
     ///   [0]=type, [1]=timestamp, [2]=targetId(hex), [3]=targetName,
     ///   [4]="DoT"/"HoT", [5]=effectId(?), [6]=amount(hex),
@@ -674,67 +768,134 @@ public class SkillTracker
         bool isHoT = string.Equals(dotOrHot, "HoT", StringComparison.OrdinalIgnoreCase);
         bool isDoT = !isHoT;
 
-        // Resolve the status name(s) and originating action from StatusTracker.
-        // Type 24 doesn't include the status name, so we look up
-        // what DoT/HoT the source currently has on the target.
-        // IMPORTANT: Type 24 lines are AGGREGATED — one line per (source, target)
-        // combining ALL DoTs/HoTs from that source. We must split the damage
-        // evenly across all matching statuses.
-        var matchedSkills = new List<string>();
+        // Collect all sources with matching DoT/HoT statuses on this target,
+        // including the status ID for potency lookup.
+        var sourceSkills = new Dictionary<string, List<(string Name, uint StatusId)>>(StringComparer.OrdinalIgnoreCase);
+
         if (statusTracker != null)
         {
             var statuses = statusTracker.GetActiveStatuses(targetName);
             foreach (var s in statuses)
             {
-                if (!string.Equals(s.SourceName, sourceName, StringComparison.OrdinalIgnoreCase))
-                    continue;
                 if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
                 {
                     var name = s.ApplyingActionName ?? s.StatusName;
-                    matchedSkills.Add(name);
+                    if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
+                    {
+                        skills = new List<(string, uint)>();
+                        sourceSkills[s.SourceName] = skills;
+                    }
+                    skills.Add((name, s.StatusId));
+                }
+            }
+
+            // Grace period buffer for recently-removed statuses.
+            var recentlyRemoved = statusTracker.GetRecentlyRemovedDoTs(targetName);
+            foreach (var s in recentlyRemoved)
+            {
+                if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
+                {
+                    var name = s.ApplyingActionName ?? s.StatusName;
+                    if (sourceSkills.TryGetValue(s.SourceName, out var existingSkills)
+                        && existingSkills.Any(e => e.Name == name))
+                        continue;
+
+                    if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
+                    {
+                        skills = new List<(string, uint)>();
+                        sourceSkills[s.SourceName] = skills;
+                    }
+                    skills.Add((name, s.StatusId));
                 }
             }
         }
 
-        // Fallback: if no matching status was found, use a generic label.
-        if (matchedSkills.Count == 0)
-            matchedSkills.Add(isHoT ? "HoT" : "DoT");
+        // Fallback: attribute to the named source with a generic label when
+        // StatusTracker has no data (e.g. plugin started mid-encounter).
+        if (sourceSkills.Count == 0)
+        {
+            sourceSkills[sourceName] = new List<(string, uint)> { (isHoT ? "HoT" : "DoT", 0u) };
+        }
 
-        // Split the aggregated tick amount evenly across all matched DoTs/HoTs.
-        var perSkillAmount = amount / matchedSkills.Count;
-        var remainder = amount - perSkillAmount * matchedSkills.Count;
+        // Potency-weighted distribution: simulate each DoT/HoT's expected tick
+        // amount using per-combatant stats and tick potency, then distribute the
+        // aggregate damage proportionally to the simulated weights.
+        var weightedSlots = new List<(string Source, string SkillName, double Weight)>();
+        var sourceWeights = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
         lock (syncLock)
         {
-            for (int i = 0; i < matchedSkills.Count; i++)
+            // Phase 1: calculate weights for each source × skill slot.
+            foreach (var (src, skills) in sourceSkills)
             {
-                var skillName = matchedSkills[i];
-                // Give any integer-division remainder to the first skill.
-                var share = perSkillAmount + (i == 0 ? remainder : 0);
+                foreach (var (skillName, statusId) in skills)
+                {
+                    var weight = CalculateTickWeight(src, statusId, isHoT);
+                    weightedSlots.Add((src, skillName, weight));
+
+                    sourceWeights[src] = sourceWeights.GetValueOrDefault(src) + weight;
+                }
+            }
+
+            var totalWeight = weightedSlots.Sum(s => s.Weight);
+            if (totalWeight <= 0) totalWeight = 1;
+
+            // Phase 2: distribute the aggregate damage proportionally.
+            long distributed = 0;
+            for (int i = 0; i < weightedSlots.Count; i++)
+            {
+                var (src, skillName, weight) = weightedSlots[i];
+
+                // Last slot gets remainder to ensure total matches exactly.
+                long share;
+                if (i == weightedSlots.Count - 1)
+                    share = amount - distributed;
+                else
+                    share = (long)(amount * weight / totalWeight);
+
+                distributed += share;
                 if (share <= 0) continue;
 
                 if (isDoT)
                 {
-                    AccumulateSkill(damageData, sourceName, skillName, share, 0, SkillDamageType.Magic);
-                    AccumulateSkill(dotTickData, sourceName, skillName, share, 0, SkillDamageType.Magic);
-                    RecordEvent(sourceName, skillName, share, false, 0, isDoTTick: true);
+                    AccumulateSkill(damageData, src, skillName, share, 0, SkillDamageType.Magic);
+                    AccumulateSkill(dotTickData, src, skillName, share, 0, SkillDamageType.Magic);
+                    RecordEvent(src, skillName, share, false, 0, isDoTTick: true);
 
                     if (!string.IsNullOrEmpty(targetName))
                         RecordDamageTakenEvent(targetName, skillName, share, 0);
                 }
                 else
                 {
-                    AccumulateSkill(healData, sourceName, skillName, share, 0, SkillDamageType.Magic);
-                    AccumulateSkill(hotTickData, sourceName, skillName, share, 0, SkillDamageType.Magic);
-                    RecordEvent(sourceName, skillName, share, true, 0, isHoTTick: true);
+                    AccumulateSkill(healData, src, skillName, share, 0, SkillDamageType.Magic);
+                    AccumulateSkill(hotTickData, src, skillName, share, 0, SkillDamageType.Magic);
+                    RecordEvent(src, skillName, share, true, 0, isHoTTick: true);
                 }
             }
         }
 
-        // Feed into graph tracker for sliding-window DPS/HPS
-        if (isDoT)
-            graphTracker?.RecordLogLineEvent(sourceName, amount, 0);
-        else
-            graphTracker?.RecordLogLineEvent(sourceName, 0, amount);
+        // Feed into graph tracker — split per source proportionally to weights.
+        var totalSourceWeight = sourceWeights.Sum(kv => kv.Value);
+        if (totalSourceWeight <= 0) totalSourceWeight = 1;
+
+        long graphDistributed = 0;
+        var sourceList = sourceWeights.ToList();
+        for (int i = 0; i < sourceList.Count; i++)
+        {
+            var (src, weight) = sourceList[i];
+            long srcShare;
+            if (i == sourceList.Count - 1)
+                srcShare = amount - graphDistributed;
+            else
+                srcShare = (long)(amount * weight / totalSourceWeight);
+
+            graphDistributed += srcShare;
+            if (srcShare <= 0) continue;
+
+            if (isDoT)
+                graphTracker?.RecordLogLineEvent(src, srcShare, 0);
+            else
+                graphTracker?.RecordLogLineEvent(src, 0, srcShare);
+        }
     }
 }
