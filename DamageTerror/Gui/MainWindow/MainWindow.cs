@@ -141,6 +141,7 @@ public class MainWindow : Window, IDisposable
             {
                 if (m == ImGuiMouseButton.Left)
                 {
+                    plugin.DataService.EndEncounter();
                     plugin.DataService.Store.ArchiveActive();
                     plugin.DataService.Store.Save();
                 }
