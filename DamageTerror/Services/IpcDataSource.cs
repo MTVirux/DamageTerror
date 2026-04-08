@@ -49,7 +49,7 @@ public class IpcDataSource : IDataSource
             {
                 sender.InvokeFunc(subscribeMsg);
                 connected = true;
-                    OnConnected?.Invoke();
+                OnConnected?.Invoke();
                 log.Information("IPC connected to IINACT");
             }
             catch (Exception ex)
