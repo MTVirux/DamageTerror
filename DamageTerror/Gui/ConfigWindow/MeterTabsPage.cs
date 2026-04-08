@@ -597,6 +597,23 @@ public static class MeterTabsPage
                     ImGui.EndPopup();
                 }
 
+                ImGui.SameLine();
+                var hasNewLine = tab.DetailNewLineColumns.Contains(col);
+                if (hasNewLine)
+                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.3f, 0.85f, 1f, 1f));
+                if (ImGui.SmallButton($"NL##dtNl_{col}"))
+                {
+                    if (hasNewLine)
+                        tab.DetailNewLineColumns.Remove(col);
+                    else
+                        tab.DetailNewLineColumns.Add(col);
+                    extChanged = true;
+                }
+                if (hasNewLine)
+                    ImGui.PopStyleColor();
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Starts a new line with this metric");
+
                 return extChanged;
             };
             changed |= MetricPicker.DrawCategorized("detailVis", tab.DetailVisibleColumns,

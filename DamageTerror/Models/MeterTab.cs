@@ -214,6 +214,11 @@ public class MeterTab
     /// <summary>Maximum skills shown in skill breakdown (0 = all).</summary>
     public int MaxSkillBreakdownCount { get; set; } = 0;
 
+    /// <summary>Set of columns that start a new line in the detail panel.</summary>
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    public HashSet<BarColumn> DetailNewLineColumns { get; set; } = new();
+
     /// <summary>Per-section column order for the detail panel. Key is section name, value is ordered column list.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumListMapConverter))]
@@ -336,6 +341,7 @@ public class MeterTab
             DetailShowBuffsTab = DetailShowBuffsTab,
             DetailShowSkillBreakdown = DetailShowSkillBreakdown,
             MaxSkillBreakdownCount = MaxSkillBreakdownCount,
+            DetailNewLineColumns = new HashSet<BarColumn>(DetailNewLineColumns),
             DetailSectionOrder = DetailSectionOrder.ToDictionary(kv => kv.Key, kv => new List<BarColumn>(kv.Value)),
         };
     }

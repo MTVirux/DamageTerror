@@ -743,6 +743,7 @@ public class CombatantDetailPanel
 
     private void DrawOrderedSection(List<BarColumn> order, CombatantEntry combatant, HashSet<BarColumn> vis, Vector4 lc, MeterTab? activeTab)
     {
+        var newLineSet = activeTab?.DetailNewLineColumns ?? config.DetailNewLineColumns;
         var rowCount = 0;
         var first = true;
         foreach (var col in order)
@@ -753,7 +754,7 @@ public class CombatantDetailPanel
 
             var (label, value) = data.Value;
 
-            if (rowCount == 3)
+            if (rowCount == 3 || (newLineSet.Contains(col) && rowCount > 0))
             {
                 rowCount = 0;
                 first = true;

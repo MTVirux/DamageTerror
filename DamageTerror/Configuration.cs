@@ -399,6 +399,9 @@ public class Configuration : IPluginConfiguration
     public bool DetailShowSkillBreakdown { get; set; } = true;
     public int MaxSkillBreakdownCount { get; set; } = 0;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    public HashSet<BarColumn> DetailNewLineColumns { get; set; } = new();
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public HashSet<string> DetailExpandedSections { get; set; } = new();
 
     public SkillMarkerConfig DetailDpsMarkers { get; set; } = new();
