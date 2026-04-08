@@ -112,7 +112,7 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         this.commandManager.AddHandler("/dt", new CommandInfo(this.OnCommand)
         {
-            HelpMessage = "Toggle the Damage Terror meter window.",
+            HelpMessage = "Toggle the meter window. Subcommands: config, toggle <group>",
         });
 
         this.mainWindow.IsOpen = this.Config.ShowOnStart;
@@ -238,20 +238,52 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     private void OnCommand(string command, string arguments)
     {
-        if (string.IsNullOrWhiteSpace(arguments))
+        var args = arguments.Trim();
+        if (string.IsNullOrWhiteSpace(args))
         {
             var newState = !this.mainWindow.IsOpen;
             this.mainWindow.IsOpen = newState;
             foreach (var popout in this.popoutWindows.Values)
                 popout.SetVisible(newState);
         }
-        else if (arguments.Trim().Equals("config", StringComparison.OrdinalIgnoreCase))
+        else if (args.Equals("config", StringComparison.OrdinalIgnoreCase))
             this.configWindow.IsOpen = !this.configWindow.IsOpen;
+        else if (args.StartsWith("toggle ", StringComparison.OrdinalIgnoreCase))
+        {
+            var groupName = args.Substring(7).Trim();
+            if (groupName.Length > 0)
+                TogglePopoutGroup(groupName);
+        }
+        else if (args.Equals("toggle", StringComparison.OrdinalIgnoreCase))
+        {
+            // bare "/dt toggle" with no group — no-op
+        }
         else
         {
             this.mainWindow.IsOpen = true;
             foreach (var popout in this.popoutWindows.Values)
                 popout.SetVisible(true);
         }
+    }
+
+    private void TogglePopoutGroup(string groupName)
+    {
+        var matching = new List<Gui.MainWindow.PopoutTabWindow>();
+        foreach (var (tabId, window) in this.popoutWindows)
+        {
+            var tab = this.Config.MeterTabs.FirstOrDefault(t => t.Id == tabId);
+            if (tab != null && !string.IsNullOrEmpty(tab.Group) &&
+                tab.Group.Equals(groupName, StringComparison.OrdinalIgnoreCase))
+            {
+                matching.Add(window);
+            }
+        }
+
+        if (matching.Count == 0)
+            return;
+
+        var anyVisible = matching.Any(w => w.IsOpen);
+        foreach (var window in matching)
+            window.SetVisible(!anyVisible);
     }
 }
