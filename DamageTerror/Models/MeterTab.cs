@@ -117,10 +117,21 @@ public class MeterTab
     [JsonConverter(typeof(TolerantEnumKeyDictionaryConverter))]
     public Dictionary<BarColumn, Vector4> ColumnValueColors { get; set; } = new();
 
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumKeyDictionaryConverter))]
+    public Dictionary<BarColumn, float> ColumnWidthOverrides { get; set; } = new();
+
     public Vector4? GetColumnValueColor(BarColumn col)
     {
         if (ColumnValueColors.TryGetValue(col, out var color))
             return color;
+        return null;
+    }
+
+    public float? GetColumnWidth(BarColumn col)
+    {
+        if (ColumnWidthOverrides.TryGetValue(col, out var width))
+            return width;
         return null;
     }
 
@@ -309,6 +320,7 @@ public class MeterTab
             ColumnHeaderLabels = new Dictionary<BarColumn, string>(ColumnHeaderLabels),
             ColumnFormatOverrides = ColumnFormatOverrides.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()),
             ColumnValueColors = new Dictionary<BarColumn, Vector4>(ColumnValueColors),
+            ColumnWidthOverrides = new Dictionary<BarColumn, float>(ColumnWidthOverrides),
             CustomJobFilter = new List<string>(CustomJobFilter),
             TooltipFields = new List<TooltipField>(TooltipFields),
             TooltipFieldLabels = new Dictionary<TooltipField, string>(TooltipFieldLabels),

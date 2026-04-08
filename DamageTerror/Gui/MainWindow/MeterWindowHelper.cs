@@ -136,7 +136,9 @@ internal static class MeterWindowHelper
             colWidths = new Dictionary<BarColumn, float>();
             foreach (var col in columnOrder)
             {
-                if (CombatantBarComponent.ColumnWidthTemplates.TryGetValue(col, out var template))
+                if (activeTab?.GetColumnWidth(col) is { } customW)
+                    colWidths[col] = customW;
+                else if (CombatantBarComponent.ColumnWidthTemplates.TryGetValue(col, out var template))
                     colWidths[col] = ImGui.CalcTextSize(template).X;
                 else
                     colWidths[col] = 0f;

@@ -311,7 +311,7 @@ public class CombatantBarComponent
                 ? GetGroupColumnDisplayValue(col, config, activeTab, groupAggregates)
                 : GetColumnDisplayValue(combatant, col, config, activeTab);
             if (!ColumnWidthTemplates.TryGetValue(col, out var template)) continue;
-            var colW = ImGui.CalcTextSize(template).X;
+            var colW = activeTab?.GetColumnWidth(col) ?? ImGui.CalcTextSize(template).X;
             rightX -= colW;
             var colColor = activeTab?.GetColumnValueColor(col);
             var valColor = colColor.HasValue ? ImGui.ColorConvertFloat4ToU32(colColor.Value) : defaultValColor;

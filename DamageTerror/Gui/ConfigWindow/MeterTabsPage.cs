@@ -367,6 +367,22 @@ public static class MeterTabsPage
                     ImGui.EndPopup();
                 }
 
+                ImGui.SameLine();
+                var hasWidth = tab.ColumnWidthOverrides.ContainsKey(col);
+                if (hasWidth)
+                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.4f, 1.0f, 0.4f, 1.0f));
+                if (ImGui.SmallButton($"W##wid_{col}"))
+                    ImGui.OpenPopup($"##widPopup_{col}");
+                if (hasWidth)
+                    ImGui.PopStyleColor();
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(hasWidth ? "Custom width (click to edit)" : "Set custom column width");
+                if (ImGui.BeginPopup($"##widPopup_{col}"))
+                {
+                    extChanged |= DrawColumnWidthPopup(col, tab.ColumnWidthOverrides);
+                    ImGui.EndPopup();
+                }
+
                 return extChanged;
             };
 
@@ -688,6 +704,43 @@ public static class MeterTabsPage
             if (ImGui.ColorEdit4($"##colClr_{col}", ref current, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
             {
                 colors[col] = current;
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    private static bool DrawColumnWidthPopup(BarColumn col, Dictionary<BarColumn, float> widths)
+    {
+        var changed = false;
+        var hasWidth = widths.TryGetValue(col, out var current);
+
+        if (!hasWidth)
+        {
+            current = 50f;
+        }
+
+        var useCustom = hasWidth;
+        if (ImGui.Checkbox("Use custom width", ref useCustom))
+        {
+            if (useCustom)
+            {
+                widths[col] = current;
+            }
+            else
+            {
+                widths.Remove(col);
+            }
+            changed = true;
+        }
+
+        if (useCustom)
+        {
+            ImGui.SetNextItemWidth(150);
+            if (ImGui.DragFloat($"##colWid_{col}", ref current, 1f, 20f, 300f, "%.0f px"))
+            {
+                widths[col] = current;
                 changed = true;
             }
         }
