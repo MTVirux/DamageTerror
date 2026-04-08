@@ -17,10 +17,7 @@ public class DataService : IDisposable
     private DateTime lastCombatDataTime;
     private readonly List<string[]> pendingLogLines = new();
 
-    /// <summary>Interval in seconds between periodic graph data captures during active encounters.</summary>
     private const float PeriodicSaveInterval = 30f;
-
-    /// <summary>Seconds without CombatData before marking an active encounter as stale.</summary>
     private const double StalenessTimeoutSeconds = 15.0;
 
     public EncounterTimer EncounterTimer { get; } = new();
@@ -50,7 +47,7 @@ public class DataService : IDisposable
         SkillTracker.SetDependencies(EncounterTimer, GraphTracker, StatusTracker);
         StatusTracker.SetSkillTracker(SkillTracker);
 
-        Store = new EncounterStore();
+        Store = new EncounterStore(config);
 
         var configDir = pluginInterface.GetPluginConfigDirectory();
         var savePath = System.IO.Path.Combine(configDir, "encounters.json");
@@ -302,33 +299,13 @@ public class DataService : IDisposable
 
             // Replay any log lines that arrived between the last CombatData
             // and this one so the first skill of a new encounter is not lost.
-            // Atomically snapshot and clear so lines arriving during the rest of
-            // OnCombatData processing are not lost.
-            string[][] pendingSnapshot;
-            lock (pendingLogLines)
-            {
-                pendingSnapshot = pendingLogLines.ToArray();
-                pendingLogLines.Clear();
-            }
-            foreach (var pending in pendingSnapshot)
-                SkillTracker.ProcessLogLine(pending);
+            DrainPendingLogLines();
         }
 
         wasActive = snapshot.Encounter.IsActive;
 
-        // For continuing encounters, process buffered log lines so the
-        // tracker has up-to-date skill data for this CombatData tick.
         if (!isNewEncounter)
-        {
-            string[][] pendingSnapshot;
-            lock (pendingLogLines)
-            {
-                pendingSnapshot = pendingLogLines.ToArray();
-                pendingLogLines.Clear();
-            }
-            foreach (var pending in pendingSnapshot)
-                SkillTracker.ProcessLogLine(pending);
-        }
+            DrainPendingLogLines();
 
         if (!string.IsNullOrEmpty(PlayerName))
             snapshot.PlayerName = PlayerName;
@@ -495,16 +472,24 @@ public class DataService : IDisposable
         return map;
     }
 
+    private void DrainPendingLogLines()
+    {
+        string[][] snapshot;
+        lock (pendingLogLines)
+        {
+            snapshot = pendingLogLines.ToArray();
+            pendingLogLines.Clear();
+        }
+
+        foreach (var line in snapshot)
+            SkillTracker.ProcessLogLine(line);
+    }
+
     private void OnLogLine(string[] line)
     {
         lock (pendingLogLines)
             pendingLogLines.Add(line);
 
-        // Lines are processed in batch during OnCombatData replay.
-
-        // Extract player name from LogLine type 02 (ChangePrimaryPlayer) as a
-        // reliable fallback — the separate ChangePrimaryPlayer event is a cached
-        // event in OverlayPlugin and may not be delivered before the first CombatData.
         if (line.Length >= 4 && line[0] == "02" && !string.IsNullOrEmpty(line[3]))
         {
             if (uint.TryParse(line[2], System.Globalization.NumberStyles.HexNumber,
