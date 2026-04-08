@@ -160,7 +160,7 @@ public class WebSocketDataSource : IDataSource
         }
         catch (Exception ex)
         {
-            ServiceManager.PluginLog.Debug($"WebSocket disconnect error: {ex.Message}");
+            log.Debug($"WebSocket disconnect error: {ex.Message}");
         }
         finally
         {
