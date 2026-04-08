@@ -106,71 +106,14 @@ public class GraphViewComponent
 
         var metricCount = (showDps ? 1 : 0) + (showHps ? 1 : 0) + (showDtps ? 1 : 0);
 
-        ImPlot.PushStyleColor(ImPlotCol.Bg, config.GraphViewBackgroundColor);
-        ImPlot.PushStyleColor(ImPlotCol.FrameBg, new Vector4(0, 0, 0, 0));
-
-        var plotFlags = ImPlotFlags.NoMouseText;
-        if (!config.GraphViewShowLegend)
-            plotFlags |= ImPlotFlags.NoLegend;
-
-        var xAxisFlags = ImPlotAxisFlags.None;
-        if (!config.GraphViewShowGrid)
-            xAxisFlags |= ImPlotAxisFlags.NoGridLines;
-        if (!config.GraphViewShowXAxisLabels)
-            xAxisFlags |= ImPlotAxisFlags.NoTickLabels;
-
-        var yAxisFlags = maxVal > 0f ? ImPlotAxisFlags.AutoFit : ImPlotAxisFlags.None;
-        if (!config.GraphViewShowGrid)
-            yAxisFlags |= ImPlotAxisFlags.NoGridLines;
-        if (!config.GraphViewShowYAxisLabels)
-            yAxisFlags |= ImPlotAxisFlags.NoTickLabels;
-
-        if (config.GraphViewShowGrid)
-        {
-            ImPlot.PushStyleColor(ImPlotCol.AxisGrid, config.GraphViewGridColor);
-        }
+        var gs = GraphSettings.FromGraphView(config);
+        GraphRenderHelper.PushGraphStyles(in gs);
+        var (plotFlags, xAxisFlags, yAxisFlags) = GraphRenderHelper.ComputePlotFlags(in gs, maxVal);
 
         if (ImPlot.BeginPlot("##GraphView", new Vector2(regionW, graphH), plotFlags))
         {
-            ImPlot.SetupAxes("", "", xAxisFlags, yAxisFlags);
-            if (!plotFlags.HasFlag(ImPlotFlags.NoLegend))
-                ImPlot.SetupLegend(ImPlotLocation.NorthWest);
-            // Use Always when actively receiving data to keep axis locked; Once when done to allow zoom/pan
-            var isActivelyUpdating = isLive && snapshot?.Encounter.IsActive == true;
-            var justEnded = wasActivelyUpdating && !isActivelyUpdating;
-            wasActivelyUpdating = isActivelyUpdating;
-            var axisLimitCond = (isActivelyUpdating || justEnded) ? ImPlotCond.Always : ImPlotCond.Once;
-
-            if (config.GraphViewAutoScroll && isActivelyUpdating && maxTime > config.GraphViewAutoScrollWindow)
-            {
-                var windowSec = config.GraphViewAutoScrollWindow;
-                var targetMin = maxTime - windowSec;
-                var targetMax = maxTime + windowSec * (config.GraphViewXAxisPadding - 1f);
-                var dt = ImGui.GetIO().DeltaTime;
-                var speed = config.GraphViewAutoScrollSmoothing;
-                var t = (float)Math.Min(1.0, speed * dt);
-                if (double.IsNaN(scrollXMin) || double.IsNaN(scrollXMax))
-                {
-                    scrollXMin = targetMin;
-                    scrollXMax = targetMax;
-                }
-                else
-                {
-                    scrollXMin += (targetMin - scrollXMin) * t;
-                    scrollXMax += (targetMax - scrollXMax) * t;
-                }
-                ImPlot.SetupAxisLimits(ImAxis.X1, scrollXMin, scrollXMax, axisLimitCond);
-            }
-            else
-            {
-                if (!double.IsNaN(scrollXMin)) { scrollXMin = double.NaN; scrollXMax = double.NaN; }
-                ImPlot.SetupAxisLimits(ImAxis.X1, 0, maxTime * config.GraphViewXAxisPadding, axisLimitCond);
-            }
-            ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, double.MaxValue);
-
-            // Custom Y-axis ticks with K/M abbreviations, skipping 0
-            if (maxVal > 0f) GraphRenderHelper.SetupAbbreviatedYTicks(maxVal, config.GraphViewYAxisHeadroom, config.GraphViewYAxisTickCount);
-            else ImPlot.SetupAxisLimits(ImAxis.Y1, 0, 1, ImPlotCond.Always);
+            GraphRenderHelper.SetupGraphAxes(in gs, plotFlags, xAxisFlags, yAxisFlags, maxTime, maxVal,
+                isLive, snapshot?.Encounter.IsActive == true, ref wasActivelyUpdating, ref scrollXMin, ref scrollXMax);
 
             var defaultThickness = config.GraphViewLineThickness;
             var selfThickness = config.GraphViewHighlightSelf ? config.GraphViewSelfLineThickness : defaultThickness;
@@ -430,20 +373,7 @@ public class GraphViewComponent
                 }
             }
 
-            // Custom mouse position text — X axis only with "s" suffix
-            if (ImPlot.IsPlotHovered())
-            {
-                var pos = ImPlot.GetPlotMousePos();
-                var plotRect = ImPlot.GetPlotPos();
-                var plotSize = ImPlot.GetPlotSize();
-                var text = $"{pos.X:F1}s";
-                var textSize = ImGui.CalcTextSize(text);
-                var drawList = ImPlot.GetPlotDrawList();
-                drawList.AddText(
-                    new Vector2(plotRect.X + plotSize.X - textSize.X - 4, plotRect.Y + plotSize.Y - textSize.Y - 4),
-                    ImGui.GetColorU32(new Vector4(1, 1, 1, config.GraphViewMouseTextOpacity)),
-                    text);
-            }
+            GraphRenderHelper.DrawMousePositionText(gs.MouseTextOpacity);
 
             // Middle-click context menu (right-click opens ImPlot's native axis controls)
             if (ImGui.BeginPopupContextItem("##GraphViewCtx", ImGuiPopupFlags.MouseButtonMiddle))
@@ -488,10 +418,7 @@ public class GraphViewComponent
             ImPlot.EndPlot();
         }
 
-        if (config.GraphViewShowGrid)
-            ImPlot.PopStyleColor(); // AxisGrid
-
-        ImPlot.PopStyleColor(2); // PlotBg, FrameBg
+        GraphRenderHelper.PopGraphStyles(gs.ShowGrid);
     }
 
     private static void FindNearest(SkillUseEvent ev, float[] times, float[] values,

@@ -5,8 +5,158 @@ using ImPlot = Dalamud.Bindings.ImPlot.ImPlot;
 
 namespace DamageTerror.Gui.MainWindow;
 
+internal struct GraphSettings
+{
+    public Vector4 BackgroundColor;
+    public Vector4 GridColor;
+    public bool ShowLegend;
+    public bool ShowGrid;
+    public bool ShowXAxisLabels;
+    public bool ShowYAxisLabels;
+    public bool AutoScroll;
+    public float AutoScrollWindow;
+    public float AutoScrollSmoothing;
+    public float XAxisPadding;
+    public float YAxisHeadroom;
+    public int YAxisTickCount;
+    public float MouseTextOpacity;
+
+    public static GraphSettings FromGraphView(Configuration config) => new()
+    {
+        BackgroundColor = config.GraphViewBackgroundColor,
+        GridColor = config.GraphViewGridColor,
+        ShowLegend = config.GraphViewShowLegend,
+        ShowGrid = config.GraphViewShowGrid,
+        ShowXAxisLabels = config.GraphViewShowXAxisLabels,
+        ShowYAxisLabels = config.GraphViewShowYAxisLabels,
+        AutoScroll = config.GraphViewAutoScroll,
+        AutoScrollWindow = config.GraphViewAutoScrollWindow,
+        AutoScrollSmoothing = config.GraphViewAutoScrollSmoothing,
+        XAxisPadding = config.GraphViewXAxisPadding,
+        YAxisHeadroom = config.GraphViewYAxisHeadroom,
+        YAxisTickCount = config.GraphViewYAxisTickCount,
+        MouseTextOpacity = config.GraphViewMouseTextOpacity,
+    };
+
+    public static GraphSettings FromDetail(Configuration config) => new()
+    {
+        BackgroundColor = config.GraphBackgroundColor,
+        GridColor = config.GraphGridColor,
+        ShowLegend = config.GraphShowLegend,
+        ShowGrid = config.GraphShowGrid,
+        ShowXAxisLabels = config.GraphShowXAxisLabels,
+        ShowYAxisLabels = config.GraphShowYAxisLabels,
+        AutoScroll = config.GraphAutoScroll,
+        AutoScrollWindow = config.GraphAutoScrollWindow,
+        AutoScrollSmoothing = config.GraphAutoScrollSmoothing,
+        XAxisPadding = config.GraphXAxisPadding,
+        YAxisHeadroom = config.GraphYAxisHeadroom,
+        YAxisTickCount = config.GraphYAxisTickCount,
+        MouseTextOpacity = config.GraphMouseTextOpacity,
+    };
+}
+
 internal static class GraphRenderHelper
 {
+    public static void PushGraphStyles(in GraphSettings settings)
+    {
+        ImPlot.PushStyleColor(ImPlotCol.Bg, settings.BackgroundColor);
+        ImPlot.PushStyleColor(ImPlotCol.FrameBg, new Vector4(0, 0, 0, 0));
+        if (settings.ShowGrid)
+            ImPlot.PushStyleColor(ImPlotCol.AxisGrid, settings.GridColor);
+    }
+
+    public static void PopGraphStyles(bool showGrid)
+    {
+        if (showGrid)
+            ImPlot.PopStyleColor();
+        ImPlot.PopStyleColor(2);
+    }
+
+    public static (ImPlotFlags plot, ImPlotAxisFlags x, ImPlotAxisFlags y) ComputePlotFlags(in GraphSettings settings, float maxVal)
+    {
+        var plotFlags = ImPlotFlags.NoMouseText;
+        if (!settings.ShowLegend) plotFlags |= ImPlotFlags.NoLegend;
+
+        var xAxisFlags = ImPlotAxisFlags.None;
+        if (!settings.ShowGrid) xAxisFlags |= ImPlotAxisFlags.NoGridLines;
+        if (!settings.ShowXAxisLabels) xAxisFlags |= ImPlotAxisFlags.NoTickLabels;
+
+        var yAxisFlags = maxVal > 0f ? ImPlotAxisFlags.AutoFit : ImPlotAxisFlags.None;
+        if (!settings.ShowGrid) yAxisFlags |= ImPlotAxisFlags.NoGridLines;
+        if (!settings.ShowYAxisLabels) yAxisFlags |= ImPlotAxisFlags.NoTickLabels;
+
+        return (plotFlags, xAxisFlags, yAxisFlags);
+    }
+
+    public static void SetupGraphAxes(
+        in GraphSettings settings,
+        ImPlotFlags plotFlags,
+        ImPlotAxisFlags xAxisFlags,
+        ImPlotAxisFlags yAxisFlags,
+        float maxTime,
+        float maxVal,
+        bool isLive,
+        bool encounterActive,
+        ref bool wasActivelyUpdating,
+        ref double scrollXMin,
+        ref double scrollXMax)
+    {
+        ImPlot.SetupAxes("", "", xAxisFlags, yAxisFlags);
+        if (!plotFlags.HasFlag(ImPlotFlags.NoLegend))
+            ImPlot.SetupLegend(ImPlotLocation.NorthWest);
+
+        var isActivelyUpdating = isLive && encounterActive;
+        var justEnded = wasActivelyUpdating && !isActivelyUpdating;
+        wasActivelyUpdating = isActivelyUpdating;
+        var axisLimitCond = (isActivelyUpdating || justEnded) ? ImPlotCond.Always : ImPlotCond.Once;
+
+        if (settings.AutoScroll && isActivelyUpdating && maxTime > settings.AutoScrollWindow)
+        {
+            var windowSec = settings.AutoScrollWindow;
+            var targetMin = maxTime - windowSec;
+            var targetMax = maxTime + windowSec * (settings.XAxisPadding - 1f);
+            var dt = ImGui.GetIO().DeltaTime;
+            var speed = settings.AutoScrollSmoothing;
+            var t = (float)Math.Min(1.0, speed * dt);
+            if (double.IsNaN(scrollXMin) || double.IsNaN(scrollXMax))
+            {
+                scrollXMin = targetMin;
+                scrollXMax = targetMax;
+            }
+            else
+            {
+                scrollXMin += (targetMin - scrollXMin) * t;
+                scrollXMax += (targetMax - scrollXMax) * t;
+            }
+            ImPlot.SetupAxisLimits(ImAxis.X1, scrollXMin, scrollXMax, axisLimitCond);
+        }
+        else
+        {
+            if (!double.IsNaN(scrollXMin)) { scrollXMin = double.NaN; scrollXMax = double.NaN; }
+            ImPlot.SetupAxisLimits(ImAxis.X1, 0, maxTime * settings.XAxisPadding, axisLimitCond);
+        }
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, double.MaxValue);
+
+        if (maxVal > 0f) SetupAbbreviatedYTicks(maxVal, settings.YAxisHeadroom, settings.YAxisTickCount);
+        else ImPlot.SetupAxisLimits(ImAxis.Y1, 0, 1, ImPlotCond.Always);
+    }
+
+    public static void DrawMousePositionText(float opacity)
+    {
+        if (!ImPlot.IsPlotHovered()) return;
+        var pos = ImPlot.GetPlotMousePos();
+        var plotRect = ImPlot.GetPlotPos();
+        var plotSize = ImPlot.GetPlotSize();
+        var text = $"{pos.X:F1}s";
+        var textSize = ImGui.CalcTextSize(text);
+        var drawList = ImPlot.GetPlotDrawList();
+        drawList.AddText(
+            new Vector2(plotRect.X + plotSize.X - textSize.X - 4, plotRect.Y + plotSize.Y - textSize.Y - 4),
+            ImGui.GetColorU32(new Vector4(1, 1, 1, opacity)),
+            text);
+    }
+
     public static float InterpolateValue(float[] times, float[]? values, float t)
     {
         if (values == null || values.Length == 0) return 0f;

@@ -187,19 +187,6 @@ public class CombatantDetailPanel
             if (dtpsVals != null) dtpsVals[i] = samples[i].Dtps;
         }
 
-        ImPlot.PushStyleColor(ImPlotCol.Bg, config.GraphBackgroundColor);
-        ImPlot.PushStyleColor(ImPlotCol.FrameBg, new Vector4(0, 0, 0, 0));
-
-        var plotFlags = ImPlotFlags.NoMouseText;
-        if (!config.GraphShowLegend)
-            plotFlags |= ImPlotFlags.NoLegend;
-
-        var xAxisFlags = ImPlotAxisFlags.None;
-        if (!config.GraphShowGrid)
-            xAxisFlags |= ImPlotAxisFlags.NoGridLines;
-        if (!config.GraphShowXAxisLabels)
-            xAxisFlags |= ImPlotAxisFlags.NoTickLabels;
-
         var maxTime = times[^1];
         if (maxTime <= 0f) maxTime = 1f;
         var maxVal = 0f;
@@ -210,56 +197,14 @@ public class CombatantDetailPanel
             if (dtpsVals != null && dtpsVals[i] > maxVal) maxVal = dtpsVals[i];
         }
 
-        var yAxisFlags = maxVal > 0f ? ImPlotAxisFlags.AutoFit : ImPlotAxisFlags.None;
-        if (!config.GraphShowGrid)
-            yAxisFlags |= ImPlotAxisFlags.NoGridLines;
-        if (!config.GraphShowYAxisLabels)
-            yAxisFlags |= ImPlotAxisFlags.NoTickLabels;
-
-        if (config.GraphShowGrid)
-        {
-            ImPlot.PushStyleColor(ImPlotCol.AxisGrid, config.GraphGridColor);
-        }
+        var gs = GraphSettings.FromDetail(config);
+        GraphRenderHelper.PushGraphStyles(in gs);
+        var (plotFlags, xAxisFlags, yAxisFlags) = GraphRenderHelper.ComputePlotFlags(in gs, maxVal);
 
         if (ImPlot.BeginPlot($"##DetailGraph_{index}", new Vector2(regionW, graphH), plotFlags))
         {
-            ImPlot.SetupAxes("", "", xAxisFlags, yAxisFlags);
-            // Use Always when actively receiving data to keep axis locked; Once when done to allow zoom/pan
-            var isActivelyUpdating = isLive && currentSnapshot?.Encounter.IsActive == true;
-            var justEnded = wasActivelyUpdating && !isActivelyUpdating;
-            wasActivelyUpdating = isActivelyUpdating;
-            var axisLimitCond = (isActivelyUpdating || justEnded) ? ImPlotCond.Always : ImPlotCond.Once;
-
-            if (config.GraphAutoScroll && isActivelyUpdating && maxTime > config.GraphAutoScrollWindow)
-            {
-                var windowSec = config.GraphAutoScrollWindow;
-                var targetMin = maxTime - windowSec;
-                var targetMax = maxTime + windowSec * (config.GraphXAxisPadding - 1f);
-                var dt = ImGui.GetIO().DeltaTime;
-                var speed = config.GraphAutoScrollSmoothing;
-                var t = (float)Math.Min(1.0, speed * dt);
-                if (double.IsNaN(scrollXMin) || double.IsNaN(scrollXMax))
-                {
-                    scrollXMin = targetMin;
-                    scrollXMax = targetMax;
-                }
-                else
-                {
-                    scrollXMin += (targetMin - scrollXMin) * t;
-                    scrollXMax += (targetMax - scrollXMax) * t;
-                }
-                ImPlot.SetupAxisLimits(ImAxis.X1, scrollXMin, scrollXMax, axisLimitCond);
-            }
-            else
-            {
-                if (!double.IsNaN(scrollXMin)) { scrollXMin = double.NaN; scrollXMax = double.NaN; }
-                ImPlot.SetupAxisLimits(ImAxis.X1, 0, maxTime * config.GraphXAxisPadding, axisLimitCond);
-            }
-            ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, double.MaxValue);
-
-            // Custom Y-axis ticks with K/M abbreviations, skipping 0
-            if (maxVal > 0f) GraphRenderHelper.SetupAbbreviatedYTicks(maxVal, config.GraphYAxisHeadroom, config.GraphYAxisTickCount);
-            else ImPlot.SetupAxisLimits(ImAxis.Y1, 0, 1, ImPlotCond.Always);
+            GraphRenderHelper.SetupGraphAxes(in gs, plotFlags, xAxisFlags, yAxisFlags, maxTime, maxVal,
+                isLive, currentSnapshot?.Encounter.IsActive == true, ref wasActivelyUpdating, ref scrollXMin, ref scrollXMax);
 
             var labelOffset = new Vector2(config.GraphLabelOffsetX, config.GraphLabelOffsetY);
 
@@ -424,20 +369,7 @@ public class CombatantDetailPanel
                 }
             }
 
-            // Custom mouse position text — X axis only with "s" suffix
-            if (ImPlot.IsPlotHovered())
-            {
-                var mousePos = ImPlot.GetPlotMousePos();
-                var plotRect = ImPlot.GetPlotPos();
-                var plotSize = ImPlot.GetPlotSize();
-                var text = $"{mousePos.X:F1}s";
-                var textSize = ImGui.CalcTextSize(text);
-                var drawList = ImPlot.GetPlotDrawList();
-                drawList.AddText(
-                    new Vector2(plotRect.X + plotSize.X - textSize.X - 4, plotRect.Y + plotSize.Y - textSize.Y - 4),
-                    ImGui.GetColorU32(new Vector4(1, 1, 1, config.GraphMouseTextOpacity)),
-                    text);
-            }
+            GraphRenderHelper.DrawMousePositionText(gs.MouseTextOpacity);
 
             // Middle-click context menu (right-click opens ImPlot's native axis controls)
             if (ImGui.BeginPopupContextItem($"##DetailGraphCtx_{index}", ImGuiPopupFlags.MouseButtonMiddle))
@@ -482,10 +414,7 @@ public class CombatantDetailPanel
             ImPlot.EndPlot();
         }
 
-        if (config.GraphShowGrid)
-            ImPlot.PopStyleColor(); // AxisGrid
-
-        ImPlot.PopStyleColor(2); // PlotBg, FrameBg
+        GraphRenderHelper.PopGraphStyles(gs.ShowGrid);
 
         ImGui.Spacing();
     }
