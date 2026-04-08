@@ -193,24 +193,8 @@ public class EncounterHeaderComponent
                 comboWasOpen = false;
             }
 
-        if (ImGui.BeginPopupContextItem("##enc_context"))
-        {
-            var scissorsIcon = FontAwesomeIcon.Cut.ToIconString();
-            ImGui.PushFont(UiBuilder.IconFont);
-            var iconSize = ImGui.CalcTextSize(scissorsIcon);
-            ImGui.PopFont();
-
-            ImGui.PushFont(UiBuilder.IconFont);
-            ImGui.Text(scissorsIcon);
-            ImGui.PopFont();
-            ImGui.SameLine();
-            if (ImGui.Selectable("Cut Encounter"))
-            {
-                Chat.SendMessage("/e end");
-            }
-
-            ImGui.EndPopup();
-        }
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+            ImGui.OpenPopup("##MainWindowContext");
 
         if (selBarPad > 0f)
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + selBarPad);
