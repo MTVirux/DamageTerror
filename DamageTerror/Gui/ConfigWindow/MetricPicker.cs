@@ -266,6 +266,9 @@ public static class MetricPicker
 
                 if (ImGui.BeginTabItem(catName))
                 {
+                    if (catName == "Group" && ImGui.IsItemHovered())
+                        ImGui.SetTooltip("These metrics specifically abide by this tab's filters");
+
                     catDisabled.Sort((a, b) =>
                         string.Compare(getLabel(a), getLabel(b), StringComparison.OrdinalIgnoreCase));
 
@@ -293,6 +296,10 @@ public static class MetricPicker
                     }
 
                     ImGui.EndTabItem();
+                }
+                else if (catName == "Group" && ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip("These metrics specifically abide by this tab's filters");
                 }
             }
 
@@ -323,7 +330,14 @@ public static class MetricPicker
         foreach (var (catName, catItems) in categories)
         {
             if (!ImGui.BeginTabItem(catName))
+            {
+                if (catName == "Group" && ImGui.IsItemHovered())
+                    ImGui.SetTooltip("These metrics specifically abide by this tab's filters");
                 continue;
+            }
+
+            if (catName == "Group" && ImGui.IsItemHovered())
+                ImGui.SetTooltip("These metrics specifically abide by this tab's filters");
 
             List<T> order;
             if (sectionOrder != null)
