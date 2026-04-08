@@ -112,14 +112,14 @@ internal static class SampleDataGenerator
     {
         var combatants = new List<CombatantEntry>
         {
-            MakeCombatant("Vermillion Terror", "Blm", 27800, 0, isLocal: true),
-            MakeCombatant("Rtb Baytolachefe", "War", 15200, 0),
-            MakeCombatant("Marcelo Benevides", "Whm", 3400, 18500),
-            MakeCombatant("Red Diamond", "Drg", 26100, 0),
-            MakeCombatant("Atrina Vermillion", "Rpr", 25900, 0),
-            MakeCombatant("Oleg Akwirit", "Pld", 14800, 0),
-            MakeCombatant("Sanaya Minatozaki", "Drg", 25400, 0),
-            MakeCombatant("Nestfexia Reanna", "Sge", 22300, 16800),
+            MakeCombatant("Vermillion Terror", "Blm", 28200, 0, isLocal: true),
+            MakeCombatant("Rtb Baytolachefe", "Pld", 14500, 0),
+            MakeCombatant("Marcelo Benevides", "Whm", 4800, 18500),
+            MakeCombatant("Red Diamond", "Drg", 26500, 0),
+            MakeCombatant("Atrina Vermillion", "Rpr", 29200, 0),
+            MakeCombatant("Nikita Airisu", "Pct", 27400, 0),
+            MakeCombatant("Kotoshiro Dazaria", "War", 15600, 0),
+            MakeCombatant("Nestfexia Reanna", "Rdm", 30100, 4200),
         };
 
         return BuildSnapshot(combatants, "The Omega Protocol (Ultimate)", "Alphascape V4.0", "08:32");
@@ -143,15 +143,15 @@ internal static class SampleDataGenerator
         var combatants = new List<CombatantEntry>();
         var names = new[]
         {
-            ("Storm Blade", "War"), ("Onyx Shield", "Drk"),
-            ("Starfire Mage", "Rdm"), ("Shadow Strike", "Nin"),
+            ("Kotoshiro Dazaria", "War"), ("Onyx Shield", "Drk"),
+            ("Nestefxia Reanna", "Rdm"), ("Shadow Strike", "Nin"),
             ("Wild Rose", "Brd"), ("Guiding Light", "Sge"),
             ("Thunder Fist", "Mnk"), ("Frost Caller", "Blm"),
-            ("Cerulean Shot", "Mch"), ("Golden Sun", "Whm"),
-            ("Emerald Lance", "Drg"), ("Crystal Star", "Pct"),
-            ("Blazing Heart", "Sam"), ("Phantom Edge", "Rpr"),
+            ("Cerulean Shot", "Mch"), ("Marcelo Benevides", "Whm"),
+            ("Red Diamond", "Drg"), ("Nikita Airisu", "Pct"),
+            ("Blazing Heart", "Sam"), ("Atrina Vermillion", "Rpr"),
             ("Dusk Warden", "Gnb"), ("Morning Dew", "Ast"),
-            ("Steel Resolve", "Pld"), ("Tidal Wave", "Smn"),
+            ("Rtb Baytolachefe", "Pld"), ("Tidal Wave", "Smn"),
             ("Gentle Spark", "Dnc"), ("Arctic Fox", "Vpr"),
             ("Crimson Tide", "War"), ("Night Bloom", "Sch"),
             ("Solar Flare", "Blm"), ("Verdant Vine", "Whm"),
@@ -177,11 +177,11 @@ internal static class SampleDataGenerator
         var pvpNames = new[]
         {
             // Maelstrom (24)
-            ("Tidal Sword", "War"), ("Rtb Baytolachefe", "Pld"), ("Gale Runner", "Nin"), ("Vermillion Terrorr", "Blm"),
+            ("Kotoshiro Dazaria", "War"), ("Rtb Baytolachefe", "Pld"), ("Gale Runner", "Nin"), ("Vermillion Terrorr", "Blm"),
             ("Coral Shield", "Gnb"), ("Marcelo Benevides", "Whm"), ("Red Diamond", "Drg"), ("Riptide Shot", "Mch"),
             ("Sea Breeze", "Dnc"), ("Ocean Fury", "Sam"), ("Atrina Vermillion", "Rpr"), ("Brine Sage", "Sge"),
             ("Sanaya Minatozaki", "Drg"), ("Whirlpool", "Smn"), ("Tsunami Edge", "Drk"), ("Tide Caller", "Ast"),
-            ("Surge Strike", "Vpr"), ("Coral Bloom", "Pct"), ("Tataru Terror", "Rdm"), ("Nestfexia Reanna", "Rdm"),
+            ("Surge Strike", "Vpr"), ("Nikita Airisu", "Pct"), ("Tataru Terror", "Rdm"), ("Nestefxia Reanna", "Rdm"),
             ("Salt Spray", "War"), ("Abyssal Ward", "Sch"), ("Storm Chaser", "Blm"), ("Oleg Arkwirit", "Pld"),
 
             // Twin Adder (24)
