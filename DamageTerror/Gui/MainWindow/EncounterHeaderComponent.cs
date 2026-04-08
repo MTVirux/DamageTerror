@@ -133,6 +133,7 @@ public class EncounterHeaderComponent
                         if (ImGui.Selectable(activeLabel, selectedIndex == -1))
                             selectedIndex = -1;
 
+                        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(5, 5));
                         if (ImGui.BeginPopupContextItem("##enc_remove_active"))
                         {
                             ImGui.PushFont(UiBuilder.IconFont);
@@ -146,6 +147,7 @@ public class EncounterHeaderComponent
                             }
                             ImGui.EndPopup();
                         }
+                        ImGui.PopStyleVar();
                     }
                 }
 
@@ -164,6 +166,7 @@ public class EncounterHeaderComponent
                     if (ImGui.Selectable(label, selectedIndex == i))
                         selectedIndex = i;
 
+                    ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(5, 5));
                     if (ImGui.BeginPopupContextItem($"##enc_remove_{i}"))
                     {
                         ImGui.PushFont(UiBuilder.IconFont);
@@ -180,6 +183,7 @@ public class EncounterHeaderComponent
                         }
                         ImGui.EndPopup();
                     }
+                    ImGui.PopStyleVar();
                 }
 
                 ImGui.EndCombo();

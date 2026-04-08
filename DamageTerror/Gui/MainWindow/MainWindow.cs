@@ -384,7 +384,7 @@ public class MainWindow : Window, IDisposable
         var mainWindowPos = ImGui.GetWindowPos();
         var mainWindowSize = ImGui.GetWindowSize();
 
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(3, 3));
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(5, 5));
         if (ImGui.BeginPopup("##MainWindowContext"))
         {
             // Go to Live (hide if already viewing live)
@@ -502,6 +502,7 @@ public class MainWindow : Window, IDisposable
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 SelectedMeterTab = i;
 
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(5, 5));
             if (ImGui.BeginPopupContextItem($"##tabCtx{i}"))
             {
                 if (plugin.IsTabPoppedOut(tab.Id))
@@ -516,6 +517,7 @@ public class MainWindow : Window, IDisposable
                 }
                 ImGui.EndPopup();
             }
+            ImGui.PopStyleVar();
 
             drawList.AddRectFilled(btnMin, btnMax, ImGui.ColorConvertFloat4ToU32(bgColor), rounding);
 
