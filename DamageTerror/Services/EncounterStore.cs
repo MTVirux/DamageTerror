@@ -7,6 +7,7 @@ public class EncounterStore
 {
     private readonly object syncLock = new();
     private readonly List<EncounterSnapshot> history = new();
+    private readonly Configuration config;
     private EncounterSnapshot? active;
     private bool wasActive;
     private bool suppressActive;
@@ -18,8 +19,9 @@ public class EncounterStore
     private SampleCombatSimulator? sampleSimulator;
     private Func<CombatantEntry?>? pendingFactory;
 
-    public EncounterStore()
+    public EncounterStore(Configuration config)
     {
+        this.config = config;
     }
 
     public EncounterSnapshot? ActiveEncounter
@@ -354,10 +356,6 @@ public class EncounterStore
 
     private void PruneHistoryLocked()
     {
-        var config = DamageTerrorPlugin.Instance?.Config;
-        if (config == null)
-            return;
-
         var removed = false;
 
         if (config.HistoryLimitMode == HistoryLimitMode.Count)
