@@ -88,7 +88,7 @@ public static class LayoutPage
         ImGui.Separator();
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset to Default"))
+        if (ConfigHelpers.ShiftResetButton("Reset to Default"))
         {
             config.Layout = new List<LayoutElement>
             {

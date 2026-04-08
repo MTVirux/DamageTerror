@@ -403,7 +403,7 @@ public static class MetricPicker
 
             if (sectionOrder != null)
             {
-                if (ImGui.Button($"Reset Order##{catName}"))
+                if (ConfigHelpers.ShiftResetButton($"Reset Order##{catName}"))
                 {
                     sectionOrder[catName] = new List<T>(catItems);
                     changed = true;

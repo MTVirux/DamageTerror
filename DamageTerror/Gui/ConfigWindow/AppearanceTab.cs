@@ -888,7 +888,7 @@ public class AppearanceTab
 
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset Header"))
+        if (ConfigHelpers.ShiftResetButton("Reset Header"))
         {
             config.HeaderTextColor = new Vector4(0.7f, 0.7f, 0.7f, 0.9f);
             config.HeaderBackgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -1086,7 +1086,7 @@ public class AppearanceTab
 
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset Selection Bar"))
+        if (ConfigHelpers.ShiftResetButton("Reset Selection Bar"))
         {
             config.SelectionBarTextColor = new Vector4(1f, 1f, 1f, 1f);
             config.SelectionBarBackgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -1136,7 +1136,7 @@ public class AppearanceTab
             changed |= ConfigHelpers.ColorEditProp("Limit Break", config.LimitBreakColor, v => config.LimitBreakColor = v);
             changed |= ConfigHelpers.ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
 
-            if (ImGui.Button("Reset Per-Job Colors"))
+            if (ConfigHelpers.ShiftResetButton("Reset Per-Job Colors"))
             {
                 config.JobColors.Clear();
                 changed = true;
@@ -1145,7 +1145,7 @@ public class AppearanceTab
 
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset All Colors"))
+        if (ConfigHelpers.ShiftResetButton("Reset All Colors"))
         {
             config.TankColor = new Vector4(0.2f, 0.4f, 0.8f, 1.0f);
             config.HealerColor = new Vector4(0.2f, 0.7f, 0.3f, 1.0f);
@@ -1364,7 +1364,7 @@ public class AppearanceTab
 
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset Details"))
+        if (ConfigHelpers.ShiftResetButton("Reset Details"))
         {
             config.DetailBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
             config.DetailLabelColor = new Vector4(0.7f, 0.7f, 0.7f, 1f);
@@ -1417,7 +1417,7 @@ public class AppearanceTab
 
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset Skill Colors"))
+        if (ConfigHelpers.ShiftResetButton("Reset Skill Colors"))
         {
             config.SkillDamageFillColor = new Vector4(0.35f, 0.35f, 0.55f, 0.7f);
             config.SkillHealingFillColor = new Vector4(0.25f, 0.50f, 0.30f, 0.7f);
@@ -1634,7 +1634,7 @@ public class AppearanceTab
 
             ImGui.Spacing();
 
-            if (ImGui.Button("Reset Graph"))
+            if (ConfigHelpers.ShiftResetButton("Reset Graph"))
             {
                 config.GraphHeight = 120f;
                 config.GraphLineThickness = 2f;
@@ -1719,7 +1719,7 @@ public class AppearanceTab
 
             ImGui.Spacing();
 
-            if (ImGui.Button("Reset Buff Colors"))
+            if (ConfigHelpers.ShiftResetButton("Reset Buff Colors"))
             {
                 config.BuffFillColor = new Vector4(0.30f, 0.50f, 0.60f, 0.7f);
                 config.DebuffFillColor = new Vector4(0.60f, 0.30f, 0.30f, 0.7f);
@@ -1963,7 +1963,7 @@ public class AppearanceTab
 
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset Graph View"))
+        if (ConfigHelpers.ShiftResetButton("Reset Graph View"))
         {
             config.GraphViewAutoHeight = true;
             config.GraphViewHeight = 300f;
@@ -2045,7 +2045,7 @@ public class AppearanceTab
 
                 ImGui.SameLine();
 
-                if (config.CustomFontSpecJson != null && ImGui.Button("Reset to Default"))
+                if (config.CustomFontSpecJson != null && ConfigHelpers.ShiftResetButton("Reset to Default"))
                 {
                     fontService.ClearCustomFont();
                     changed = true;
@@ -2130,7 +2130,7 @@ public class AppearanceTab
 
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset Sizes"))
+        if (ConfigHelpers.ShiftResetButton("Reset Sizes"))
         {
             config.BarFontSize = 14f;
             config.HeaderFontSize = 14f;

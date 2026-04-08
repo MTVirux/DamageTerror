@@ -128,4 +128,15 @@ public static class ConfigHelpers
 
         return changed;
     }
+
+    public static bool ShiftResetButton(string label)
+    {
+        var shiftHeld = ImGui.GetIO().KeyShift;
+        if (!shiftHeld) ImGui.BeginDisabled();
+        var pressed = ImGui.Button(label);
+        if (!shiftHeld) ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGui.SetTooltip("Click while holding SHIFT to reset");
+        return pressed;
+    }
 }
