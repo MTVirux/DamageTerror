@@ -759,26 +759,37 @@ public class CombatantDetailPanel
                 first = true;
             }
 
+            var colColor = activeTab?.GetColumnValueColor(col);
+
             if (col == BarColumn.Deaths)
             {
                 var deathLabel = activeTab != null ? activeTab.GetDetailColumnLabel(BarColumn.Deaths) : "Deaths";
                 if (!first) ImGui.SameLine();
                 ImGui.TextColored(lc, first ? $"{deathLabel}:" : $"  {deathLabel}:");
                 ImGui.SameLine();
-                ImGui.TextUnformatted(value);
+                if (colColor.HasValue)
+                    ImGui.TextColored(colColor.Value, value);
+                else
+                    ImGui.TextUnformatted(value);
             }
             else if (first)
             {
                 ImGui.TextColored(lc, $"{label}:");
                 ImGui.SameLine();
-                ImGui.TextUnformatted(value);
+                if (colColor.HasValue)
+                    ImGui.TextColored(colColor.Value, value);
+                else
+                    ImGui.TextUnformatted(value);
             }
             else
             {
                 ImGui.SameLine();
                 ImGui.TextColored(lc, $"  {label}:");
                 ImGui.SameLine();
-                ImGui.TextUnformatted(value);
+                if (colColor.HasValue)
+                    ImGui.TextColored(colColor.Value, value);
+                else
+                    ImGui.TextUnformatted(value);
             }
 
             first = false;

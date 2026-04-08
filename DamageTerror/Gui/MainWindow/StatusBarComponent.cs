@@ -59,7 +59,8 @@ public class StatusBarComponent
         using var fontScope = FontScope.Push(config.GetFontScale(config.StatusBarFontSize));
 
         var isActive = encounter.Encounter.IsActive;
-        var textColor = ImGui.ColorConvertFloat4ToU32(isActive ? config.StatusBarActiveColor : config.StatusBarInactiveColor);
+        var activeColor = ImGui.ColorConvertFloat4ToU32(config.StatusBarActiveColor);
+        var defaultInactiveColor = ImGui.ColorConvertFloat4ToU32(config.StatusBarInactiveColor);
         var labelColor = ImGui.ColorConvertFloat4ToU32(config.StatusBarLabelColor);
         var textY = cursorPos.Y + (height - ImGui.GetTextLineHeight()) * 0.5f;
         var padding = config.StatusBarPadding;
@@ -87,6 +88,10 @@ public class StatusBarComponent
                     : localPlayer != null
                         ? CombatantBarComponent.GetColumnDisplayValue(localPlayer, col, config, tab)
                         : "0";
+                var colColor = tab?.GetColumnValueColor(col);
+                var textColor = isActive
+                    ? activeColor
+                    : colColor.HasValue ? ImGui.ColorConvertFloat4ToU32(colColor.Value) : defaultInactiveColor;
                 drawList.AddText(new Vector2(x, textY), textColor, valueText);
                 x += ImGui.CalcTextSize(valueText).X;
 
@@ -104,7 +109,8 @@ public class StatusBarComponent
             var timerText = encounter.Encounter.Duration;
             var timerWidth = ImGui.CalcTextSize(timerText).X;
             var rightX = cursorPos.X + windowWidth - padding - timerWidth;
-            drawList.AddText(new Vector2(rightX, textY), textColor, timerText);
+            var timerColor = isActive ? activeColor : defaultInactiveColor;
+            drawList.AddText(new Vector2(rightX, textY), timerColor, timerText);
         }
 
         ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + height));

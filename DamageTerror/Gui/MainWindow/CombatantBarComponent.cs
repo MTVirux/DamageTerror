@@ -296,7 +296,7 @@ public class CombatantBarComponent
         }
 
         var rightX = cursorPos.X + windowWidth - config.BarRightPadding;
-        var valColor = ImGui.ColorConvertFloat4ToU32(config.ValueTextColor);
+        var defaultValColor = ImGui.ColorConvertFloat4ToU32(config.ValueTextColor);
         var colSpacing = config.BarColumnSpacing;
 
         var columnOrder = activeTab?.ColumnOrder ?? new List<BarColumn>();
@@ -313,6 +313,8 @@ public class CombatantBarComponent
             if (!ColumnWidthTemplates.TryGetValue(col, out var template)) continue;
             var colW = ImGui.CalcTextSize(template).X;
             rightX -= colW;
+            var colColor = activeTab?.GetColumnValueColor(col);
+            var valColor = colColor.HasValue ? ImGui.ColorConvertFloat4ToU32(colColor.Value) : defaultValColor;
             drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(text).X) * 0.5f, textY), valColor, text);
             rightX -= colSpacing;
         }

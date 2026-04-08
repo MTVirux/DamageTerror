@@ -351,6 +351,22 @@ public static class MeterTabsPage
                     }
                 }
 
+                ImGui.SameLine();
+                var hasColor = tab.ColumnValueColors.ContainsKey(col);
+                if (hasColor)
+                    ImGui.PushStyleColor(ImGuiCol.Text, tab.ColumnValueColors[col]);
+                if (ImGui.SmallButton($"C##clr_{col}"))
+                    ImGui.OpenPopup($"##clrPopup_{col}");
+                if (hasColor)
+                    ImGui.PopStyleColor();
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(hasColor ? "Custom value color (click to edit)" : "Set custom value color");
+                if (ImGui.BeginPopup($"##clrPopup_{col}"))
+                {
+                    extChanged |= DrawColumnColorPopup(col, tab.ColumnValueColors);
+                    ImGui.EndPopup();
+                }
+
                 return extChanged;
             };
 
@@ -405,6 +421,21 @@ public static class MeterTabsPage
             }
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip(MetricPicker.GetBarColumnLabel(col));
+            ImGui.SameLine();
+            var hasColor = tab.ColumnValueColors.ContainsKey(col);
+            if (hasColor)
+                ImGui.PushStyleColor(ImGuiCol.Text, tab.ColumnValueColors[col]);
+            if (ImGui.SmallButton($"C##sbClr_{col}"))
+                ImGui.OpenPopup($"##sbClrPopup_{col}");
+            if (hasColor)
+                ImGui.PopStyleColor();
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(hasColor ? "Custom value color (click to edit)" : "Set custom value color");
+            if (ImGui.BeginPopup($"##sbClrPopup_{col}"))
+            {
+                extChanged |= DrawColumnColorPopup(col, tab.ColumnValueColors);
+                ImGui.EndPopup();
+            }
             return extChanged;
         };
         changed |= MetricPicker.Draw("statusBar", tab.StatusBarMetrics,
@@ -533,6 +564,23 @@ public static class MeterTabsPage
                 }
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip(MetricPicker.GetBarColumnLabel(col));
+
+                ImGui.SameLine();
+                var hasColor = tab.ColumnValueColors.ContainsKey(col);
+                if (hasColor)
+                    ImGui.PushStyleColor(ImGuiCol.Text, tab.ColumnValueColors[col]);
+                if (ImGui.SmallButton($"C##dtClr_{col}"))
+                    ImGui.OpenPopup($"##dtClrPopup_{col}");
+                if (hasColor)
+                    ImGui.PopStyleColor();
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(hasColor ? "Custom value color (click to edit)" : "Set custom value color");
+                if (ImGui.BeginPopup($"##dtClrPopup_{col}"))
+                {
+                    extChanged |= DrawColumnColorPopup(col, tab.ColumnValueColors);
+                    ImGui.EndPopup();
+                }
+
                 return extChanged;
             };
             changed |= MetricPicker.DrawCategorized("detailVis", tab.DetailVisibleColumns,
@@ -609,6 +657,42 @@ public static class MeterTabsPage
             }
             ImGui.TreePop();
         }
+    }
+
+    private static bool DrawColumnColorPopup(BarColumn col, Dictionary<BarColumn, Vector4> colors)
+    {
+        var changed = false;
+        var hasColor = colors.TryGetValue(col, out var current);
+
+        if (!hasColor)
+        {
+            current = new Vector4(1f, 1f, 1f, 1f);
+        }
+
+        var useCustom = hasColor;
+        if (ImGui.Checkbox("Use custom color", ref useCustom))
+        {
+            if (useCustom)
+            {
+                colors[col] = current;
+            }
+            else
+            {
+                colors.Remove(col);
+            }
+            changed = true;
+        }
+
+        if (useCustom)
+        {
+            if (ImGui.ColorEdit4($"##colClr_{col}", ref current, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
+            {
+                colors[col] = current;
+                changed = true;
+            }
+        }
+
+        return changed;
     }
 
     public static bool DrawButtonAppearance(Configuration config)
