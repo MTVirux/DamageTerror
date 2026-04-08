@@ -394,6 +394,8 @@ public class MainWindow : Window, IDisposable
         // Open on right-click over the window background (not over other items)
         if (ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows) && ImGui.IsMouseClicked(ImGuiMouseButton.Right) && !ImGui.IsAnyItemHovered())
             ImGui.OpenPopup("##MainWindowContext");
+        if (headerComponent.RequestContextMenu)
+            ImGui.OpenPopup("##MainWindowContext");
 
         // Cache main window pos/size before entering the popup (inside a popup, ImGui returns the popup's geometry)
         var mainWindowPos = ImGui.GetWindowPos();

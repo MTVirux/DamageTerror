@@ -49,6 +49,7 @@ public class EncounterHeaderComponent
     public bool IsViewingLive => selectedIndex == -1;
 
     public bool IsComboOpen => comboWasOpen;
+    public bool RequestContextMenu { get; private set; }
 
     public float GetHeight()
     {
@@ -193,8 +194,7 @@ public class EncounterHeaderComponent
                 comboWasOpen = false;
             }
 
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
-            ImGui.OpenPopup("##MainWindowContext");
+        RequestContextMenu = ImGui.IsItemClicked(ImGuiMouseButton.Right);
 
         if (selBarPad > 0f)
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + selBarPad);
