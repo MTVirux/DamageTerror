@@ -131,6 +131,21 @@ public class MainWindow : Window, IDisposable
             }
         };
         TitleBarButtons.Add(viewModeButton);
+
+        TitleBarButtons.Add(new TitleBarButton
+        {
+            Icon = FontAwesomeIcon.Cut,
+            IconOffset = new Vector2(2, 2),
+            ShowTooltip = () => ImGui.SetTooltip("Cut encounter"),
+            Click = (m) =>
+            {
+                if (m == ImGuiMouseButton.Left)
+                {
+                    plugin.DataService.Store.ArchiveActive();
+                    plugin.DataService.Store.Save();
+                }
+            },
+        });
     }
 
     public void Dispose()
