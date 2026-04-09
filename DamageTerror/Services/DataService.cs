@@ -310,7 +310,11 @@ public class DataService : IDisposable
         if (!string.IsNullOrEmpty(PlayerName))
             snapshot.PlayerName = PlayerName;
 
-        var existing = Store.ActiveEncounter;
+        // When a new encounter just started the tracker was reset, so the
+        // active encounter in the store still holds the *previous* fight's
+        // data.  Using it as a fallback would carry stale skill breakdowns
+        // into the new encounter.  Null it out so the fresh tracker wins.
+        var existing = isNewEncounter ? null : Store.ActiveEncounter;
 
         // Resolve home worlds from the current party list
         var worldMap = ResolvePartyWorldMap();
