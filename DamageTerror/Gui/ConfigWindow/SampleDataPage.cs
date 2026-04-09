@@ -68,7 +68,7 @@ public class SampleDataPage
             var active = store.ActiveEncounter;
             var count = active?.Combatants.Count ?? 0;
             ImGui.TextColored(new Vector4(0.4f, 1.0f, 0.4f, 1.0f),
-                $"Sample encounter loaded ({count} players). Check the main meter window.");
+                $"Sample encounter loaded ({count} players). Enable simulation and check the main meter window.");
         }
     }
 
