@@ -808,6 +808,23 @@ public class SkillTracker
                     skills.Add((name, s.StatusId));
                 }
             }
+
+            // Ground-effect DoTs: the status is on the source player, not the target.
+            // Check if the named source has an active ground-effect self-buff.
+            if (isDoT)
+            {
+                var groundEffects = statusTracker.GetActiveGroundEffectDots(sourceName);
+                foreach (var (skillName, statusId2) in groundEffects)
+                {
+                    if (!sourceSkills.TryGetValue(sourceName, out var skills))
+                    {
+                        skills = new List<(string, uint)>();
+                        sourceSkills[sourceName] = skills;
+                    }
+                    if (!skills.Any(e => e.Name == skillName))
+                        skills.Add((skillName, statusId2));
+                }
+            }
         }
 
         // Fallback: attribute to the named source with a generic label when

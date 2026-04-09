@@ -92,9 +92,6 @@ public class StatusTracker
         1837, // Sonic Break
         1838, // Bow Shock
 
-        // Tank / Dark Knight
-        749,  // Salted Earth
-
         // Caster / Blue Mage
         1714, // Bleeding (Song of Torment, Nightbloom, Aetherial Spark)
         1736, // Dropsy (Aqua Breath)
@@ -102,6 +99,14 @@ public class StatusTracker
         1723, // Windburn (Feather Rain)
         3712, // Breath of Magic
         3643, // Mortal Flame
+    };
+
+    // Ground-effect DoTs: self-buff status IDs that indicate an active ground zone.
+    // The status is applied to the CASTER, not the enemy targets standing in the zone.
+    // Mapped to the skill name for attribution in type 24 tick lines.
+    private static readonly Dictionary<uint, string> GroundEffectDotIds = new()
+    {
+        { 749, "Salted Earth" }, // DRK
     };
 
     private static readonly HashSet<uint> KnownHotStatusIds = new()
@@ -357,6 +362,27 @@ public class StatusTracker
 
     public bool IsDoT(uint statusId) => ClassifyStatus(statusId).IsDoT;
     public bool IsHoT(uint statusId) => ClassifyStatus(statusId).IsHoT;
+
+    /// <summary>
+    /// Returns ground-effect DoT skill names for which the given source has an active self-buff.
+    /// These are DoTs where the status is on the caster, not on the enemy target.
+    /// </summary>
+    public List<(string SkillName, uint StatusId)> GetActiveGroundEffectDots(string sourceName)
+    {
+        var result = new List<(string, uint)>();
+        lock (syncLock)
+        {
+            foreach (var (id, skillName) in GroundEffectDotIds)
+            {
+                // Ground-effect statuses are keyed as (target=source, statusId, source=source)
+                // because ACT reports sourceName == targetName for self-buffs.
+                var key = (sourceName, id, sourceName);
+                if (activeStatuses.ContainsKey(key))
+                    result.Add((skillName, id));
+            }
+        }
+        return result;
+    }
 
     public void Reset()
     {
