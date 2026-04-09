@@ -58,6 +58,16 @@ public static class DotPotencyTable
         // VPR
         { 3667, 35 },  // Noxious Gnash
 
+        // PLD
+        { 248, 30 },   // Circle of Scorn
+
+        // GNB
+        { 1837, 60 },  // Sonic Break
+        { 1838, 60 },  // Bow Shock
+
+        // DRK
+        { 749, 50 },   // Salted Earth
+
         // BLU
         { 1714, 50 },  // Bleeding
         { 1736, 50 },  // Dropsy

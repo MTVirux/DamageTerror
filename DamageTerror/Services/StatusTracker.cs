@@ -85,6 +85,16 @@ public class StatusTracker
         // Melee / Viper
         3667, // Noxious Gnash
 
+        // Tank / Paladin
+        248,  // Circle of Scorn
+
+        // Tank / Gunbreaker
+        1837, // Sonic Break
+        1838, // Bow Shock
+
+        // Tank / Dark Knight
+        749,  // Salted Earth
+
         // Caster / Blue Mage
         1714, // Bleeding (Song of Torment, Nightbloom, Aetherial Spark)
         1736, // Dropsy (Aqua Breath)
