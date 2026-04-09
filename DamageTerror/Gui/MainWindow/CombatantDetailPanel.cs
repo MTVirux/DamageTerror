@@ -879,8 +879,11 @@ public class CombatantDetailPanel
         var topSkills = maxCount > 0 ? skills.Take(maxCount).ToList() : skills;
         var headerColor = ImGui.ColorConvertFloat4ToU32(config.SkillHeaderTextColor);
         var colPad = config.SkillColumnPadding;
+        var isHeal = idPrefix == "heal";
+        var valLabel = isHeal ? "Amount" : "Damage";
+        var valTooltip = isHeal ? "Amount healed by the skill" : "Damage dealt by the skill";
 
-        float colValW = ImGui.CalcTextSize("Amount").X;
+        float colValW = ImGui.CalcTextSize(valLabel).X;
         float colPctW = ImGui.CalcTextSize("%").X;
         float colHitsW = ImGui.CalcTextSize("Hits").X;
         float colCritW = ImGui.CalcTextSize("!").X;
@@ -905,13 +908,25 @@ public class CombatantDetailPanel
         var hdrMax = ImGui.GetItemRectMax();
         drawList.AddText(new Vector2(hdrMin.X + 3, hdrMin.Y + textYOff), headerColor, "Skill");
 
+        var mousePos = ImGui.GetMousePos();
         var hdrX = hdrMax.X - 3;
-        hdrX -= colHitsW; drawList.AddText(new Vector2(hdrX + (colHitsW - ImGui.CalcTextSize("Hits").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "Hits"); hdrX -= colPad;
-        hdrX -= colCdhW; drawList.AddText(new Vector2(hdrX + (colCdhW - ImGui.CalcTextSize("!!!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!!!"); hdrX -= colPad;
-        hdrX -= colDhW; drawList.AddText(new Vector2(hdrX + (colDhW - ImGui.CalcTextSize("!!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!!"); hdrX -= colPad;
-        hdrX -= colCritW; drawList.AddText(new Vector2(hdrX + (colCritW - ImGui.CalcTextSize("!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!"); hdrX -= colPad;
-        hdrX -= colPctW; drawList.AddText(new Vector2(hdrX + (colPctW - ImGui.CalcTextSize("%").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "%"); hdrX -= colPad;
-        hdrX -= colValW; drawList.AddText(new Vector2(hdrX + (colValW - ImGui.CalcTextSize("Amount").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "Amount");
+        hdrX -= colHitsW; drawList.AddText(new Vector2(hdrX + (colHitsW - ImGui.CalcTextSize("Hits").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "Hits");
+        if (mousePos.X >= hdrX && mousePos.X < hdrX + colHitsW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip("Hit Count"); }
+        hdrX -= colPad;
+        hdrX -= colCdhW; drawList.AddText(new Vector2(hdrX + (colCdhW - ImGui.CalcTextSize("!!!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!!!");
+        if (mousePos.X >= hdrX && mousePos.X < hdrX + colCdhW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip("Critical Direct Hit %"); }
+        hdrX -= colPad;
+        hdrX -= colDhW; drawList.AddText(new Vector2(hdrX + (colDhW - ImGui.CalcTextSize("!!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!!");
+        if (mousePos.X >= hdrX && mousePos.X < hdrX + colDhW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip("Direct Hit %"); }
+        hdrX -= colPad;
+        hdrX -= colCritW; drawList.AddText(new Vector2(hdrX + (colCritW - ImGui.CalcTextSize("!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!");
+        if (mousePos.X >= hdrX && mousePos.X < hdrX + colCritW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip("Critical Hit %"); }
+        hdrX -= colPad;
+        hdrX -= colPctW; drawList.AddText(new Vector2(hdrX + (colPctW - ImGui.CalcTextSize("%").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "%");
+        if (mousePos.X >= hdrX && mousePos.X < hdrX + colPctW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip("Damage %"); }
+        hdrX -= colPad;
+        hdrX -= colValW; drawList.AddText(new Vector2(hdrX + (colValW - ImGui.CalcTextSize(valLabel).X) * 0.5f, hdrMin.Y + textYOff), headerColor, valLabel);
+        if (mousePos.X >= hdrX && mousePos.X < hdrX + colValW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip(valTooltip); }
 
         var skillIdx = 0;
         foreach (var skill in topSkills)
