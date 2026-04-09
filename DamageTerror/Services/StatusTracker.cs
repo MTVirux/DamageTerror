@@ -109,6 +109,15 @@ public class StatusTracker
         { 749, "Salted Earth" }, // DRK
     };
 
+    // Reverse map: skill name -> ground-effect status ID
+    private static readonly Dictionary<string, uint> GroundEffectDotNameToId =
+        GroundEffectDotIds.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.OrdinalIgnoreCase);
+
+    // Pending ground effects: skill was used (type 21/22) but status gain (type 26)
+    // hasn't arrived yet. Ensures the first DoT tick is attributed correctly.
+    private readonly Dictionary<(string Source, uint StatusId), float> pendingGroundEffects = new();
+    private const float PendingGroundEffectTimeoutSec = 5f;
+
     private static readonly HashSet<uint> KnownHotStatusIds = new()
     {
         // White Mage
@@ -155,10 +164,35 @@ public class StatusTracker
 
     public float ElapsedSeconds => timer?.ElapsedSeconds ?? 0f;
 
+    /// <summary>
+    /// Pre-register a ground-effect DoT when the skill is used (type 21/22),
+    /// before the status gain (type 26) arrives. This ensures the first tick
+    /// is attributed correctly even if it arrives out of order.
+    /// </summary>
+    public void NotifyGroundEffectSkillUsed(string sourceName, string skillName)
+    {
+        if (!GroundEffectDotNameToId.TryGetValue(skillName, out var statusId))
+            return;
+
+        lock (syncLock)
+        {
+            pendingGroundEffects[(sourceName, statusId)] = timer?.ElapsedSeconds ?? 0f;
+        }
+    }
+
     public void OnStatusGained(string sourceName, string targetName, uint statusId, string statusName, float duration)
     {
         var classification = ClassifyStatus(statusId);
         var now = timer?.ElapsedSeconds ?? 0f;
+
+        // Clear pending ground effect now that the real status has arrived.
+        if (GroundEffectDotIds.ContainsKey(statusId))
+        {
+            lock (syncLock)
+            {
+                pendingGroundEffects.Remove((sourceName, statusId));
+            }
+        }
 
         var isPermanent = duration >= PermanentDurationThreshold;
 
@@ -251,7 +285,9 @@ public class StatusTracker
                 // Keep DoT/HoT statuses in a grace-period buffer so that
                 // type 24 ticks arriving after status removal can still be
                 // attributed to the correct source.
-                if (existing.IsDoT || existing.IsHoT)
+                // Also keep ground-effect DoTs (e.g. Salted Earth) whose self-buff
+                // status isn't classified as IsDoT but still needs tick attribution.
+                if (existing.IsDoT || existing.IsHoT || GroundEffectDotIds.ContainsKey(existing.StatusId))
                 {
                     existing.RemovedAtSec = removalTime;
                     recentlyRemovedDots.Add(existing);
@@ -369,6 +405,7 @@ public class StatusTracker
     /// </summary>
     public List<(string SkillName, uint StatusId)> GetActiveGroundEffectDots(string sourceName)
     {
+        var now = timer?.ElapsedSeconds ?? 0f;
         var result = new List<(string, uint)>();
         lock (syncLock)
         {
@@ -378,7 +415,32 @@ public class StatusTracker
                 // because ACT reports sourceName == targetName for self-buffs.
                 var key = (sourceName, id, sourceName);
                 if (activeStatuses.ContainsKey(key))
+                {
                     result.Add((skillName, id));
+                    continue;
+                }
+
+                // Pending: skill was used but status gain hasn't arrived yet.
+                var pendingKey = (sourceName, id);
+                if (pendingGroundEffects.TryGetValue(pendingKey, out var pendingTime)
+                    && now - pendingTime <= PendingGroundEffectTimeoutSec)
+                {
+                    result.Add((skillName, id));
+                    continue;
+                }
+
+                // Grace period: the self-buff may expire slightly before the last
+                // DoT tick arrives. Check the recently-removed buffer.
+                foreach (var s in recentlyRemovedDots)
+                {
+                    if (s.StatusId == id
+                        && string.Equals(s.SourceName, sourceName, StringComparison.OrdinalIgnoreCase)
+                        && now - s.RemovedAtSec <= RecentlyRemovedGraceSec)
+                    {
+                        result.Add((skillName, id));
+                        break;
+                    }
+                }
             }
         }
         return result;
@@ -390,6 +452,7 @@ public class StatusTracker
         {
             activeStatuses.Clear();
             recentlyRemovedDots.Clear();
+            pendingGroundEffects.Clear();
             statusHistory.Clear();
             receivedHistory.Clear();
         }

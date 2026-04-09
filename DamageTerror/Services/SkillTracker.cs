@@ -159,6 +159,10 @@ public class SkillTracker
         if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(skillName))
             return;
 
+        // Pre-register ground-effect DoTs so the first tick is attributed
+        // correctly even if the status gain (type 26) arrives after the tick.
+        statusTracker?.NotifyGroundEffectSkillUsed(sourceName, skillName);
+
         var damageType = SkillDamageType.Unknown;
         if (line.Length > 4 && uint.TryParse(line[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var actionId))
             damageType = LookupDamageType(actionId);
