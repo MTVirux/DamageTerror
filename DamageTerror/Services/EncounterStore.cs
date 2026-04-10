@@ -11,6 +11,7 @@ public class EncounterStore
     private EncounterSnapshot? active;
     private bool wasActive;
     private bool suppressActive;
+    private bool activeAlreadyInHistory;
     private string? savePath;
     private bool dirty;
     private bool loadedSuccessfully;
@@ -22,6 +23,21 @@ public class EncounterStore
     public EncounterStore(Configuration config)
     {
         this.config = config;
+    }
+
+    public long StorageSizeBytes
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(savePath))
+                return 0;
+            try
+            {
+                var info = new System.IO.FileInfo(savePath);
+                return info.Exists ? info.Length : 0;
+            }
+            catch { return 0; }
+        }
     }
 
     public EncounterSnapshot? ActiveEncounter
@@ -147,13 +163,14 @@ public class EncounterStore
             if (snapshot.Encounter.IsActive && !wasActive && active != null)
             {
                 active.Encounter.IsActive = false;
-                if (!double.IsNaN(active.Encounter.EncDps))
+                if (!activeAlreadyInHistory && !double.IsNaN(active.Encounter.EncDps))
                 {
                     history.Add(active);
                     dirty = true;
                     archived = true;
                     PruneHistoryLocked();
                 }
+                activeAlreadyInHistory = false;
             }
             else if (!snapshot.Encounter.IsActive && !wasActive && active != null
                      && active != snapshot
@@ -238,12 +255,38 @@ public class EncounterStore
 
             if (!double.IsNaN(active.Encounter.EncDps))
             {
-                history.Add(active);
+                if (!activeAlreadyInHistory)
+                    history.Add(active);
                 dirty = true;
             }
 
+            activeAlreadyInHistory = false;
             active = null;
             wasActive = false;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Copies the active encounter into history without removing it from
+    /// the active slot, so the main window continues to display it.
+    /// </summary>
+    public bool CopyActiveToHistory()
+    {
+        lock (syncLock)
+        {
+            if (active == null || sampleDataActive || activeAlreadyInHistory)
+                return false;
+
+            active.Encounter.IsActive = false;
+
+            if (double.IsNaN(active.Encounter.EncDps))
+                return false;
+
+            history.Add(active);
+            dirty = true;
+            activeAlreadyInHistory = true;
+            PruneHistoryLocked();
             return true;
         }
     }
@@ -376,6 +419,69 @@ public class EncounterStore
 
         if (removed)
             dirty = true;
+    }
+
+    private static readonly JsonSerializerSettings ExportSettings = new()
+    {
+        DefaultValueHandling = DefaultValueHandling.Ignore,
+        Formatting = Formatting.Indented,
+    };
+
+    public string ExportEncounter(EncounterSnapshot encounter)
+    {
+        return JsonConvert.SerializeObject(encounter, ExportSettings);
+    }
+
+    public EncounterSnapshot? ImportEncounter(string json, out string? error)
+    {
+        error = null;
+        try
+        {
+            var snapshot = JsonConvert.DeserializeObject<EncounterSnapshot>(json);
+            if (snapshot == null)
+            {
+                error = "Failed to parse encounter JSON.";
+                return null;
+            }
+
+            if (double.IsNaN(snapshot.Encounter.EncDps))
+            {
+                error = "Invalid encounter data (NaN DPS).";
+                return null;
+            }
+
+            snapshot.Encounter.IsActive = false;
+            snapshot.ValidateAndRepair();
+
+            lock (syncLock)
+            {
+                // Insert sorted by timestamp.
+                var idx = history.FindIndex(s => s.Timestamp > snapshot.Timestamp);
+                if (idx < 0)
+                    history.Add(snapshot);
+                else
+                    history.Insert(idx, snapshot);
+
+                dirty = true;
+                PruneHistoryLocked();
+            }
+
+            return snapshot;
+        }
+        catch (JsonException ex)
+        {
+            error = $"Invalid JSON: {ex.Message}";
+            return null;
+        }
+    }
+
+    public string GetExportsDirectory()
+    {
+        var dir = string.IsNullOrEmpty(savePath)
+            ? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DamageTerror", "exports")
+            : System.IO.Path.Combine(System.IO.Path.GetDirectoryName(savePath)!, "exports");
+        System.IO.Directory.CreateDirectory(dir);
+        return dir;
     }
 
     public void Save(bool force = false)

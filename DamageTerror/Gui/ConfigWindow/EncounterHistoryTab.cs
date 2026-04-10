@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using Newtonsoft.Json;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
@@ -8,6 +9,10 @@ public class EncounterHistoryTab
     private readonly DamageTerrorPlugin plugin;
     private string historySearchFilter = string.Empty;
     private int pendingLimitValue;
+    private string importJson = string.Empty;
+    private string? importError;
+    private string? statusMessage;
+    private DateTime statusMessageTime;
 
     public EncounterHistoryTab(DamageTerrorPlugin plugin)
     {
@@ -29,7 +34,7 @@ public class EncounterHistoryTab
         var store = plugin.DataService.Store;
         var history = store.History;
 
-        ImGui.TextDisabled($"{history.Count} encounter(s) stored.");
+        ImGui.TextDisabled($"{history.Count} encounter(s) stored.  ({FormatSize(store.StorageSizeBytes)})");
         ConfigHelpers.HelpMarker("Encounter history is saved automatically and persists across restarts.");
         ImGui.Spacing();
 
@@ -75,17 +80,11 @@ public class EncounterHistoryTab
         ImGui.Separator();
         ImGui.Spacing();
 
-        if (history.Count == 0)
-        {
-            ImGui.TextUnformatted("No encounters in history yet.");
-            return;
-        }
-
         ImGui.SetNextItemWidth(-1);
         ImGui.InputTextWithHint("##historySearch", "Search by zone, title, player, or job...", ref historySearchFilter, 256);
         ImGui.Spacing();
 
-        if (ImGui.Button("Clear All History"))
+        if (history.Count > 0 && ImGui.Button("Clear All History"))
         {
             ImGui.OpenPopup("##confirmClearHistory");
         }
@@ -107,9 +106,90 @@ public class EncounterHistoryTab
             ImGui.EndPopup();
         }
 
+        if (history.Count > 0)
+            ImGui.SameLine();
+        if (ImGui.Button("Import Encounter"))
+        {
+            ImGui.OpenPopup("##importEncounter");
+            importJson = string.Empty;
+            importError = null;
+        }
+
+        if (ImGui.BeginPopup("##importEncounter"))
+        {
+            ImGui.TextUnformatted("Paste exported encounter JSON:");
+            ImGui.SetNextItemWidth(400);
+            ImGui.InputTextMultiline("##importJsonInput", ref importJson, 1024 * 512, new Vector2(400, 200));
+
+            if (ImGui.Button("Paste from Clipboard"))
+            {
+                var clip = ImGui.GetClipboardText();
+                if (!string.IsNullOrEmpty(clip))
+                    importJson = clip;
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Import"))
+            {
+                if (string.IsNullOrWhiteSpace(importJson))
+                {
+                    importError = "No JSON provided.";
+                }
+                else
+                {
+                    var result = store.ImportEncounter(importJson, out var error);
+                    if (result != null)
+                    {
+                        store.Save(force: true);
+                        importJson = string.Empty;
+                        importError = null;
+                        SetStatus("Encounter imported successfully!");
+                        ImGui.CloseCurrentPopup();
+                    }
+                    else
+                    {
+                        importError = error;
+                    }
+                }
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel##importCancel"))
+            {
+                ImGui.CloseCurrentPopup();
+            }
+
+            if (!string.IsNullOrEmpty(importError))
+            {
+                ImGui.TextColored(new Vector4(1f, 0.3f, 0.3f, 1f), importError);
+            }
+
+            ImGui.EndPopup();
+        }
+
+        // Status message display
+        if (statusMessage != null)
+        {
+            if ((DateTime.UtcNow - statusMessageTime).TotalSeconds > 3)
+            {
+                statusMessage = null;
+            }
+            else
+            {
+                ImGui.SameLine();
+                ImGui.TextColored(new Vector4(0.3f, 1f, 0.3f, 1f), statusMessage);
+            }
+        }
+
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.Spacing();
+
+        if (history.Count == 0)
+        {
+            ImGui.TextUnformatted("No encounters in history yet.");
+            return;
+        }
 
         int removeIdx = -1;
 
@@ -204,6 +284,35 @@ public class EncounterHistoryTab
                     removeIdx = i;
                 }
 
+                ImGui.SameLine();
+                if (ImGui.SmallButton("Copy to Clipboard"))
+                {
+                    var json = store.ExportEncounter(enc);
+                    ImGui.SetClipboardText(json);
+                    SetStatus("Copied to clipboard!");
+                }
+
+                ImGui.SameLine();
+                if (ImGui.SmallButton("Save to File"))
+                {
+                    var json = store.ExportEncounter(enc);
+                    var exportsDir = store.GetExportsDirectory();
+                    var filename = SanitizeFilename($"{encounter.ZoneName}_{enc.Timestamp.ToLocalTime():yyyy-MM-dd_HH-mm}") + ".json";
+                    var path = System.IO.Path.Combine(exportsDir, filename);
+
+                    // Avoid overwriting — append a counter if needed.
+                    var counter = 1;
+                    while (System.IO.File.Exists(path))
+                    {
+                        var numbered = SanitizeFilename($"{encounter.ZoneName}_{enc.Timestamp.ToLocalTime():yyyy-MM-dd_HH-mm}_{counter}") + ".json";
+                        path = System.IO.Path.Combine(exportsDir, numbered);
+                        counter++;
+                    }
+
+                    System.IO.File.WriteAllText(path, json);
+                    SetStatus($"Saved to {path}");
+                }
+
                 ImGui.TreePop();
             }
             ImGui.PopID();
@@ -214,5 +323,28 @@ public class EncounterHistoryTab
             store.RemoveHistory(removeIdx);
             store.Save(force: true);
         }
+    }
+
+    private void SetStatus(string message)
+    {
+        statusMessage = message;
+        statusMessageTime = DateTime.UtcNow;
+    }
+
+    private static string SanitizeFilename(string name)
+    {
+        var invalid = System.IO.Path.GetInvalidFileNameChars();
+        var sanitized = new System.Text.StringBuilder(name.Length);
+        foreach (var c in name)
+            sanitized.Append(Array.IndexOf(invalid, c) >= 0 ? '_' : c);
+        return sanitized.ToString();
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024.0 * 1024.0):F1} MB";
+        return $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB";
     }
 }

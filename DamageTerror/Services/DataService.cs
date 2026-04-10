@@ -17,6 +17,9 @@ public class DataService : IDisposable
     private float lastPeriodicSaveTime;
     private DateTime lastCombatDataTime;
     private readonly List<string[]> pendingLogLines = new();
+#if DEBUG
+    private readonly List<string> encounterLogLines = new();
+#endif
 
     private const float PeriodicSaveInterval = 30f;
     private const double StalenessTimeoutSeconds = 15.0;
@@ -272,6 +275,7 @@ public class DataService : IDisposable
         // Detect new encounter boundary — ensure the outgoing encounter
         // has a final skills snapshot before resetting the tracker.
         var isNewEncounter = false;
+        var isEncounterEnd = false;
         if (snapshot.Encounter.IsActive && !wasActive)
         {
             var outgoing = Store.ActiveEncounter;
@@ -291,6 +295,10 @@ public class DataService : IDisposable
             StatusTracker.Reset();
             EncounterTimer.Restart();
             lastPeriodicSaveTime = 0f;
+#if DEBUG
+            lock (encounterLogLines)
+                encounterLogLines.Clear();
+#endif
 
             isNewEncounter = true;
             OnNewEncounter?.Invoke();
@@ -310,6 +318,13 @@ public class DataService : IDisposable
             // Replay any log lines that arrived between the last CombatData
             // and this one so the first skill of a new encounter is not lost.
             DrainPendingLogLines();
+        }
+
+        // Detect encounter ending — combat was active and is now inactive.
+        // Archive so it appears in history immediately.
+        if (!snapshot.Encounter.IsActive && wasActive)
+        {
+            isEncounterEnd = true;
         }
 
         wasActive = snapshot.Encounter.IsActive;
@@ -439,10 +454,33 @@ public class DataService : IDisposable
 
         if (archived)
             Store.Save();
+
+        // Copy the encounter into history now that Store.Update() has
+        // applied it as active with the final snapshot data. Use
+        // CopyActiveToHistory so the encounter stays visible in the
+        // main window until the next encounter starts.
+        if (isEncounterEnd)
+        {
+            var active = Store.ActiveEncounter;
+            if (active != null)
+                CaptureGraphData(active);
+
+            if (Store.CopyActiveToHistory())
+                Store.Save(force: true);
+        }
     }
 
     private void CaptureGraphData(EncounterSnapshot target)
     {
+#if DEBUG
+        // Capture raw log lines accumulated during this encounter.
+        lock (encounterLogLines)
+        {
+            if (encounterLogLines.Count > 0)
+                target.RawLogLines = new List<string>(encounterLogLines);
+        }
+#endif
+
         // Only overwrite per-combatant entries where the tracker has data.
         // This preserves graph data loaded from disk when the tracker is empty
         // (e.g. after a plugin reload).
@@ -506,7 +544,13 @@ public class DataService : IDisposable
         }
 
         foreach (var line in snapshot)
+        {
             SkillTracker.ProcessLogLine(line);
+#if DEBUG
+            lock (encounterLogLines)
+                encounterLogLines.Add(string.Join("|", line));
+#endif
+        }
     }
 
     private void OnLogLine(string[] line)
@@ -549,6 +593,10 @@ public class DataService : IDisposable
         GraphTracker.Reset();
         StatusTracker.Reset();
         EncounterTimer.Reset();
+#if DEBUG
+        lock (encounterLogLines)
+            encounterLogLines.Clear();
+#endif
 
         if (Store.ArchiveActive())
             Store.Save();

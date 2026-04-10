@@ -38,6 +38,12 @@ public class EncounterSnapshot
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public Dictionary<string, List<StatusApplication>> StatusesReceived { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+#if DEBUG
+    /// <summary>Raw ACT log lines captured during the encounter. Each entry is a pipe-delimited log line.</summary>
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public List<string> RawLogLines { get; set; } = new();
+#endif
+
     /// <summary>
     /// Rebuild dictionaries with case-insensitive comparers after JSON deserialization,
     /// since Newtonsoft.Json creates them with the default (case-sensitive) comparer.
