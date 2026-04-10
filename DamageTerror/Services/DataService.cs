@@ -1,5 +1,6 @@
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using DamageTerror.Helpers;
 
 namespace DamageTerror.Services;
 
@@ -25,6 +26,7 @@ public class DataService : IDisposable
     public GraphDataTracker GraphTracker { get; }
     public StatusTracker StatusTracker { get; }
     public EncounterStore Store { get; }
+    public PositionalTable PositionalTable { get; }
     public string PlayerName { get; private set; } = string.Empty;
     public uint PlayerId { get; private set; }
     public bool IsConnected => activeSource?.IsConnected ?? false;
@@ -43,13 +45,16 @@ public class DataService : IDisposable
         GraphTracker.SetTimer(EncounterTimer);
         StatusTracker = new StatusTracker(ServiceManager.DataManager, log);
         StatusTracker.SetTimer(EncounterTimer);
-        SkillTracker = new SkillTracker(ServiceManager.DataManager, log);
+
+        var configDir = pluginInterface.GetPluginConfigDirectory();
+
+        PositionalTable = new PositionalTable(configDir, log);
+        SkillTracker = new SkillTracker(ServiceManager.DataManager, log, PositionalTable);
         SkillTracker.SetDependencies(EncounterTimer, GraphTracker, StatusTracker);
         StatusTracker.SetSkillTracker(SkillTracker);
 
         Store = new EncounterStore(config);
 
-        var configDir = pluginInterface.GetPluginConfigDirectory();
         var savePath = System.IO.Path.Combine(configDir, "encounters.json");
         Store.SetSavePath(savePath);
         Store.Load();
@@ -91,6 +96,9 @@ public class DataService : IDisposable
     public async Task StartAsync()
     {
         if (disposed) return;
+
+        // Initialize positional data from remote CSV (falls back to cache/embedded)
+        await PositionalTable.InitializeAsync().ConfigureAwait(false);
 
         cts = new CancellationTokenSource();
 
@@ -565,5 +573,6 @@ public class DataService : IDisposable
 
         Store.ArchiveActive();
         Store.Save(force: true);
+        PositionalTable.Dispose();
     }
 }

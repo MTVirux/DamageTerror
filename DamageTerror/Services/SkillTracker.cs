@@ -67,11 +67,13 @@ public class SkillTracker
 
     private readonly IDataManager dataManager;
     private readonly IPluginLog log;
+    private readonly PositionalTable positionalTable;
 
-    public SkillTracker(IDataManager dataManager, IPluginLog log)
+    public SkillTracker(IDataManager dataManager, IPluginLog log, PositionalTable positionalTable)
     {
         this.dataManager = dataManager;
         this.log = log;
+        this.positionalTable = positionalTable;
     }
 
     /// <summary>Bind the shared encounter timer, graph tracker, and status tracker.</summary>
@@ -206,11 +208,13 @@ public class SkillTracker
         }
 
         // Track positional hits/misses for known melee positional actions.
-        if (dmgAmount > 0 && dmgBonusPercent >= 0 && PositionalTable.IsPositional(actionId))
+        // Uses CSV lookup table approach inspired by DamageInfoPlugin:
+        // https://github.com/perchbirdd/DamageInfoPlugin
+        if (dmgAmount > 0 && dmgBonusPercent >= 0 && positionalTable.IsPositional(actionId))
         {
             lock (syncLock)
             {
-                if (PositionalTable.IsPositionalMiss(actionId, dmgBonusPercent))
+                if (positionalTable.IsPositionalMiss(actionId, dmgBonusPercent))
                     positionalMissCounts[sourceName] = positionalMissCounts.GetValueOrDefault(sourceName) + 1;
                 else
                     positionalHitCounts[sourceName] = positionalHitCounts.GetValueOrDefault(sourceName) + 1;
@@ -659,25 +663,27 @@ public class SkillTracker
         //   0x20 = crit, 0x40 = direct hit, 0x60 = crit direct hit
         var severity = (byte)((flags >> 8) & 0xFF);
 
+        // Bonus percent: DamageInfoPlugin reads EffectEntry.param2 (byte 3 of the
+        // 8-byte struct), which maps to the top byte of the FLAGS field in ACT logs.
+        // The 8-byte EffectEntry is split as flagsHex=[type,param0,param1,param2] and
+        // valueHex=[mult,flags,value]. param2 = (flagsHex >> 24) & 0xFF.
+        // https://github.com/perchbirdd/DamageInfoPlugin
+        int bonusPercent = (int)((flags >> 24) & 0xFF);
+
         // Value bytes (left-extended to 4 bytes): ABCD
-        // Normal: upper 16 bits (AB).
-        // "A lot" (0x4000 mask in value field): reassemble as D-A-B.
-        // The leftmost byte (A) is the bonus percent from positional/combo bonuses.
-        // In the "a lot" case, bytes are rearranged so bonusPercent is unreliable → -1.
+        // Normal: damage is upper 16 bits (AB).
+        // "A lot" (0x4000 mask in value field): damage reassembled as D-A-B.
         long amount;
-        int bonusPercent;
         if ((raw & 0x4000) != 0)
         {
             var a = (raw >> 24) & 0xFF;
             var b = (raw >> 16) & 0xFF;
             var d = raw & 0xFF;
             amount = (long)((d << 16) | (a << 8) | b);
-            bonusPercent = -1;
         }
         else
         {
             amount = (long)((raw >> 16) & 0xFFFF);
-            bonusPercent = (int)((raw >> 24) & 0xFF);
         }
 
         return (amount, severity, effectType, bonusPercent);
