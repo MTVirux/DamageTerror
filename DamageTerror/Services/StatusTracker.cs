@@ -133,9 +133,11 @@ public class StatusTracker
         { 4304, "Doton" },         // NIN PvP
     };
 
-    // Reverse map: skill name -> ground-effect status ID
-    private static readonly Dictionary<string, uint> GroundEffectDotNameToId =
-        GroundEffectDotIds.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.OrdinalIgnoreCase);
+    // Reverse map: skill name -> ground-effect status IDs (multiple IDs for PvE + PvP variants)
+    private static readonly Dictionary<string, List<uint>> GroundEffectDotNameToIds =
+        GroundEffectDotIds
+            .GroupBy(kv => kv.Value, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Select(kv => kv.Key).ToList(), StringComparer.OrdinalIgnoreCase);
 
     // Pending ground effects: skill was used (type 21/22) but status gain (type 26)
     // hasn't arrived yet. Ensures the first DoT tick is attributed correctly.
@@ -216,12 +218,14 @@ public class StatusTracker
     /// </summary>
     public void NotifyGroundEffectSkillUsed(string sourceName, string skillName)
     {
-        if (!GroundEffectDotNameToId.TryGetValue(skillName, out var statusId))
+        if (!GroundEffectDotNameToIds.TryGetValue(skillName, out var statusIds))
             return;
 
         lock (syncLock)
         {
-            pendingGroundEffects[(sourceName, statusId)] = timer?.ElapsedSeconds ?? 0f;
+            var now = timer?.ElapsedSeconds ?? 0f;
+            foreach (var statusId in statusIds)
+                pendingGroundEffects[(sourceName, statusId)] = now;
         }
     }
 
