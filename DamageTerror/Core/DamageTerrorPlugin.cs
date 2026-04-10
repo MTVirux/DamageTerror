@@ -87,6 +87,14 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             this.PluginInterface.SavePluginConfig(cfg);
         }
 
+        // Add PositionalPct to detail visible columns for existing configs (Version 2 → 3)
+        if (cfg.Version < 3)
+        {
+            cfg.DetailVisibleColumns.Add(BarColumn.PositionalPct);
+            cfg.Version = 3;
+            this.PluginInterface.SavePluginConfig(cfg);
+        }
+
         this.DataService = new DataService(pluginInterface, pluginLog, this.Config);
 
         this.PartyService = new PartyMembershipService();
