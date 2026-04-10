@@ -46,10 +46,21 @@ public class TolerantEnumKeyDictionaryConverter : JsonConverter
         return dict;
     }
 
-    public override bool CanWrite => false;
+    public override bool CanWrite => true;
 
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        => throw new NotImplementedException();
+    {
+        if (value == null) { writer.WriteNull(); return; }
+
+        var dict = (System.Collections.IDictionary)value;
+        writer.WriteStartObject();
+        foreach (System.Collections.DictionaryEntry entry in dict)
+        {
+            writer.WritePropertyName(entry.Key.ToString()!);
+            serializer.Serialize(writer, entry.Value);
+        }
+        writer.WriteEndObject();
+    }
 }
 
 /// <summary>
@@ -95,10 +106,17 @@ public class TolerantEnumCollectionConverter : JsonConverter
         return collection;
     }
 
-    public override bool CanWrite => false;
+    public override bool CanWrite => true;
 
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        => throw new NotImplementedException();
+    {
+        if (value == null) { writer.WriteNull(); return; }
+
+        writer.WriteStartArray();
+        foreach (var item in (System.Collections.IEnumerable)value)
+            writer.WriteValue(item.ToString());
+        writer.WriteEndArray();
+    }
 }
 
 /// <summary>
@@ -158,8 +176,23 @@ public class TolerantEnumListMapConverter : JsonConverter
         return dict;
     }
 
-    public override bool CanWrite => false;
+    public override bool CanWrite => true;
 
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        => throw new NotImplementedException();
+    {
+        if (value == null) { writer.WriteNull(); return; }
+
+        var dict = (System.Collections.IDictionary)value;
+        writer.WriteStartObject();
+        foreach (System.Collections.DictionaryEntry entry in dict)
+        {
+            writer.WritePropertyName(entry.Key.ToString()!);
+            var list = (System.Collections.IEnumerable)entry.Value!;
+            writer.WriteStartArray();
+            foreach (var item in list)
+                writer.WriteValue(item.ToString());
+            writer.WriteEndArray();
+        }
+        writer.WriteEndObject();
+    }
 }

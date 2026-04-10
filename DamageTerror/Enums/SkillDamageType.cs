@@ -1,5 +1,9 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
 namespace DamageTerror.Enums;
 
+[JsonConverter(typeof(StringEnumConverter))]
 public enum SkillDamageType : byte
 {
     Unknown = 0,

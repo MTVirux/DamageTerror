@@ -109,6 +109,12 @@ public class CombatantEntry
 
     public int DamageDown { get; set; }
 
+    public int Positionals { get; set; }
+
+    public int PositionalHits { get; set; }
+
+    public int PositionalMisses { get; set; }
+
     public List<SkillEntry> Skills { get; set; } = new();
 
     public List<SkillEntry> HealingSkills { get; set; } = new();

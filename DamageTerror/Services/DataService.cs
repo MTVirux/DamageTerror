@@ -356,6 +356,12 @@ public class DataService : IDisposable
             if (trackerDamageDown > c.DamageDown)
                 c.DamageDown = trackerDamageDown;
 
+            var trackerPositionalHits = SkillTracker.GetPositionalHits(c.Name);
+            var trackerPositionalMisses = SkillTracker.GetPositionalMisses(c.Name);
+            c.PositionalHits = Math.Max(c.PositionalHits, trackerPositionalHits);
+            c.PositionalMisses = Math.Max(c.PositionalMisses, trackerPositionalMisses);
+            c.Positionals = c.PositionalHits + c.PositionalMisses;
+
             if (!string.IsNullOrEmpty(PlayerName) && string.Equals(c.Name, PlayerName, StringComparison.OrdinalIgnoreCase))
                 c.IsLocalPlayer = true;
 

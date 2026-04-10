@@ -20,6 +20,8 @@ public class SkillTracker
     private readonly Dictionary<(string Target, string Status), int> skillIssueStacks = new();
     private readonly Dictionary<string, int> damageDownCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<(string Target, string Status), int> damageDownStacks = new();
+    private readonly Dictionary<string, int> positionalHitCounts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> positionalMissCounts = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Localized status names that count as "skill issues" (Vulnerability Up / Damage Down).</summary>
     private static readonly HashSet<string> SkillIssueNames = new(StringComparer.OrdinalIgnoreCase)
@@ -164,7 +166,8 @@ public class SkillTracker
         statusTracker?.NotifyGroundEffectSkillUsed(sourceName, skillName);
 
         var damageType = SkillDamageType.Unknown;
-        if (line.Length > 4 && uint.TryParse(line[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var actionId))
+        uint actionId = 0;
+        if (line.Length > 4 && uint.TryParse(line[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out actionId))
             damageType = LookupDamageType(actionId);
 
         // Scan all 8 effect pairs (fields 8-23).
@@ -172,6 +175,7 @@ public class SkillTracker
         // (e.g. drain abilities like Souleater, Energy Drain).
         long dmgAmount = 0;
         byte dmgSeverity = 0;
+        int dmgBonusPercent = -1;
         long healAmount = 0;
         byte healSeverity = 0;
         for (int i = 0; i < 8; i++)
@@ -197,6 +201,19 @@ public class SkillTracker
             {
                 dmgAmount = result.Amount;
                 dmgSeverity = result.Severity;
+                dmgBonusPercent = result.BonusPercent;
+            }
+        }
+
+        // Track positional hits/misses for known melee positional actions.
+        if (dmgAmount > 0 && dmgBonusPercent >= 0 && PositionalTable.IsPositional(actionId))
+        {
+            lock (syncLock)
+            {
+                if (PositionalTable.IsPositionalMiss(actionId, dmgBonusPercent))
+                    positionalMissCounts[sourceName] = positionalMissCounts.GetValueOrDefault(sourceName) + 1;
+                else
+                    positionalHitCounts[sourceName] = positionalHitCounts.GetValueOrDefault(sourceName) + 1;
             }
         }
 
@@ -431,6 +448,22 @@ public class SkillTracker
         }
     }
 
+    public int GetPositionalHits(string combatantName)
+    {
+        lock (syncLock)
+        {
+            return positionalHitCounts.GetValueOrDefault(combatantName);
+        }
+    }
+
+    public int GetPositionalMisses(string combatantName)
+    {
+        lock (syncLock)
+        {
+            return positionalMissCounts.GetValueOrDefault(combatantName);
+        }
+    }
+
     public void Reset()
     {
         lock (syncLock)
@@ -446,6 +479,8 @@ public class SkillTracker
             skillIssueStacks.Clear();
             damageDownCounts.Clear();
             damageDownStacks.Clear();
+            positionalHitCounts.Clear();
+            positionalMissCounts.Clear();
             seededEvents = null;
             seededDamageTakenEvents = null;
             damageTypeCache.Clear();
@@ -604,21 +639,21 @@ public class SkillTracker
 
     /// Decode an ability effect from FFXIV network log line fields.
     /// See: https://github.com/OverlayPlugin/cactbot/blob/main/docs/LogGuide.md#ability-damage
-    private static (long Amount, byte Severity, byte EffectType) DecodeEffect(string flagsHex, string valueHex)
+    private static (long Amount, byte Severity, byte EffectType, int BonusPercent) DecodeEffect(string flagsHex, string valueHex)
     {
         if (string.IsNullOrEmpty(flagsHex) || string.IsNullOrEmpty(valueHex))
-            return (0, 0, 0);
+            return (0, 0, 0, -1);
 
         if (!uint.TryParse(flagsHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var flags))
-            return (0, 0, 0);
+            return (0, 0, 0, -1);
         if (!uint.TryParse(valueHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var raw))
-            return (0, 0, 0);
+            return (0, 0, 0, -1);
 
         // Low byte of flags is the effect type:
         //   0x03 = damage dealt, 0x04 = heal, 0x05 = blocked damage, 0x06 = parried damage
         var effectType = (byte)(flags & 0xFF);
         if (effectType != 3 && effectType != 4 && effectType != 5 && effectType != 6)
-            return (0, 0, 0);
+            return (0, 0, 0, -1);
 
         // Second byte of flags is the severity (crit/DH):
         //   0x20 = crit, 0x40 = direct hit, 0x60 = crit direct hit
@@ -627,20 +662,25 @@ public class SkillTracker
         // Value bytes (left-extended to 4 bytes): ABCD
         // Normal: upper 16 bits (AB).
         // "A lot" (0x4000 mask in value field): reassemble as D-A-B.
+        // The leftmost byte (A) is the bonus percent from positional/combo bonuses.
+        // In the "a lot" case, bytes are rearranged so bonusPercent is unreliable → -1.
         long amount;
+        int bonusPercent;
         if ((raw & 0x4000) != 0)
         {
             var a = (raw >> 24) & 0xFF;
             var b = (raw >> 16) & 0xFF;
             var d = raw & 0xFF;
             amount = (long)((d << 16) | (a << 8) | b);
+            bonusPercent = -1;
         }
         else
         {
             amount = (long)((raw >> 16) & 0xFFFF);
+            bonusPercent = (int)((raw >> 24) & 0xFF);
         }
 
-        return (amount, severity, effectType);
+        return (amount, severity, effectType, bonusPercent);
     }
 
     /// <summary>

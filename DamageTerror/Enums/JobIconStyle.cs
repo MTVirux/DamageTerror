@@ -1,8 +1,12 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
 namespace DamageTerror.Enums;
 
+[JsonConverter(typeof(StringEnumConverter))]
 public enum JobIconStyle
 {
-    Framed,
-    Plain,
-    Custom,
+    Framed = 0,
+    Plain = 1,
+    Custom = 2,
 }

@@ -1,10 +1,14 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
 namespace DamageTerror.Enums;
 
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ValueDisplayFormat
 {
-    Abbreviated,
+    Abbreviated = 0,
 
-    Commas,
+    Commas = 1,
 
-    Raw,
+    Raw = 2,
 }

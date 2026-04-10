@@ -1,7 +1,11 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
 namespace DamageTerror.Enums;
 
+[JsonConverter(typeof(StringEnumConverter))]
 public enum HistoryLimitMode
 {
-    Count,
-    Days,
+    Count = 0,
+    Days = 1,
 }
