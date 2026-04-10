@@ -109,6 +109,14 @@ public class StatusTracker
         1723, // Windburn (Feather Rain)
         3712, // Breath of Magic
         3643, // Mortal Flame
+
+        // PvP DoTs
+        2039, // Biolysis (SCH PvP)
+        3976, // Eukrasian Dosis III (SGE PvP)
+        2019, // Bioblaster (MCH PvP)
+        3184, // Goka Mekkyaku (NIN PvP)
+        3231, // Scarlet Flame (SMN PvP)
+        4319, // Scorch (RDM PvP)
     };
 
     // Ground-effect DoTs: self-buff status IDs that indicate an active ground zone.
@@ -118,6 +126,11 @@ public class StatusTracker
     {
         { 749, "Salted Earth" }, // DRK
         { 501, "Doton" },        // NIN
+
+        // PvP ground-effect DoTs
+        { 3036, "Salted Earth" }, // DRK PvP
+        { 3162, "Honing Dance" },  // DNC PvP
+        { 4304, "Doton" },         // NIN PvP
     };
 
     // Reverse map: skill name -> ground-effect status ID
@@ -171,6 +184,11 @@ public class StatusTracker
 
         // Blue Mage
         2495, // Angel's Snack
+
+        // PvP HoTs
+        3037, // Salted Earth (DRK PvP, self-HoT)
+        3189, // Meisui (NIN PvP)
+        2862, // Crest of Time Returned (RPR PvP)
     };
 
     public StatusTracker(IDataManager dataManager, IPluginLog log)

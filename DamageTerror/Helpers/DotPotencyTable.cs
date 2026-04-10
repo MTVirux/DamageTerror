@@ -89,6 +89,18 @@ public static class DotPotencyTable
         { 3712, 80 },  // Breath of Magic
         { 3643, 50 },  // Mortal Flame
 
+        // PvP DoTs
+        { 2039, 50 },  // Biolysis (SCH PvP)
+        { 3976, 50 },  // Eukrasian Dosis III (SGE PvP)
+        { 2019, 65 },  // Bioblaster (MCH PvP)
+        { 3184, 80 },  // Goka Mekkyaku (NIN PvP)
+        { 3231, 65 },  // Scarlet Flame (SMN PvP)
+        { 4319, 65 },  // Scorch (RDM PvP)
+        // PvP ground-effect DoTs
+        { 3036, 80 },  // Salted Earth (DRK PvP)
+        { 3162, 75 },  // Honing Dance (DNC PvP)
+        { 4304, 50 },  // Doton (NIN PvP)
+
         // ── HoTs ──
 
         // WHM
@@ -131,6 +143,11 @@ public static class DotPotencyTable
 
         // BLU
         { 2495, 100 }, // Angel's Snack
+
+        // PvP HoTs
+        { 3037, 80 },  // Salted Earth (DRK PvP, self-HoT)
+        { 3189, 65 },  // Meisui (NIN PvP)
+        { 2862, 100 }, // Crest of Time Returned (RPR PvP)
     };
 
     public static int GetTickPotency(uint statusId)
