@@ -416,6 +416,15 @@ public static class MeterTabsPage
             changed = true;
         }
 
+        var colorOverride = tab.StatusBarColorOverridesActive;
+        if (ImGui.Checkbox("Custom colors override active color##sbColorOverride", ref colorOverride))
+        {
+            tab.StatusBarColorOverridesActive = colorOverride;
+            changed = true;
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("When enabled, per-metric custom colors are used even during active encounters.\nWhen disabled, active encounters always use the active encounter color.");
+
         ImGui.Spacing();
         ImGui.TextDisabled("Metrics");
         tab.StatusBarMetrics ??= new List<BarColumn> { BarColumn.Dps, BarColumn.EncDps };

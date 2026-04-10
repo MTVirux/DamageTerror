@@ -89,9 +89,10 @@ public class StatusBarComponent
                         ? CombatantBarComponent.GetColumnDisplayValue(localPlayer, col, config, tab)
                         : "0";
                 var colColor = tab?.GetColumnValueColor(col);
-                var textColor = isActive
-                    ? activeColor
-                    : colColor.HasValue ? ImGui.ColorConvertFloat4ToU32(colColor.Value) : defaultInactiveColor;
+                var colorOverridesActive = tab?.StatusBarColorOverridesActive ?? true;
+                var textColor = colColor.HasValue && (colorOverridesActive || !isActive)
+                    ? ImGui.ColorConvertFloat4ToU32(colColor.Value)
+                    : isActive ? activeColor : defaultInactiveColor;
                 drawList.AddText(new Vector2(x, textY), textColor, valueText);
                 x += ImGui.CalcTextSize(valueText).X;
 

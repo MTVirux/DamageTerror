@@ -64,6 +64,9 @@ public class MeterTab
     // Per-tab status bar content visibility
     public bool ShowStatusBarTimer { get; set; } = true;
 
+    /// <summary>When true, per-column value colors override the active-encounter color in the status bar.</summary>
+    public bool StatusBarColorOverridesActive { get; set; } = true;
+
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.EncDps };
@@ -331,6 +334,7 @@ public class MeterTab
             TooltipFieldLabels = new Dictionary<TooltipField, string>(TooltipFieldLabels),
             TooltipTopSkillCount = TooltipTopSkillCount,
             ShowStatusBarTimer = ShowStatusBarTimer,
+            StatusBarColorOverridesActive = StatusBarColorOverridesActive,
             StatusBarMetrics = new List<BarColumn>(StatusBarMetrics),
             StatusBarMetricLabels = new Dictionary<BarColumn, string>(StatusBarMetricLabels),
             DetailColumnLabels = new Dictionary<BarColumn, string>(DetailColumnLabels),
