@@ -36,6 +36,12 @@ public class EncounterHistoryTab
 
         ImGui.TextDisabled($"{history.Count} encounter(s) stored.  ({FormatSize(store.StorageSizeBytes)})");
         ConfigHelpers.HelpMarker("Encounter history is saved automatically and persists across restarts.");
+#if DEBUG
+        ImGui.TextColored(new Vector4(1f, 0.85f, 0.3f, 1f),
+            "Please be aware that raw log lines are stored in the debug build and may contain DM and Linkshell messages.");
+        ImGui.TextColored(new Vector4(1f, 0.85f, 0.3f, 1f),
+            "Be careful when sharing.");
+#endif
         ImGui.Spacing();
 
         // --- History limit settings ---
