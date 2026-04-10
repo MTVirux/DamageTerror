@@ -115,6 +115,8 @@ public class CombatantEntry
 
     public int PositionalMisses { get; set; }
 
+    public double PositionalPct => Positionals > 0 ? (double)PositionalHits / Positionals * 100.0 : 0.0;
+
     public List<SkillEntry> Skills { get; set; } = new();
 
     public List<SkillEntry> HealingSkills { get; set; } = new();

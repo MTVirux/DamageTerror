@@ -43,6 +43,7 @@ public class ColumnFormatOverride
         BarColumn.ParryPct, BarColumn.CritHealPct,
         BarColumn.GroupAvgCrit, BarColumn.GroupAvgDirectHit, BarColumn.GroupAvgCritDirectHit,
         BarColumn.GroupAvgOverhealPct, BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate,
+        BarColumn.PositionalPct,
     };
 
     public static bool SupportsFormatting(BarColumn col)

@@ -10,7 +10,7 @@ public static class MetricPicker
     {
         ("Damage", new[] { BarColumn.Dps, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.Damage, BarColumn.DamagePercent, BarColumn.MaxHit, BarColumn.MaxHitValue, BarColumn.DamageShield, BarColumn.EncDps }),
         ("Healing", new[] { BarColumn.Hps, BarColumn.InstantHps, BarColumn.Healed, BarColumn.HealPercent, BarColumn.Overheal, BarColumn.OverhealAmount, BarColumn.CritHealPct, BarColumn.MaxHeal, BarColumn.MaxHealValue, BarColumn.HealCount, BarColumn.EncHps }),
-        ("Hit Stats", new[] { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses }),
+        ("Hit Stats", new[] { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses, BarColumn.Positionals, BarColumn.PositionalHits, BarColumn.PositionalMisses, BarColumn.PositionalPct }),
         ("Defense", new[] { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct, BarColumn.HealsTaken }),
         ("High-end Raiding", new[] { BarColumn.LegsSweeped, BarColumn.SkillIssue, BarColumn.DamageDown }),
         ("Group", new[] { BarColumn.DpsRank, BarColumn.HpsRank, BarColumn.GroupDps, BarColumn.GroupHps, BarColumn.GroupDamage, BarColumn.GroupHealed, BarColumn.GroupDamageTaken, BarColumn.GroupDeaths, BarColumn.GroupOverheal, BarColumn.GroupSkillIssue, BarColumn.GroupDamageDown, BarColumn.GroupInstantDps, BarColumn.GroupInstantHps, BarColumn.GroupAvgDps, BarColumn.GroupAvgHps, BarColumn.GroupAvgCrit, BarColumn.GroupAvgDirectHit, BarColumn.GroupAvgCritDirectHit, BarColumn.GroupAvgOverhealPct, BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate, BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue, BarColumn.GroupMaxHealValue }),
@@ -24,7 +24,7 @@ public static class MetricPicker
     {
         ("Damage", new[] { TooltipField.Dps, TooltipField.InstantDps, TooltipField.PeakDps, TooltipField.Damage, TooltipField.DamagePercent, TooltipField.MaxHit, TooltipField.MaxHitValue, TooltipField.DamageShield, TooltipField.EncDps, TooltipField.TopDamageSkills }),
         ("Healing", new[] { TooltipField.Hps, TooltipField.InstantHps, TooltipField.Healed, TooltipField.HealPercent, TooltipField.Overheal, TooltipField.OverhealAmount, TooltipField.CritHealPct, TooltipField.MaxHeal, TooltipField.MaxHealValue, TooltipField.MaxHealWard, TooltipField.HealCount, TooltipField.EncHps, TooltipField.TopHealingSkills }),
-        ("Hit Stats", new[] { TooltipField.Crit, TooltipField.DirectHit, TooltipField.CritDirectHit, TooltipField.HitRate, TooltipField.Swings, TooltipField.Hits, TooltipField.Misses }),
+        ("Hit Stats", new[] { TooltipField.Crit, TooltipField.DirectHit, TooltipField.CritDirectHit, TooltipField.HitRate, TooltipField.Swings, TooltipField.Hits, TooltipField.Misses, TooltipField.Positionals, TooltipField.PositionalHits, TooltipField.PositionalMisses, TooltipField.PositionalPct }),
         ("Defense", new[] { TooltipField.DamageTaken, TooltipField.HealsTaken }),
         ("Other", new[] { TooltipField.Name, TooltipField.Job, TooltipField.Deaths, TooltipField.Kills, TooltipField.CombatantDuration }),
         ("High-end Raiding", new[] { TooltipField.LegsSweeped, TooltipField.SkillIssue, TooltipField.DamageDown }),
@@ -101,6 +101,10 @@ public static class MetricPicker
         { BarColumn.GroupMaxHealValue, "Group Max Heal Value" },
         { BarColumn.GroupDamageDown, "Group Damage Down" },
         { BarColumn.GroupSkillIssue, "Group Skill Issue" },
+        { BarColumn.Positionals, "Positionals" },
+        { BarColumn.PositionalHits, "Positional Hits" },
+        { BarColumn.PositionalMisses, "Positional Misses" },
+        { BarColumn.PositionalPct, "Positional %" },
     };
 
     public static readonly Dictionary<TooltipField, string> TooltipFieldLabels = new()
@@ -145,6 +149,9 @@ public static class MetricPicker
         { TooltipField.EncHps, "Encounter HPS" },
         { TooltipField.TopDamageSkills, "Top Damage Skills" },
         { TooltipField.TopHealingSkills, "Top Healing Skills" },
+        { TooltipField.Positionals, "Positionals" },
+        { TooltipField.PositionalHits, "Positional Hits" },
+        { TooltipField.PositionalMisses, "Positional Misses" },
     };
 
     public static readonly Dictionary<BarColumn, string> BarColumnDescriptions = new()

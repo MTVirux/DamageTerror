@@ -224,6 +224,7 @@ public class Configuration : IPluginConfiguration
         { BarColumn.Positionals, "Pos" },
         { BarColumn.PositionalHits, "PosH" },
         { BarColumn.PositionalMisses, "PosM" },
+        { BarColumn.PositionalPct, "Pos%" },
         { BarColumn.EncDps, "eDPS" },
         { BarColumn.EncHps, "eHPS" },
         { BarColumn.DpsRank, "Rank" },
@@ -293,6 +294,7 @@ public class Configuration : IPluginConfiguration
         { TooltipField.Positionals, "Positionals" },
         { TooltipField.PositionalHits, "Positional Hits" },
         { TooltipField.PositionalMisses, "Positional Misses" },
+        { TooltipField.PositionalPct, "Positional %" },
         { TooltipField.EncDps, "Encounter DPS" },
         { TooltipField.EncHps, "Encounter HPS" },
         { TooltipField.TopDamageSkills, "Top Damage Skills" },
@@ -349,6 +351,7 @@ public class Configuration : IPluginConfiguration
         { BarColumn.Positionals, "Positionals" },
         { BarColumn.PositionalHits, "Positional Hits" },
         { BarColumn.PositionalMisses, "Positional Misses" },
+        { BarColumn.PositionalPct, "Positional %" },
     };
 
     public static readonly Dictionary<BarColumn, string> FullColumnNames = new()
@@ -399,6 +402,7 @@ public class Configuration : IPluginConfiguration
         { BarColumn.Positionals, "Positionals" },
         { BarColumn.PositionalHits, "Positional Hits" },
         { BarColumn.PositionalMisses, "Positional Misses" },
+        { BarColumn.PositionalPct, "Positional %" },
         { BarColumn.EncDps, "Encounter DPS" },
         { BarColumn.EncHps, "Encounter HPS" },
         { BarColumn.DpsRank, "DPS Rank" },

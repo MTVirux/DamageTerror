@@ -92,6 +92,11 @@ public class CombatantBarComponent
         { BarColumn.GroupPeakDps, "000.0K" },
         { BarColumn.GroupMaxHitValue, "000.0K" },
         { BarColumn.GroupMaxHealValue, "000.0K" },
+        // Positionals
+        { BarColumn.Positionals, "00/00" },
+        { BarColumn.PositionalHits, "0000" },
+        { BarColumn.PositionalMisses, "0000" },
+        { BarColumn.PositionalPct, "100%" },
     };
 
     public static string GetColumnDisplayValue(CombatantEntry combatant, BarColumn col,
@@ -143,6 +148,7 @@ public class CombatantBarComponent
         BarColumn.Positionals => $"{combatant.Positionals}",
         BarColumn.PositionalHits => $"{combatant.PositionalHits}",
         BarColumn.PositionalMisses => $"{combatant.PositionalMisses}",
+        BarColumn.PositionalPct => ValueFormatter.FormatPercentColumn(combatant.PositionalPct, config, BarColumn.PositionalPct, activeTab),
         BarColumn.EncDps => ValueFormatter.FormatColumn(combatant.RaidDps, config, BarColumn.EncDps, activeTab),
         BarColumn.EncHps => ValueFormatter.FormatColumn(combatant.RaidHps, config, BarColumn.EncHps, activeTab),
         BarColumn.DpsRank => $"{combatant.DpsRank}/{combatant.DpsRankTotal}",

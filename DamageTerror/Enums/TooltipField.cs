@@ -45,8 +45,9 @@ public enum TooltipField
     Positionals = 36,
     PositionalHits = 37,
     PositionalMisses = 38,
-    EncDps = 39,
-    EncHps = 40,
-    TopDamageSkills = 41,
-    TopHealingSkills = 42,
+    PositionalPct = 39,
+    EncDps = 40,
+    EncHps = 41,
+    TopDamageSkills = 42,
+    TopHealingSkills = 43,
 }
