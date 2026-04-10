@@ -883,6 +883,10 @@ public class CombatantDetailPanel
             BarColumn.Swings => (Label(col), c.Swings.ToString()),
             BarColumn.Hits => (Label(col), c.Hits.ToString()),
             BarColumn.Misses => (Label(col), c.Misses.ToString()),
+            BarColumn.Positionals => (Label(col), c.Positionals.ToString()),
+            BarColumn.PositionalHits => (Label(col), c.PositionalHits.ToString()),
+            BarColumn.PositionalMisses => (Label(col), c.PositionalMisses.ToString()),
+            BarColumn.PositionalPct => (Label(col), FmtPct(c.PositionalPct)),
 
             // Defense
             BarColumn.DamageTaken => (Label(col), Fmt(c.DamageTaken)),
@@ -906,9 +910,6 @@ public class CombatantDetailPanel
             BarColumn.LegsSweeped => (Label(col), c.Stuns.ToString()),
             BarColumn.SkillIssue => (Label(col), c.SkillIssue.ToString()),
             BarColumn.DamageDown => (Label(col), c.DamageDown.ToString()),
-            BarColumn.Positionals => (Label(col), c.Positionals.ToString()),
-            BarColumn.PositionalHits => (Label(col), c.PositionalHits.ToString()),
-            BarColumn.PositionalMisses => (Label(col), c.PositionalMisses.ToString()),
 
             _ => null,
         };
