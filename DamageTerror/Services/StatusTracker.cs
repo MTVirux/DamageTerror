@@ -57,12 +57,19 @@ public class StatusTracker
         1200, // Caustic Bite
         1201, // Stormbite
 
+        // Caster / Black Mage
+        163,  // Thunder III
+        1210, // Thunder IV
+        3871, // High Thunder
+        3872, // High Thunder II
+
         // Caster / Summoner
         2706, // Slipstream (Garuda)
 
         // Healer / Scholar
         1895, // Biolysis
         189,  // Bio II
+        3883, // Baneful Impaction
 
         // Healer / Astrologian
         838,  // Combust
@@ -92,6 +99,9 @@ public class StatusTracker
         1837, // Sonic Break
         1838, // Bow Shock
 
+        // Ranged / Machinist
+        1866, // Bioblaster
+
         // Caster / Blue Mage
         1714, // Bleeding (Song of Torment, Nightbloom, Aetherial Spark)
         1736, // Dropsy (Aqua Breath)
@@ -107,6 +117,7 @@ public class StatusTracker
     private static readonly Dictionary<uint, string> GroundEffectDotIds = new()
     {
         { 749, "Salted Earth" }, // DRK
+        { 501, "Doton" },        // NIN
     };
 
     // Reverse map: skill name -> ground-effect status ID
@@ -124,11 +135,14 @@ public class StatusTracker
         158,  // Regen
         150,  // Medica II
         3880, // Medica III
+        1911, // Asylum
 
         // Astrologian
         835,  // Aspected Benefic
         836,  // Aspected Helios
         3894, // Helios Conjunction
+        848,  // Collective Unconscious
+        956,  // Wheel of Fortune
 
         // Scholar
         315,  // Whispering Dawn
@@ -141,6 +155,19 @@ public class StatusTracker
         2620, // Physis II
         2938, // Kerakeia
         3898, // Philosophia
+
+        // Warrior
+        2681, // Equilibrium
+        2108, // Shake It Off (Over Time)
+
+        // Gunbreaker
+        1835, // Aurora
+
+        // Paladin
+        2676, // Knight's Benediction
+
+        // Dancer
+        2695, // Improvisation
 
         // Blue Mage
         2495, // Angel's Snack

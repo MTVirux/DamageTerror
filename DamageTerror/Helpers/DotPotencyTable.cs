@@ -27,6 +27,7 @@ public static class DotPotencyTable
         // SCH
         { 1895, 75 },  // Biolysis
         { 189, 20 },   // Bio II
+        { 3883, 50 },  // Baneful Impaction
 
         // AST
         { 838, 40 },   // Combust
@@ -44,6 +45,12 @@ public static class DotPotencyTable
         { 129, 20 },   // Windbite
         { 1200, 20 },  // Caustic Bite
         { 1201, 25 },  // Stormbite
+
+        // BLM
+        { 163, 35 },   // Thunder III
+        { 1210, 30 },  // Thunder IV
+        { 3871, 30 },  // High Thunder
+        { 3872, 30 },  // High Thunder II
 
         // SMN
         { 2706, 30 },  // Slipstream
@@ -65,6 +72,12 @@ public static class DotPotencyTable
         { 1837, 60 },  // Sonic Break
         { 1838, 60 },  // Bow Shock
 
+        // MCH
+        { 1866, 50 },  // Bioblaster
+
+        // NIN
+        { 501, 50 },   // Doton
+
         // DRK
         { 749, 50 },   // Salted Earth
 
@@ -82,11 +95,14 @@ public static class DotPotencyTable
         { 158, 250 },  // Regen
         { 150, 150 },  // Medica II
         { 3880, 150 }, // Medica III
+        { 1911, 100 }, // Asylum
 
         // AST
         { 835, 250 },  // Aspected Benefic
         { 836, 150 },  // Aspected Helios
         { 3894, 150 }, // Helios Conjunction
+        { 848, 100 },  // Collective Unconscious
+        { 956, 100 },  // Wheel of Fortune
 
         // SCH
         { 315, 120 },  // Whispering Dawn
@@ -99,6 +115,19 @@ public static class DotPotencyTable
         { 2620, 100 }, // Physis II
         { 2938, 100 }, // Kerakeia
         { 3898, 170 }, // Philosophia
+
+        // WAR
+        { 2681, 200 }, // Equilibrium
+        { 2108, 100 }, // Shake It Off (Over Time)
+
+        // GNB
+        { 1835, 200 }, // Aurora
+
+        // PLD
+        { 2676, 250 }, // Knight's Benediction
+
+        // DNC
+        { 2695, 100 }, // Improvisation
 
         // BLU
         { 2495, 100 }, // Angel's Snack
