@@ -211,6 +211,9 @@ public class MeterTab
     /// <summary>Whether to show the Buffs/Debuffs tab in the detail panel.</summary>
     public bool DetailShowBuffsTab { get; set; } = true;
 
+    /// <summary>Whether to show the Item tab in the detail panel.</summary>
+    public bool DetailShowItemTab { get; set; } = true;
+
     /// <summary>Whether to show the skill breakdown section in the detail panel.</summary>
     public bool DetailShowSkillBreakdown { get; set; } = true;
 
@@ -343,6 +346,7 @@ public class MeterTab
             DetailShowSkillsTab = DetailShowSkillsTab,
             DetailShowGraphTab = DetailShowGraphTab,
             DetailShowBuffsTab = DetailShowBuffsTab,
+            DetailShowItemTab = DetailShowItemTab,
             DetailShowSkillBreakdown = DetailShowSkillBreakdown,
             MaxSkillBreakdownCount = MaxSkillBreakdownCount,
             DetailNewLineColumns = new HashSet<BarColumn>(DetailNewLineColumns),

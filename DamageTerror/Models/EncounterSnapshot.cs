@@ -26,6 +26,10 @@ public class EncounterSnapshot
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public Dictionary<string, List<SkillUseEvent>> DamageTakenEvents { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Per-combatant timestamped item use events, keyed by name. Populated on encounter archive.</summary>
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public Dictionary<string, List<SkillUseEvent>> ItemEvents { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Per-combatant status application history (statuses applied BY this combatant), keyed by source name.</summary>
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public Dictionary<string, List<StatusApplication>> StatusHistory { get; set; } = new(StringComparer.OrdinalIgnoreCase);
@@ -47,6 +51,10 @@ public class EncounterSnapshot
             SkillEvents = new Dictionary<string, List<SkillUseEvent>>(SkillEvents, StringComparer.OrdinalIgnoreCase);
         if (DamageTakenEvents.Count > 0 && DamageTakenEvents.Comparer != StringComparer.OrdinalIgnoreCase)
             DamageTakenEvents = new Dictionary<string, List<SkillUseEvent>>(DamageTakenEvents, StringComparer.OrdinalIgnoreCase);
+        if (ItemEvents is null)
+            ItemEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
+        else if (ItemEvents.Count > 0 && ItemEvents.Comparer != StringComparer.OrdinalIgnoreCase)
+            ItemEvents = new Dictionary<string, List<SkillUseEvent>>(ItemEvents, StringComparer.OrdinalIgnoreCase);
         if (StatusHistory is null)
             StatusHistory = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
         else if (StatusHistory.Count > 0 && StatusHistory.Comparer != StringComparer.OrdinalIgnoreCase)

@@ -84,6 +84,8 @@ public class DataService : IDisposable
                             SkillTracker.SeedHistoricalEvents(restored.SkillEvents);
                         if (restored.DamageTakenEvents.Count > 0)
                             SkillTracker.SeedHistoricalDamageTakenEvents(restored.DamageTakenEvents);
+                        if (restored.ItemEvents.Count > 0)
+                            SkillTracker.SeedHistoricalItemEvents(restored.ItemEvents);
                     }
 
                     log.Debug($"Restored last encounter for {name} on startup");
@@ -457,6 +459,10 @@ public class DataService : IDisposable
             var dtEvents = SkillTracker.GetDamageTakenEvents(c.Name);
             if (dtEvents.Count > 0)
                 target.DamageTakenEvents[c.Name] = dtEvents;
+
+            var itemEvts = SkillTracker.GetItemEvents(c.Name);
+            if (itemEvts.Count > 0)
+                target.ItemEvents[c.Name] = itemEvts;
 
             var statusApplied = StatusTracker.GetStatusHistory(c.Name);
             if (statusApplied.Count > 0)

@@ -17,6 +17,7 @@ public class CombatantDetailPanel
     private string? expandedName;
     private readonly HashSet<string> expandedSkills = new();
     private readonly HashSet<string> hiddenLegendEntries = new(StringComparer.Ordinal);
+    private readonly Dictionary<uint, string> itemNameCache = new();
     private bool wasActivelyUpdating;
     private double scrollXMin = double.NaN;
     private double scrollXMax = double.NaN;
@@ -89,6 +90,7 @@ public class CombatantDetailPanel
         var showSkillsTab = activeTab?.DetailShowSkillsTab ?? config.DetailShowSkillsTab;
         var showGraphTab = activeTab?.DetailShowGraphTab ?? config.DetailShowGraphTab;
         var showBuffsTab = activeTab?.DetailShowBuffsTab ?? config.DetailShowBuffsTab;
+        var showItemTab = activeTab?.DetailShowItemTab ?? config.DetailShowItemTab;
 
         if (ImGui.BeginTabBar("##detailTabs", ImGuiTabBarFlags.Reorderable))
         {
@@ -113,6 +115,12 @@ public class CombatantDetailPanel
             if (showBuffsTab && ImGui.BeginTabItem($"Buffs/Debuffs##detail"))
             {
                 DrawBuffsTab(combatant, combatant.Name);
+                ImGui.EndTabItem();
+            }
+
+            if (showItemTab && ImGui.BeginTabItem($"Items##detail"))
+            {
+                DrawItemTab(combatant, combatant.Name);
                 ImGui.EndTabItem();
             }
 
@@ -483,6 +491,108 @@ public class CombatantDetailPanel
 
             ImGui.EndTabBar();
         }
+    }
+
+    private void DrawItemTab(CombatantEntry combatant, string index)
+    {
+        List<SkillUseEvent> items;
+
+        if (isLive)
+        {
+            items = skillTracker.GetItemEvents(combatant.Name);
+
+            if (items.Count == 0
+                && currentSnapshot?.ItemEvents != null
+                && currentSnapshot.ItemEvents.TryGetValue(combatant.Name, out var fallback))
+                items = fallback;
+        }
+        else
+        {
+            items = currentSnapshot?.ItemEvents != null
+                && currentSnapshot.ItemEvents.TryGetValue(combatant.Name, out var saved)
+                ? saved : [];
+        }
+
+        if (items.Count == 0)
+        {
+            ImGui.Spacing();
+            ImGui.TextDisabled("No item usage recorded.");
+            ImGui.Spacing();
+            return;
+        }
+
+        var sorted = items.OrderBy(e => e.TimeSec).ToList();
+
+        if (ImGui.BeginTable($"##itemTable_{index}", 2,
+                ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp))
+        {
+            ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.None, 0.65f);
+            ImGui.TableSetupColumn("Timestamp", ImGuiTableColumnFlags.None, 0.35f);
+            ImGui.TableHeadersRow();
+
+            foreach (var evt in sorted)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+
+                var displayName = ResolveItemName(evt.SkillName);
+                ImGui.TextUnformatted(displayName);
+
+                ImGui.TableNextColumn();
+                var min = (int)(evt.TimeSec / 60);
+                var sec = (int)(evt.TimeSec % 60);
+                ImGui.TextUnformatted($"{min}:{sec:00}");
+            }
+
+            ImGui.EndTable();
+        }
+    }
+
+    private string ResolveItemName(string skillName)
+    {
+        if (!skillName.StartsWith("item_", StringComparison.OrdinalIgnoreCase))
+            return skillName;
+
+        var idStr = skillName[5..];
+        if (!uint.TryParse(idStr, System.Globalization.NumberStyles.HexNumber,
+                System.Globalization.CultureInfo.InvariantCulture, out var itemId))
+            return idStr;
+
+        if (itemNameCache.TryGetValue(itemId, out var cached))
+            return cached;
+
+        // Strip HQ (+1,000,000) and Collectible (+500,000) flags from item IDs.
+        var baseId = itemId;
+        bool isHq = false;
+        if (baseId >= 1_000_000)
+        {
+            baseId -= 1_000_000;
+            isHq = true;
+        }
+        else if (baseId >= 500_000)
+        {
+            baseId -= 500_000;
+        }
+
+        string resolved = idStr;
+        try
+        {
+            var sheet = ServiceManager.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Item>();
+            if (sheet != null)
+            {
+                var row = sheet.GetRowOrDefault(baseId);
+                if (row.HasValue)
+                {
+                    var name = row.Value.Name.ToString();
+                    if (!string.IsNullOrEmpty(name))
+                        resolved = isHq ? $"{name} (HQ)" : name;
+                }
+            }
+        }
+        catch { }
+
+        itemNameCache[itemId] = resolved;
+        return resolved;
     }
 
     private sealed class AggregatedStatus

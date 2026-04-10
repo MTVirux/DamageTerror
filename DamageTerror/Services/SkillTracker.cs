@@ -15,6 +15,7 @@ public class SkillTracker
 
     private readonly Dictionary<string, List<SkillUseEvent>> skillEvents = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<SkillUseEvent>> damageTakenEvents = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<SkillUseEvent>> itemEvents = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> stunCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> skillIssueCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<(string Target, string Status), int> skillIssueStacks = new();
@@ -55,6 +56,7 @@ public class SkillTracker
 
     private Dictionary<string, List<SkillUseEvent>>? seededEvents;
     private Dictionary<string, List<SkillUseEvent>>? seededDamageTakenEvents;
+    private Dictionary<string, List<SkillUseEvent>>? seededItemEvents;
 
     private EncounterTimer? timer;
     private GraphDataTracker? graphTracker;
@@ -101,6 +103,14 @@ public class SkillTracker
         lock (syncLock)
         {
             seededDamageTakenEvents = new Dictionary<string, List<SkillUseEvent>>(data, StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    public void SeedHistoricalItemEvents(Dictionary<string, List<SkillUseEvent>> data)
+    {
+        lock (syncLock)
+        {
+            seededItemEvents = new Dictionary<string, List<SkillUseEvent>>(data, StringComparer.OrdinalIgnoreCase);
         }
     }
 
@@ -162,6 +172,16 @@ public class SkillTracker
 
         if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(skillName))
             return;
+
+        // Separate item uses (item_XXXX) into their own tracking.
+        if (skillName.StartsWith("item_", StringComparison.OrdinalIgnoreCase))
+        {
+            lock (syncLock)
+            {
+                RecordItemEvent(sourceName, skillName, targetName);
+            }
+            return;
+        }
 
         // Pre-register ground-effect DoTs so the first tick is attributed
         // correctly even if the status gain (type 26) arrives after the tick.
@@ -428,6 +448,22 @@ public class SkillTracker
         }
     }
 
+    public List<SkillUseEvent> GetItemEvents(string combatantName)
+    {
+        lock (syncLock)
+        {
+            if (itemEvents.TryGetValue(combatantName, out var events) && events.Count > 0)
+                return new List<SkillUseEvent>(events);
+
+            if (seededItemEvents != null
+                && seededItemEvents.TryGetValue(combatantName, out var seeded)
+                && seeded.Count > 0)
+                return new List<SkillUseEvent>(seeded);
+
+            return new List<SkillUseEvent>();
+        }
+    }
+
     public int GetStunCount(string combatantName)
     {
         lock (syncLock)
@@ -485,8 +521,10 @@ public class SkillTracker
             damageDownStacks.Clear();
             positionalHitCounts.Clear();
             positionalMissCounts.Clear();
+            itemEvents.Clear();
             seededEvents = null;
             seededDamageTakenEvents = null;
+            seededItemEvents = null;
             damageTypeCache.Clear();
             combatantDotStats.Clear();
         }
@@ -567,6 +605,24 @@ public class SkillTracker
             IsHeal = false,
             IsCrit = (severity & 0x20) != 0,
             IsDirectHit = (severity & 0x40) != 0,
+        });
+    }
+
+    private void RecordItemEvent(string combatantName, string skillName, string? targetName)
+    {
+        if (!itemEvents.TryGetValue(combatantName, out var events))
+        {
+            events = new List<SkillUseEvent>();
+            itemEvents[combatantName] = events;
+        }
+
+        events.Add(new SkillUseEvent
+        {
+            TimeSec = timer?.ElapsedSeconds ?? 0f,
+            SkillName = skillName,
+            TargetName = targetName,
+            Amount = 0,
+            IsHeal = false,
         });
     }
 

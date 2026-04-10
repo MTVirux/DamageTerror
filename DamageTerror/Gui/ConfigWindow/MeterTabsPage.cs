@@ -547,6 +547,14 @@ public static class MeterTabsPage
                 changed = true;
             }
 
+            ImGui.SameLine();
+            var showItemTab = tab.DetailShowItemTab;
+            if (ImGui.Checkbox("Items##detailTab", ref showItemTab))
+            {
+                tab.DetailShowItemTab = showItemTab;
+                changed = true;
+            }
+
             ImGui.Spacing();
 
             if (ImGui.Button("Enable All##detailVis"))

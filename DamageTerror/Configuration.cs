@@ -420,6 +420,7 @@ public class Configuration : IPluginConfiguration
     public bool DetailShowSkillsTab { get; set; } = true;
     public bool DetailShowGraphTab { get; set; } = true;
     public bool DetailShowBuffsTab { get; set; } = true;
+    public bool DetailShowItemTab { get; set; } = true;
     public bool DetailShowSkillBreakdown { get; set; } = true;
     public int MaxSkillBreakdownCount { get; set; } = 0;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
