@@ -677,8 +677,9 @@ public class CombatantDetailPanel
     private void DrawOrderedSection(List<BarColumn> order, CombatantEntry combatant, HashSet<BarColumn> vis, Vector4 lc, MeterTab? activeTab)
     {
         var newLineSet = activeTab?.DetailNewLineColumns ?? config.DetailNewLineColumns;
-        var rowCount = 0;
         var first = true;
+        var regionMin = ImGui.GetCursorScreenPos().X;
+        var availWidth = ImGui.GetContentRegionAvail().X;
         foreach (var col in order)
         {
             var data = GetDetailColumnData(col, combatant, vis, activeTab);
@@ -687,47 +688,43 @@ public class CombatantDetailPanel
 
             var (label, value) = data.Value;
 
-            if (rowCount == 3 || (newLineSet.Contains(col) && rowCount > 0))
-            {
-                rowCount = 0;
+            if (newLineSet.Contains(col) && !first)
                 first = true;
-            }
 
             var colColor = activeTab?.GetColumnValueColor(col);
 
-            if (col == BarColumn.Deaths)
+            var displayLabel = col == BarColumn.Deaths
+                ? (activeTab != null ? activeTab.GetDetailColumnLabel(BarColumn.Deaths) : "Deaths")
+                : label;
+
+            if (!first)
             {
-                var deathLabel = activeTab != null ? activeTab.GetDetailColumnLabel(BarColumn.Deaths) : "Deaths";
-                if (!first) ImGui.SameLine();
-                ImGui.TextColored(lc, first ? $"{deathLabel}:" : $"  {deathLabel}:");
-                ImGui.SameLine();
-                if (colColor.HasValue)
-                    ImGui.TextColored(colColor.Value, value);
+                var spacing = ImGui.GetStyle().ItemSpacing.X;
+                var prefix = $"  {displayLabel}:";
+                var prevEndX = ImGui.GetItemRectMax().X - regionMin;
+                var itemWidth = spacing + ImGui.CalcTextSize(prefix).X + spacing + ImGui.CalcTextSize(value).X;
+
+                if (prevEndX + itemWidth > availWidth)
+                {
+                    ImGui.TextColored(lc, $"{displayLabel}:");
+                }
                 else
-                    ImGui.TextUnformatted(value);
-            }
-            else if (first)
-            {
-                ImGui.TextColored(lc, $"{label}:");
-                ImGui.SameLine();
-                if (colColor.HasValue)
-                    ImGui.TextColored(colColor.Value, value);
-                else
-                    ImGui.TextUnformatted(value);
+                {
+                    ImGui.SameLine();
+                    ImGui.TextColored(lc, prefix);
+                }
             }
             else
             {
-                ImGui.SameLine();
-                ImGui.TextColored(lc, $"  {label}:");
-                ImGui.SameLine();
-                if (colColor.HasValue)
-                    ImGui.TextColored(colColor.Value, value);
-                else
-                    ImGui.TextUnformatted(value);
+                ImGui.TextColored(lc, $"{displayLabel}:");
+                first = false;
             }
 
-            first = false;
-            rowCount++;
+            ImGui.SameLine();
+            if (colColor.HasValue)
+                ImGui.TextColored(colColor.Value, value);
+            else
+                ImGui.TextUnformatted(value);
         }
     }
 
