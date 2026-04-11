@@ -60,7 +60,7 @@ public class ConfigWindow : Window, IDisposable
     };
 
     public ConfigWindow(DamageTerrorPlugin plugin, PresetManager presetManager)
-        : base("Damage Terror — Settings")
+        : base("Damage Terror — Settings###DamageTerrorConfig")
     {
         this.plugin = plugin;
         this.generalTab = new GeneralTab(plugin);

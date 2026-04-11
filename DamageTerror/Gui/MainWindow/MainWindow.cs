@@ -16,18 +16,18 @@ public class MainWindow : Window, IDisposable
 
 #if DEBUG
             var title = string.IsNullOrEmpty(ver)
-                ? "Damage Terror [TESTING]"
-                : $"Damage Terror  -  v{ver} [TESTING]";
+                ? "Damage Terror [TESTING]###DamageTerrorMain"
+                : $"Damage Terror  -  v{ver} [TESTING]###DamageTerrorMain";
 #else
             var title = string.IsNullOrEmpty(ver)
-                ? "Damage Terror"
-                : $"Damage Terror  -  v{ver}";
+                ? "Damage Terror###DamageTerrorMain"
+                : $"Damage Terror  -  v{ver}###DamageTerrorMain";
 #endif
             return title;
         }
         catch
         {
-            return "Damage Terror";
+            return "Damage Terror###DamageTerrorMain";
         }
     }
 
