@@ -32,7 +32,7 @@ public class EncounterHeaderComponent
         var formattedPlayer = !string.IsNullOrEmpty(playerName)
             ? $"  ({NameFormatHelper.GetDisplayName(playerName, "", true, config)})"
             : "";
-        return $"{icon} {enc.ZoneName}{title}{time}  |  {enc.Duration}  |  {ValueFormatter.Format(enc.EncDps, ValueDisplayFormat.Raw, 1)} rDPS{formattedPlayer}{suffix}";
+        return $"{icon} {enc.ZoneName}{title}{time}  |  {enc.Duration}  |  {ValueFormatter.Format(enc.EncDps, ValueDisplayFormat.Raw, 0)} eDPS{formattedPlayer}{suffix}";
     }
 
     public EncounterSnapshot? SelectedEncounter
