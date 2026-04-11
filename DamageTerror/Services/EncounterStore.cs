@@ -163,7 +163,8 @@ public class EncounterStore
             if (snapshot.Encounter.IsActive && !wasActive && active != null)
             {
                 active.Encounter.IsActive = false;
-                if (!activeAlreadyInHistory && !double.IsNaN(active.Encounter.EncDps))
+                if (!activeAlreadyInHistory && !double.IsNaN(active.Encounter.EncDps)
+                    && !(config.SkipZeroEdpsEncounters && active.Encounter.EncDps == 0))
                 {
                     history.Add(active);
                     dirty = true;
@@ -253,7 +254,8 @@ public class EncounterStore
 
             active.Encounter.IsActive = false;
 
-            if (!double.IsNaN(active.Encounter.EncDps))
+            if (!double.IsNaN(active.Encounter.EncDps)
+                && !(config.SkipZeroEdpsEncounters && active.Encounter.EncDps == 0))
             {
                 if (!activeAlreadyInHistory)
                     history.Add(active);
@@ -281,6 +283,9 @@ public class EncounterStore
             active.Encounter.IsActive = false;
 
             if (double.IsNaN(active.Encounter.EncDps))
+                return false;
+
+            if (config.SkipZeroEdpsEncounters && active.Encounter.EncDps == 0)
                 return false;
 
             history.Add(active);
@@ -395,6 +400,25 @@ public class EncounterStore
     {
         lock (syncLock)
             PruneHistoryLocked();
+    }
+
+    public int CountZeroEdpsEncounters()
+    {
+        lock (syncLock)
+            return history.Count(s => s.Encounter.EncDps == 0);
+    }
+
+    public int RemoveZeroEdpsEncounters()
+    {
+        lock (syncLock)
+        {
+            var before = history.Count;
+            history.RemoveAll(s => s.Encounter.EncDps == 0);
+            var removed = before - history.Count;
+            if (removed > 0)
+                dirty = true;
+            return removed;
+        }
     }
 
     private void PruneHistoryLocked()

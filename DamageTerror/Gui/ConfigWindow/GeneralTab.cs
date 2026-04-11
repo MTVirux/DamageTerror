@@ -73,6 +73,30 @@ public class GeneralTab
                 ImGui.Unindent();
             }
 
+            var skipZeroEdps = config.SkipZeroEdpsEncounters;
+            if (ImGui.Checkbox("Don't store 0 eDPS encounters", ref skipZeroEdps))
+            {
+                config.SkipZeroEdpsEncounters = skipZeroEdps;
+                changed = true;
+            }
+
+            if (config.SkipZeroEdpsEncounters)
+            {
+                var zeroCount = plugin.DataService.Store.CountZeroEdpsEncounters();
+                if (zeroCount > 0)
+                {
+                    ImGui.Indent();
+                    ImGui.TextColored(new System.Numerics.Vector4(1f, 0.8f, 0.3f, 1f),
+                        $"Found {zeroCount} encounter{(zeroCount != 1 ? "s" : "")} with 0 eDPS in history.");
+                    ImGui.SameLine();
+                    if (ImGui.Button($"Clean up##{zeroCount}"))
+                    {
+                        plugin.DataService.Store.RemoveZeroEdpsEncounters();
+                    }
+                    ImGui.Unindent();
+                }
+            }
+
             var ignoreEsc = config.IgnoreEscClose;
             if (ImGui.Checkbox("Ignore ESC key closing the meter", ref ignoreEsc))
             {
