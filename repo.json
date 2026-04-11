@@ -27,6 +27,6 @@
   "DownloadLinkInstall": "https://github.com/MTVirux/DamageTerror/releases/download/1.0.0.42/DamageTerror.zip",
   "DownloadLinkUpdate": "https://github.com/MTVirux/DamageTerror/releases/download/1.0.0.42/DamageTerror.zip",
   "DownloadLinkTesting": "https://github.com/MTVirux/DamageTerror/releases/download/testing_1.1.0.0/DamageTerror.zip",
-  "IconUrl": "https://raw.githubusercontent.com/MTVirux/DamageTerror/main/images/icon.png"
+  "IconUrl": "https://raw.githubusercontent.com/MTVirux/DamageTerror/master/images/icon.png"
 }
 ]
