@@ -177,7 +177,7 @@ public class MainWindow : Window, IDisposable
 
             var pos = this.plugin.Config.MainWindowPos;
             var size = this.plugin.Config.MainWindowSize;
-            if (pos.X > 1f && pos.Y > 1f && size.X > 1f && size.Y > 1f)
+            if (pos.X >= 0f && pos.Y >= 0f && size.X > 1f && size.Y > 1f)
             {
                 ImGui.SetNextWindowPos(pos);
                 ImGui.SetNextWindowSize(size);
@@ -210,6 +210,11 @@ public class MainWindow : Window, IDisposable
     public override void Draw()
     {
         wasDrawnLastFrame = true;
+
+        // Keep config size in sync so dock-position buttons use the real size.
+        if (!plugin.Config.PinMainWindow)
+            plugin.Config.MainWindowSize = ImGui.GetWindowSize();
+
         plugin.DataService.CheckStaleness();
         plugin.DataService.Store.TickSampleSimulation();
 

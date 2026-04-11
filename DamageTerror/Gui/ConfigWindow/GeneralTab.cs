@@ -141,6 +141,84 @@ public class GeneralTab
 
         ImGui.Spacing();
 
+        if (ImGui.CollapsingHeader("Position & Size"))
+        {
+            if (config.PinMainWindow)
+            {
+                ImGui.TextColored(new Vector4(1f, 0.8f, 0.3f, 1f),
+                    "Window is locked. Using these controls will update its pinned position and size.");
+                ImGui.Spacing();
+            }
+
+            ImGui.TextDisabled("Snap the meter window to a screen edge or corner.");
+            ImGui.Spacing();
+
+            var viewport = ImGui.GetMainViewport();
+            var workPos = viewport.WorkPos;
+            var workSize = viewport.WorkSize;
+            var windowSize = config.MainWindowSize;
+            var btnSize = new Vector2(80, 0);
+
+            void Dock(float x, float y)
+            {
+                x = Math.Max(workPos.X, Math.Min(x, workPos.X + workSize.X - windowSize.X));
+                y = Math.Max(workPos.Y, Math.Min(y, workPos.Y + workSize.Y - windowSize.Y));
+                config.MainWindowPos = new Vector2(x, y);
+                config.PinMainWindow = true;
+                changed = true;
+            }
+
+            // Row 1: Top-Left, Top, Top-Right
+            if (ImGui.Button("Top-Left", btnSize))
+                Dock(workPos.X, workPos.Y);
+            ImGui.SameLine();
+            if (ImGui.Button("Top", btnSize))
+                Dock(workPos.X + (workSize.X - windowSize.X) / 2f, workPos.Y);
+            ImGui.SameLine();
+            if (ImGui.Button("Top-Right", btnSize))
+                Dock(workPos.X + workSize.X - windowSize.X, workPos.Y);
+
+            // Row 2: Left, (gap), Right
+            if (ImGui.Button("Left", btnSize))
+                Dock(workPos.X, workPos.Y + (workSize.Y - windowSize.Y) / 2f);
+            ImGui.SameLine();
+            ImGui.Dummy(btnSize);
+            ImGui.SameLine();
+            if (ImGui.Button("Right", btnSize))
+                Dock(workPos.X + workSize.X - windowSize.X, workPos.Y + (workSize.Y - windowSize.Y) / 2f);
+
+            // Row 3: Bottom-Left, Bottom, Bottom-Right
+            if (ImGui.Button("Bot-Left", btnSize))
+                Dock(workPos.X, workPos.Y + workSize.Y - windowSize.Y);
+            ImGui.SameLine();
+            if (ImGui.Button("Bottom", btnSize))
+                Dock(workPos.X + (workSize.X - windowSize.X) / 2f, workPos.Y + workSize.Y - windowSize.Y);
+            ImGui.SameLine();
+            if (ImGui.Button("Bot-Right", btnSize))
+                Dock(workPos.X + workSize.X - windowSize.X, workPos.Y + workSize.Y - windowSize.Y);
+
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+
+            var width = config.MainWindowSize.X;
+            var height = config.MainWindowSize.Y;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Width", ref width, 250f, workSize.X, "%.0f"))
+            {
+                config.MainWindowSize = new Vector2(width, config.MainWindowSize.Y);
+                changed = true;
+            }
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.SliderFloat("Height", ref height, 150f, workSize.Y, "%.0f"))
+            {
+                config.MainWindowSize = new Vector2(config.MainWindowSize.X, height);
+                changed = true;
+            }
+        }
+
+        ImGui.Spacing();
+
         if (ImGui.CollapsingHeader("Duty Filters", ImGuiTreeNodeFlags.DefaultOpen))
         {
             var v = config.EnableInOverworld;
