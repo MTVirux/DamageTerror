@@ -34,10 +34,16 @@ public class IpcDataSource : IDataSource
 
         try
         {
-            receiver = pluginInterface.GetIpcProvider<JObject, bool>("IINACT.IpcProvider.DamageTerror");
+            // Register our provider gate where IINACT will send events to us.
+            receiver = pluginInterface.GetIpcProvider<JObject, bool>("DamageTerror");
             receiver.RegisterFunc(OnDataReceived);
 
-            sender = pluginInterface.GetIpcSubscriber<JObject, bool>("DamageTerror");
+            // Ask IINACT to create its handler pair for "DamageTerror".
+            var createSub = pluginInterface.GetIpcSubscriber<string, bool>("IINACT.CreateSubscriber");
+            createSub.InvokeFunc("DamageTerror");
+
+            // Subscribe to the command gate IINACT created for us.
+            sender = pluginInterface.GetIpcSubscriber<JObject, bool>("IINACT.IpcProvider.DamageTerror");
 
             var subscribeMsg = JObject.FromObject(new
             {
@@ -47,7 +53,7 @@ public class IpcDataSource : IDataSource
 
             try
             {
-                sender.InvokeFunc(subscribeMsg);
+                sender.InvokeAction(subscribeMsg);
                 connected = true;
                 OnConnected?.Invoke();
                 log.Information("IPC connected to IINACT");
@@ -85,6 +91,16 @@ public class IpcDataSource : IDataSource
     {
         try
         {
+            var unsub = pluginInterface.GetIpcSubscriber<string, bool>("IINACT.Unsubscribe");
+            unsub.InvokeFunc("DamageTerror");
+        }
+        catch
+        {
+            // IINACT may already be gone
+        }
+
+        try
+        {
             receiver?.UnregisterFunc();
         }
         catch
@@ -103,7 +119,7 @@ public class IpcDataSource : IDataSource
         try
         {
             var endMsg = JObject.FromObject(new { call = "end" });
-            sender.InvokeFunc(endMsg);
+            sender.InvokeAction(endMsg);
             log.Debug("Sent end encounter command via IPC");
         }
         catch (Exception ex)
