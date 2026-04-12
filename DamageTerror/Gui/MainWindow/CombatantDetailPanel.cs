@@ -377,7 +377,7 @@ public class CombatantDetailPanel
                 }
             }
 
-            GraphRenderHelper.DrawMousePositionText(gs.MouseTextOpacity);
+            GraphRenderHelper.DrawMousePositionText(gs.MouseTextOpacity, config.GraphXAxisMinSec);
 
             // Middle-click context menu (right-click opens ImPlot's native axis controls)
             if (ImGui.BeginPopupContextItem($"##DetailGraphCtx_{index}", ImGuiPopupFlags.MouseButtonMiddle))
@@ -415,6 +415,10 @@ public class CombatantDetailPanel
                 var showLabels = config.GraphShowLabels;
                 if (ImGui.Checkbox("Show Value Labels", ref showLabels))
                     config.GraphShowLabels = showLabels;
+
+                var minSec = config.GraphXAxisMinSec;
+                if (ImGui.Checkbox("X-Axis min:sec", ref minSec))
+                    config.GraphXAxisMinSec = minSec;
 
                 ImGui.EndPopup();
             }

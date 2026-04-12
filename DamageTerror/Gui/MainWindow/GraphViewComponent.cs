@@ -373,7 +373,7 @@ public class GraphViewComponent
                 }
             }
 
-            GraphRenderHelper.DrawMousePositionText(gs.MouseTextOpacity);
+            GraphRenderHelper.DrawMousePositionText(gs.MouseTextOpacity, config.GraphViewXAxisMinSec);
 
             // Middle-click context menu (right-click opens ImPlot's native axis controls)
             if (ImGui.BeginPopupContextItem("##GraphViewCtx", ImGuiPopupFlags.MouseButtonMiddle))
@@ -411,6 +411,10 @@ public class GraphViewComponent
                 var showLabels = config.GraphViewShowLabels;
                 if (ImGui.Checkbox("Show Value Labels", ref showLabels))
                     config.GraphViewShowLabels = showLabels;
+
+                var minSec = config.GraphViewXAxisMinSec;
+                if (ImGui.Checkbox("X-Axis min:sec", ref minSec))
+                    config.GraphViewXAxisMinSec = minSec;
 
                 ImGui.EndPopup();
             }

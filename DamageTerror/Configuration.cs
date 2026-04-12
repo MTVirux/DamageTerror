@@ -486,6 +486,7 @@ public class Configuration : IPluginConfiguration
     public float GraphYAxisHeadroom { get; set; } = 1.1f;
     public int GraphYAxisTickCount { get; set; } = 8;
     public float GraphXAxisPadding { get; set; } = 1.25f;
+    public bool GraphXAxisMinSec { get; set; } = false;
     public bool GraphAutoScroll { get; set; } = false;
     public float GraphAutoScrollWindow { get; set; } = 60f;
     public float GraphAutoScrollSmoothing { get; set; } = 8f;
@@ -509,6 +510,7 @@ public class Configuration : IPluginConfiguration
     public float GraphViewLabelOffsetY { get; set; } = 0f;
     public float GraphViewFontSize { get; set; } = 14f;
     public float GraphViewXAxisPadding { get; set; } = 1.18f;
+    public bool GraphViewXAxisMinSec { get; set; } = false;
     public bool GraphViewAutoScroll { get; set; } = true;
     public float GraphViewAutoScrollWindow { get; set; } = 15f;
     public float GraphViewAutoScrollSmoothing { get; set; } = 8f;

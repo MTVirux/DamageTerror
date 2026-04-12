@@ -17,6 +17,7 @@ internal struct GraphSettings
     public float AutoScrollWindow;
     public float AutoScrollSmoothing;
     public float XAxisPadding;
+    public bool XAxisMinSec;
     public float YAxisHeadroom;
     public int YAxisTickCount;
     public float MouseTextOpacity;
@@ -33,6 +34,7 @@ internal struct GraphSettings
         AutoScrollWindow = config.GraphViewAutoScrollWindow,
         AutoScrollSmoothing = config.GraphViewAutoScrollSmoothing,
         XAxisPadding = config.GraphViewXAxisPadding,
+        XAxisMinSec = config.GraphViewXAxisMinSec,
         YAxisHeadroom = config.GraphViewYAxisHeadroom,
         YAxisTickCount = config.GraphViewYAxisTickCount,
         MouseTextOpacity = config.GraphViewMouseTextOpacity,
@@ -50,6 +52,7 @@ internal struct GraphSettings
         AutoScrollWindow = config.GraphAutoScrollWindow,
         AutoScrollSmoothing = config.GraphAutoScrollSmoothing,
         XAxisPadding = config.GraphXAxisPadding,
+        XAxisMinSec = config.GraphXAxisMinSec,
         YAxisHeadroom = config.GraphYAxisHeadroom,
         YAxisTickCount = config.GraphYAxisTickCount,
         MouseTextOpacity = config.GraphMouseTextOpacity,
@@ -138,23 +141,64 @@ internal static class GraphRenderHelper
         }
         ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, double.MaxValue);
 
+        if (settings.XAxisMinSec) SetupMinSecXTicks(maxTime, settings);
+
         if (maxVal > 0f) SetupAbbreviatedYTicks(maxVal, settings.YAxisHeadroom, settings.YAxisTickCount);
         else ImPlot.SetupAxisLimits(ImAxis.Y1, 0, 1, ImPlotCond.Always);
     }
 
-    public static void DrawMousePositionText(float opacity)
+    public static void DrawMousePositionText(float opacity, bool minSecFormat = false)
     {
         if (!ImPlot.IsPlotHovered()) return;
         var pos = ImPlot.GetPlotMousePos();
         var plotRect = ImPlot.GetPlotPos();
         var plotSize = ImPlot.GetPlotSize();
-        var text = $"{pos.X:F1}s";
+        var text = minSecFormat ? FormatMinSec((float)pos.X) : $"{pos.X:F1}s";
         var textSize = ImGui.CalcTextSize(text);
         var drawList = ImPlot.GetPlotDrawList();
         drawList.AddText(
             new Vector2(plotRect.X + plotSize.X - textSize.X - 4, plotRect.Y + plotSize.Y - textSize.Y - 4),
             ImGui.GetColorU32(new Vector4(1, 1, 1, opacity)),
             text);
+    }
+
+    private static string FormatMinSec(float seconds)
+    {
+        if (seconds < 0f) seconds = 0f;
+        var mins = (int)(seconds / 60f);
+        var secs = seconds - mins * 60f;
+        return $"{mins}:{secs:00.0}";
+    }
+
+    private static void SetupMinSecXTicks(float maxTime, in GraphSettings settings)
+    {
+        var visibleMax = settings.AutoScroll ? settings.AutoScrollWindow * settings.XAxisPadding : maxTime * settings.XAxisPadding;
+        if (visibleMax <= 0f) return;
+
+        // Choose a nice step in seconds
+        float step;
+        if (visibleMax <= 30f) step = 5f;
+        else if (visibleMax <= 60f) step = 10f;
+        else if (visibleMax <= 180f) step = 15f;
+        else if (visibleMax <= 600f) step = 30f;
+        else step = 60f;
+
+        var ticks = new List<double>();
+        var labels = new List<string>();
+        for (var v = 0f; v <= maxTime * settings.XAxisPadding + step; v += step)
+        {
+            ticks.Add(v);
+            var m = (int)(v / 60f);
+            var s = (int)(v - m * 60f);
+            labels.Add($"{m}:{s:D2}");
+        }
+
+        if (ticks.Count > 0)
+        {
+            var tickArr = ticks.ToArray();
+            var labelArr = labels.ToArray();
+            ImPlot.SetupAxisTicks(ImAxis.X1, ref tickArr[0], ticks.Count, labelArr, false);
+        }
     }
 
     public static float InterpolateValue(float[] times, float[]? values, float t)
