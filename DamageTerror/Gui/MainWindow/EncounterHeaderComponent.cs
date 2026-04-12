@@ -20,6 +20,7 @@ public class EncounterHeaderComponent
         this.dataService = dataService;
         this.config = config;
         dataService.OnNewEncounter += ResetToLive;
+        dataService.Store.OnSampleDataLoaded += ResetToLive;
     }
 
     public void ResetToLive() => selectedIndex = -1;
@@ -132,7 +133,11 @@ public class EncounterHeaderComponent
                     {
                         var activeLabel = FormatEncounterLabel(aEnc, active.PlayerName ?? "", "##active", active.Timestamp);
                         if (ImGui.Selectable(activeLabel, selectedIndex == -1))
+                        {
                             selectedIndex = -1;
+                            if (dataService.Store.IsSampleSimulating)
+                                dataService.Store.ClearSampleData();
+                        }
 
                         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(5, 5));
                         if (ImGui.BeginPopupContextItem("##enc_remove_active"))
@@ -165,7 +170,11 @@ public class EncounterHeaderComponent
                         continue;
                     var label = FormatEncounterLabel(hEnc, h.PlayerName ?? "", $"##{i}", h.Timestamp);
                     if (ImGui.Selectable(label, selectedIndex == i))
+                    {
                         selectedIndex = i;
+                        if (dataService.Store.IsSampleSimulating)
+                            dataService.Store.ClearSampleData();
+                    }
 
                     ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(5, 5));
                     if (ImGui.BeginPopupContextItem($"##enc_remove_{i}"))

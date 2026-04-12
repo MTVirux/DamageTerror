@@ -84,6 +84,8 @@ public class EncounterStore
         get { lock (syncLock) return sampleSimulator?.IsRunning ?? false; }
     }
 
+    public event Action? OnSampleDataLoaded;
+
     public void LoadSampleData(EncounterSnapshot sample, bool simulate = false, Func<CombatantEntry?>? combatantFactory = null)
     {
         lock (syncLock)
@@ -100,6 +102,8 @@ public class EncounterStore
             if (simulate)
                 sampleSimulator = new SampleCombatSimulator(sample, combatantFactory);
         }
+
+        OnSampleDataLoaded?.Invoke();
     }
 
     public void SetSampleSimulation(bool enabled)
