@@ -770,6 +770,9 @@ public class CombatantDetailPanel
 
         foreach (var (sectionName, defaultOrder) in Sections)
         {
+            if (sectionName == "Group")
+                continue;
+
             if (!HasAny(vis, defaultOrder))
                 continue;
 
