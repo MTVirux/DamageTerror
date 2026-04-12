@@ -303,16 +303,12 @@ public class DataService : IDisposable
             isNewEncounter = true;
             OnNewEncounter?.Invoke();
 
-            // Re-seed historical data so the graph remains visible while
+            // Re-seed graph data so the line chart remains visible while
             // the live tracker accumulates its first few samples.
             if (outgoing != null)
             {
                 if (outgoing.GraphData.Count > 0)
                     GraphTracker.SeedHistorical(outgoing.GraphData);
-                if (outgoing.SkillEvents.Count > 0)
-                    SkillTracker.SeedHistoricalEvents(outgoing.SkillEvents);
-                if (outgoing.DamageTakenEvents.Count > 0)
-                    SkillTracker.SeedHistoricalDamageTakenEvents(outgoing.DamageTakenEvents);
             }
 
             // Replay any log lines that arrived between the last CombatData
