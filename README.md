@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Native ImGui damage meter overlay for FFXIV, powered by IINACT.</b><br/>
-  No browser. No web server. No extra processes. Just bars ana graphs.
+  No browser. No web server. No extra processes. Just bars and graphs.
 </p>
 
 <p align="center">
