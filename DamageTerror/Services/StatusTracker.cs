@@ -20,10 +20,10 @@ public class StatusTracker
     private EncounterTimer? timer;
     private SkillTracker? skillTracker;
 
-    // (targetName, statusId) -> ActiveStatus
+    // (targetId, statusId, sourceId) -> ActiveStatus
     // Multiple sources can apply the same status to the same target (e.g. two SCHs both apply Bio).
-    // Key is (targetName, statusId, sourceName) to handle this.
-    private readonly Dictionary<(string Target, uint StatusId, string Source), ActiveStatus> activeStatuses = new();
+    // Key uses entity IDs for robust tracking across boss name changes (phase transitions).
+    private readonly Dictionary<(uint TargetId, uint StatusId, uint SourceId), ActiveStatus> activeStatuses = new();
 
     // Recently-removed DoT/HoT statuses, kept briefly so that type 24 ticks
     // arriving after a status-lost event (e.g. overwrite by another player) can
@@ -141,7 +141,7 @@ public class StatusTracker
 
     // Pending ground effects: skill was used (type 21/22) but status gain (type 26)
     // hasn't arrived yet. Ensures the first DoT tick is attributed correctly.
-    private readonly Dictionary<(string Source, uint StatusId), float> pendingGroundEffects = new();
+    private readonly Dictionary<(uint SourceId, uint StatusId), float> pendingGroundEffects = new();
     private const float PendingGroundEffectTimeoutSec = 5f;
 
     private static readonly HashSet<uint> KnownHotStatusIds = new()
@@ -216,7 +216,7 @@ public class StatusTracker
     /// before the status gain (type 26) arrives. This ensures the first tick
     /// is attributed correctly even if it arrives out of order.
     /// </summary>
-    public void NotifyGroundEffectSkillUsed(string sourceName, string skillName)
+    public void NotifyGroundEffectSkillUsed(uint sourceId, string sourceName, string skillName)
     {
         if (!GroundEffectDotNameToIds.TryGetValue(skillName, out var statusIds))
             return;
@@ -225,11 +225,11 @@ public class StatusTracker
         {
             var now = timer?.ElapsedSeconds ?? 0f;
             foreach (var statusId in statusIds)
-                pendingGroundEffects[(sourceName, statusId)] = now;
+                pendingGroundEffects[(sourceId, statusId)] = now;
         }
     }
 
-    public void OnStatusGained(string sourceName, string targetName, uint statusId, string statusName, float duration)
+    public void OnStatusGained(uint sourceId, string sourceName, uint targetId, string targetName, uint statusId, string statusName, float duration)
     {
         var classification = ClassifyStatus(statusId);
         var now = timer?.ElapsedSeconds ?? 0f;
@@ -239,7 +239,7 @@ public class StatusTracker
         {
             lock (syncLock)
             {
-                pendingGroundEffects.Remove((sourceName, statusId));
+                pendingGroundEffects.Remove((sourceId, statusId));
             }
         }
 
@@ -248,7 +248,9 @@ public class StatusTracker
         var status = new ActiveStatus
         {
             SourceName = sourceName,
+            SourceId = sourceId,
             TargetName = targetName,
+            TargetId = targetId,
             StatusId = statusId,
             StatusName = statusName,
             AppliedAtSec = now,
@@ -261,7 +263,7 @@ public class StatusTracker
 
         lock (syncLock)
         {
-            var key = (targetName, statusId, sourceName);
+            var key = (targetId, statusId, sourceId);
 
             if (activeStatuses.TryGetValue(key, out var existing))
             {
@@ -281,7 +283,9 @@ public class StatusTracker
                 StatusId = statusId,
                 StatusName = statusName,
                 SourceName = sourceName,
+                SourceId = sourceId,
                 TargetName = targetName,
+                TargetId = targetId,
                 AppliedAtSec = now,
                 Duration = duration,
                 IsPermanent = isPermanent,
@@ -311,7 +315,7 @@ public class StatusTracker
 
             lock (syncLock)
             {
-                var key2 = (targetName, statusId, sourceName);
+                var key2 = (targetId, statusId, sourceId);
                 if (activeStatuses.TryGetValue(key2, out var s))
                 {
                     s.ApplyingActionName = statusName;
@@ -321,11 +325,11 @@ public class StatusTracker
         }
     }
 
-    public void OnStatusLost(string sourceName, string targetName, uint statusId, float removalTime)
+    public void OnStatusLost(uint sourceId, string sourceName, uint targetId, string targetName, uint statusId, float removalTime)
     {
         lock (syncLock)
         {
-            var key = (targetName, statusId, sourceName);
+            var key = (targetId, statusId, sourceId);
             if (activeStatuses.TryGetValue(key, out var existing))
             {
                 RecordRemoval(existing, removalTime);
@@ -349,14 +353,14 @@ public class StatusTracker
     /// Look up who applied a given status to a target. Used by DoT tick
     /// attribution when type 24 lines lack explicit source info.
     /// </summary>
-    public string? GetSourceForStatus(string targetName, uint statusId)
+    public string? GetSourceForStatus(uint targetId, uint statusId)
     {
         lock (syncLock)
         {
             ActiveStatus? best = null;
             foreach (var kv in activeStatuses)
             {
-                if (kv.Key.Target == targetName && kv.Key.StatusId == statusId)
+                if (kv.Key.TargetId == targetId && kv.Key.StatusId == statusId)
                 {
                     if (best == null || kv.Value.AppliedAtSec > best.Value.AppliedAtSec)
                         best = kv.Value;
@@ -374,7 +378,21 @@ public class StatusTracker
             var result = new List<ActiveStatus>();
             foreach (var kv in activeStatuses)
             {
-                if (string.Equals(kv.Key.Target, targetName, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(kv.Value.TargetName, targetName, StringComparison.OrdinalIgnoreCase))
+                    result.Add(kv.Value);
+            }
+            return result;
+        }
+    }
+
+    public List<ActiveStatus> GetActiveStatuses(uint targetId)
+    {
+        lock (syncLock)
+        {
+            var result = new List<ActiveStatus>();
+            foreach (var kv in activeStatuses)
+            {
+                if (kv.Key.TargetId == targetId)
                     result.Add(kv.Value);
             }
             return result;
@@ -393,6 +411,65 @@ public class StatusTracker
             foreach (var s in recentlyRemovedDots)
             {
                 if (string.Equals(s.TargetName, targetName, StringComparison.OrdinalIgnoreCase))
+                    result.Add(s);
+            }
+            return result;
+        }
+    }
+
+    public List<ActiveStatus> GetRecentlyRemovedDoTs(uint targetId)
+    {
+        var now = timer?.ElapsedSeconds ?? 0f;
+        lock (syncLock)
+        {
+            recentlyRemovedDots.RemoveAll(s => now - s.RemovedAtSec > RecentlyRemovedGraceSec);
+
+            var result = new List<ActiveStatus>();
+            foreach (var s in recentlyRemovedDots)
+            {
+                if (s.TargetId == targetId)
+                    result.Add(s);
+            }
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Returns all active statuses applied BY a given source, regardless of target.
+    /// Used as a fallback when the target entity ID changes during phase transitions.
+    /// </summary>
+    public List<ActiveStatus> GetActiveStatusesBySource(uint sourceId, string sourceName)
+    {
+        lock (syncLock)
+        {
+            var result = new List<ActiveStatus>();
+            foreach (var kv in activeStatuses)
+            {
+                if (sourceId != 0 && kv.Key.SourceId == sourceId)
+                    result.Add(kv.Value);
+                else if (sourceId == 0 && string.Equals(kv.Value.SourceName, sourceName, StringComparison.OrdinalIgnoreCase))
+                    result.Add(kv.Value);
+            }
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Returns recently-removed DoT/HoT statuses applied BY a given source, regardless of target.
+    /// </summary>
+    public List<ActiveStatus> GetRecentlyRemovedDotsBySource(uint sourceId, string sourceName)
+    {
+        var now = timer?.ElapsedSeconds ?? 0f;
+        lock (syncLock)
+        {
+            recentlyRemovedDots.RemoveAll(s => now - s.RemovedAtSec > RecentlyRemovedGraceSec);
+
+            var result = new List<ActiveStatus>();
+            foreach (var s in recentlyRemovedDots)
+            {
+                if (sourceId != 0 && s.SourceId == sourceId)
+                    result.Add(s);
+                else if (sourceId == 0 && string.Equals(s.SourceName, sourceName, StringComparison.OrdinalIgnoreCase))
                     result.Add(s);
             }
             return result;
@@ -452,7 +529,7 @@ public class StatusTracker
     /// Returns ground-effect DoT skill names for which the given source has an active self-buff.
     /// These are DoTs where the status is on the caster, not on the enemy target.
     /// </summary>
-    public List<(string SkillName, uint StatusId)> GetActiveGroundEffectDots(string sourceName)
+    public List<(string SkillName, uint StatusId)> GetActiveGroundEffectDots(uint sourceId, string sourceName)
     {
         var now = timer?.ElapsedSeconds ?? 0f;
         var result = new List<(string, uint)>();
@@ -462,7 +539,7 @@ public class StatusTracker
             {
                 // Ground-effect statuses are keyed as (target=source, statusId, source=source)
                 // because ACT reports sourceName == targetName for self-buffs.
-                var key = (sourceName, id, sourceName);
+                var key = (sourceId, id, sourceId);
                 if (activeStatuses.ContainsKey(key))
                 {
                     result.Add((skillName, id));
@@ -470,7 +547,7 @@ public class StatusTracker
                 }
 
                 // Pending: skill was used but status gain hasn't arrived yet.
-                var pendingKey = (sourceName, id);
+                var pendingKey = (sourceId, id);
                 if (pendingGroundEffects.TryGetValue(pendingKey, out var pendingTime)
                     && now - pendingTime <= PendingGroundEffectTimeoutSec)
                 {
@@ -483,7 +560,7 @@ public class StatusTracker
                 foreach (var s in recentlyRemovedDots)
                 {
                     if (s.StatusId == id
-                        && string.Equals(s.SourceName, sourceName, StringComparison.OrdinalIgnoreCase)
+                        && s.SourceId == sourceId
                         && now - s.RemovedAtSec <= RecentlyRemovedGraceSec)
                     {
                         result.Add((skillName, id));

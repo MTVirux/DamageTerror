@@ -185,7 +185,10 @@ public class SkillTracker
 
         // Pre-register ground-effect DoTs so the first tick is attributed
         // correctly even if the status gain (type 26) arrives after the tick.
-        statusTracker?.NotifyGroundEffectSkillUsed(sourceName, skillName);
+        uint sourceIdForGround = 0;
+        if (line.Length > 2)
+            uint.TryParse(line[2], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out sourceIdForGround);
+        statusTracker?.NotifyGroundEffectSkillUsed(sourceIdForGround, sourceName, skillName);
 
         var damageType = SkillDamageType.Unknown;
         uint actionId = 0;
@@ -764,7 +767,9 @@ public class SkillTracker
 
         var statusIdHex = line[2];
         var statusName = line[3];
+        var sourceIdHex = line[5];
         var sourceName = line[6];
+        var targetIdHex = line[7];
         var targetName = line[8];
 
         if (string.IsNullOrEmpty(statusIdHex))
@@ -773,6 +778,9 @@ public class SkillTracker
         if (!uint.TryParse(statusIdHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var statusId))
             return;
 
+        uint.TryParse(sourceIdHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var sourceId);
+        uint.TryParse(targetIdHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var targetId);
+
         if (type == "26")
         {
             // GainsEffect — parse duration from field [4]
@@ -780,7 +788,7 @@ public class SkillTracker
             if (line.Length > 4)
                 float.TryParse(line[4], NumberStyles.Float, CultureInfo.InvariantCulture, out duration);
 
-            statusTracker.OnStatusGained(sourceName, targetName, statusId, statusName, duration);
+            statusTracker.OnStatusGained(sourceId, sourceName, targetId, targetName, statusId, statusName, duration);
 
             if (SkillIssueNames.Contains(statusName))
             {
@@ -818,7 +826,7 @@ public class SkillTracker
         {
             // LosesEffect
             var removalTime = timer?.ElapsedSeconds ?? 0f;
-            statusTracker.OnStatusLost(sourceName, targetName, statusId, removalTime);
+            statusTracker.OnStatusLost(sourceId, sourceName, targetId, targetName, statusId, removalTime);
 
             if (SkillIssueNames.Contains(statusName))
             {
@@ -841,16 +849,21 @@ public class SkillTracker
     /// <summary>
     /// Parse ACT log line type 24 (DoTHoT) — periodic damage/heal ticks.
     ///
-    /// Type 24 lines are AGGREGATED — one line per tick combining damage from
-    /// ALL DoTs/HoTs on the target from ALL sources. We simulate individual tick
-    /// amounts using a per-potency multiplier approach inspired by the
-    /// FFXIV_ACT_Plugin (see wiki link below) and distribute proportionally.
+    /// Type 24 lines are per-source — each source with active DoTs/HoTs on a
+    /// target gets its own line per 3-second tick, containing only THAT source's
+    /// DoT/HoT damage. We attribute the damage to the named source's active
+    /// DoT/HoT statuses on the target, distributing proportionally by potency
+    /// weight when the source has multiple active DoTs.
+    ///
+    /// For ground-effect DoTs (effectId != 0), the line carries only that
+    /// ground-effect's damage and is attributed directly.
     ///
     /// https://github.com/ravahn/FFXIV_ACT_Plugin/wiki/DoT---HoT-Simulation-details
     ///
     /// Verified IINACT field layout:
     ///   [0]=type, [1]=timestamp, [2]=targetId(hex), [3]=targetName,
-    ///   [4]="DoT"/"HoT", [5]=effectId(?), [6]=amount(hex),
+    ///   [4]="DoT"/"HoT", [5]=effectId(hex, 0 for normal ticks, non-zero
+    ///   for ground-effect ticks), [6]=amount(hex),
     ///   [7]=targetCurrentHP, [8]=targetMaxHP, ...
     ///   [17]=sourceId(hex), [18]=sourceName, ...
     /// </summary>
@@ -860,9 +873,12 @@ public class SkillTracker
         if (line.Length < 19)
             return;
 
+        var targetIdHex = line[2];
         var targetName = line[3];
         var dotOrHot = line[4];       // "DoT" or "HoT"
+        var effectIdHex = line[5];    // Non-zero for ground-effect ticks only
         var amountHex = line[6];
+        var sourceIdHex = line[17];
         var sourceName = line[18];
 
         if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(amountHex))
@@ -871,55 +887,141 @@ public class SkillTracker
         if (!long.TryParse(amountHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var amount) || amount <= 0)
             return;
 
+        uint.TryParse(targetIdHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var targetId);
+        uint.TryParse(sourceIdHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var sourceId);
+        uint.TryParse(effectIdHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var effectId);
+
         bool isHoT = string.Equals(dotOrHot, "HoT", StringComparison.OrdinalIgnoreCase);
         bool isDoT = !isHoT;
 
-        // Collect all sources with matching DoT/HoT statuses on this target,
+        // Ground-effect type 24 lines (effectId != 0) carry only that ground
+        // effect's damage and must NOT be distributed to normal DoTs.
+        // Normal type 24 lines (effectId == 0) are per-source — each source
+        // with active DoTs/HoTs on the target gets its own line containing
+        // only that source's damage. We filter to only that source's statuses.
+        bool isGroundEffectLine = effectId != 0;
+
+        // Collect this source's DoT/HoT statuses on the target,
         // including the status ID for potency lookup.
         var sourceSkills = new Dictionary<string, List<(string Name, uint StatusId)>>(StringComparer.OrdinalIgnoreCase);
 
         if (statusTracker != null)
         {
-            var statuses = statusTracker.GetActiveStatuses(targetName);
-            foreach (var s in statuses)
+            if (!isGroundEffectLine)
             {
-                if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
+                // Per-source tick: attribute only to THIS source's DoTs/HoTs on the target.
+                //
+                // Lookup cascade:
+                //   1. Active statuses on this target (by ID, then by name) filtered to this source
+                //   2. Recently-removed statuses on this target (grace period) filtered to this source
+                //   3. Phase-transition fallback: this source's statuses on ANY target
+                //      (handles boss entity ID + name changes like Red Hot → Deep Blue)
+
+                var statuses = targetId != 0
+                    ? statusTracker.GetActiveStatuses(targetId)
+                    : new List<ActiveStatus>();
+
+                // Fall back to target name if ID-based lookup found nothing
+                if (statuses.Count == 0 && !string.IsNullOrEmpty(targetName))
+                    statuses = statusTracker.GetActiveStatuses(targetName);
+
+                foreach (var s in statuses)
                 {
-                    var name = s.ApplyingActionName ?? s.StatusName;
-                    if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
+                    if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
                     {
-                        skills = new List<(string, uint)>();
-                        sourceSkills[s.SourceName] = skills;
+                        // Only this source's statuses
+                        if (!string.Equals(s.SourceName, sourceName, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        var name = s.ApplyingActionName ?? s.StatusName;
+                        if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
+                        {
+                            skills = new List<(string, uint)>();
+                            sourceSkills[s.SourceName] = skills;
+                        }
+                        if (!skills.Any(e => e.Name == name))
+                            skills.Add((name, s.StatusId));
                     }
-                    skills.Add((name, s.StatusId));
+                }
+
+                // Grace period buffer for recently-removed statuses (same source filter).
+                if (sourceSkills.Count == 0)
+                {
+                    var recentlyRemoved = targetId != 0
+                        ? statusTracker.GetRecentlyRemovedDoTs(targetId)
+                        : new List<ActiveStatus>();
+
+                    if (recentlyRemoved.Count == 0 && !string.IsNullOrEmpty(targetName))
+                        recentlyRemoved = statusTracker.GetRecentlyRemovedDoTs(targetName);
+
+                    foreach (var s in recentlyRemoved)
+                    {
+                        if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
+                        {
+                            if (!string.Equals(s.SourceName, sourceName, StringComparison.OrdinalIgnoreCase))
+                                continue;
+
+                            var name = s.ApplyingActionName ?? s.StatusName;
+                            if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
+                            {
+                                skills = new List<(string, uint)>();
+                                sourceSkills[s.SourceName] = skills;
+                            }
+                            if (!skills.Any(e => e.Name == name))
+                                skills.Add((name, s.StatusId));
+                        }
+                    }
+                }
+
+                // Phase-transition fallback: when the boss entity ID AND name both
+                // change (e.g. Red Hot → Deep Blue), target-based lookups fail.
+                // Search for any active DoTs from this source on ANY target.
+                if (sourceSkills.Count == 0)
+                {
+                    var sourceStatuses = statusTracker.GetActiveStatusesBySource(sourceId, sourceName);
+                    foreach (var s in sourceStatuses)
+                    {
+                        if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
+                        {
+                            var name = s.ApplyingActionName ?? s.StatusName;
+                            if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
+                            {
+                                skills = new List<(string, uint)>();
+                                sourceSkills[s.SourceName] = skills;
+                            }
+                            if (!skills.Any(e => e.Name == name))
+                                skills.Add((name, s.StatusId));
+                        }
+                    }
+
+                    // Also check recently-removed from this source (any target).
+                    if (sourceSkills.Count == 0)
+                    {
+                        var removedFromSource = statusTracker.GetRecentlyRemovedDotsBySource(sourceId, sourceName);
+                        foreach (var s in removedFromSource)
+                        {
+                            if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
+                            {
+                                var name = s.ApplyingActionName ?? s.StatusName;
+                                if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
+                                {
+                                    skills = new List<(string, uint)>();
+                                    sourceSkills[s.SourceName] = skills;
+                                }
+                                if (!skills.Any(e => e.Name == name))
+                                    skills.Add((name, s.StatusId));
+                            }
+                        }
+                    }
                 }
             }
-
-            // Grace period buffer for recently-removed statuses.
-            var recentlyRemoved = statusTracker.GetRecentlyRemovedDoTs(targetName);
-            foreach (var s in recentlyRemoved)
+            else if (isDoT)
             {
-                if ((isDoT && s.IsDoT) || (isHoT && s.IsHoT))
-                {
-                    var name = s.ApplyingActionName ?? s.StatusName;
-                    if (sourceSkills.TryGetValue(s.SourceName, out var existingSkills)
-                        && existingSkills.Any(e => e.Name == name))
-                        continue;
-
-                    if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
-                    {
-                        skills = new List<(string, uint)>();
-                        sourceSkills[s.SourceName] = skills;
-                    }
-                    skills.Add((name, s.StatusId));
-                }
-            }
-
-            // Ground-effect DoTs: the status is on the source player, not the target.
-            // Check if the named source has an active ground-effect self-buff.
-            if (isDoT)
-            {
-                var groundEffects = statusTracker.GetActiveGroundEffectDots(sourceName);
+                // Ground-effect tick: attribute only to this source's ground-effect
+                // DoT. The status is tracked as a self-buff on the source player.
+                var groundEffects = sourceId != 0
+                    ? statusTracker.GetActiveGroundEffectDots(sourceId, sourceName)
+                    : statusTracker.GetActiveGroundEffectDots(0, sourceName);
                 foreach (var (skillName, statusId2) in groundEffects)
                 {
                     if (!sourceSkills.TryGetValue(sourceName, out var skills))

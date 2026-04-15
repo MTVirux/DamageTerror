@@ -319,6 +319,24 @@ public class EncounterHistoryTab
                     SetStatus($"Saved to {path}");
                 }
 
+#if DEBUG
+                ImGui.SameLine();
+                var hasLogLines = enc.RawLogLines != null && enc.RawLogLines.Count > 0;
+                if (!hasLogLines) ImGui.BeginDisabled();
+                if (ImGui.SmallButton("Recalculate"))
+                {
+                    plugin.DataService.ReprocessEncounterLogLines(enc);
+                    store.Save(force: true);
+                    SetStatus("Encounter recalculated!");
+                }
+                if (!hasLogLines) ImGui.EndDisabled();
+                if (!hasLogLines)
+                {
+                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                        ImGui.SetTooltip("No raw log lines stored for this encounter.");
+                }
+#endif
+
                 ImGui.TreePop();
             }
             ImGui.PopID();

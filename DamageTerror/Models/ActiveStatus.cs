@@ -9,8 +9,14 @@ public struct ActiveStatus
     /// <summary>Player who applied this status.</summary>
     public string SourceName;
 
+    /// <summary>Entity ID of the source (hex-parsed from log lines).</summary>
+    public uint SourceId;
+
     /// <summary>Entity this status is applied to.</summary>
     public string TargetName;
+
+    /// <summary>Entity ID of the target (hex-parsed from log lines).</summary>
+    public uint TargetId;
 
     /// <summary>FFXIV status effect ID.</summary>
     public uint StatusId;

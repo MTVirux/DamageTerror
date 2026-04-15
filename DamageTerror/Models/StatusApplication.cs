@@ -8,7 +8,9 @@ public class StatusApplication
     public uint StatusId;
     public string StatusName = string.Empty;
     public string SourceName = string.Empty;
+    public uint SourceId;
     public string TargetName = string.Empty;
+    public uint TargetId;
     public float AppliedAtSec;
     public float Duration;
     public float? RemovedAtSec;
