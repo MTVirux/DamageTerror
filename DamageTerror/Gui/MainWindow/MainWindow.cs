@@ -140,11 +140,7 @@ public class MainWindow : Window, IDisposable
             Click = (m) =>
             {
                 if (m == ImGuiMouseButton.Left)
-                {
-                    plugin.DataService.EndEncounter();
-                    plugin.DataService.Store.ArchiveActive();
-                    plugin.DataService.Store.Save();
-                }
+                    plugin.DataService.CutEncounter();
             },
         });
     }
@@ -423,10 +419,7 @@ public class MainWindow : Window, IDisposable
             var isOngoing = active?.Encounter.IsActive == true;
             ImGui.BeginDisabled(!isOngoing);
             if (IconMenuItem("Cut Encounter", FontAwesomeIcon.Cut))
-            {
-                plugin.DataService.Store.ArchiveActive();
-                plugin.DataService.Store.Save();
-            }
+                plugin.DataService.CutEncounter();
             ImGui.EndDisabled();
 
             ImGui.Separator();

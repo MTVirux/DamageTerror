@@ -183,6 +183,46 @@ public class DataService : IDisposable
         activeSource?.EndEncounter();
     }
 
+    /// <summary>
+    /// Cuts the current encounter: finalizes it, archives to history, resets all
+    /// trackers, and tells IINACT to end so the next combat starts a fresh encounter.
+    /// </summary>
+    public void CutEncounter()
+    {
+        var outgoing = Store.ActiveEncounter;
+        if (outgoing != null)
+        {
+            foreach (var c in outgoing.Combatants)
+            {
+                c.Skills = SkillTracker.GetSkills(c.Name);
+                c.HealingSkills = SkillTracker.GetHealSkills(c.Name);
+            }
+
+            CaptureGraphData(outgoing);
+        }
+
+        activeSource?.EndEncounter();
+
+        Store.ArchiveActive();
+        Store.Save();
+
+        SkillTracker.Reset();
+        GraphTracker.Reset();
+        StatusTracker.Reset();
+        EncounterTimer.Reset();
+        lastPeriodicSaveTime = 0f;
+        wasActive = false;
+
+        lock (pendingLogLines)
+            pendingLogLines.Clear();
+#if DEBUG
+        lock (encounterLogLines)
+            encounterLogLines.Clear();
+#endif
+
+        OnNewEncounter?.Invoke();
+    }
+
     public void Stop()
     {
         cts?.Cancel();
@@ -507,6 +547,92 @@ public class DataService : IDisposable
                 target.StatusesReceived[c.Name] = statusReceived;
         }
     }
+
+#if DEBUG
+    /// <summary>
+    /// Reprocess an encounter's raw log lines through the skill and status trackers,
+    /// rebuilding per-combatant skill breakdowns, events, and status histories.
+    /// This allows testing DoT/HoT attribution fixes on historical encounters.
+    /// Only available in DEBUG builds since RawLogLines are only captured there.
+    /// </summary>
+    public void ReprocessEncounterLogLines(EncounterSnapshot snapshot)
+    {
+        if (snapshot.RawLogLines == null || snapshot.RawLogLines.Count == 0)
+            return;
+
+        // Reset trackers to a clean state for replay.
+        SkillTracker.Reset();
+        GraphTracker.Reset();
+        StatusTracker.Reset();
+        EncounterTimer.Restart();
+
+        // Replay all raw log lines through the processing pipeline.
+        foreach (var rawLine in snapshot.RawLogLines)
+        {
+            var fields = rawLine.Split('|');
+            SkillTracker.ProcessLogLine(fields);
+        }
+
+        // Rebuild per-combatant skill lists from the replayed data.
+        foreach (var c in snapshot.Combatants)
+        {
+            var newSkills = SkillTracker.GetSkills(c.Name);
+            var newHealSkills = SkillTracker.GetHealSkills(c.Name);
+
+            // Only overwrite if the replayed data has comparable or better totals.
+            var newDmg = newSkills.Sum(s => s.TotalDamage);
+            if (newDmg > 0)
+                c.Skills = newSkills;
+
+            var newHeal = newHealSkills.Sum(s => s.TotalDamage);
+            if (newHeal > 0)
+                c.HealingSkills = newHealSkills;
+
+            // Refresh stun/debuff counts.
+            var trackerStuns = SkillTracker.GetStunCount(c.Name);
+            if (trackerStuns > 0) c.Stuns = trackerStuns;
+            var trackerSI = SkillTracker.GetSkillIssueCount(c.Name);
+            if (trackerSI > 0) c.SkillIssue = trackerSI;
+            var trackerDD = SkillTracker.GetDamageDownCount(c.Name);
+            if (trackerDD > 0) c.DamageDown = trackerDD;
+
+            var trackerPH = SkillTracker.GetPositionalHits(c.Name);
+            var trackerPM = SkillTracker.GetPositionalMisses(c.Name);
+            if (trackerPH + trackerPM > 0)
+            {
+                c.PositionalHits = trackerPH;
+                c.PositionalMisses = trackerPM;
+                c.Positionals = trackerPH + trackerPM;
+            }
+
+            // Rebuild events and status histories.
+            var events = SkillTracker.GetSkillEvents(c.Name);
+            if (events.Count > 0)
+                snapshot.SkillEvents[c.Name] = events;
+
+            var dtEvents = SkillTracker.GetDamageTakenEvents(c.Name);
+            if (dtEvents.Count > 0)
+                snapshot.DamageTakenEvents[c.Name] = dtEvents;
+
+            var itemEvts = SkillTracker.GetItemEvents(c.Name);
+            if (itemEvts.Count > 0)
+                snapshot.ItemEvents[c.Name] = itemEvts;
+
+            var statusApplied = StatusTracker.GetStatusHistory(c.Name);
+            if (statusApplied.Count > 0)
+                snapshot.StatusHistory[c.Name] = statusApplied;
+
+            var statusReceived = StatusTracker.GetStatusesReceived(c.Name);
+            if (statusReceived.Count > 0)
+                snapshot.StatusesReceived[c.Name] = statusReceived;
+        }
+
+        // Reset trackers again so they don't interfere with live encounters.
+        SkillTracker.Reset();
+        GraphTracker.Reset();
+        StatusTracker.Reset();
+    }
+#endif
 
     /// <summary>
     /// Build a combatant name → home world name map from the current party list.
