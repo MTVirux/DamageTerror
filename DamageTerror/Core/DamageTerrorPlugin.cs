@@ -169,7 +169,6 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         {
             this.PluginInterface.SavePluginConfig(this.Config);
             this.DataService.Dispose();
-            this.FontService.Dispose();
 
             foreach (var popout in this.popoutWindows.Values)
                 popout.Dispose();
@@ -178,6 +177,9 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             this.windowSystem.RemoveAllWindows();
             this.mainWindow.Dispose();
             this.configWindow.Dispose();
+
+            // Dispose FontService after windows so they don't reference fonts during teardown.
+            this.FontService.Dispose();
 
             Svc.ClientState.TerritoryChanged -= this.OnTerritoryChanged;
 
