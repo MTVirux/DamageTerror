@@ -211,7 +211,6 @@ public class MainWindow : Window, IDisposable
     {
         wasDrawnLastFrame = true;
 
-        // Keep config size in sync so dock-position buttons use the real size.
         if (!plugin.Config.PinMainWindow)
             plugin.Config.MainWindowSize = ImGui.GetWindowSize();
 
@@ -225,12 +224,11 @@ public class MainWindow : Window, IDisposable
         var padTop = plugin.Config.WindowPaddingTop;
         var padBottom = plugin.Config.WindowPaddingBottom;
 
-        // If the status bar is the last visible layout element, skip bottom padding
-        var modifierActiveEarly = MeterWindowHelper.IsModifierActive(plugin.Config);
+        var modifierActive = MeterWindowHelper.IsModifierActive(plugin.Config);
         LayoutElement? lastVisibleEl = null;
         foreach (var el in plugin.Config.Layout)
         {
-            if (plugin.Config.CtrlShiftOnlyElements.Contains(el) && !modifierActiveEarly)
+            if (plugin.Config.CtrlShiftOnlyElements.Contains(el) && !modifierActive)
                 continue;
             lastVisibleEl = el;
         }
@@ -253,7 +251,6 @@ public class MainWindow : Window, IDisposable
             ? encounter.PlayerName
             : plugin.DataService.PlayerName;
 
-        // Resolve active tab (always resolve so status bar can read per-tab content settings)
         var useTabBar = config.ShowTabBar && config.MeterTabs.Count > 0;
         MeterTab? activeTab = null;
 
@@ -299,18 +296,16 @@ public class MainWindow : Window, IDisposable
         var afterBarsHeight = MeterWindowHelper.CalculateAfterBarsHeight(
             config, statusBarComponent.GetHeight, headerComponent.GetHeight,
             encounter != null, useTabBar);
-        var modifierHeld = MeterWindowHelper.IsModifierActive(config);
 
         if (!plugin.DataService.IsConnected && encounter == null)
         {
             ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
             if (ImGui.Button("Reconnect"))
-                Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+                SpawnReconnect();
             ImGui.EndChild();
             return;
         }
 
-        var modifierActive = MeterWindowHelper.IsModifierActive(config);
         foreach (var element in config.Layout)
         {
             if (config.CtrlShiftOnlyElements.Contains(element) && !modifierActive
@@ -330,7 +325,7 @@ public class MainWindow : Window, IDisposable
                         {
                             ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
                             if (ImGui.Button("Reconnect"))
-                                Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+                                SpawnReconnect();
                         }
                         ImGui.EndChild();
                         return;
@@ -350,8 +345,7 @@ public class MainWindow : Window, IDisposable
                             sortBy = activeTab.SortBy;
                             sortDesc = activeTab.SortDescending;
 
-                            // Re-resolve party context if the new tab needs it
-                            if (activeTab.GroupFilter is GroupFilter.Party or GroupFilter.Alliance)
+                                if (activeTab.GroupFilter is GroupFilter.Party or GroupFilter.Alliance)
                             {
                                 partyNames ??= plugin.PartyService.GetPartyMemberNames();
                                 allianceNames ??= plugin.PartyService.GetAllianceMemberNames();
@@ -382,7 +376,6 @@ public class MainWindow : Window, IDisposable
                     {
                         DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, activeTab, currentPlayerName, encounter, headerComponent.IsViewingLive, groupAggregates);
                     }
-                    // Anchor post-bars elements to the bottom of the content area
                     if (afterBarsHeight > 0)
                     {
                         var contentMaxY = ImGui.GetWindowContentRegionMax().Y;
@@ -398,27 +391,23 @@ public class MainWindow : Window, IDisposable
 
     private void DrawContextMenu()
     {
-        // Open on right-click over the window background (not over other items)
         if (ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows) && ImGui.IsMouseClicked(ImGuiMouseButton.Right) && !ImGui.IsAnyItemHovered())
             ImGui.OpenPopup("##MainWindowContext");
         if (headerComponent.RequestContextMenu)
             ImGui.OpenPopup("##MainWindowContext");
 
-        // Cache main window pos/size before entering the popup (inside a popup, ImGui returns the popup's geometry)
         var mainWindowPos = ImGui.GetWindowPos();
         var mainWindowSize = ImGui.GetWindowSize();
 
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(5, 5));
         if (ImGui.BeginPopup("##MainWindowContext"))
         {
-            // Go to Live (hide if already viewing live)
             if (!headerComponent.IsViewingLive)
             {
                 if (IconMenuItem("Go to Live", FontAwesomeIcon.Play))
                     headerComponent.ResetSelection();
             }
 
-            // Cut encounter (only if active)
             var active = plugin.DataService.Store.ActiveEncounter;
             var isOngoing = active?.Encounter.IsActive == true;
             ImGui.BeginDisabled(!isOngoing);
@@ -431,7 +420,6 @@ public class MainWindow : Window, IDisposable
 
             ImGui.Separator();
 
-            // Swap view mode
             var viewIcon = currentActiveTab?.ViewMode == ViewMode.LineGraph ? FontAwesomeIcon.ChartBar : FontAwesomeIcon.ChartLine;
             var viewLabel = currentActiveTab?.ViewMode == ViewMode.LineGraph ? "Swap to Bar View" : "Swap to Graph View";
             ImGui.BeginDisabled(currentActiveTab == null);
@@ -447,7 +435,6 @@ public class MainWindow : Window, IDisposable
 
             ImGui.Separator();
 
-            // Lock/Unlock window
             var lockIcon = plugin.Config.PinMainWindow ? FontAwesomeIcon.LockOpen : FontAwesomeIcon.Lock;
             var lockLabel = plugin.Config.PinMainWindow ? "Unlock Window" : "Lock Window";
             if (IconMenuItem(lockLabel, lockIcon))
@@ -463,7 +450,6 @@ public class MainWindow : Window, IDisposable
                     lockButton.Icon = plugin.Config.PinMainWindow ? FontAwesomeIcon.Lock : FontAwesomeIcon.LockOpen;
             }
 
-            // Open settings
             if (IconMenuItem("Open Settings", FontAwesomeIcon.Cog))
                 plugin.OpenConfigUi();
 
@@ -785,4 +771,7 @@ public class MainWindow : Window, IDisposable
         ImGui.SameLine();
         return ImGui.Selectable(label);
     }
+
+    private void SpawnReconnect() =>
+        Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
 }
