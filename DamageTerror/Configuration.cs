@@ -43,6 +43,7 @@ public class Configuration : IPluginConfiguration
 
     public bool ShowJobIcons { get; set; } = true;
     public JobIconStyle JobIconStyle { get; set; } = JobIconStyle.Plain;
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public Dictionary<string, uint> CustomJobIcons { get; set; } = new();
 
     public bool ShowTabBar { get; set; } = true;
@@ -110,6 +111,7 @@ public class Configuration : IPluginConfiguration
     public Vector4 DefaultJobColor { get; set; } = new(0.5f, 0.5f, 0.5f, 1.0f);
 
     public bool UsePerJobColors { get; set; } = true;
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public Dictionary<string, Vector4> JobColors { get; set; } = new();
     public Vector4 BarBackgroundColor { get; set; } = new(0.15f, 0.15f, 0.15f, 1.0f);
     public Vector4 NameTextColor { get; set; } = new(1f, 1f, 1f, 1f);

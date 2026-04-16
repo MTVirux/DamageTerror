@@ -25,7 +25,7 @@ public class EncounterHeaderComponent
 
     public void ResetToLive() => selectedIndex = -1;
 
-    private string FormatEncounterLabel(CombatEncounter enc, string playerName = "", string suffix = "", DateTime? timestamp = null)
+    private string FormatEncounterLabel(CombatEncounter enc, string playerName = "", string idSuffix = "", DateTime? timestamp = null)
     {
         var icon = enc.IsActive ? "●" : "○";
         var title = !string.IsNullOrEmpty(enc.Title) ? $" — {enc.Title}" : "";
@@ -33,7 +33,7 @@ public class EncounterHeaderComponent
         var formattedPlayer = !string.IsNullOrEmpty(playerName)
             ? $"  ({NameFormatHelper.GetDisplayName(playerName, "", true, config)})"
             : "";
-        return $"{icon} {enc.ZoneName}{title}{time}  |  {enc.Duration}  |  {ValueFormatter.Format(enc.EncDps, ValueDisplayFormat.Raw, 0)} eDPS{formattedPlayer}{suffix}";
+        return $"{icon} {enc.ZoneName}{title}{time}  |  {enc.Duration}  |  {ValueFormatter.Format(enc.EncDps, ValueDisplayFormat.Raw, 0)} eDPS{formattedPlayer}{idSuffix}";
     }
 
     public EncounterSnapshot? SelectedEncounter

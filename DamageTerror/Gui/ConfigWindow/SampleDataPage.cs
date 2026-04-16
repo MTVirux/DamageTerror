@@ -661,7 +661,6 @@ internal static class SampleDataGenerator
         return result;
     }
 
-    // Returns (StatusId, Name, Duration, IsHoT)
     internal static (uint, string, float, bool)[] GetJobBuffs(string job) => job switch
     {
         "War" => new[] { (1001u, "Vengeance", 15f, false), (1002u, "Thrill of Battle", 10f, false), (1003u, "Shake It Off", 30f, false) },
@@ -688,7 +687,6 @@ internal static class SampleDataGenerator
         _ => Array.Empty<(uint, string, float, bool)>(),
     };
 
-    // Returns (StatusId, Name, Duration, IsDoT)
     internal static (uint, string, float, bool)[] GetJobDebuffs(string job) => job switch
     {
         "War" => new[] { (2001u, "Storm's Eye", 30f, false) },
