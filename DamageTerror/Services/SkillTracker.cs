@@ -520,49 +520,57 @@ public class SkillTracker
     public List<SkillUseEvent> GetSkillEvents(string combatantName)
     {
         lock (syncLock)
-        {
-            if (skillEvents.TryGetValue(combatantName, out var events) && events.Count > 0)
-                return new List<SkillUseEvent>(events);
-
-            // Fall back to seeded historical events when live tracker has nothing yet.
-            if (seededEvents != null
-                && seededEvents.TryGetValue(combatantName, out var seeded)
-                && seeded.Count > 0)
-                return new List<SkillUseEvent>(seeded);
-
-            return new List<SkillUseEvent>();
-        }
+            return GetEventsWithFallback(skillEvents, seededEvents, combatantName);
     }
 
     public List<SkillUseEvent> GetDamageTakenEvents(string combatantName)
     {
         lock (syncLock)
-        {
-            if (damageTakenEvents.TryGetValue(combatantName, out var events) && events.Count > 0)
-                return new List<SkillUseEvent>(events);
-
-            if (seededDamageTakenEvents != null
-                && seededDamageTakenEvents.TryGetValue(combatantName, out var seeded)
-                && seeded.Count > 0)
-                return new List<SkillUseEvent>(seeded);
-
-            return new List<SkillUseEvent>();
-        }
+            return GetEventsWithFallback(damageTakenEvents, seededDamageTakenEvents, combatantName);
     }
 
     public List<SkillUseEvent> GetItemEvents(string combatantName)
     {
         lock (syncLock)
+            return GetEventsWithFallback(itemEvents, seededItemEvents, combatantName);
+    }
+
+    /// <summary>Returns a copy of live events, falling back to seeded historical events. Must be called under <see cref="syncLock"/>.</summary>
+    private static List<SkillUseEvent> GetEventsWithFallback(
+        Dictionary<string, List<SkillUseEvent>> live,
+        Dictionary<string, List<SkillUseEvent>>? seeded,
+        string combatantName)
+    {
+        if (live.TryGetValue(combatantName, out var events) && events.Count > 0)
+            return new List<SkillUseEvent>(events);
+
+        if (seeded != null
+            && seeded.TryGetValue(combatantName, out var fallback)
+            && fallback.Count > 0)
+            return new List<SkillUseEvent>(fallback);
+
+        return new List<SkillUseEvent>();
+    }
+
+    /// <summary>Increments a status-stack counter (skill issue or damage down). Must NOT be called under <see cref="syncLock"/>.</summary>
+    private void IncrementStatusStackCount(
+        string targetName,
+        string statusName,
+        string[] line,
+        Dictionary<string, int> counts,
+        Dictionary<(string, string), int> stacks)
+    {
+        int newStacks = 1;
+        if (line.Length > 9 && int.TryParse(line[9], out var parsed) && parsed > 0)
+            newStacks = parsed;
+
+        lock (syncLock)
         {
-            if (itemEvents.TryGetValue(combatantName, out var events) && events.Count > 0)
-                return new List<SkillUseEvent>(events);
-
-            if (seededItemEvents != null
-                && seededItemEvents.TryGetValue(combatantName, out var seeded)
-                && seeded.Count > 0)
-                return new List<SkillUseEvent>(seeded);
-
-            return new List<SkillUseEvent>();
+            var key = (targetName.ToLowerInvariant(), statusName.ToLowerInvariant());
+            var prevStacks = stacks.GetValueOrDefault(key);
+            var delta = newStacks - prevStacks;
+            counts[targetName] = counts.GetValueOrDefault(targetName) + Math.Max(delta, 1);
+            stacks[key] = newStacks;
         }
     }
 
@@ -902,57 +910,26 @@ public class SkillTracker
                 damageLB, critLB, hasLB);
 
             if (SkillIssueNames.Contains(statusName))
-            {
-                int newStacks = 1;
-                if (line.Length > 9 && int.TryParse(line[9], out var parsed) && parsed > 0)
-                    newStacks = parsed;
-
-                lock (syncLock)
-                {
-                    var key = (targetName.ToLowerInvariant(), statusName.ToLowerInvariant());
-                    var prevStacks = skillIssueStacks.GetValueOrDefault(key);
-                    var delta = newStacks - prevStacks;
-                    skillIssueCounts[targetName] = skillIssueCounts.GetValueOrDefault(targetName) + Math.Max(delta, 1);
-                    skillIssueStacks[key] = newStacks;
-                }
-            }
+                IncrementStatusStackCount(targetName, statusName, line, skillIssueCounts, skillIssueStacks);
 
             if (DamageDownNames.Contains(statusName))
-            {
-                int newStacks = 1;
-                if (line.Length > 9 && int.TryParse(line[9], out var parsedDD) && parsedDD > 0)
-                    newStacks = parsedDD;
-
-                lock (syncLock)
-                {
-                    var key = (targetName.ToLowerInvariant(), statusName.ToLowerInvariant());
-                    var prevStacks = damageDownStacks.GetValueOrDefault(key);
-                    var delta = newStacks - prevStacks;
-                    damageDownCounts[targetName] = damageDownCounts.GetValueOrDefault(targetName) + Math.Max(delta, 1);
-                    damageDownStacks[key] = newStacks;
-                }
-            }
+                IncrementStatusStackCount(targetName, statusName, line, damageDownCounts, damageDownStacks);
         }
         else if (type == "30")
         {
-            // LosesEffect
             var removalTime = timer?.ElapsedSeconds ?? 0f;
             statusTracker.OnStatusLost(sourceName, targetName, statusId, removalTime);
 
             if (SkillIssueNames.Contains(statusName))
             {
                 lock (syncLock)
-                {
                     skillIssueStacks.Remove((targetName.ToLowerInvariant(), statusName.ToLowerInvariant()));
-                }
             }
 
             if (DamageDownNames.Contains(statusName))
             {
                 lock (syncLock)
-                {
                     damageDownStacks.Remove((targetName.ToLowerInvariant(), statusName.ToLowerInvariant()));
-                }
             }
         }
     }
