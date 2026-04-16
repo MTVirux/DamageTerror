@@ -104,7 +104,6 @@ public class ThemePreset
     public float SkillBarRounding { get; set; } = 0f;
     public float SkillFontSize { get; set; } = 14f;
 
-    // Buff/Debuff styling
     public Vector4 BuffFillColor { get; set; } = new(0.30f, 0.50f, 0.60f, 0.7f);
     public Vector4 DebuffFillColor { get; set; } = new(0.60f, 0.30f, 0.30f, 0.7f);
     public Vector4 BuffRowBackgroundColor { get; set; } = new(0.12f, 0.12f, 0.12f, 0.6f);
@@ -115,7 +114,6 @@ public class ThemePreset
     public float BuffBarRounding { get; set; } = 0f;
     public float BuffFontSize { get; set; } = 14f;
 
-    // Detail inline graph
     public float GraphHeight { get; set; } = 140f;
     public float GraphLineThickness { get; set; } = 2f;
     public Vector4 GraphDpsColor { get; set; } = new(0.9f, 0.4f, 0.4f, 1f);
@@ -148,7 +146,6 @@ public class ThemePreset
     public SkillMarkerConfig DetailHpsMarkers { get; set; } = new();
     public SkillMarkerConfig DetailDtpsMarkers { get; set; } = new();
 
-    // Graph View (main window graph mode)
     public bool GraphViewAutoHeight { get; set; } = false;
     public float GraphViewHeight { get; set; } = 260f;
     public float GraphViewLineThickness { get; set; } = 2f;
@@ -188,7 +185,6 @@ public class ThemePreset
     public float DetailIndent { get; set; } = 8.0f;
     public float DetailFontSize { get; set; } = 14f;
 
-    // Tooltip
     public bool ShowTooltip { get; set; } = true;
     public float TooltipDelay { get; set; } = 0.3f;
 
@@ -199,7 +195,6 @@ public class ThemePreset
     public float TooltipRounding { get; set; } = 4f;
     public float TooltipPadding { get; set; } = 6f;
 
-    // Tab Button Styling
     public bool ShowTabBar { get; set; } = true;
     public Vector4 TabButtonColor { get; set; } = new(0.18f, 0.18f, 0.18f, 1.0f);
     public Vector4 TabButtonHoveredColor { get; set; } = new(0.28f, 0.31f, 0.36f, 0.22f);
@@ -318,7 +313,6 @@ public class ThemePreset
         config.BuffBarRounding = BuffBarRounding;
         config.BuffFontSize = BuffFontSize;
 
-        // Detail inline graph
         config.GraphHeight = GraphHeight;
         config.GraphLineThickness = GraphLineThickness;
         config.GraphDpsColor = GraphDpsColor;
@@ -351,7 +345,6 @@ public class ThemePreset
         config.DetailHpsMarkers = DetailHpsMarkers.Clone();
         config.DetailDtpsMarkers = DetailDtpsMarkers.Clone();
 
-        // Graph View
         config.GraphViewAutoHeight = GraphViewAutoHeight;
         config.GraphViewHeight = GraphViewHeight;
         config.GraphViewLineThickness = GraphViewLineThickness;
@@ -386,7 +379,6 @@ public class ThemePreset
         config.ShowJobAbbrevOnBar = ShowJobAbbrevOnBar;
         config.ShowRankNumber = ShowRankNumber;
 
-        // Tab button styling
         config.ShowTabBar = ShowTabBar;
         config.TabButtonColor = TabButtonColor;
         config.TabButtonHoveredColor = TabButtonHoveredColor;
@@ -405,7 +397,6 @@ public class ThemePreset
         config.DetailIndent = DetailIndent;
         config.DetailFontSize = DetailFontSize;
 
-        // Tooltip
         config.ShowTooltip = ShowTooltip;
         config.TooltipDelay = TooltipDelay;
         config.TooltipBackgroundColor = TooltipBackgroundColor;
@@ -528,7 +519,6 @@ public class ThemePreset
             BuffBarRounding = config.BuffBarRounding,
             BuffFontSize = config.BuffFontSize,
 
-            // Detail inline graph
             GraphHeight = config.GraphHeight,
             GraphLineThickness = config.GraphLineThickness,
             GraphDpsColor = config.GraphDpsColor,
@@ -561,7 +551,6 @@ public class ThemePreset
             DetailHpsMarkers = config.DetailHpsMarkers.Clone(),
             DetailDtpsMarkers = config.DetailDtpsMarkers.Clone(),
 
-            // Graph View
             GraphViewAutoHeight = config.GraphViewAutoHeight,
             GraphViewHeight = config.GraphViewHeight,
             GraphViewLineThickness = config.GraphViewLineThickness,
@@ -614,7 +603,6 @@ public class ThemePreset
             DetailIndent = config.DetailIndent,
             DetailFontSize = config.DetailFontSize,
 
-            // Tooltip
             ShowTooltip = config.ShowTooltip,
             TooltipDelay = config.TooltipDelay,
             TooltipBackgroundColor = config.TooltipBackgroundColor,

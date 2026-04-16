@@ -316,7 +316,6 @@ public class EncounterStore
                 }
             }
 
-            // Fall back to the latest entry if no match for this player.
             if (idx < 0 && history.Count > 0)
                 idx = history.Count - 1;
 
@@ -493,7 +492,6 @@ public class EncounterStore
 
             lock (syncLock)
             {
-                // Insert sorted by timestamp.
                 var idx = history.FindIndex(s => s.Timestamp > snapshot.Timestamp);
                 if (idx < 0)
                     history.Add(snapshot);

@@ -34,7 +34,6 @@ public static class JobIconHelper
         { "Pct", 42 }, { "pictomancer", 42 },
         { "Blu", 36 }, { "bluemage", 36 },
 
-        // Base classes
         { "Gla", 1 }, { "gladiator", 1 },
         { "Pgl", 2 }, { "pugilist", 2 },
         { "Mrd", 3 }, { "marauder", 3 },
@@ -45,7 +44,6 @@ public static class JobIconHelper
         { "Acn", 26 }, { "arcanist", 26 },
         { "Rog", 29 }, { "rogue", 29 },
 
-        // Crafters/Gatherers (unlikely in combat but handle gracefully)
         { "Crp", 8 }, { "Bsm", 9 }, { "Arm", 10 },
         { "Gsm", 11 }, { "Ltw", 12 }, { "Wvr", 13 },
         { "Alc", 14 }, { "Cul", 15 },

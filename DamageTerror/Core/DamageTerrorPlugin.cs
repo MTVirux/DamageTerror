@@ -265,9 +265,7 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
                 TogglePopoutGroup(groupName);
         }
         else if (args.Equals("toggle", StringComparison.OrdinalIgnoreCase))
-        {
-            // bare "/dt toggle" with no group — no-op
-        }
+        { }
         else
         {
             this.mainWindow.IsOpen = true;
