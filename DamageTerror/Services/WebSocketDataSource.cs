@@ -8,6 +8,9 @@ namespace DamageTerror.Services;
 
 public class WebSocketDataSource : IDataSource
 {
+    private const int InitialRetryDelayMs = 1000;
+    private const int MaxRetryDelayMs = 30000;
+
     private readonly IPluginLog log;
     private readonly string url;
     private ClientWebSocket? ws;
@@ -54,9 +57,18 @@ public class WebSocketDataSource : IDataSource
     private async Task ConnectOnceAsync(CancellationToken ct)
     {
         ws?.Dispose();
-        ws = new ClientWebSocket();
+        var newWs = new ClientWebSocket();
+        try
+        {
+            await newWs.ConnectAsync(new Uri(url), ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            newWs.Dispose();
+            throw;
+        }
 
-        await ws.ConnectAsync(new Uri(url), ct).ConfigureAwait(false);
+        ws = newWs;
         log.Information($"WebSocket connected to {url}");
         OnConnected?.Invoke();
 
@@ -73,14 +85,13 @@ public class WebSocketDataSource : IDataSource
 
     private async Task ReceiveAndReconnectLoopAsync(CancellationToken ct)
     {
-        int retryDelay = 1000;
-        const int maxDelay = 30000;
+        int retryDelay = InitialRetryDelayMs;
 
         while (!ct.IsCancellationRequested && !disposed)
         {
             if (ws?.State == WebSocketState.Open)
             {
-                retryDelay = 1000;
+                retryDelay = InitialRetryDelayMs;
                 await ReceiveLoopAsync(ct).ConfigureAwait(false);
             }
 
@@ -91,7 +102,7 @@ public class WebSocketDataSource : IDataSource
             try
             {
                 await Task.Delay(retryDelay, ct).ConfigureAwait(false);
-                retryDelay = Math.Min(retryDelay * 2, maxDelay);
+                retryDelay = Math.Min(retryDelay * 2, MaxRetryDelayMs);
                 await ConnectOnceAsync(ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
