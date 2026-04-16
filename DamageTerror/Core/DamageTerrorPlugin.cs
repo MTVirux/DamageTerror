@@ -67,14 +67,12 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.Config.Save = this.SaveConfig;
         Gui.ConfigWindow.LayoutPage.EnsureLayoutComplete(cfg);
 
-        // Ensure all MeterTabs have a stable GUID (migration for existing configs)
         foreach (var tab in cfg.MeterTabs)
         {
             if (tab.Id == Guid.Empty)
                 tab.Id = Guid.NewGuid();
         }
 
-        // Migrate graph line settings from old derived-from-columns behavior (Version 1 → 2)
         if (cfg.Version < 2)
         {
             foreach (var tab in cfg.MeterTabs)
@@ -87,7 +85,6 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             this.PluginInterface.SavePluginConfig(cfg);
         }
 
-        // Add PositionalPct to detail visible columns for existing configs (Version 2 → 3)
         if (cfg.Version < 3)
         {
             cfg.DetailVisibleColumns.Add(BarColumn.PositionalPct);
@@ -167,19 +164,17 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         if (disposing)
         {
-            this.PluginInterface.SavePluginConfig(this.Config);
-            this.DataService.Dispose();
+            SafeDispose(() => this.PluginInterface.SavePluginConfig(this.Config));
+            SafeDispose(() => this.DataService.Dispose());
 
             foreach (var popout in this.popoutWindows.Values)
-                popout.Dispose();
+                SafeDispose(() => popout.Dispose());
             this.popoutWindows.Clear();
 
             this.windowSystem.RemoveAllWindows();
-            this.mainWindow.Dispose();
-            this.configWindow.Dispose();
-
-            // Dispose FontService after windows so they don't reference fonts during teardown.
-            this.FontService.Dispose();
+            SafeDispose(() => this.mainWindow.Dispose());
+            SafeDispose(() => this.configWindow.Dispose());
+            SafeDispose(() => this.FontService.Dispose());
 
             Svc.ClientState.TerritoryChanged -= this.OnTerritoryChanged;
 
@@ -193,6 +188,12 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         }
 
         this.disposed = true;
+    }
+
+    private void SafeDispose(Action action)
+    {
+        try { action(); }
+        catch (Exception ex) { this.pluginLog.Error($"Error during disposal: {ex.Message}"); }
     }
 
     public void OpenPopoutTab(Guid tabId)
