@@ -52,7 +52,7 @@ public class DataService : IDisposable
         var configDir = pluginInterface.GetPluginConfigDirectory();
 
         PositionalTable = new PositionalTable(configDir, log);
-        SkillTracker = new SkillTracker(ServiceManager.DataManager, log, PositionalTable);
+        SkillTracker = new SkillTracker(ServiceManager.DataManager, log, PositionalTable, config);
         SkillTracker.SetDependencies(EncounterTimer, GraphTracker, StatusTracker);
         StatusTracker.SetSkillTracker(SkillTracker);
 

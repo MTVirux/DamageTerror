@@ -229,7 +229,8 @@ public class StatusTracker
         }
     }
 
-    public void OnStatusGained(string sourceName, string targetName, uint statusId, string statusName, float duration)
+    public void OnStatusGained(string sourceName, string targetName, uint statusId, string statusName, float duration,
+        byte damageLowByte = 0, byte critLowByte = 0, bool hasLowByteData = false)
     {
         var classification = ClassifyStatus(statusId);
         var now = timer?.ElapsedSeconds ?? 0f;
@@ -257,6 +258,9 @@ public class StatusTracker
             IsDoT = classification.IsDoT,
             IsHoT = classification.IsHoT,
             IsBuff = classification.IsBuff,
+            DamageLowByte = damageLowByte,
+            CritLowByte = critLowByte,
+            HasLowByteData = hasLowByteData,
         };
 
         lock (syncLock)

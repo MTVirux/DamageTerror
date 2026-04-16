@@ -91,6 +91,8 @@ public class Configuration : IPluginConfiguration
 
     public bool SkipZeroEdpsEncounters { get; set; } = false;
 
+    public DotCalcMode DotCalcMode { get; set; } = DotCalcMode.Plugin;
+
     public HistoryLimitMode HistoryLimitMode { get; set; } = HistoryLimitMode.Count;
     public int MaxEncounterHistory { get; set; } = 50;
     public int MaxEncounterHistoryDays { get; set; } = 30;

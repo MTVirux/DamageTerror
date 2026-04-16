@@ -64,18 +64,24 @@ public class SkillTracker
     private readonly ConcurrentDictionary<uint, SkillDamageType> damageTypeCache = new();
     private readonly Dictionary<string, CombatantDotStats> combatantDotStats = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Pending low-byte refinement data extracted from 0x0E/0x0F status-application
+    /// effects in Type 21/22 lines, consumed when the matching Type 26 (GainsEffect) arrives.</summary>
+    private readonly Dictionary<(string Source, string Target, uint StatusId), (byte DamageLowByte, byte CritLowByte)> pendingLowBytes = new();
+
     /// <summary>Estimated crit damage multiplier for level 100 (~3000 crit stat).</summary>
     private const double EstimatedCritMulti = 1.6;
 
     private readonly IDataManager dataManager;
     private readonly IPluginLog log;
     private readonly PositionalTable positionalTable;
+    private readonly Configuration config;
 
-    public SkillTracker(IDataManager dataManager, IPluginLog log, PositionalTable positionalTable)
+    public SkillTracker(IDataManager dataManager, IPluginLog log, PositionalTable positionalTable, Configuration config)
     {
         this.dataManager = dataManager;
         this.log = log;
         this.positionalTable = positionalTable;
+        this.config = config;
     }
 
     /// <summary>Bind the shared encounter timer, graph tracker, and status tracker.</summary>
@@ -227,6 +233,51 @@ public class SkillTracker
             }
         }
 
+        // Scan for 0x0E/0x0F status-application effects to extract low-byte
+        // refinement data (damage lowbyte + crit lowbyte) for DoT simulation.
+        if (config.DotCalcMode == DotCalcMode.Refined)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                int flagIdx = 8 + i * 2;
+                int valIdx = flagIdx + 1;
+                if (valIdx >= line.Length)
+                    break;
+
+                if (string.IsNullOrEmpty(line[flagIdx]) || string.IsNullOrEmpty(line[valIdx]))
+                    continue;
+
+                if (!uint.TryParse(line[flagIdx], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var sFlags))
+                    continue;
+                if (!uint.TryParse(line[valIdx], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var sRaw))
+                    continue;
+
+                var sEffectType = (byte)(sFlags & 0xFF);
+                // 0x0E = status applied to target, 0x0F = status applied to caster
+                if (sEffectType != 0x0E && sEffectType != 0x0F)
+                    continue;
+
+                // Upper 16 bits of the value field contain the status ID.
+                var appliedStatusId = (uint)((sRaw >> 16) & 0xFFFF);
+                if (appliedStatusId == 0)
+                    continue;
+
+                // Byte 1 of flags = damage lowbyte, Byte 2 = crit lowbyte
+                var damageLB = (byte)((sFlags >> 8) & 0xFF);
+                var critLB = (byte)((sFlags >> 16) & 0xFF);
+
+                // Determine the target of the status: 0x0E = targetName, 0x0F = sourceName (self-buff)
+                var statusTarget = sEffectType == 0x0E ? targetName : sourceName;
+                if (string.IsNullOrEmpty(statusTarget))
+                    continue;
+
+                lock (syncLock)
+                {
+                    pendingLowBytes[(sourceName, statusTarget, appliedStatusId)] = (damageLB, critLB);
+                }
+            }
+        }
+
         // Track positional hits/misses for known melee positional actions.
         // Uses CSV lookup table approach inspired by DamageInfoPlugin:
         // https://github.com/perchbirdd/DamageInfoPlugin
@@ -352,7 +403,8 @@ public class SkillTracker
     /// Used to proportionally distribute aggregate type-24 tick damage.
     /// Must be called under syncLock.
     /// </summary>
-    private double CalculateTickWeight(string sourceName, uint statusId, bool isHoT)
+    private double CalculateTickWeight(string sourceName, uint statusId, bool isHoT,
+        byte damageLowByte = 0, byte critLowByte = 0, bool hasLowByteData = false)
     {
         var potency = DotPotencyTable.GetTickPotency(statusId);
 
@@ -361,13 +413,63 @@ public class SkillTracker
 
         var baseDmgPerHit = stats.AverageBaseDmgPerHit;
 
+        // Estimated raw tick damage before crit/DH.
+        double estimatedTick = baseDmgPerHit * potency;
+
+        // Refined mode: snap estimated tick to the nearest value whose LSB
+        // matches the low-byte from the 0x0E status-application effect.
+        if (config.DotCalcMode == DotCalcMode.Refined && hasLowByteData && estimatedTick > 0)
+        {
+            estimatedTick = SnapToLowByte(estimatedTick, damageLowByte);
+        }
+
         // Expected crit/DH multiplier applied to periodic ticks.
-        // DoTs: (1 + (critMulti - 1) × critRate) × (1 + (dhMulti - 1) × dhRate)
-        // HoTs: (1 + (critMulti - 1) × critRate) — heals cannot Direct Hit
-        double critFactor = 1.0 + (EstimatedCritMulti - 1.0) * stats.CritRate;
+        double critRate = stats.CritRate;
+
+        // Refined mode: use per-application crit rate from low-byte when available
+        // and within the reliable range (≤ 25.5%, byte overflow threshold).
+        if (config.DotCalcMode == DotCalcMode.Refined && hasLowByteData && critLowByte > 0)
+        {
+            var perAppCrit = critLowByte / 1000.0;
+            if (perAppCrit <= 0.255)
+                critRate = perAppCrit;
+        }
+
+        double critFactor = 1.0 + (EstimatedCritMulti - 1.0) * critRate;
         double dhFactor = isHoT ? 1.0 : 1.0 + 0.25 * stats.DHRate;
 
-        return baseDmgPerHit * potency * critFactor * dhFactor;
+        return estimatedTick * critFactor * dhFactor;
+    }
+
+    /// <summary>
+    /// Snap an estimated tick value to the nearest integer whose least significant
+    /// byte matches <paramref name="lowByte"/>. Used by the Refined DoT simulation
+    /// to leverage the damage low-byte from 0x0E status-application effects.
+    /// </summary>
+    private static double SnapToLowByte(double estimated, byte lowByte)
+    {
+        // The LSB constrains: result & 0xFF == lowByte.
+        // Candidates are: base | lowByte, (base+256) | lowByte, (base-256) | lowByte
+        int estInt = (int)estimated;
+        int baseVal = estInt & ~0xFF; // clear bottom byte
+
+        double bestDist = double.MaxValue;
+        double bestVal = estimated;
+
+        for (int offset = -256; offset <= 256; offset += 256)
+        {
+            int candidate = (baseVal + offset) | lowByte;
+            if (candidate <= 0)
+                continue;
+            double dist = Math.Abs(candidate - estimated);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                bestVal = candidate;
+            }
+        }
+
+        return bestVal;
     }
 
     private SkillDamageType LookupDamageType(uint actionId)
@@ -527,6 +629,7 @@ public class SkillTracker
             seededItemEvents = null;
             damageTypeCache.Clear();
             combatantDotStats.Clear();
+            pendingLowBytes.Clear();
         }
     }
 
@@ -780,7 +883,23 @@ public class SkillTracker
             if (line.Length > 4)
                 float.TryParse(line[4], NumberStyles.Float, CultureInfo.InvariantCulture, out duration);
 
-            statusTracker.OnStatusGained(sourceName, targetName, statusId, statusName, duration);
+            // Consume pending low-byte refinement data captured from the Type 21/22
+            // ability line that applied this status.
+            byte damageLB = 0, critLB = 0;
+            bool hasLB = false;
+            lock (syncLock)
+            {
+                var lbKey = (sourceName, targetName, statusId);
+                if (pendingLowBytes.Remove(lbKey, out var lb))
+                {
+                    damageLB = lb.DamageLowByte;
+                    critLB = lb.CritLowByte;
+                    hasLB = true;
+                }
+            }
+
+            statusTracker.OnStatusGained(sourceName, targetName, statusId, statusName, duration,
+                damageLB, critLB, hasLB);
 
             if (SkillIssueNames.Contains(statusName))
             {
@@ -874,9 +993,41 @@ public class SkillTracker
         bool isHoT = string.Equals(dotOrHot, "HoT", StringComparison.OrdinalIgnoreCase);
         bool isDoT = !isHoT;
 
+        // IINACT mode: trust the parser's simulation and attribute the full
+        // aggregate amount to the named source without potency splitting.
+        if (config.DotCalcMode == DotCalcMode.Iinact)
+        {
+            var label = isHoT ? "HoT" : "DoT";
+            lock (syncLock)
+            {
+                if (isDoT)
+                {
+                    AccumulateSkill(damageData, sourceName, label, amount, 0, SkillDamageType.Magic);
+                    AccumulateSkill(dotTickData, sourceName, label, amount, 0, SkillDamageType.Magic);
+                    RecordEvent(sourceName, label, amount, false, 0, isDoTTick: true);
+
+                    if (!string.IsNullOrEmpty(targetName))
+                        RecordDamageTakenEvent(targetName, label, amount, 0);
+                }
+                else
+                {
+                    AccumulateSkill(healData, sourceName, label, amount, 0, SkillDamageType.Magic);
+                    AccumulateSkill(hotTickData, sourceName, label, amount, 0, SkillDamageType.Magic);
+                    RecordEvent(sourceName, label, amount, true, 0, isHoTTick: true);
+                }
+            }
+
+            if (isDoT)
+                graphTracker?.RecordLogLineEvent(sourceName, amount, 0);
+            else
+                graphTracker?.RecordLogLineEvent(sourceName, 0, amount);
+
+            return;
+        }
+
         // Collect all sources with matching DoT/HoT statuses on this target,
         // including the status ID for potency lookup.
-        var sourceSkills = new Dictionary<string, List<(string Name, uint StatusId)>>(StringComparer.OrdinalIgnoreCase);
+        var sourceSkills = new Dictionary<string, List<(string Name, uint StatusId, byte DamageLowByte, byte CritLowByte, bool HasLowByteData)>>(StringComparer.OrdinalIgnoreCase);
 
         if (statusTracker != null)
         {
@@ -888,10 +1039,10 @@ public class SkillTracker
                     var name = s.ApplyingActionName ?? s.StatusName;
                     if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
                     {
-                        skills = new List<(string, uint)>();
+                        skills = new List<(string, uint, byte, byte, bool)>();
                         sourceSkills[s.SourceName] = skills;
                     }
-                    skills.Add((name, s.StatusId));
+                    skills.Add((name, s.StatusId, s.DamageLowByte, s.CritLowByte, s.HasLowByteData));
                 }
             }
 
@@ -908,10 +1059,10 @@ public class SkillTracker
 
                     if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
                     {
-                        skills = new List<(string, uint)>();
+                        skills = new List<(string, uint, byte, byte, bool)>();
                         sourceSkills[s.SourceName] = skills;
                     }
-                    skills.Add((name, s.StatusId));
+                    skills.Add((name, s.StatusId, s.DamageLowByte, s.CritLowByte, s.HasLowByteData));
                 }
             }
 
@@ -924,11 +1075,11 @@ public class SkillTracker
                 {
                     if (!sourceSkills.TryGetValue(sourceName, out var skills))
                     {
-                        skills = new List<(string, uint)>();
+                        skills = new List<(string, uint, byte, byte, bool)>();
                         sourceSkills[sourceName] = skills;
                     }
                     if (!skills.Any(e => e.Name == skillName))
-                        skills.Add((skillName, statusId2));
+                        skills.Add((skillName, statusId2, 0, 0, false));
                 }
             }
         }
@@ -937,7 +1088,7 @@ public class SkillTracker
         // StatusTracker has no data (e.g. plugin started mid-encounter).
         if (sourceSkills.Count == 0)
         {
-            sourceSkills[sourceName] = new List<(string, uint)> { (isHoT ? "HoT" : "DoT", 0u) };
+            sourceSkills[sourceName] = new List<(string, uint, byte, byte, bool)> { (isHoT ? "HoT" : "DoT", 0u, 0, 0, false) };
         }
 
         // Potency-weighted distribution: simulate each DoT/HoT's expected tick
@@ -951,9 +1102,9 @@ public class SkillTracker
             // Phase 1: calculate weights for each source × skill slot.
             foreach (var (src, skills) in sourceSkills)
             {
-                foreach (var (skillName, statusId) in skills)
+                foreach (var (skillName, statusId, dLB, cLB, hasLB) in skills)
                 {
-                    var weight = CalculateTickWeight(src, statusId, isHoT);
+                    var weight = CalculateTickWeight(src, statusId, isHoT, dLB, cLB, hasLB);
                     weightedSlots.Add((src, skillName, weight));
 
                     sourceWeights[src] = sourceWeights.GetValueOrDefault(src) + weight;

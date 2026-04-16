@@ -42,4 +42,15 @@ public struct ActiveStatus
     /// <summary>Encounter-relative time when this status was removed, if applicable (seconds).
     /// Set when the status is moved to the recently-removed buffer.</summary>
     public float RemovedAtSec;
+
+    /// <summary>Least significant byte of the expected non-crit tick damage, extracted from the
+    /// 0x0E status-application effect in the Type 21/22 line that applied this status.</summary>
+    public byte DamageLowByte;
+
+    /// <summary>Crit rate × 10 as a byte from the 0x0E effect flags (200 = 20.0% crit).
+    /// Overflows at 25.6%, so only reliable when value ≤ 255.</summary>
+    public byte CritLowByte;
+
+    /// <summary>True if DamageLowByte/CritLowByte were populated from a 0x0E effect pair.</summary>
+    public bool HasLowByteData;
 }
