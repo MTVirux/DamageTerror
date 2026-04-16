@@ -10,6 +10,7 @@ public class WebSocketDataSource : IDataSource
 {
     private const int InitialRetryDelayMs = 1000;
     private const int MaxRetryDelayMs = 30000;
+    private const int MaxMessageSize = 10 * 1024 * 1024;
 
     private readonly IPluginLog log;
     private readonly string url;
@@ -137,6 +138,13 @@ public class WebSocketDataSource : IDataSource
                 }
 
                 messageBuilder.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+
+                if (messageBuilder.Length > MaxMessageSize)
+                {
+                    log.Warning("WebSocket message exceeded maximum size, discarding");
+                    messageBuilder.Clear();
+                    break;
+                }
             }
             while (!result.EndOfMessage);
 
