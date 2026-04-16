@@ -183,7 +183,6 @@ public class GeneralTab
                 changed = true;
             }
 
-            // Row 1: Top-Left, Top, Top-Right
             if (ImGui.Button("Top-Left", btnSize))
                 Dock(workPos.X, workPos.Y);
             ImGui.SameLine();
@@ -193,7 +192,6 @@ public class GeneralTab
             if (ImGui.Button("Top-Right", btnSize))
                 Dock(workPos.X + workSize.X - windowSize.X, workPos.Y);
 
-            // Row 2: Left, (gap), Right
             if (ImGui.Button("Left", btnSize))
                 Dock(workPos.X, workPos.Y + (workSize.Y - windowSize.Y) / 2f);
             ImGui.SameLine();
@@ -202,7 +200,6 @@ public class GeneralTab
             if (ImGui.Button("Right", btnSize))
                 Dock(workPos.X + workSize.X - windowSize.X, workPos.Y + (workSize.Y - windowSize.Y) / 2f);
 
-            // Row 3: Bottom-Left, Bottom, Bottom-Right
             if (ImGui.Button("Bot-Left", btnSize))
                 Dock(workPos.X, workPos.Y + workSize.Y - windowSize.Y);
             ImGui.SameLine();

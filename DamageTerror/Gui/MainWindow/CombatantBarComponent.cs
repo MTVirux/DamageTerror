@@ -68,7 +68,6 @@ public class CombatantBarComponent
         { BarColumn.EncHps, "000.0K" },
         { BarColumn.DpsRank, "00/00" },
         { BarColumn.HpsRank, "00/00" },
-        // Group totals
         { BarColumn.GroupDps, "000.0K" },
         { BarColumn.GroupHps, "000.0K" },
         { BarColumn.GroupDamage, "000.0K" },
@@ -79,7 +78,6 @@ public class CombatantBarComponent
         { BarColumn.GroupOverheal, "000.0K" },
         { BarColumn.GroupInstantDps, "000.0K" },
         { BarColumn.GroupInstantHps, "000.0K" },
-        // Group averages
         { BarColumn.GroupAvgDps, "000.0K" },
         { BarColumn.GroupAvgHps, "000.0K" },
         { BarColumn.GroupAvgCrit, "100%" },
@@ -88,11 +86,9 @@ public class CombatantBarComponent
         { BarColumn.GroupAvgOverhealPct, "100%" },
         { BarColumn.GroupAvgCritHealPct, "100%" },
         { BarColumn.GroupAvgHitRate, "100%" },
-        // Group max
         { BarColumn.GroupPeakDps, "000.0K" },
         { BarColumn.GroupMaxHitValue, "000.0K" },
         { BarColumn.GroupMaxHealValue, "000.0K" },
-        // Positionals
         { BarColumn.Positionals, "00/00" },
         { BarColumn.PositionalHits, "0000" },
         { BarColumn.PositionalMisses, "0000" },

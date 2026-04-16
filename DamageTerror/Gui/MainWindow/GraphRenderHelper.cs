@@ -175,7 +175,6 @@ internal static class GraphRenderHelper
         var visibleMax = settings.AutoScroll ? settings.AutoScrollWindow * settings.XAxisPadding : maxTime * settings.XAxisPadding;
         if (visibleMax <= 0f) return;
 
-        // Choose a nice step in seconds
         float step;
         if (visibleMax <= 30f) step = 5f;
         else if (visibleMax <= 60f) step = 10f;

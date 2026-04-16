@@ -58,7 +58,6 @@ public enum BarColumn
     DpsRank = 49,
     HpsRank = 50,
 
-    // Group totals (sum of filtered combatants)
     GroupDps = 51,
     GroupHps = 52,
     GroupDamage = 53,
@@ -71,7 +70,6 @@ public enum BarColumn
     GroupSkillIssue = 60,
     GroupDamageDown = 61,
 
-    // Group averages (mean of filtered combatants)
     GroupAvgDps = 62,
     GroupAvgHps = 63,
     GroupAvgCrit = 64,
@@ -81,7 +79,6 @@ public enum BarColumn
     GroupAvgCritHealPct = 68,
     GroupAvgHitRate = 69,
 
-    // Group max (best in filtered combatants)
     GroupPeakDps = 70,
     GroupMaxHitValue = 71,
     GroupMaxHealValue = 72,

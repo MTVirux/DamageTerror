@@ -351,7 +351,6 @@ internal static class SampleDataGenerator
         var totalDps = durationSec > 0 ? totalDamage / durationSec : 0;
         var totalHps = durationSec > 0 ? totalHealed / durationSec : 0;
 
-        // Compute damage/heal percentages
         foreach (var c in combatants)
         {
             c.DamagePercent = totalDamage > 0
@@ -381,7 +380,6 @@ internal static class SampleDataGenerator
             PlayerName = combatants.FirstOrDefault(c => c.IsLocalPlayer)?.Name ?? string.Empty,
         };
 
-        // Generate graph data
         var graphData = new Dictionary<string, List<GraphSample>>(StringComparer.OrdinalIgnoreCase);
         foreach (var c in combatants)
         {
@@ -390,7 +388,6 @@ internal static class SampleDataGenerator
         }
         snapshot.GraphData = graphData;
 
-        // Generate buff/debuff status data
         var statusHistory = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
         var statusesReceived = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
         foreach (var c in combatants)
@@ -458,7 +455,6 @@ internal static class SampleDataGenerator
         entry.Misses = entry.Swings - entry.Hits;
         entry.DamageTakenPercent = $"{Rng.Next(8, 16)}%";
 
-        // Generate skill breakdowns
         entry.Skills = GenerateSkills(job, isDamage: true);
         entry.HealingSkills = hps > 0 ? GenerateSkills(job, isDamage: false) : new();
 

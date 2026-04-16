@@ -216,7 +216,6 @@ public class GraphViewComponent
                     }
                 }
 
-                // Determine if combatant is hidden — primary legend entry was toggled off
                 var combatantHidden = primaryLabel != null && hiddenLegendEntries.Contains(primaryLabel);
                 if (combatantHidden) hiddenNames.Add(combatant.Name);
 
@@ -363,7 +362,6 @@ public class GraphViewComponent
                 }
             }
 
-            // Detect legend entry clicks to track hidden state
             foreach (var (label, _) in legendLabels)
             {
                 if (ImPlot.IsLegendEntryHovered(label) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))

@@ -855,7 +855,6 @@ public class CombatantDetailPanel
 
         return col switch
         {
-            // Damage
             BarColumn.Dps => (Label(col), Fmt(c.EncDps)),
             BarColumn.InstantDps => (Label(col), Fmt(c.InstantDps)),
             BarColumn.PeakDps => (Label(col), Fmt(c.PeakDps)),
@@ -866,7 +865,6 @@ public class CombatantDetailPanel
             BarColumn.DamageShield => (Label(col), Fmt(c.DamageShield)),
             BarColumn.EncDps => (Label(col), Fmt(c.RaidDps)),
 
-            // Healing
             BarColumn.Hps => (Label(col), Fmt(c.EncHps)),
             BarColumn.InstantHps => (Label(col), Fmt(c.InstantHps)),
             BarColumn.Healed => (Label(col), Fmt(c.Healed)),
@@ -879,7 +877,6 @@ public class CombatantDetailPanel
             BarColumn.HealCount => (Label(col), c.HealCount.ToString()),
             BarColumn.EncHps => (Label(col), Fmt(c.RaidHps)),
 
-            // Hit Stats
             BarColumn.Crit => (Label(col), FmtPct(c.CritPct)),
             BarColumn.DirectHit => (Label(col), FmtPct(c.DirectHitPct)),
             BarColumn.CritDirectHit => (Label(col), FmtPct(c.CritDirectHitPct)),
@@ -895,25 +892,21 @@ public class CombatantDetailPanel
             BarColumn.PositionalMisses => (Label(col), c.PositionalMisses.ToString()),
             BarColumn.PositionalPct => (Label(col), FmtPct(c.PositionalPct)),
 
-            // Defense
             BarColumn.DamageTaken => (Label(col), Fmt(c.DamageTaken)),
             BarColumn.DamageTakenPercent => (Label(col), c.DamageTakenPercent),
             BarColumn.BlockPct => (Label(col), FmtPct(c.BlockPct)),
             BarColumn.ParryPct => (Label(col), FmtPct(c.ParryPct)),
             BarColumn.HealsTaken => (Label(col), Fmt(c.HealsTaken)),
 
-            // Other
             BarColumn.Deaths => (Label(col), c.Deaths.ToString()),
             BarColumn.Kills => (Label(col), c.Kills.ToString()),
             BarColumn.CombatantDuration => (Label(col), c.CombatantDuration),
             BarColumn.PowerHeal => (Label(col), Fmt(c.PowerHeal)),
 
-            // Debug
             BarColumn.PowerDrain => (Label(col), Fmt(c.PowerDrain)),
             BarColumn.AbsorbHeal => (Label(col), Fmt(c.AbsorbHeal)),
             BarColumn.MaxHealWard when !string.IsNullOrEmpty(c.MaxHealWardName) => (Label(col), $"{c.MaxHealWardName} ({Fmt(c.MaxHealWardAmount)})"),
 
-            // High-end Raiding
             BarColumn.LegsSweeped => (Label(col), c.Stuns.ToString()),
             BarColumn.SkillIssue => (Label(col), c.SkillIssue.ToString()),
             BarColumn.DamageDown => (Label(col), c.DamageDown.ToString()),

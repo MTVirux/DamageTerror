@@ -258,7 +258,6 @@ public class PopoutTabWindow : Window, IDisposable
                     {
                         DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, tab, currentPlayerName, encounter, headerComponent.IsViewingLive);
                     }
-                    // Anchor post-bars elements to the bottom of the content area
                     if (afterBarsHeight > 0)
                     {
                         var contentMaxY = ImGui.GetWindowContentRegionMax().Y;
