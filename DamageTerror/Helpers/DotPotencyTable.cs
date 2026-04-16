@@ -150,8 +150,62 @@ public static class DotPotencyTable
         { 2862, 100 }, // Crest of Time Returned (RPR PvP)
     };
 
+    /// <summary>
+    /// Maps DoT status IDs to the initial hit potency of the applying ability.
+    /// Used to calibrate a per-source damage-per-potency-point coefficient
+    /// for more accurate tick weight distribution.
+    /// Only includes DoTs whose applying ability deals direct damage on application.
+    /// </summary>
+    private static readonly Dictionary<uint, int> InitialHitPotencies = new()
+    {
+        // SAM
+        { 1228, 200 },  // Higanbana
+
+        // DRG
+        { 118, 100 },   // Chaos Thrust
+        { 2719, 300 },  // Chaotic Spring
+
+        // VPR
+        { 3667, 200 },  // Noxious Gnash
+
+        // BRD
+        { 1200, 150 },  // Caustic Bite
+        { 1201, 100 },  // Stormbite
+
+        // BLM
+        { 163, 120 },   // Thunder III
+        { 1210, 80 },   // Thunder IV
+        { 3871, 150 },  // High Thunder
+        { 3872, 80 },   // High Thunder II
+
+        // WHM
+        { 1871, 65 },   // Dia
+
+        // SCH
+        { 1895, 75 },   // Biolysis
+
+        // PLD
+        { 248, 120 },   // Circle of Scorn
+
+        // GNB
+        { 1837, 300 },  // Sonic Break
+        { 1838, 150 },  // Bow Shock
+
+        // MCH
+        { 1866, 50 },   // Bioblaster
+    };
+
     public static int GetTickPotency(uint statusId)
     {
         return TickPotencies.GetValueOrDefault(statusId, DefaultPotency);
+    }
+
+    /// <summary>
+    /// Returns the initial hit potency for a DoT-applying ability, or 0 if unknown.
+    /// Used by SkillTracker to calibrate per-source damage-per-potency-point coefficients.
+    /// </summary>
+    public static int GetInitialHitPotency(uint statusId)
+    {
+        return InitialHitPotencies.GetValueOrDefault(statusId, 0);
     }
 }

@@ -68,14 +68,14 @@ public class SkillTracker
     /// effects in Type 21/22 lines, consumed when the matching Type 26 (GainsEffect) arrives.</summary>
     private readonly Dictionary<(string Source, string Target, uint StatusId), (byte DamageLowByte, byte CritLowByte)> pendingLowBytes = new();
 
-    /// <summary>Estimated crit damage multiplier for level 100 (~3000 crit stat).</summary>
-    private const double EstimatedCritMulti = 1.6;
+    /// <summary>Default crit damage multiplier fallback when per-source dynamic estimate is unavailable.</summary>
+    private const double DefaultCritMulti = 1.65;
 
     private const byte CritFlag = 0x20;
     private const byte DirectHitFlag = 0x40;
 
-    private const double DotOutlierLowThreshold = 0.5;
-    private const double DotOutlierHighThreshold = 2.0;
+    private const double DotOutlierLowThreshold = 0.3;
+    private const double DotOutlierHighThreshold = 3.0;
     private const int DotMinHitsForOutlierFilter = 10;
 
     private readonly IDataManager dataManager;
@@ -148,10 +148,41 @@ public class SkillTracker
         public int TotalHits;
         public int CritHits;
         public int DHHits;
+
+        // DH-stripped damage pools split by crit/non-crit for dynamic crit multiplier estimation.
+        public double NonCritDHStripped;
+        public int NonCritCount;
+        public double CritDHStripped;
+        public int CritCountForMulti;
+
+        // Per-potency coefficient calibrated from DoT initial hits.
+        public double CalibrationSum;
+        public int CalibrationCount;
+
         public readonly double AverageBaseDmgPerHit => TotalHits > 0 ? TotalBaseDamage / TotalHits : 0;
         public readonly double CritRate => TotalHits > 0 ? (double)CritHits / TotalHits : 0;
         public readonly double DHRate => TotalHits > 0 ? (double)DHHits / TotalHits : 0;
         public readonly bool HasData => TotalHits >= 3;
+
+        /// <summary>
+        /// Dynamic crit multiplier derived from observed crit vs non-crit damage ratios.
+        /// Returns 0 when insufficient data is available (falls back to DefaultCritMulti).
+        /// </summary>
+        public readonly double DynamicCritMulti
+        {
+            get
+            {
+                if (NonCritCount < 5 || CritCountForMulti < 3) return 0;
+                var avgNonCrit = NonCritDHStripped / NonCritCount;
+                var avgCrit = CritDHStripped / CritCountForMulti;
+                if (avgNonCrit <= 0) return 0;
+                var multi = avgCrit / avgNonCrit;
+                return multi is >= 1.3 and <= 1.8 ? multi : 0;
+            }
+        }
+
+        public readonly double CalibratedCoeff => CalibrationCount > 0 ? CalibrationSum / CalibrationCount : 0;
+        public readonly bool HasCalibration => CalibrationCount >= 1;
     }
 
     public void ProcessLogLine(string[] line)
@@ -241,8 +272,10 @@ public class SkillTracker
         }
 
         // Scan for 0x0E/0x0F status-application effects to extract low-byte
-        // refinement data (damage lowbyte + crit lowbyte) for DoT simulation.
-        if (config.DotCalcMode == DotCalcMode.Refined)
+        // refinement data (damage lowbyte + crit lowbyte) for DoT simulation,
+        // and calibrate per-source damage-per-potency-point coefficients from
+        // DoT initial hits.
+        if (config.DotCalcMode != DotCalcMode.Iinact)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -278,9 +311,28 @@ public class SkillTracker
                 if (string.IsNullOrEmpty(statusTarget))
                     continue;
 
-                lock (syncLock)
+                // Refined mode: store low-byte data for per-application refinement.
+                if (config.DotCalcMode == DotCalcMode.Refined)
                 {
-                    pendingLowBytes[(sourceName, statusTarget, appliedStatusId)] = (damageLB, critLB);
+                    lock (syncLock)
+                    {
+                        pendingLowBytes[(sourceName, statusTarget, appliedStatusId)] = (damageLB, critLB);
+                    }
+                }
+
+                // Calibrate per-potency coefficient from DoT initial hits.
+                // If this ability dealt direct damage AND applied a known DoT with
+                // a catalogued initial hit potency, use it to derive the coefficient.
+                if (dmgAmount > 0)
+                {
+                    var initialPot = DotPotencyTable.GetInitialHitPotency(appliedStatusId);
+                    if (initialPot > 0)
+                    {
+                        lock (syncLock)
+                        {
+                            CalibrateFromDotHit(sourceName, dmgAmount, dmgSeverity, initialPot);
+                        }
+                    }
                 }
             }
         }
@@ -371,7 +423,8 @@ public class SkillTracker
     /// <summary>
     /// Accumulate per-combatant damage stats for DoT/HoT tick simulation.
     /// Strips crit/DH from observed damage to estimate the base per-potency
-    /// multiplier, and tracks running crit/DH rates.
+    /// multiplier, tracks running crit/DH rates, and builds DH-stripped pools
+    /// for dynamic crit multiplier estimation.
     /// Must be called under syncLock.
     /// </summary>
     private void AccumulateCombatantStats(string sourceName, long amount, byte severity)
@@ -379,15 +432,18 @@ public class SkillTracker
         bool isCrit = (severity & CritFlag) != 0;
         bool isDH = (severity & DirectHitFlag) != 0;
 
-        // Strip crit/DH multipliers to estimate base damage
-        double baseDmg = amount;
-        if (isCrit) baseDmg /= EstimatedCritMulti;
-        if (isDH) baseDmg /= 1.25;
-
         if (!combatantDotStats.TryGetValue(sourceName, out var stats))
             stats = default;
 
-        // Outlier filter: exclude hits outside 50%-200% of running average
+        // Use dynamic crit multiplier when available, otherwise fall back to default.
+        var critMulti = stats.DynamicCritMulti > 0 ? stats.DynamicCritMulti : DefaultCritMulti;
+
+        // Strip crit/DH multipliers to estimate base damage
+        double baseDmg = amount;
+        if (isCrit) baseDmg /= critMulti;
+        if (isDH) baseDmg /= 1.25;
+
+        // Outlier filter: exclude hits outside 30%-300% of running average
         // to avoid potency spikes from skewing the per-potency estimate.
         // Skip filter when under 10 samples (similar to ACT's <50 swings rule).
         if (stats.TotalHits >= DotMinHitsForOutlierFilter)
@@ -401,6 +457,47 @@ public class SkillTracker
         stats.TotalHits++;
         if (isCrit) stats.CritHits++;
         if (isDH) stats.DHHits++;
+
+        // DH-stripped pools for dynamic crit multiplier estimation.
+        // Crit damage is preserved so we can derive critMulti = avgCrit / avgNonCrit.
+        double dhStripped = amount;
+        if (isDH) dhStripped /= 1.25;
+        if (isCrit)
+        {
+            stats.CritDHStripped += dhStripped;
+            stats.CritCountForMulti++;
+        }
+        else
+        {
+            stats.NonCritDHStripped += dhStripped;
+            stats.NonCritCount++;
+        }
+
+        combatantDotStats[sourceName] = stats;
+    }
+
+    /// <summary>
+    /// Calibrate per-source damage-per-potency-point coefficient from a DoT initial hit.
+    /// When we see a type 21/22 line that deals damage AND applies a known DoT whose
+    /// initial hit potency is in DotPotencyTable, we can derive a clean coefficient.
+    /// Must be called under syncLock.
+    /// </summary>
+    private void CalibrateFromDotHit(string sourceName, long amount, byte severity, int initialPotency)
+    {
+        if (initialPotency <= 0 || amount <= 0)
+            return;
+
+        if (!combatantDotStats.TryGetValue(sourceName, out var stats))
+            stats = default;
+
+        var critMulti = stats.DynamicCritMulti > 0 ? stats.DynamicCritMulti : DefaultCritMulti;
+
+        double baseDmg = amount;
+        if ((severity & CritFlag) != 0) baseDmg /= critMulti;
+        if ((severity & DirectHitFlag) != 0) baseDmg /= 1.25;
+
+        stats.CalibrationSum += baseDmg / initialPotency;
+        stats.CalibrationCount++;
         combatantDotStats[sourceName] = stats;
     }
 
@@ -420,10 +517,13 @@ public class SkillTracker
         if (!combatantDotStats.TryGetValue(sourceName, out var stats) || !stats.HasData)
             return potency; // No stat data yet — weight by potency alone
 
-        var baseDmgPerHit = stats.AverageBaseDmgPerHit;
-
-        // Estimated raw tick damage before crit/DH.
-        double estimatedTick = baseDmgPerHit * potency;
+        // Prefer calibrated per-potency coefficient (from DoT initial hits) when available.
+        // This eliminates mixed-potency average contamination from the general stat pool.
+        double estimatedTick;
+        if (stats.HasCalibration)
+            estimatedTick = stats.CalibratedCoeff * potency;
+        else
+            estimatedTick = stats.AverageBaseDmgPerHit * potency;
 
         // Refined mode: snap estimated tick to the nearest value whose LSB
         // matches the low-byte from the 0x0E status-application effect.
@@ -431,6 +531,9 @@ public class SkillTracker
         {
             estimatedTick = SnapToLowByte(estimatedTick, damageLowByte);
         }
+
+        // Use dynamic crit multiplier when available.
+        var critMulti = stats.DynamicCritMulti > 0 ? stats.DynamicCritMulti : DefaultCritMulti;
 
         // Expected crit/DH multiplier applied to periodic ticks.
         double critRate = stats.CritRate;
@@ -444,7 +547,7 @@ public class SkillTracker
                 critRate = perAppCrit;
         }
 
-        double critFactor = 1.0 + (EstimatedCritMulti - 1.0) * critRate;
+        double critFactor = 1.0 + (critMulti - 1.0) * critRate;
         double dhFactor = isHoT ? 1.0 : 1.0 + 0.25 * stats.DHRate;
 
         return estimatedTick * critFactor * dhFactor;
