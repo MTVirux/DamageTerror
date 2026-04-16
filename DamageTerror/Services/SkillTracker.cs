@@ -407,6 +407,8 @@ public class SkillTracker
         byte damageLowByte = 0, byte critLowByte = 0, bool hasLowByteData = false)
     {
         var potency = DotPotencyTable.GetTickPotency(statusId);
+        if (potency <= 0)
+            return 0;
 
         if (!combatantDotStats.TryGetValue(sourceName, out var stats) || !stats.HasData)
             return potency; // No stat data yet — weight by potency alone
