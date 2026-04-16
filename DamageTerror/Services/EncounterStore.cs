@@ -10,7 +10,9 @@ public class EncounterStore
     private readonly Configuration config;
     private EncounterSnapshot? active;
     private bool wasActive;
-    private bool suppressActive;
+    /// <summary>When true, drop incoming CombatData until a genuinely new encounter starts.
+    /// Set after the user manually removes the active encounter via RemoveActive().</summary>
+    private bool isStaleDataSuppressed;
     private bool activeAlreadyInHistory;
     private string? savePath;
     private bool dirty;
@@ -153,10 +155,10 @@ public class EncounterStore
 
             var archived = false;
 
-            if (suppressActive)
+            if (isStaleDataSuppressed)
             {
                 if (snapshot.Encounter.IsActive && !wasActive)
-                    suppressActive = false;
+                    isStaleDataSuppressed = false;
                 else
                 {
                     wasActive = snapshot.Encounter.IsActive;
@@ -244,7 +246,7 @@ public class EncounterStore
             if (sampleDataActive) return;
             active = null;
             wasActive = false;
-            suppressActive = true;
+            isStaleDataSuppressed = true;
             dirty = true;
         }
     }
@@ -342,6 +344,8 @@ public class EncounterStore
 
     public void SetSavePath(string path)
     {
+        if (string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("Save path must not be null or empty.", nameof(path));
         savePath = path;
     }
 
@@ -392,11 +396,17 @@ public class EncounterStore
             // Persist repaired data back to disk so the rebuild is a one-time migration.
             Save();
         }
-        catch
+        catch (JsonException ex)
         {
-            // If the file is corrupt, just start fresh.
-            // loadedSuccessfully stays false so Save won't overwrite the
-            // existing file with an empty list.
+            ServiceManager.PluginLog.Warning($"Encounter history is corrupt and could not be loaded: {ex.Message}");
+        }
+        catch (System.IO.IOException ex)
+        {
+            ServiceManager.PluginLog.Warning($"Failed to read encounter history file: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            ServiceManager.PluginLog.Warning($"Unexpected error loading encounter history: {ex.Message}");
         }
     }
 
