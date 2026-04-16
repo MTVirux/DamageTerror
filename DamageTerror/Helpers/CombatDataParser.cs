@@ -111,50 +111,47 @@ public static class CombatDataParser
         return list;
     }
 
+    private const string NullPlaceholder = "---";
+    private const string InfinityPlaceholder = "∞";
+
     private static string GetString(JObject obj, string key, string defaultValue = "")
     {
         var token = obj[key];
         return token?.ToString() ?? defaultValue;
     }
 
-    private static double GetDouble(JObject obj, string key)
+    private static string? SanitizeNumericToken(JObject obj, string key)
     {
         var token = obj[key];
         if (token == null)
-            return 0;
+            return null;
 
         var str = token.ToString();
-        if (string.IsNullOrEmpty(str) || str == "---" || str == "∞")
-            return 0;
+        if (string.IsNullOrEmpty(str) || str == NullPlaceholder || str == InfinityPlaceholder)
+            return null;
 
-        str = str.Replace(",", "").Replace("%", "").Trim();
+        return str.Replace(",", "").Replace("%", "").Trim();
+    }
+
+    private static double GetDouble(JObject obj, string key)
+    {
+        var str = SanitizeNumericToken(obj, key);
+        if (str == null) return 0;
         return double.TryParse(str, System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out var val) ? val : 0;
     }
 
     private static long GetLong(JObject obj, string key)
     {
-        var token = obj[key];
-        if (token == null)
-            return 0;
-
-        var str = token.ToString().Replace(",", "").Trim();
-        if (string.IsNullOrEmpty(str) || str == "---")
-            return 0;
-
+        var str = SanitizeNumericToken(obj, key);
+        if (str == null) return 0;
         return long.TryParse(str, out var val) ? val : 0;
     }
 
     private static int GetInt(JObject obj, string key)
     {
-        var token = obj[key];
-        if (token == null)
-            return 0;
-
-        var str = token.ToString().Replace(",", "").Trim();
-        if (string.IsNullOrEmpty(str) || str == "---")
-            return 0;
-
+        var str = SanitizeNumericToken(obj, key);
+        if (str == null) return 0;
         return int.TryParse(str, out var val) ? val : 0;
     }
 }
