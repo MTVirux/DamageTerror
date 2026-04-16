@@ -7,7 +7,7 @@ using DamageTerror.Gui.ConfigWindow;
 /// </summary>
 internal sealed class SampleCombatSimulator
 {
-    private static readonly Random Rng = new();
+    private static Random Rng => Random.Shared;
 
     private readonly EncounterSnapshot snapshot;
     private readonly List<double> baseDps = new();
@@ -18,10 +18,7 @@ internal sealed class SampleCombatSimulator
     private float lastStatusTickTime;
     private float lastSpawnTime;
 
-    // Lazy factory to generate combatants one at a time (stress test)
     private readonly Func<CombatantEntry?>? combatantFactory;
-
-    // Track active statuses per combatant for realistic refresh/expire cycles
     private readonly Dictionary<string, List<ActiveBuff>> activeBuffs = new(StringComparer.OrdinalIgnoreCase);
 
     public bool IsRunning { get; private set; }
@@ -32,18 +29,15 @@ internal sealed class SampleCombatSimulator
         this.startTime = DateTime.UtcNow;
         this.combatantFactory = combatantFactory;
 
-        // Capture base rates for each combatant
         foreach (var c in snapshot.Combatants)
         {
             baseDps.Add(c.EncDps);
             baseHps.Add(c.EncHps);
         }
 
-        // Mark as active combat
         snapshot.Encounter.IsActive = true;
         snapshot.Encounter.Duration = "00:00";
 
-        // Reset totals — they'll be recomputed each tick
         foreach (var c in snapshot.Combatants)
         {
             c.Damage = 0;
@@ -52,7 +46,6 @@ internal sealed class SampleCombatSimulator
         snapshot.Encounter.TotalDamage = 0;
         snapshot.Encounter.TotalHealed = 0;
 
-        // Clear dynamic data so it builds up from scratch
         snapshot.GraphData.Clear();
         snapshot.SkillEvents.Clear();
         snapshot.DamageTakenEvents.Clear();
@@ -72,12 +65,10 @@ internal sealed class SampleCombatSimulator
         var elapsed = (float)(DateTime.UtcNow - startTime).TotalSeconds;
         if (elapsed < 0.01f) return;
 
-        // Update duration string
         var mins = (int)(elapsed / 60f);
         var secs = (int)(elapsed % 60f);
         snapshot.Encounter.Duration = $"{mins:D2}:{secs:D2}";
 
-        // Progressively add combatants every 0.5s via lazy factory
         if (combatantFactory != null && elapsed - lastSpawnTime >= 0.5f)
         {
             lastSpawnTime = elapsed;
@@ -101,13 +92,11 @@ internal sealed class SampleCombatSimulator
             var bdps = baseDps[i];
             var bhps = baseHps[i];
 
-            // Per-combatant fluctuation: smooth wave + random noise
             var wave = 1.0 + 0.15 * Math.Sin(elapsed * (0.3 + i * 0.07));
             var noise = 0.9 + Rng.NextDouble() * 0.2;
             var instantDps = bdps * wave * noise;
             var instantHps = bhps * (1.0 + 0.2 * Math.Sin(elapsed * (0.25 + i * 0.05))) * (0.85 + Rng.NextDouble() * 0.3);
 
-            // Accumulate totals from instant rates
             c.Damage = (long)(bdps * elapsed * (0.95 + 0.1 * Math.Sin(elapsed * 0.1 + i)));
             c.Healed = (long)(bhps * elapsed * (0.95 + 0.1 * Math.Sin(elapsed * 0.08 + i)));
 
@@ -126,7 +115,6 @@ internal sealed class SampleCombatSimulator
         snapshot.Encounter.EncDps = elapsed > 0 ? totalDamage / (double)elapsed : 0;
         snapshot.Encounter.EncHps = elapsed > 0 ? totalHealed / (double)elapsed : 0;
 
-        // Recompute damage/heal percentages
         foreach (var c in snapshot.Combatants)
         {
             c.DamagePercent = totalDamage > 0
@@ -137,7 +125,6 @@ internal sealed class SampleCombatSimulator
                 : "0%";
         }
 
-        // Append graph samples at intervals
         if (elapsed - lastGraphSampleTime >= 0.5f)
         {
             lastGraphSampleTime = elapsed;
@@ -161,14 +148,12 @@ internal sealed class SampleCombatSimulator
             }
         }
 
-        // Generate skill use events every ~1.5-2.5s per combatant
         if (elapsed - lastSkillEventTime >= 0.8f)
         {
             lastSkillEventTime = elapsed;
             TickSkillEvents(elapsed);
         }
 
-        // Tick buff/debuff statuses every ~2s
         if (elapsed - lastStatusTickTime >= 2.0f)
         {
             lastStatusTickTime = elapsed;
@@ -182,10 +167,8 @@ internal sealed class SampleCombatSimulator
         {
             var c = snapshot.Combatants[i];
 
-            // ~60% chance to fire a skill event per tick per combatant
             if (Rng.NextDouble() > 0.6) continue;
 
-            // Pick a random skill from the combatant's skill list
             var isHeal = c.EncHps > 1000 && (c.Skills.Count == 0 || Rng.NextDouble() < 0.4);
             var skillList = isHeal ? c.HealingSkills : c.Skills;
             if (skillList.Count == 0) continue;
@@ -213,11 +196,9 @@ internal sealed class SampleCombatSimulator
             }
             events.Add(evt);
 
-            // Update the per-skill totals on the combatant
             skill.TotalDamage += amount;
             skill.HitCount++;
 
-            // Also generate occasional damage-taken events
             if (!isHeal && Rng.NextDouble() < 0.15)
             {
                 var dtEvt = new SkillUseEvent
@@ -251,28 +232,22 @@ internal sealed class SampleCombatSimulator
                 activeBuffs[c.Name] = buffs;
             }
 
-            // Expire old buffs
             for (var j = buffs.Count - 1; j >= 0; j--)
             {
                 var b = buffs[j];
                 if (elapsed >= b.ExpiresAt)
                 {
-                    // Set removed time on the status application
                     b.Application.RemovedAtSec = elapsed;
                     buffs.RemoveAt(j);
                 }
             }
 
-            // Apply new buffs/debuffs based on job
             var jobBuffs = SampleDataGenerator.GetJobBuffs(c.Job);
             var jobDebuffs = SampleDataGenerator.GetJobDebuffs(c.Job);
 
             foreach (var (statusId, statusName, duration, isHot) in jobBuffs)
             {
-                // Check if already active
                 if (buffs.Exists(b => b.Application.StatusId == statusId)) continue;
-
-                // Chance to apply based on cooldown approximation
                 if (Rng.NextDouble() > 0.25) continue;
 
                 var app = new StatusApplication
@@ -287,7 +262,6 @@ internal sealed class SampleCombatSimulator
                     IsHoT = isHot,
                 };
 
-                // Healers apply buffs to random party members
                 if (isHot && Rng.NextDouble() < 0.5)
                 {
                     var target = snapshot.Combatants[Rng.Next(snapshot.Combatants.Count)];
@@ -323,7 +297,6 @@ internal sealed class SampleCombatSimulator
 
     private void AddStatusToSnapshot(StatusApplication app)
     {
-        // StatusHistory: keyed by source
         if (!snapshot.StatusHistory.TryGetValue(app.SourceName, out var history))
         {
             history = new List<StatusApplication>();
@@ -331,7 +304,6 @@ internal sealed class SampleCombatSimulator
         }
         history.Add(app);
 
-        // StatusesReceived: keyed by target
         if (!snapshot.StatusesReceived.TryGetValue(app.TargetName, out var received))
         {
             received = new List<StatusApplication>();
