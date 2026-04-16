@@ -19,8 +19,10 @@ public sealed class FontService : IDisposable
 
     private SingleFontSpec? activeSpec;
 
-    // Deferred rebuild: flag set when config changes, applied next frame before push
-    private bool rebuildPending;
+    // Deferred rebuild: flag set when config changes, applied next frame before push.
+    // Volatile because config changes (ApplyFontSpec/ClearCustomFont) could theoretically
+    // race with the UI-thread read in PushFont().
+    private volatile bool rebuildPending;
 
     public bool IsInitialized => uiBuilder != null;
     public bool HasCustomFont => customFontHandle is { Available: true };

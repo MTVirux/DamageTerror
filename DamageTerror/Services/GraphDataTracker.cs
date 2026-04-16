@@ -35,8 +35,11 @@ public class GraphDataTracker
 
     public ValidationStats Validation;
 
+    /// <summary>Sliding window width in seconds for instantaneous DPS/HPS/DTPS calculation.</summary>
     public float WindowSeconds { get; set; } = 5f;
+    /// <summary>Interval between emitted graph samples (controls graph resolution).</summary>
     public float SampleIntervalSeconds { get; set; } = 0.25f;
+    /// <summary>Maximum allowed divergence (5%) between log-line and CombatData totals before applying correction.</summary>
     private const double ValidationThreshold = 0.05;
 
     public GraphDataTracker() { }

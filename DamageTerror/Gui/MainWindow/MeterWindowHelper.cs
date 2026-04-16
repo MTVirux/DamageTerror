@@ -6,7 +6,9 @@ namespace DamageTerror.Gui.MainWindow;
 
 internal static class MeterWindowHelper
 {
+    /// <summary>Persists across frames: current toggle state for modifier key mode.</summary>
     private static bool toggleState;
+    /// <summary>Persists across frames: tracks if modifier was down last frame (for edge detection).</summary>
     private static bool wasModifierDown;
 
     /// <summary>
