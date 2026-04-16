@@ -412,7 +412,7 @@ public class CombatantBarComponent
         var value = field switch
         {
             TooltipField.Name => NameFormatHelper.GetDisplayName(combatant.Name, combatant.Job, combatant.IsLocalPlayer, config),
-            TooltipField.Job => !string.IsNullOrEmpty(combatant.Job) ? JobNameHelper.GetFullName(combatant.Job) : "—",
+            TooltipField.Job => !string.IsNullOrEmpty(combatant.Job) ? JobDataTable.GetFullName(combatant.Job) : "—",
             TooltipField.Dps => GetColumnDisplayValue(combatant, BarColumn.Dps, config, activeTab),
             TooltipField.Hps => GetColumnDisplayValue(combatant, BarColumn.Hps, config, activeTab),
             TooltipField.Damage => GetColumnDisplayValue(combatant, BarColumn.Damage, config, activeTab),

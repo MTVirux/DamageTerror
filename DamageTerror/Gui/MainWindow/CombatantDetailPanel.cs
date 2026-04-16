@@ -56,7 +56,16 @@ public class CombatantDetailPanel
 
     public void Toggle(string name)
     {
-        expandedName = expandedName == name ? null : name;
+        if (expandedName == name)
+        {
+            expandedName = null;
+        }
+        else
+        {
+            expandedName = name;
+            expandedSkills.Clear();
+            hiddenLegendEntries.Clear();
+        }
     }
 
     public bool IsExpanded(string name) => expandedName == name;
@@ -1148,5 +1157,7 @@ public class CombatantDetailPanel
     public void CollapseAll()
     {
         expandedName = null;
+        expandedSkills.Clear();
+        hiddenLegendEntries.Clear();
     }
 }

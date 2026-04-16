@@ -38,12 +38,6 @@ public class EncounterSnapshot
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public Dictionary<string, List<StatusApplication>> StatusesReceived { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
-#if DEBUG
-    /// <summary>Raw ACT log lines captured during the encounter. Each entry is a pipe-delimited log line.</summary>
-    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-    public List<string> RawLogLines { get; set; } = new();
-#endif
-
     /// <summary>
     /// Rebuild dictionaries with case-insensitive comparers after JSON deserialization,
     /// since Newtonsoft.Json creates them with the default (case-sensitive) comparer.
@@ -51,24 +45,22 @@ public class EncounterSnapshot
     [OnDeserialized]
     internal void OnDeserialized(StreamingContext context)
     {
-        if (GraphData.Count > 0 && GraphData.Comparer != StringComparer.OrdinalIgnoreCase)
-            GraphData = new Dictionary<string, List<GraphSample>>(GraphData, StringComparer.OrdinalIgnoreCase);
-        if (SkillEvents.Count > 0 && SkillEvents.Comparer != StringComparer.OrdinalIgnoreCase)
-            SkillEvents = new Dictionary<string, List<SkillUseEvent>>(SkillEvents, StringComparer.OrdinalIgnoreCase);
-        if (DamageTakenEvents.Count > 0 && DamageTakenEvents.Comparer != StringComparer.OrdinalIgnoreCase)
-            DamageTakenEvents = new Dictionary<string, List<SkillUseEvent>>(DamageTakenEvents, StringComparer.OrdinalIgnoreCase);
-        if (ItemEvents is null)
-            ItemEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
-        else if (ItemEvents.Count > 0 && ItemEvents.Comparer != StringComparer.OrdinalIgnoreCase)
-            ItemEvents = new Dictionary<string, List<SkillUseEvent>>(ItemEvents, StringComparer.OrdinalIgnoreCase);
-        if (StatusHistory is null)
-            StatusHistory = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
-        else if (StatusHistory.Count > 0 && StatusHistory.Comparer != StringComparer.OrdinalIgnoreCase)
-            StatusHistory = new Dictionary<string, List<StatusApplication>>(StatusHistory, StringComparer.OrdinalIgnoreCase);
-        if (StatusesReceived is null)
-            StatusesReceived = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
-        else if (StatusesReceived.Count > 0 && StatusesReceived.Comparer != StringComparer.OrdinalIgnoreCase)
-            StatusesReceived = new Dictionary<string, List<StatusApplication>>(StatusesReceived, StringComparer.OrdinalIgnoreCase);
+        GraphData = EnsureCaseInsensitive(GraphData);
+        SkillEvents = EnsureCaseInsensitive(SkillEvents);
+        DamageTakenEvents = EnsureCaseInsensitive(DamageTakenEvents);
+        ItemEvents = EnsureCaseInsensitive(ItemEvents);
+        StatusHistory = EnsureCaseInsensitive(StatusHistory);
+        StatusesReceived = EnsureCaseInsensitive(StatusesReceived);
+    }
+
+    private static Dictionary<string, List<TValue>> EnsureCaseInsensitive<TValue>(
+        Dictionary<string, List<TValue>>? dict)
+    {
+        if (dict is null)
+            return new Dictionary<string, List<TValue>>(StringComparer.OrdinalIgnoreCase);
+        if (dict.Count > 0 && dict.Comparer != StringComparer.OrdinalIgnoreCase)
+            return new Dictionary<string, List<TValue>>(dict, StringComparer.OrdinalIgnoreCase);
+        return dict;
     }
 
     /// <summary>

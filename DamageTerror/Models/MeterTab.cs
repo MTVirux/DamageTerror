@@ -43,6 +43,8 @@ public class SkillMarkerConfig
 
 public class MeterTab
 {
+    #region Tab Identity & Filtering
+
     public Guid Id { get; set; } = Guid.NewGuid();
 
     public string Name { get; set; } = "DPS";
@@ -61,6 +63,10 @@ public class MeterTab
 
     public GroupFilter GroupFilter { get; set; } = GroupFilter.All;
 
+    #endregion
+
+    #region Status Bar
+
     // Per-tab status bar content visibility
     public bool ShowStatusBarTimer { get; set; } = true;
 
@@ -74,6 +80,10 @@ public class MeterTab
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public Dictionary<BarColumn, string> StatusBarMetricLabels { get; set; } = new();
 
+    #endregion
+
+    #region Graph Settings
+
     /// <summary>Whether DPS graph line should be shown (independent of bar columns).</summary>
     public bool GraphShowDpsLine { get; set; } = true;
 
@@ -82,6 +92,10 @@ public class MeterTab
 
     /// <summary>Whether DTPS graph line should be shown (independent of bar columns).</summary>
     public bool GraphShowDtpsLine { get; set; } = false;
+
+    #endregion
+
+    #region Column Settings
 
     /// <summary>Set of visible bar columns for this tab.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
@@ -170,6 +184,10 @@ public class MeterTab
 
     public List<string> CustomJobFilter { get; set; } = new();
 
+    #endregion
+
+    #region Tooltip Settings
+
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public List<TooltipField> TooltipFields { get; set; } = new()
@@ -190,6 +208,10 @@ public class MeterTab
     public Dictionary<TooltipField, string> TooltipFieldLabels { get; set; } = new();
 
     public int TooltipTopSkillCount { get; set; } = 3;
+
+    #endregion
+
+    #region Detail Panel
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public Dictionary<BarColumn, string> DetailColumnLabels { get; set; } = new();
@@ -229,6 +251,10 @@ public class MeterTab
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumListMapConverter))]
     public Dictionary<string, List<BarColumn>> DetailSectionOrder { get; set; } = new();
+
+    #endregion
+
+    #region Legacy Migration
 
     [JsonExtensionData]
     private Dictionary<string, JToken>? _extensionData;
@@ -299,6 +325,10 @@ public class MeterTab
 
         _extensionData = null;
     }
+
+    #endregion
+
+    #region Construction & Methods
 
     public MeterTab() { }
 
@@ -384,7 +414,7 @@ public class MeterTab
             return CustomJobFilter.Any(j => string.Equals(j, combatant.Job, StringComparison.OrdinalIgnoreCase));
         }
 
-        var role = JobColorHelper.GetRole(combatant.Job);
+        var role = JobDataTable.GetRole(combatant.Job);
         return FilterMode switch
         {
             TabFilterMode.Tanks => role == JobRole.Tank,
@@ -396,4 +426,6 @@ public class MeterTab
             _ => true,
         };
     }
+
+    #endregion
 }

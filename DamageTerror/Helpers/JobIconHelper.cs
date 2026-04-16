@@ -14,10 +14,15 @@ public static class JobIconHelper
 
     private static readonly string[] ExtraAbbreviations = ExtraClassJobIds.Keys.ToArray();
 
+    private const uint PlainIconOffset = 62000;
+    private const uint FramedIconOffset = 62100;
+    private const uint LimitBreakIconId = 103;
+
     private static uint GetBaseOffset(JobIconStyle style) => style switch
     {
-        JobIconStyle.Plain => 62000,
-        _ => 62100,
+        JobIconStyle.Plain => PlainIconOffset,
+        JobIconStyle.Framed => FramedIconOffset,
+        _ => FramedIconOffset,
     };
 
     public static uint? GetIconId(string job, JobIconStyle style = JobIconStyle.Framed,
@@ -34,7 +39,7 @@ public static class JobIconHelper
 
         if (job.Equals("Lmb", StringComparison.OrdinalIgnoreCase)
             || job.Equals("Limit Break", StringComparison.OrdinalIgnoreCase))
-            return 103;
+            return LimitBreakIconId;
 
         uint? classJobId = JobDataTable.GetClassJobId(job);
         if (classJobId == null && ExtraClassJobIds.TryGetValue(job, out var extraId))

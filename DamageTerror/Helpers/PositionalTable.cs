@@ -58,7 +58,6 @@ public class PositionalTable : IDisposable
             var text = await client.GetStringAsync(SheetUrl).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(text))
             {
-                // Only write if content changed
                 if (!File.Exists(cachePath) || File.ReadAllText(cachePath) != text)
                     File.WriteAllText(cachePath, text);
 
@@ -72,7 +71,6 @@ public class PositionalTable : IDisposable
             log.Debug($"PositionalTable: remote CSV download failed: {ex.Message}");
         }
 
-        // Try cached file
         if (File.Exists(cachePath))
         {
             try
@@ -88,7 +86,6 @@ public class PositionalTable : IDisposable
             }
         }
 
-        // Fall back to embedded data
         log.Debug($"PositionalTable: using embedded fallback ({actionStore.Count} actions)");
     }
 
@@ -109,7 +106,6 @@ public class PositionalTable : IDisposable
         var store = new Dictionary<int, PositionalAction>();
         var lines = csvText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-        // Skip header row
         for (var i = 1; i < lines.Length; i++)
         {
             var fields = ParseCsvLine(lines[i]);

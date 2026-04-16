@@ -28,7 +28,7 @@ public static class NameFormatHelper
             case NameDisplayFormat.JobAbbreviation:
                 return !string.IsNullOrEmpty(job) ? job.ToUpperInvariant() : name;
             case NameDisplayFormat.JobFullName:
-                return !string.IsNullOrEmpty(job) ? JobNameHelper.GetFullName(job) : name;
+                return !string.IsNullOrEmpty(job) ? JobDataTable.GetFullName(job) : name;
             case NameDisplayFormat.Truncated:
                 return name.Length > truncateLength ? name[..truncateLength] + "..." : name;
             default:

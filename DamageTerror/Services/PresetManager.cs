@@ -43,7 +43,9 @@ public class PresetManager
         preset.IsBuiltIn = false;
         var json = JsonConvert.SerializeObject(preset, JsonSettings);
         var path = GetPresetPath(preset.Name);
-        File.WriteAllText(path, json);
+        var tempPath = path + ".tmp";
+        File.WriteAllText(tempPath, json);
+        File.Move(tempPath, path, overwrite: true);
         ReloadCustomPresets();
     }
 

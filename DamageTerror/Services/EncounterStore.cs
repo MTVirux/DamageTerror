@@ -9,7 +9,7 @@ public class EncounterStore
     private readonly List<EncounterSnapshot> history = new();
     private readonly Configuration config;
     private EncounterSnapshot? active;
-    private bool wasActive;
+    private bool prevSnapshotActive;
     /// <summary>When true, drop incoming CombatData until a genuinely new encounter starts.
     /// Set after the user manually removes the active encounter via RemoveActive().</summary>
     private bool isStaleDataSuppressed;
@@ -157,16 +157,16 @@ public class EncounterStore
 
             if (isStaleDataSuppressed)
             {
-                if (snapshot.Encounter.IsActive && !wasActive)
+                if (snapshot.Encounter.IsActive && !prevSnapshotActive)
                     isStaleDataSuppressed = false;
                 else
                 {
-                    wasActive = snapshot.Encounter.IsActive;
+                    prevSnapshotActive = snapshot.Encounter.IsActive;
                     return false;
                 }
             }
 
-            if (snapshot.Encounter.IsActive && !wasActive && active != null)
+            if (snapshot.Encounter.IsActive && !prevSnapshotActive && active != null)
             {
                 active.Encounter.IsActive = false;
                 if (!activeAlreadyInHistory && !double.IsNaN(active.Encounter.EncDps)
@@ -179,7 +179,7 @@ public class EncounterStore
                 }
                 activeAlreadyInHistory = false;
             }
-            else if (!snapshot.Encounter.IsActive && !wasActive && active != null
+            else if (!snapshot.Encounter.IsActive && !prevSnapshotActive && active != null
                      && active != snapshot
                      && (active.GraphData.Count > 0 || active.SkillEvents.Count > 0))
             {
@@ -221,7 +221,7 @@ public class EncounterStore
             }
 
             active = snapshot;
-            wasActive = snapshot.Encounter.IsActive;
+            prevSnapshotActive = snapshot.Encounter.IsActive;
 
             return archived;
         }
@@ -245,7 +245,7 @@ public class EncounterStore
         {
             if (sampleDataActive) return;
             active = null;
-            wasActive = false;
+            prevSnapshotActive = false;
             isStaleDataSuppressed = true;
             dirty = true;
         }
@@ -270,7 +270,7 @@ public class EncounterStore
 
             activeAlreadyInHistory = false;
             active = null;
-            wasActive = false;
+            prevSnapshotActive = false;
             return true;
         }
     }
@@ -324,7 +324,7 @@ public class EncounterStore
 
             active = history[idx];
             history.RemoveAt(idx);
-            wasActive = false;
+            prevSnapshotActive = false;
             dirty = true;
             return true;
         }
@@ -336,7 +336,7 @@ public class EncounterStore
         {
             history.Clear();
             active = null;
-            wasActive = false;
+            prevSnapshotActive = false;
             dirty = true;
         }
     }

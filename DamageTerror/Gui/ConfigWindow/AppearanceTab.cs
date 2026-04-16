@@ -1116,12 +1116,12 @@ public class AppearanceTab
         }
         else
         {
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Tanks", JobColorHelper.TankJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Healers", JobColorHelper.HealerJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Melee DPS", JobColorHelper.MeleeDpsJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Phys Ranged DPS", JobColorHelper.RangedDpsJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Caster DPS", JobColorHelper.CasterDpsJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Base Classes", JobColorHelper.BaseClassJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Tanks", JobDataTable.TankJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Healers", JobDataTable.HealerJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Melee DPS", JobDataTable.MeleeDpsJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Phys Ranged DPS", JobDataTable.RangedDpsJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Caster DPS", JobDataTable.CasterDpsJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Base Classes", JobDataTable.BaseClassJobs, config);
             changed |= ConfigHelpers.ColorEditProp("Limit Break", config.LimitBreakColor, v => config.LimitBreakColor = v);
             changed |= ConfigHelpers.ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
 

@@ -71,6 +71,13 @@ public class SkillTracker
     /// <summary>Estimated crit damage multiplier for level 100 (~3000 crit stat).</summary>
     private const double EstimatedCritMulti = 1.6;
 
+    private const byte CritFlag = 0x20;
+    private const byte DirectHitFlag = 0x40;
+
+    private const double DotOutlierLowThreshold = 0.5;
+    private const double DotOutlierHighThreshold = 2.0;
+    private const int DotMinHitsForOutlierFilter = 10;
+
     private readonly IDataManager dataManager;
     private readonly IPluginLog log;
     private readonly PositionalTable positionalTable;
@@ -333,8 +340,8 @@ public class SkillTracker
     private void AccumulateSkill(Dictionary<string, Dictionary<string, SkillAccum>> store,
         string sourceName, string skillName, long amount, byte severity, SkillDamageType damageType)
     {
-        bool isCrit = (severity & 0x20) != 0;
-        bool isDirectHit = (severity & 0x40) != 0;
+        bool isCrit = (severity & CritFlag) != 0;
+        bool isDirectHit = (severity & DirectHitFlag) != 0;
         bool isCritDirectHit = isCrit && isDirectHit;
 
         if (!store.TryGetValue(sourceName, out var skills))
@@ -369,8 +376,8 @@ public class SkillTracker
     /// </summary>
     private void AccumulateCombatantStats(string sourceName, long amount, byte severity)
     {
-        bool isCrit = (severity & 0x20) != 0;
-        bool isDH = (severity & 0x40) != 0;
+        bool isCrit = (severity & CritFlag) != 0;
+        bool isDH = (severity & DirectHitFlag) != 0;
 
         // Strip crit/DH multipliers to estimate base damage
         double baseDmg = amount;
@@ -383,10 +390,10 @@ public class SkillTracker
         // Outlier filter: exclude hits outside 50%-200% of running average
         // to avoid potency spikes from skewing the per-potency estimate.
         // Skip filter when under 10 samples (similar to ACT's <50 swings rule).
-        if (stats.TotalHits >= 10)
+        if (stats.TotalHits >= DotMinHitsForOutlierFilter)
         {
             var currentAvg = stats.AverageBaseDmgPerHit;
-            if (currentAvg > 0 && (baseDmg < currentAvg * 0.5 || baseDmg > currentAvg * 2.0))
+            if (currentAvg > 0 && (baseDmg < currentAvg * DotOutlierLowThreshold || baseDmg > currentAvg * DotOutlierHighThreshold))
                 return;
         }
 
@@ -576,45 +583,19 @@ public class SkillTracker
         }
     }
 
-    public int GetStunCount(string combatantName)
+    private int GetCountLocked(Dictionary<string, int> dict, string combatantName)
     {
         lock (syncLock)
         {
-            return stunCounts.GetValueOrDefault(combatantName);
+            return dict.GetValueOrDefault(combatantName);
         }
     }
 
-    public int GetSkillIssueCount(string combatantName)
-    {
-        lock (syncLock)
-        {
-            return skillIssueCounts.GetValueOrDefault(combatantName);
-        }
-    }
-
-    public int GetDamageDownCount(string combatantName)
-    {
-        lock (syncLock)
-        {
-            return damageDownCounts.GetValueOrDefault(combatantName);
-        }
-    }
-
-    public int GetPositionalHits(string combatantName)
-    {
-        lock (syncLock)
-        {
-            return positionalHitCounts.GetValueOrDefault(combatantName);
-        }
-    }
-
-    public int GetPositionalMisses(string combatantName)
-    {
-        lock (syncLock)
-        {
-            return positionalMissCounts.GetValueOrDefault(combatantName);
-        }
-    }
+    public int GetStunCount(string combatantName) => GetCountLocked(stunCounts, combatantName);
+    public int GetSkillIssueCount(string combatantName) => GetCountLocked(skillIssueCounts, combatantName);
+    public int GetDamageDownCount(string combatantName) => GetCountLocked(damageDownCounts, combatantName);
+    public int GetPositionalHits(string combatantName) => GetCountLocked(positionalHitCounts, combatantName);
+    public int GetPositionalMisses(string combatantName) => GetCountLocked(positionalMissCounts, combatantName);
 
     public void Reset()
     {
@@ -659,8 +640,8 @@ public class SkillTracker
             TargetName = targetName,
             Amount = amount,
             IsHeal = isHeal,
-            IsCrit = (severity & 0x20) != 0,
-            IsDirectHit = (severity & 0x40) != 0,
+            IsCrit = (severity & CritFlag) != 0,
+            IsDirectHit = (severity & DirectHitFlag) != 0,
             IsDoTTick = isDoTTick,
             IsHoTTick = isHoTTick,
         });
@@ -716,8 +697,8 @@ public class SkillTracker
             SkillName = skillName,
             Amount = amount,
             IsHeal = false,
-            IsCrit = (severity & 0x20) != 0,
-            IsDirectHit = (severity & 0x40) != 0,
+            IsCrit = (severity & CritFlag) != 0,
+            IsDirectHit = (severity & DirectHitFlag) != 0,
         });
     }
 

@@ -12,14 +12,11 @@ public class DataService : IDisposable
     private IDataSource? activeSource;
     private CancellationTokenSource? cts;
     private bool disposed;
-    private bool wasActive;
+    private bool prevSnapshotActive;
     private bool playerChanged;
     private float lastPeriodicSaveTime;
-    private DateTime lastCombatDataTime;
+    private long lastCombatDataTicks;
     private readonly List<string[]> pendingLogLines = new();
-#if DEBUG
-    private readonly List<string> encounterLogLines = new();
-#endif
 
     private const float PeriodicSaveInterval = 30f;
     private const double StalenessTimeoutSeconds = 15.0;
@@ -206,7 +203,7 @@ public class DataService : IDisposable
         if (active is { Encounter.IsActive: true })
         {
             active.Encounter.IsActive = false;
-            wasActive = false;
+            prevSnapshotActive = false;
         }
     }
 
@@ -224,17 +221,17 @@ public class DataService : IDisposable
         var active = Store.ActiveEncounter;
         if (active == null || !active.Encounter.IsActive) return;
 
-        var elapsed = (DateTime.UtcNow - lastCombatDataTime).TotalSeconds;
+        var elapsed = (DateTime.UtcNow - new DateTime(Interlocked.Read(ref lastCombatDataTicks), DateTimeKind.Utc)).TotalSeconds;
         if (elapsed >= StalenessTimeoutSeconds)
         {
             active.Encounter.IsActive = false;
-            wasActive = false;
+            prevSnapshotActive = false;
         }
     }
 
     private void OnCombatData(EncounterSnapshot snapshot)
     {
-        lastCombatDataTime = DateTime.UtcNow;
+        Interlocked.Exchange(ref lastCombatDataTicks, DateTime.UtcNow.Ticks);
 
         // After a player change, drop stale data from the previous session
         // until a genuinely new active encounter starts.
@@ -276,29 +273,15 @@ public class DataService : IDisposable
         // has a final skills snapshot before resetting the tracker.
         var isNewEncounter = false;
         var isEncounterEnd = false;
-        if (snapshot.Encounter.IsActive && !wasActive)
+        if (snapshot.Encounter.IsActive && !prevSnapshotActive)
         {
-            var outgoing = Store.ActiveEncounter;
-            if (outgoing != null)
-            {
-                foreach (var c in outgoing.Combatants)
-                {
-                    c.Skills = SkillTracker.GetSkills(c.Name);
-                    c.HealingSkills = SkillTracker.GetHealSkills(c.Name);
-                }
-
-                CaptureGraphData(outgoing);
-            }
+            var outgoing = FinalizeOutgoingEncounter();
 
             SkillTracker.Reset();
             GraphTracker.Reset();
             StatusTracker.Reset();
             EncounterTimer.Restart();
             lastPeriodicSaveTime = 0f;
-#if DEBUG
-            lock (encounterLogLines)
-                encounterLogLines.Clear();
-#endif
 
             isNewEncounter = true;
             OnNewEncounter?.Invoke();
@@ -318,12 +301,12 @@ public class DataService : IDisposable
 
         // Detect encounter ending — combat was active and is now inactive.
         // Archive so it appears in history immediately.
-        if (!snapshot.Encounter.IsActive && wasActive)
+        if (!snapshot.Encounter.IsActive && prevSnapshotActive)
         {
             isEncounterEnd = true;
         }
 
-        wasActive = snapshot.Encounter.IsActive;
+        prevSnapshotActive = snapshot.Encounter.IsActive;
 
         if (!isNewEncounter)
             DrainPendingLogLines();
@@ -466,17 +449,23 @@ public class DataService : IDisposable
         }
     }
 
+    private EncounterSnapshot? FinalizeOutgoingEncounter()
+    {
+        var outgoing = Store.ActiveEncounter;
+        if (outgoing == null) return null;
+
+        foreach (var c in outgoing.Combatants)
+        {
+            c.Skills = SkillTracker.GetSkills(c.Name);
+            c.HealingSkills = SkillTracker.GetHealSkills(c.Name);
+        }
+
+        CaptureGraphData(outgoing);
+        return outgoing;
+    }
+
     private void CaptureGraphData(EncounterSnapshot target)
     {
-#if DEBUG
-        // Capture raw log lines accumulated during this encounter.
-        lock (encounterLogLines)
-        {
-            if (encounterLogLines.Count > 0)
-                target.RawLogLines = new List<string>(encounterLogLines);
-        }
-#endif
-
         // Only overwrite per-combatant entries where the tracker has data.
         // This preserves graph data loaded from disk when the tracker is empty
         // (e.g. after a plugin reload).
@@ -542,10 +531,6 @@ public class DataService : IDisposable
         foreach (var line in snapshot)
         {
             SkillTracker.ProcessLogLine(line);
-#if DEBUG
-            lock (encounterLogLines)
-                encounterLogLines.Add(string.Join("|", line));
-#endif
         }
     }
 
@@ -573,31 +558,17 @@ public class DataService : IDisposable
             return;
         }
 
-        var outgoing = Store.ActiveEncounter;
-        if (outgoing != null)
-        {
-            foreach (var c in outgoing.Combatants)
-            {
-                c.Skills = SkillTracker.GetSkills(c.Name);
-                c.HealingSkills = SkillTracker.GetHealSkills(c.Name);
-            }
-
-            CaptureGraphData(outgoing);
-        }
+        FinalizeOutgoingEncounter();
 
         SkillTracker.Reset();
         GraphTracker.Reset();
         StatusTracker.Reset();
         EncounterTimer.Reset();
-#if DEBUG
-        lock (encounterLogLines)
-            encounterLogLines.Clear();
-#endif
 
         if (Store.ArchiveActive())
             Store.Save();
 
-        wasActive = false;
+        prevSnapshotActive = false;
         playerChanged = true;
         PlayerName = newName;
         PlayerId = newId;

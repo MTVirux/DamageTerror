@@ -4,7 +4,7 @@ public static class EncounterSearchHelper
 {
     public static bool MatchesFilter(EncounterSnapshot snapshot, string filter)
     {
-        if (filter.Length == 0) return true;
+        if (string.IsNullOrEmpty(filter)) return true;
 
         var enc = snapshot.Encounter;
         return enc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)

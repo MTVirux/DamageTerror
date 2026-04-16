@@ -73,6 +73,8 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
                 tab.Id = Guid.NewGuid();
         }
 
+        var loadedVersion = cfg.Version;
+
         if (cfg.Version < 2)
         {
             foreach (var tab in cfg.MeterTabs)
@@ -82,15 +84,16 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
                 tab.GraphShowDtpsLine = tab.VisibleColumns.Contains(BarColumn.DamageTaken) || tab.VisibleColumns.Contains(BarColumn.DamageTakenPercent);
             }
             cfg.Version = 2;
-            this.PluginInterface.SavePluginConfig(cfg);
         }
 
         if (cfg.Version < 3)
         {
             cfg.DetailVisibleColumns.Add(BarColumn.PositionalPct);
             cfg.Version = 3;
-            this.PluginInterface.SavePluginConfig(cfg);
         }
+
+        if (cfg.Version != loadedVersion)
+            this.PluginInterface.SavePluginConfig(cfg);
 
         this.DataService = new DataService(pluginInterface, pluginLog, this.Config);
 
@@ -265,14 +268,6 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             if (groupName.Length > 0)
                 TogglePopoutGroup(groupName);
         }
-        else if (args.Equals("toggle", StringComparison.OrdinalIgnoreCase))
-        { }
-        else
-        {
-            this.mainWindow.IsOpen = true;
-            foreach (var popout in this.popoutWindows.Values)
-                popout.SetVisible(true);
-        }
     }
 
     private void TogglePopoutGroup(string groupName)
@@ -289,7 +284,10 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         }
 
         if (matching.Count == 0)
+        {
+            this.pluginLog.Warning($"No popout group found matching '{groupName}'.");
             return;
+        }
 
         var anyVisible = matching.Any(w => w.IsOpen);
         foreach (var window in matching)

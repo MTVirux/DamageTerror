@@ -123,7 +123,7 @@ public class GraphViewComponent
 
             foreach (var (combatant, samples) in allSeries)
             {
-                var jobColor = JobColorHelper.GetColor(combatant.Job, config);
+                var jobColor = JobColorHelper.GetEffectiveJobColor(combatant.Job, config);
                 var isSelf = string.Equals(combatant.Name, currentPlayerName, StringComparison.OrdinalIgnoreCase);
                 var thickness = isSelf ? selfThickness : defaultThickness;
                 var displayName = NameFormatHelper.GetDisplayName(combatant.Name, combatant.Job, isSelf, config);

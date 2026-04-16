@@ -668,11 +668,11 @@ public static class MeterTabsPage
         ConfigHelpers.HelpMarker("Select which jobs to include.");
         ImGui.Indent();
 
-        DrawJobGroup("Tanks", JobColorHelper.TankJobs, tab, ref changed);
-        DrawJobGroup("Healers", JobColorHelper.HealerJobs, tab, ref changed);
-        DrawJobGroup("Melee DPS", JobColorHelper.MeleeDpsJobs, tab, ref changed);
-        DrawJobGroup("Ranged DPS", JobColorHelper.RangedDpsJobs, tab, ref changed);
-        DrawJobGroup("Caster DPS", JobColorHelper.CasterDpsJobs, tab, ref changed);
+        DrawJobGroup("Tanks", JobDataTable.TankJobs, tab, ref changed);
+        DrawJobGroup("Healers", JobDataTable.HealerJobs, tab, ref changed);
+        DrawJobGroup("Melee DPS", JobDataTable.MeleeDpsJobs, tab, ref changed);
+        DrawJobGroup("Ranged DPS", JobDataTable.RangedDpsJobs, tab, ref changed);
+        DrawJobGroup("Caster DPS", JobDataTable.CasterDpsJobs, tab, ref changed);
 
         ImGui.Unindent();
         return changed;
@@ -685,7 +685,7 @@ public static class MeterTabsPage
             foreach (var job in jobs)
             {
                 var isChecked = tab.CustomJobFilter.Contains(job, StringComparer.OrdinalIgnoreCase);
-                var fullName = JobNameHelper.GetFullName(job);
+                var fullName = JobDataTable.GetFullName(job);
                 if (ImGui.Checkbox($"{fullName} ({job})##custom_{job}", ref isChecked))
                 {
                     if (isChecked)

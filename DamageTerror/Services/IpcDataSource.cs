@@ -11,7 +11,7 @@ public class IpcDataSource : IDataSource
     private readonly IPluginLog log;
     private ICallGateProvider<JObject, bool>? receiver;
     private ICallGateSubscriber<JObject, bool>? sender;
-    private bool connected;
+    private volatile bool connected;
     private bool disposed;
 
     public event Action<EncounterSnapshot>? OnCombatData;

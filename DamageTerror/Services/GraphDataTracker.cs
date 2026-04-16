@@ -22,7 +22,7 @@ public class GraphDataTracker
     private readonly object syncLock = new();
     private readonly IPluginLog? log;
     private readonly Dictionary<string, List<GraphSample>> perCombatant = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, List<(float time, long damage, long healed, long damageTaken)>> recentHistory = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<(float time, long damage, long healed, long damageTaken)>> slidingWindowBuffer = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<string, (long damage, long healed)> logLineTotals = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, (long damage, long healed, long damageTaken)> combatDataTotals = new(StringComparer.OrdinalIgnoreCase);
@@ -31,7 +31,7 @@ public class GraphDataTracker
 
     private EncounterTimer? timer;
     private float lastEmitTime;
-    private bool lastWasActive;
+    private bool previousWasActive;
 
     public ValidationStats Validation;
 
@@ -84,17 +84,17 @@ public class GraphDataTracker
 
         lock (syncLock)
         {
-            if (enc.IsActive && !lastWasActive)
+            if (enc.IsActive && !previousWasActive)
             {
                 perCombatant.Clear();
-                recentHistory.Clear();
+                slidingWindowBuffer.Clear();
                 logLineTotals.Clear();
                 combatDataTotals.Clear();
                 // Use a negative lastEmitTime so the very first frame always emits a sample.
                 lastEmitTime = -SampleIntervalSeconds;
             }
 
-            lastWasActive = enc.IsActive;
+            previousWasActive = enc.IsActive;
 
             if (!enc.IsActive)
             {
@@ -148,10 +148,10 @@ public class GraphDataTracker
                     perCombatant[name] = list;
                 }
 
-                if (!recentHistory.TryGetValue(name, out var history))
+                if (!slidingWindowBuffer.TryGetValue(name, out var history))
                 {
                     history = new List<(float, long, long, long)>();
-                    recentHistory[name] = history;
+                    slidingWindowBuffer[name] = history;
                 }
                 history.Add((timeSec, effectiveDamage, effectiveHealed, effectiveDamageTaken));
 
@@ -243,12 +243,12 @@ public class GraphDataTracker
         lock (syncLock)
         {
             perCombatant.Clear();
-            recentHistory.Clear();
+            slidingWindowBuffer.Clear();
             logLineTotals.Clear();
             combatDataTotals.Clear();
             seededData = null;
             lastEmitTime = 0f;
-            lastWasActive = false;
+            previousWasActive = false;
             Validation = default;
         }
     }
