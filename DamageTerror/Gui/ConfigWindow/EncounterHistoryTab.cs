@@ -44,7 +44,6 @@ public class EncounterHistoryTab
 #endif
         ImGui.Spacing();
 
-        // --- History limit settings ---
         var modeInt = (int)config.HistoryLimitMode;
         ImGui.TextUnformatted("Limit history by:");
         ImGui.SameLine();
@@ -211,11 +210,7 @@ public class EncounterHistoryTab
             if (string.IsNullOrEmpty(label))
                 label = "Unknown";
 
-            if (filter.Length > 0
-                && !encounter.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                && !(encounter.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
-                && !enc.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                    || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+            if (!EncounterSearchHelper.MatchesFilter(enc, filter))
                 continue;
 
             var header = $"[{enc.Timestamp.ToLocalTime():yyyy-MM-dd HH:mm}]  {label}  ({encounter.Duration})";

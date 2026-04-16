@@ -124,12 +124,7 @@ public class EncounterHeaderComponent
                 if (active != null)
                 {
                     var aEnc = active.Encounter;
-                    if (filter.Length == 0
-                        || aEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                        || (aEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
-                        || (active.PlayerName?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
-                        || active.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                            || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                    if (EncounterSearchHelper.MatchesFilter(active, filter))
                     {
                         var activeLabel = FormatEncounterLabel(aEnc, active.PlayerName ?? "", "##active", active.Timestamp);
                         if (ImGui.Selectable(activeLabel, selectedIndex == -1))
@@ -161,12 +156,7 @@ public class EncounterHeaderComponent
                 {
                     var h = history[i];
                     var hEnc = h.Encounter;
-                    if (filter.Length > 0
-                        && !hEnc.ZoneName.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                        && !(hEnc.Title?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
-                        && !(h.PlayerName?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
-                        && !h.Combatants.Any(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                            || c.Job.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                    if (!EncounterSearchHelper.MatchesFilter(h, filter))
                         continue;
                     var label = FormatEncounterLabel(hEnc, h.PlayerName ?? "", $"##{i}", h.Timestamp);
                     if (ImGui.Selectable(label, selectedIndex == i))
