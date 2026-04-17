@@ -6,7 +6,7 @@ using ECommons;
 
 namespace DamageTerror.Core;
 
-public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
+public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 {
     public static DamageTerrorPlugin Instance { get; private set; } = null!;
 
@@ -165,40 +165,30 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public void Dispose()
     {
-        this.Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
         if (this.disposed) return;
-
-        if (disposing)
-        {
-            SafeDispose(() => this.PluginInterface.SavePluginConfig(this.Config));
-            SafeDispose(() => this.DataService.Dispose());
-
-            foreach (var popout in this.popoutWindows.Values)
-                SafeDispose(() => popout.Dispose());
-            this.popoutWindows.Clear();
-
-            this.windowSystem.RemoveAllWindows();
-            SafeDispose(() => this.mainWindow.Dispose());
-            SafeDispose(() => this.configWindow.Dispose());
-            SafeDispose(() => this.FontService.Dispose());
-
-            Svc.ClientState.TerritoryChanged -= this.OnTerritoryChanged;
-
-            this.PluginInterface.UiBuilder.Draw -= this.DrawUi;
-            this.PluginInterface.UiBuilder.OpenConfigUi -= this.OpenConfigUi;
-            this.PluginInterface.UiBuilder.OpenMainUi -= this.OpenMainUi;
-
-            this.commandManager.RemoveHandler("/dt");
-
-            ECommonsMain.Dispose();
-        }
-
         this.disposed = true;
+
+        SafeDispose(() => this.PluginInterface.SavePluginConfig(this.Config));
+        SafeDispose(() => this.DataService.Dispose());
+
+        foreach (var popout in this.popoutWindows.Values)
+            SafeDispose(() => popout.Dispose());
+        this.popoutWindows.Clear();
+
+        this.windowSystem.RemoveAllWindows();
+        SafeDispose(() => this.mainWindow.Dispose());
+        SafeDispose(() => this.configWindow.Dispose());
+        SafeDispose(() => this.FontService.Dispose());
+
+        Svc.ClientState.TerritoryChanged -= this.OnTerritoryChanged;
+
+        this.PluginInterface.UiBuilder.Draw -= this.DrawUi;
+        this.PluginInterface.UiBuilder.OpenConfigUi -= this.OpenConfigUi;
+        this.PluginInterface.UiBuilder.OpenMainUi -= this.OpenMainUi;
+
+        this.commandManager.RemoveHandler("/dt");
+
+        ECommonsMain.Dispose();
     }
 
     private void SafeDispose(Action action)

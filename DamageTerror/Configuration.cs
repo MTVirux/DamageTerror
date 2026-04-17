@@ -16,7 +16,7 @@ file static class FontDefaults
     public const float BaseSizePt = 14f;
 }
 
-public class Configuration : IPluginConfiguration
+public sealed class Configuration : IPluginConfiguration
 {
     [JsonIgnore]
     public Action? Save { get; set; }

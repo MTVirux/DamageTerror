@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace DamageTerror.Services;
 
-public class EncounterStore
+public sealed class EncounterStore
 {
     private readonly object syncLock = new();
     private readonly List<EncounterSnapshot> history = new();

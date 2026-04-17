@@ -4,7 +4,7 @@ using Dalamud.Bindings.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-public class StatusBarComponent
+public sealed class StatusBarComponent
 {
     private readonly Configuration config;
 

@@ -11,7 +11,7 @@ namespace DamageTerror.Services;
 /// Used to correlate DoT/HoT ticks (type 24) back to the source player
 /// and to compute uptime analytics.
 /// </summary>
-public class StatusTracker
+public sealed class StatusTracker
 {
     public const float PermanentDurationThreshold = 9999f;
 

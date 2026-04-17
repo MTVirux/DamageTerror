@@ -7,7 +7,7 @@ using ImPlot = Dalamud.Bindings.ImPlot.ImPlot;
 
 namespace DamageTerror.Gui.MainWindow;
 
-public class GraphViewComponent
+public sealed class GraphViewComponent
 {
     private readonly Configuration config;
     private readonly GraphDataTracker graphTracker;

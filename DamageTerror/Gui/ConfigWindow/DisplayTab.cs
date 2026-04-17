@@ -6,7 +6,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-public class DisplayTab
+public sealed class DisplayTab
 {
     public bool Draw(Configuration config)
     {

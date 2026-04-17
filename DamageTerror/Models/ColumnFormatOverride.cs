@@ -1,6 +1,6 @@
 namespace DamageTerror.Models;
 
-public class ColumnFormatOverride
+public sealed class ColumnFormatOverride
 {
     public ValueDisplayFormat ValueDisplayFormat { get; set; } = ValueDisplayFormat.Abbreviated;
     public int AbbreviatedDecimalPlaces { get; set; } = 1;

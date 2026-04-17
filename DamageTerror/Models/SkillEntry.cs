@@ -1,6 +1,6 @@
 namespace DamageTerror.Models;
 
-public class SkillEntry
+public sealed class SkillEntry
 {
     public string Name { get; set; } = string.Empty;
 

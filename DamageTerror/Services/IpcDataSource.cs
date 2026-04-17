@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace DamageTerror.Services;
 
-public class IpcDataSource : IDataSource
+public sealed class IpcDataSource : IDataSource
 {
     private readonly IDalamudPluginInterface pluginInterface;
     private readonly IPluginLog log;

@@ -3,7 +3,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-public class GeneralTab
+public sealed class GeneralTab
 {
     private readonly DamageTerrorPlugin plugin;
     private string wsUrlBuffer;

@@ -4,7 +4,7 @@ using DamageTerror.Helpers;
 
 namespace DamageTerror.Services;
 
-public class DataService : IDisposable
+public sealed class DataService : IDisposable
 {
     private readonly IDalamudPluginInterface pluginInterface;
     private readonly IPluginLog log;

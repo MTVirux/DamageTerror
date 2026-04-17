@@ -3,7 +3,7 @@ namespace DamageTerror.Models;
 /// <summary>
 /// Record of a single status application for uptime tracking.
 /// </summary>
-public class StatusApplication
+public sealed class StatusApplication
 {
     public uint StatusId;
     public string StatusName = string.Empty;

@@ -7,7 +7,7 @@ namespace DamageTerror.Services;
 /// name sets for group filtering. Caches results with a short TTL to avoid
 /// querying the party list every frame.
 /// </summary>
-public class PartyMembershipService
+public sealed class PartyMembershipService
 {
     private readonly object syncLock = new();
     private DateTime lastRefresh = DateTime.MinValue;

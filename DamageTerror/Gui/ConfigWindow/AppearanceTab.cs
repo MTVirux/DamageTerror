@@ -8,7 +8,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-public class AppearanceTab
+public sealed class AppearanceTab
 {
     private readonly PresetManager presetManager;
     private int selectedPresetIndex = -1;

@@ -17,7 +17,7 @@ public struct ValidationStats
     public float LastCorrectionTime;
 }
 
-public class GraphDataTracker
+public sealed class GraphDataTracker
 {
     private readonly object syncLock = new();
     private readonly IPluginLog? log;

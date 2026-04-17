@@ -1,6 +1,6 @@
 namespace DamageTerror.Models;
 
-public class PopoutWindowPin
+public sealed class PopoutWindowPin
 {
     public bool Pinned { get; set; }
     public Vector2 Pos { get; set; } = new(100, 100);

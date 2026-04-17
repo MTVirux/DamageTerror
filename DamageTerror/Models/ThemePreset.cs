@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace DamageTerror.Models;
 
-public class ThemePreset
+public sealed class ThemePreset
 {
     public string Name { get; set; } = "Untitled";
     public string Description { get; set; } = string.Empty;

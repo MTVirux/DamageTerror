@@ -7,7 +7,7 @@ namespace DamageTerror.Helpers;
 /// Deserializes <c>Dictionary&lt;TEnum, TValue&gt;</c> while silently skipping
 /// entries whose key is not a recognized member of the enum type.
 /// </summary>
-public class TolerantEnumKeyDictionaryConverter : JsonConverter
+public sealed class TolerantEnumKeyDictionaryConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
     {
@@ -67,7 +67,7 @@ public class TolerantEnumKeyDictionaryConverter : JsonConverter
 /// Deserializes <c>List&lt;TEnum&gt;</c> or <c>HashSet&lt;TEnum&gt;</c> while
 /// silently skipping values that are not recognized members of the enum type.
 /// </summary>
-public class TolerantEnumCollectionConverter : JsonConverter
+public sealed class TolerantEnumCollectionConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
     {
@@ -123,7 +123,7 @@ public class TolerantEnumCollectionConverter : JsonConverter
 /// Deserializes <c>Dictionary&lt;string, List&lt;TEnum&gt;&gt;</c> while silently
 /// skipping unrecognized enum values inside the inner lists.
 /// </summary>
-public class TolerantEnumListMapConverter : JsonConverter
+public sealed class TolerantEnumListMapConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
     {

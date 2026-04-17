@@ -4,7 +4,7 @@ using Dalamud.Plugin.Services;
 
 namespace DamageTerror.Services;
 
-public class SkillTracker
+public sealed class SkillTracker
 {
     private readonly object syncLock = new();
 

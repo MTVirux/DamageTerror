@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 namespace DamageTerror.Models;
 
 /// <summary>Per-line skill marker appearance settings.</summary>
-public class SkillMarkerConfig
+public sealed class SkillMarkerConfig
 {
     public bool ShowMarkers { get; set; } = true;
     public Vector4 MarkerColor { get; set; } = new(1f, 0.85f, 0.3f, 0.9f);
@@ -41,7 +41,7 @@ public class SkillMarkerConfig
     };
 }
 
-public class MeterTab
+public sealed class MeterTab
 {
     #region Tab Identity & Filtering
 

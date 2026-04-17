@@ -1,6 +1,6 @@
 namespace DamageTerror.Models;
 
-public class CombatantEntry
+public sealed class CombatantEntry
 {
     public string Name { get; set; } = string.Empty;
 

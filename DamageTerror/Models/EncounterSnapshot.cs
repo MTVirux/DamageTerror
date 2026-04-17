@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace DamageTerror.Models;
 
-public class EncounterSnapshot
+public sealed class EncounterSnapshot
 {
     public CombatEncounter Encounter { get; set; } = new();
 

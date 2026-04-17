@@ -6,7 +6,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-public class PopoutTabWindow : Window, IDisposable
+public sealed class PopoutTabWindow : Window, IDisposable
 {
     private readonly DamageTerrorPlugin plugin;
     private readonly Guid tabId;

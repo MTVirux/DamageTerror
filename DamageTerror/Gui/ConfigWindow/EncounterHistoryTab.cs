@@ -4,7 +4,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-public class EncounterHistoryTab
+public sealed class EncounterHistoryTab
 {
     private readonly DamageTerrorPlugin plugin;
     private string historySearchFilter = string.Empty;

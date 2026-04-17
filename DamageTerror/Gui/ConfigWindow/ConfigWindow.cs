@@ -5,7 +5,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-public class ConfigWindow : Window, IDisposable
+public sealed class ConfigWindow : Window, IDisposable
 {
     private readonly DamageTerrorPlugin plugin;
     private readonly GeneralTab generalTab;

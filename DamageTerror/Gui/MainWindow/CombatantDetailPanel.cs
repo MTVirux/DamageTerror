@@ -8,7 +8,7 @@ using ImPlot = Dalamud.Bindings.ImPlot.ImPlot;
 
 namespace DamageTerror.Gui.MainWindow;
 
-public class CombatantDetailPanel
+public sealed class CombatantDetailPanel
 {
     private readonly Configuration config;
     private readonly GraphDataTracker graphTracker;

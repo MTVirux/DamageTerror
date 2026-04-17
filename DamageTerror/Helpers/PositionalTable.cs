@@ -19,7 +19,7 @@ namespace DamageTerror.Helpers;
 /// in ACT log lines 21/22, which corresponds to EffectEntry.param2 (byte 3)
 /// from the ActionEffect network packet.
 /// </summary>
-public class PositionalTable : IDisposable
+public sealed class PositionalTable : IDisposable
 {
     /// <summary>
     /// Google Sheets CSV URL — same data source used by DamageInfoPlugin.

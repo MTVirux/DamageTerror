@@ -8,7 +8,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-public class CombatantBarComponent
+public sealed class CombatantBarComponent
 {
     private readonly Configuration config;
     private readonly ITextureProvider textureProvider;

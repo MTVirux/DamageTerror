@@ -6,7 +6,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-public class MainWindow : Window, IDisposable
+public sealed class MainWindow : Window, IDisposable
 {
     private static string GetTitleWithVersion()
     {

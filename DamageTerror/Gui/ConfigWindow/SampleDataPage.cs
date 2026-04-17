@@ -4,7 +4,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-public class SampleDataPage
+public sealed class SampleDataPage
 {
     private readonly DamageTerrorPlugin plugin;
 

@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 
 namespace DamageTerror.Services;
 
-public class WebSocketDataSource : IDataSource
+public sealed class WebSocketDataSource : IDataSource
 {
     private const int InitialRetryDelayMs = 1000;
     private const int MaxRetryDelayMs = 30000;

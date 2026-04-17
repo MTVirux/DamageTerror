@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace DamageTerror.Services;
 
-public class PresetManager
+public sealed class PresetManager
 {
     private readonly string presetsDir;
     private readonly IPluginLog log;
