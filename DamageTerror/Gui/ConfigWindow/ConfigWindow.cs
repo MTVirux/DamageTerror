@@ -182,19 +182,19 @@ public sealed class ConfigWindow : Window, IDisposable
                 break;
 
             case ConfigPage.AppearanceGeneral:
-                changed |= AppearanceTab.DrawAppearanceGeneralPage(config);
+                changed |= AppearanceGeneralSection.Draw(config);
                 break;
 
             case ConfigPage.Bars:
-                changed |= AppearanceTab.DrawBarsPage(config);
+                changed |= BarsSection.Draw(config);
                 break;
 
             case ConfigPage.NameFormat:
-                changed |= AppearanceTab.DrawNameFormatPage(config);
+                changed |= NameFormatSection.Draw(config);
                 break;
 
             case ConfigPage.Formatting:
-                changed |= AppearanceTab.DrawFormattingPage(config);
+                changed |= FormattingSection.Draw(config);
                 break;
 
             case ConfigPage.TabButtons:
@@ -202,31 +202,31 @@ public sealed class ConfigWindow : Window, IDisposable
                 break;
 
             case ConfigPage.SelectionBar:
-                changed |= AppearanceTab.DrawSelectionBarPage(config);
+                changed |= SelectionBarSection.Draw(config);
                 break;
 
             case ConfigPage.Colors:
-                changed |= AppearanceTab.DrawColorsPage(config);
+                changed |= ColorsSection.Draw(config);
                 break;
 
             case ConfigPage.StatusBar:
-                changed |= AppearanceTab.DrawStatusBarPage(config);
+                changed |= StatusBarSection.Draw(config);
                 break;
 
             case ConfigPage.Tooltip:
-                changed |= AppearanceTab.DrawTooltipPage(config);
+                changed |= TooltipSection.Draw(config);
                 break;
 
             case ConfigPage.Details:
-                changed |= AppearanceTab.DrawDetailsPage(config);
+                changed |= DetailsSection.Draw(config);
                 break;
 
             case ConfigPage.GraphView:
-                changed |= AppearanceTab.DrawGraphViewPage(config);
+                changed |= GraphViewSection.Draw(config);
                 break;
 
             case ConfigPage.Font:
-                changed |= AppearanceTab.DrawFontPage(config, plugin.FontService, plugin.PluginInterface.UiBuilder);
+                changed |= FontSection.Draw(config, plugin.FontService, plugin.PluginInterface.UiBuilder);
                 break;
 
             case ConfigPage.History:
