@@ -132,11 +132,16 @@ public sealed class PresetManager
         return Path.Combine(presetsDir, safe + ".json");
     }
 
+    private static readonly Regex InvalidFileNameRegex = new(
+        $"[{Regex.Escape(new string(Path.GetInvalidFileNameChars()))}]",
+        RegexOptions.Compiled);
+
+    private static readonly Regex WhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
+
     private static string SanitizeFileName(string name)
     {
-        var invalid = new string(Path.GetInvalidFileNameChars());
-        var cleaned = Regex.Replace(name, $"[{Regex.Escape(invalid)}]", "");
-        cleaned = Regex.Replace(cleaned.Trim(), @"\s+", "_");
+        var cleaned = InvalidFileNameRegex.Replace(name, "");
+        cleaned = WhitespaceRegex.Replace(cleaned.Trim(), "_");
         return string.IsNullOrEmpty(cleaned) ? "preset" : cleaned;
     }
 }
