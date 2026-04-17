@@ -8,6 +8,8 @@ public interface IDataSource : IDisposable
 
     event Action<string[]>? OnLogLine;
 
+    event Action? OnConnected;
+
     bool IsConnected { get; }
 
     Task ConnectAsync(CancellationToken ct = default);
