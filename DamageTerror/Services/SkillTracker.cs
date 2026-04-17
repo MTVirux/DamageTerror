@@ -810,9 +810,11 @@ public sealed class SkillTracker
                     break;
 
                 // Tag the first eligible event we find
-                if (isDoT) evt.IsDoTApplication = true;
-                if (isHoT) evt.IsHoTApplication = true;
-                events[i] = evt;
+                events[i] = evt with
+                {
+                    IsDoTApplication = isDoT || evt.IsDoTApplication,
+                    IsHoTApplication = isHoT || evt.IsHoTApplication,
+                };
                 return;
             }
         }

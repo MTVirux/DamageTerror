@@ -11,9 +11,9 @@ public sealed class DataService : IDisposable
     private readonly Configuration config;
     private IDataSource? activeSource;
     private CancellationTokenSource? cts;
-    private bool disposed;
-    private bool prevSnapshotActive;
-    private bool playerChanged;
+    private volatile bool disposed;
+    private volatile bool prevSnapshotActive;
+    private volatile bool playerChanged;
     private float lastPeriodicSaveTime;
     private long lastCombatDataTicks;
     private readonly List<string[]> pendingLogLines = new();

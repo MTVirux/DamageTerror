@@ -2,12 +2,12 @@ namespace DamageTerror.Services;
 
 using Dalamud.Plugin.Services;
 
-public struct GraphSample
+public readonly struct GraphSample
 {
-    public float TimeSec;
-    public float Dps;
-    public float Hps;
-    public float Dtps;
+    public required float TimeSec { get; init; }
+    public required float Dps { get; init; }
+    public required float Hps { get; init; }
+    public required float Dtps { get; init; }
 }
 
 public struct ValidationStats
@@ -265,8 +265,7 @@ public sealed class GraphDataTracker
                 var last = list[^1];
                 if (last.TimeSec > encDuration)
                 {
-                    last.TimeSec = encDuration;
-                    list[^1] = last;
+                    list[^1] = last with { TimeSec = encDuration };
                 }
             }
         }
