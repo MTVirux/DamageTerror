@@ -1,4 +1,3 @@
-using DamageTerror.Helpers;
 
 namespace DamageTerror.Jobs;
 

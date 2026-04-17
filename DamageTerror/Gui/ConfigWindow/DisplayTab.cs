@@ -1,7 +1,4 @@
 using Dalamud.Bindings.ImGui;
-using DamageTerror.Enums;
-using DamageTerror.Helpers;
-using DamageTerror.Services;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;

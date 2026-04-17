@@ -1,8 +1,5 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ImGuiFileDialog;
-using DamageTerror.Enums;
-using DamageTerror.Helpers;
-using DamageTerror.Services;
 using Dalamud.Interface;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 

@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using Dalamud.Plugin.Services;
-using DamageTerror.Jobs;
 
 namespace DamageTerror.Services;
 

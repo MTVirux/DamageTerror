@@ -1,7 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Bindings.ImPlot;
 using DamageTerror.Gui;
-using DamageTerror.Services;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 using ImPlot = Dalamud.Bindings.ImPlot.ImPlot;
 

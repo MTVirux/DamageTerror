@@ -1,6 +1,5 @@
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using DamageTerror.Helpers;
 
 namespace DamageTerror.Services;
 

@@ -1,7 +1,6 @@
 using System.IO;
 using System.Net.Http;
 using Dalamud.Plugin.Services;
-using DamageTerror.Jobs;
 
 namespace DamageTerror.Helpers;
 
