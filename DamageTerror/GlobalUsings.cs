@@ -9,6 +9,7 @@ global using DamageTerror;
 global using DamageTerror.Core;
 global using DamageTerror.Enums;
 global using DamageTerror.Helpers;
+global using DamageTerror.Jobs;
 global using DamageTerror.Models;
 global using DamageTerror.Presets;
 global using DamageTerror.Services;

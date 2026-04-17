@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using Dalamud.Plugin.Services;
+using DamageTerror.Jobs;
 
 namespace DamageTerror.Services;
 
@@ -40,98 +41,11 @@ public class StatusTracker
     // Cache: statusId -> isDoT (true), isHoT, or neither
     private readonly ConcurrentDictionary<uint, StatusClassification> classificationCache = new();
 
-    // Well-known DoT status IDs (FFXIV 7.x). Fallback when Lumina lookup is ambiguous.
-    // These are the status effect IDs, NOT action IDs.
-    // Verified against xivanalysis data (src/data/STATUSES/root/*.ts).
-    private static readonly HashSet<uint> KnownDotStatusIds = new()
-    {
-        // Healer / White Mage
-        1871, // Dia
-        143,  // Aero
-        144,  // Aero II
-        798,  // Aero III
+    // Well-known DoT status IDs — aggregated from per-job definitions.
+    private static readonly HashSet<uint> KnownDotStatusIds = JobRegistry.GetKnownDotStatusIds();
 
-        // Ranged / Bard
-        124,  // Venomous Bite
-        129,  // Windbite
-        1200, // Caustic Bite
-        1201, // Stormbite
-
-        // Caster / Black Mage
-        163,  // Thunder III
-        1210, // Thunder IV
-        3871, // High Thunder
-        3872, // High Thunder II
-
-        // Caster / Summoner
-        2706, // Slipstream (Garuda)
-
-        // Healer / Scholar
-        1895, // Biolysis
-        189,  // Bio II
-        3883, // Baneful Impaction
-
-        // Healer / Astrologian
-        838,  // Combust
-        843,  // Combust II
-        1881, // Combust III
-
-        // Healer / Sage
-        2614, // Eukrasian Dosis
-        2615, // Eukrasian Dosis II
-        2616, // Eukrasian Dosis III
-        3897, // Eukrasian Dyskrasia
-
-        // Melee / Samurai
-        1228, // Higanbana
-
-        // Melee / Dragoon
-        118,  // Chaos Thrust
-        2719, // Chaotic Spring
-
-        // Melee / Viper
-        3667, // Noxious Gnash
-
-        // Tank / Paladin
-        248,  // Circle of Scorn
-
-        // Tank / Gunbreaker
-        1837, // Sonic Break
-        1838, // Bow Shock
-
-        // Ranged / Machinist
-        1866, // Bioblaster
-
-        // Caster / Blue Mage
-        1714, // Bleeding (Song of Torment, Nightbloom, Aetherial Spark)
-        1736, // Dropsy (Aqua Breath)
-        18,   // Poison (Bad Breath)
-        1723, // Windburn (Feather Rain)
-        3712, // Breath of Magic
-        3643, // Mortal Flame
-
-        // PvP DoTs
-        2039, // Biolysis (SCH PvP)
-        3976, // Eukrasian Dosis III (SGE PvP)
-        2019, // Bioblaster (MCH PvP)
-        3184, // Goka Mekkyaku (NIN PvP)
-        3231, // Scarlet Flame (SMN PvP)
-        4319, // Scorch (RDM PvP)
-    };
-
-    // Ground-effect DoTs: self-buff status IDs that indicate an active ground zone.
-    // The status is applied to the CASTER, not the enemy targets standing in the zone.
-    // Mapped to the skill name for attribution in type 24 tick lines.
-    private static readonly Dictionary<uint, string> GroundEffectDotIds = new()
-    {
-        { 749, "Salted Earth" }, // DRK
-        { 501, "Doton" },        // NIN
-
-        // PvP ground-effect DoTs
-        { 3036, "Salted Earth" }, // DRK PvP
-        { 3162, "Honing Dance" },  // DNC PvP
-        { 4304, "Doton" },         // NIN PvP
-    };
+    // Ground-effect DoTs — aggregated from per-job definitions.
+    private static readonly Dictionary<uint, string> GroundEffectDotIds = JobRegistry.GetGroundEffectDotIds();
 
     // Reverse map: skill name -> ground-effect status IDs (multiple IDs for PvE + PvP variants)
     private static readonly Dictionary<string, List<uint>> GroundEffectDotNameToIds =
@@ -144,54 +58,8 @@ public class StatusTracker
     private readonly Dictionary<(string Source, uint StatusId), float> pendingGroundEffects = new();
     private const float PendingGroundEffectTimeoutSec = 5f;
 
-    private static readonly HashSet<uint> KnownHotStatusIds = new()
-    {
-        // White Mage
-        158,  // Regen
-        150,  // Medica II
-        3880, // Medica III
-        1911, // Asylum
-
-        // Astrologian
-        835,  // Aspected Benefic
-        836,  // Aspected Helios
-        3894, // Helios Conjunction
-        848,  // Collective Unconscious
-        956,  // Wheel of Fortune
-
-        // Scholar
-        315,  // Whispering Dawn
-        1874, // Angel's Whisper (Seraph)
-        1944, // Sacred Soil
-        3885, // Seraphism HoT
-
-        // Sage
-        2617, // Physis
-        2620, // Physis II
-        2938, // Kerakeia
-        3898, // Philosophia
-
-        // Warrior
-        2681, // Equilibrium
-        2108, // Shake It Off (Over Time)
-
-        // Gunbreaker
-        1835, // Aurora
-
-        // Paladin
-        2676, // Knight's Benediction
-
-        // Dancer
-        2695, // Improvisation
-
-        // Blue Mage
-        2495, // Angel's Snack
-
-        // PvP HoTs
-        3037, // Salted Earth (DRK PvP, self-HoT)
-        3189, // Meisui (NIN PvP)
-        2862, // Crest of Time Returned (RPR PvP)
-    };
+    // Well-known HoT status IDs — aggregated from per-job definitions.
+    private static readonly HashSet<uint> KnownHotStatusIds = JobRegistry.GetKnownHotStatusIds();
 
     public StatusTracker(IDataManager dataManager, IPluginLog log)
     {

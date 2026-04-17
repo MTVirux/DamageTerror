@@ -6,7 +6,9 @@ namespace DamageTerror.Enums;
 [JsonConverter(typeof(StringEnumConverter))]
 public enum DotCalcMode
 {
-    Plugin = 0,
+    Refined = 0,
     Iinact = 1,
-    Refined = 2,
+
+    [Obsolete("Replaced by Refined. Kept for config deserialization backward compat.")]
+    Plugin = 2,
 }

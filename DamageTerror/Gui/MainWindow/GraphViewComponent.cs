@@ -147,6 +147,8 @@ public class GraphViewComponent
                     var label = metricCount > 1 ? $"{displayName} (DPS)" : displayName;
                     primaryLabel ??= label;
                     legendLabels.Add((label, combatant.Name));
+                    if (hiddenLegendEntries.Contains(label))
+                        ImPlot.HideNextItem(true, ImPlotCond.Always);
                     ImPlot.PushStyleColor(ImPlotCol.Line, jobColor);
                     ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
                     ImPlot.PlotLine(label, ref times[0], ref dpsVals[0], samples.Count);
@@ -174,6 +176,8 @@ public class GraphViewComponent
                     var label = metricCount > 1 ? $"{displayName} (HPS)" : displayName;
                     primaryLabel ??= label;
                     legendLabels.Add((label, combatant.Name));
+                    if (hiddenLegendEntries.Contains(label))
+                        ImPlot.HideNextItem(true, ImPlotCond.Always);
                     ImPlot.PushStyleColor(ImPlotCol.Line, hpsColor);
                     ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
                     ImPlot.PlotLine(label, ref times[0], ref hpsVals[0], samples.Count);
@@ -201,6 +205,8 @@ public class GraphViewComponent
                     var label = metricCount > 1 ? $"{displayName} (DTPS)" : displayName;
                     primaryLabel ??= label;
                     legendLabels.Add((label, combatant.Name));
+                    if (hiddenLegendEntries.Contains(label))
+                        ImPlot.HideNextItem(true, ImPlotCond.Always);
                     ImPlot.PushStyleColor(ImPlotCol.Line, dtpsColor);
                     ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
                     ImPlot.PlotLine(label, ref times[0], ref dtpsVals[0], samples.Count);

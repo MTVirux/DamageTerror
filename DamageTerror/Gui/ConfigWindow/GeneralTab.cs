@@ -113,7 +113,7 @@ public class GeneralTab
 
             ImGui.Spacing();
 
-            var dotCalcLabels = new[] { "DamageTerror (potency-weighted)", "IINACT / ACT (trust parser)", "DamageTerror Refined (low-byte)" };
+            var dotCalcLabels = new[] { "DamageTerror Refined (low-byte)", "IINACT / ACT (trust parser)" };
             var dotCalcIndex = (int)config.DotCalcMode;
             ImGui.SetNextItemWidth(280);
             if (ImGui.Combo("DoT calculation", ref dotCalcIndex, dotCalcLabels, dotCalcLabels.Length))
@@ -122,9 +122,8 @@ public class GeneralTab
                 changed = true;
             }
             ConfigHelpers.HelpMarker(
-                "DamageTerror: distributes aggregated DoT ticks across active statuses using potency weights.\n" +
-                "IINACT / ACT: trusts the parser's own DoT simulation and attributes each tick to the named source as-is.\n" +
-                "Refined: like potency-weighted, but uses low-byte data from status application effects for more accurate per-tick snapping and crit rate.");
+                "DamageTerror Refined: distributes aggregated DoT ticks across active statuses using potency weights, with low-byte data from status application effects for per-tick snapping and crit rate.\n" +
+                "IINACT / ACT: trusts the parser's own DoT simulation and attributes each tick to the named source as-is.");
 
             ImGui.Spacing();
             ImGui.Separator();

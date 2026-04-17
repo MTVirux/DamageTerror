@@ -63,6 +63,14 @@ public class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             this.PluginInterface.SavePluginConfig(cfg);
         }
 
+#pragma warning disable CS0612
+        if (cfg.DotCalcMode == DotCalcMode.Plugin)
+        {
+            cfg.DotCalcMode = DotCalcMode.Refined;
+            this.PluginInterface.SavePluginConfig(cfg);
+        }
+#pragma warning restore CS0612
+
         this.Config = cfg;
         this.Config.Save = this.SaveConfig;
         Gui.ConfigWindow.LayoutPage.EnsureLayoutComplete(cfg);

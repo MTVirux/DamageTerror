@@ -231,6 +231,8 @@ public class CombatantDetailPanel
 
             if (dpsVals != null)
             {
+                if (dpsHidden)
+                    ImPlot.HideNextItem(true, ImPlotCond.Always);
                 ImPlot.PushStyleColor(ImPlotCol.Line, config.GraphDpsColor);
                 ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
                 ImPlot.PlotLine("iDPS", ref times[0], ref dpsVals[0], samples.Count);
@@ -248,6 +250,8 @@ public class CombatantDetailPanel
 
             if (hpsVals != null)
             {
+                if (hpsHidden)
+                    ImPlot.HideNextItem(true, ImPlotCond.Always);
                 ImPlot.PushStyleColor(ImPlotCol.Line, config.GraphHpsColor);
                 ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
                 ImPlot.PlotLine("iHPS", ref times[0], ref hpsVals[0], samples.Count);
@@ -265,6 +269,8 @@ public class CombatantDetailPanel
 
             if (dtpsVals != null)
             {
+                if (dtpsHidden)
+                    ImPlot.HideNextItem(true, ImPlotCond.Always);
                 ImPlot.PushStyleColor(ImPlotCol.Line, config.GraphDtpsColor);
                 ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
                 ImPlot.PlotLine("iDTPS", ref times[0], ref dtpsVals[0], samples.Count);

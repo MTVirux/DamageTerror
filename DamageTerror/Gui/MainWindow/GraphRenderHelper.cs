@@ -107,7 +107,7 @@ internal static class GraphRenderHelper
     {
         ImPlot.SetupAxes("", "", xAxisFlags, yAxisFlags);
         if (!plotFlags.HasFlag(ImPlotFlags.NoLegend))
-            ImPlot.SetupLegend(ImPlotLocation.NorthWest);
+            ImPlot.SetupLegend(ImPlotLocation.NorthWest, (ImPlotLegendFlags)2);  // NoButtons — our manual tracking controls both lines and markers
 
         var isActivelyUpdating = isLive && encounterActive;
         var justEnded = wasActivelyUpdating && !isActivelyUpdating;

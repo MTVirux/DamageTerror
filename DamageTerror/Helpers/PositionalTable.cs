@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net.Http;
 using Dalamud.Plugin.Services;
+using DamageTerror.Jobs;
 
 namespace DamageTerror.Helpers;
 
@@ -208,46 +209,19 @@ public class PositionalTable : IDisposable
     {
         var store = new Dictionary<int, PositionalAction>();
 
-        void Add(int id, string name, string position, (int percent, bool isHit)[] entries)
+        foreach (var entry in JobRegistry.GetAllFallbackPositionals())
         {
             var action = new PositionalAction
             {
-                Id = id,
-                ActionName = name,
-                ActionPosition = position,
+                Id = entry.ActionId,
+                ActionName = entry.ActionName,
+                ActionPosition = entry.Position,
                 Positionals = new Dictionary<int, bool>(),
             };
-            foreach (var (p, h) in entries)
+            foreach (var (p, h) in entry.Entries)
                 action.Positionals[p] = h;
-            store[id] = action;
+            store[entry.ActionId] = action;
         }
-
-        Add(56, "Snap Punch", "Flank", [(0, false), (16, false), (25, false), (17, true), (27, true), (20, true), (30, true)]);
-        Add(66, "Demolish", "Rear", [(0, false), (15, true), (18, true)]);
-        Add(36947, "Pouncing Coeurl", "Flank", [(0, false), (23, false), (15, true), (18, true), (12, true), (14, true)]);
-
-        Add(3554, "Fang and Claw", "Flank", [(0, false), (53, false), (10, true), (11, true), (58, true), (59, true)]);
-        Add(3556, "Wheeling Thrust", "Rear", [(0, false), (53, false), (10, true), (11, true), (58, true), (59, true)]);
-        Add(25772, "Chaotic Spring", "Rear", [(0, false), (53, false), (10, true), (11, true), (58, true), (59, true)]);
-
-        Add(2255, "Aeolian Edge", "Rear", [(0, false), (47, false), (23, true), (30, true), (56, true), (59, true)]);
-        Add(2258, "Trick Attack", "Rear", [(0, false), (25, true)]);
-        Add(3563, "Armor Crush", "Flank", [(0, false), (47, false), (21, true), (27, true), (53, true), (58, true)]);
-
-        Add(7481, "Gekko", "Rear", [(0, false), (53, false), (10, true), (22, true), (11, true), (58, true)]);
-        Add(7482, "Kasha", "Flank", [(0, false), (53, false), (10, true), (22, true), (11, true), (58, true)]);
-
-        Add(24382, "Gibbet", "Flank", [(0, false), (10, false), (11, true), (19, true)]);
-        Add(24383, "Gallows", "Rear", [(0, false), (10, false), (11, true), (19, true)]);
-        Add(36970, "Executioner's Gibbet", "Flank", [(0, false), (7, true)]);
-        Add(36971, "Executioner's Gallows", "Rear", [(0, false), (7, true)]);
-
-        Add(34610, "Flanksting Strike", "Flank", [(0, false), (15, true), (12, true)]);
-        Add(34611, "Flanksbane Fang", "Flank", [(0, false), (15, true), (12, true)]);
-        Add(34612, "Hindsting Strike", "Rear", [(0, false), (15, true), (12, true)]);
-        Add(34613, "Hindsbane Fang", "Rear", [(0, false), (15, true), (12, true)]);
-        Add(34621, "Hunter's Coil", "Rear", [(0, false), (9, true)]);
-        Add(34622, "Swiftskin's Coil", "Flank", [(0, false), (9, true)]);
 
         actionStore = store;
     }

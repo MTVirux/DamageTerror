@@ -661,7 +661,12 @@ public class DataService : IDisposable
             encounter.ItemEvents[c.Name] = tempSkillTracker.GetItemEvents(c.Name);
             encounter.StatusHistory[c.Name] = tempStatusTracker.GetStatusHistory(c.Name);
             encounter.StatusesReceived[c.Name] = tempStatusTracker.GetStatusesReceived(c.Name);
+
+            var dotDmg = c.Skills?.Sum(s => s.SubEntries?.Sum(sub => sub.TotalDamage) ?? 0) ?? 0;
+            log.Debug($"[Recalc] {c.Name}: skills={c.Skills?.Count ?? 0}, totalDmg={c.Skills?.Sum(s => s.TotalDamage) ?? 0:N0}, dotSubDmg={dotDmg:N0}");
         }
+
+        log.Debug(tempSkillTracker.GetDotDiagnostics());
 
         Store.Save(force: true);
         log.Debug($"Recalculated encounter '{encounter.Encounter.Title}' from {encounter.RawLogLines.Count} raw log lines");
