@@ -10,6 +10,7 @@ public class EncounterHistoryTab
     private string historySearchFilter = string.Empty;
     private int pendingLimitValue;
     private string importJson = string.Empty;
+    private string importFilePath = string.Empty;
     private string? importError;
     private string? statusMessage;
     private DateTime statusMessageTime;
@@ -117,14 +118,60 @@ public class EncounterHistoryTab
         {
             ImGui.OpenPopup("##importEncounter");
             importJson = string.Empty;
+            importFilePath = string.Empty;
             importError = null;
         }
 
         if (ImGui.BeginPopup("##importEncounter"))
         {
-            ImGui.TextUnformatted("Paste exported encounter JSON:");
+            ImGui.TextUnformatted("Import from file (recommended for large encounters):");
+            ImGui.SetNextItemWidth(350);
+            ImGui.InputTextWithHint("##importFilePath", "Path to .json file...", ref importFilePath, 1024);
+            ImGui.SameLine();
+            if (ImGui.Button("Import File"))
+            {
+                if (string.IsNullOrWhiteSpace(importFilePath))
+                {
+                    importError = "No file path provided.";
+                }
+                else if (!System.IO.File.Exists(importFilePath.Trim()))
+                {
+                    importError = "File not found.";
+                }
+                else
+                {
+                    try
+                    {
+                        var fileJson = System.IO.File.ReadAllText(importFilePath.Trim());
+                        var result = store.ImportEncounter(fileJson, out var error);
+                        if (result != null)
+                        {
+                            store.Save(force: true);
+                            importFilePath = string.Empty;
+                            importJson = string.Empty;
+                            importError = null;
+                            SetStatus("Encounter imported successfully!");
+                            ImGui.CloseCurrentPopup();
+                        }
+                        else
+                        {
+                            importError = error;
+                        }
+                    }
+                    catch (System.IO.IOException ex)
+                    {
+                        importError = $"Failed to read file: {ex.Message}";
+                    }
+                }
+            }
+
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+
+            ImGui.TextUnformatted("Or paste exported encounter JSON:");
             ImGui.SetNextItemWidth(400);
-            ImGui.InputTextMultiline("##importJsonInput", ref importJson, 1024 * 512, new Vector2(400, 200));
+            ImGui.InputTextMultiline("##importJsonInput", ref importJson, 1024 * 1024 * 16, new Vector2(400, 200));
 
             if (ImGui.Button("Paste from Clipboard"))
             {
@@ -313,6 +360,18 @@ public class EncounterHistoryTab
                     System.IO.File.WriteAllText(path, json);
                     SetStatus($"Saved to {path}");
                 }
+
+#if DEBUG
+                if (enc.RawLogLines.Count > 0)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton($"Recalculate##{i}"))
+                    {
+                        plugin.DataService.RecalculateFromLogLines(enc);
+                        SetStatus("Recalculated from raw log lines!");
+                    }
+                }
+#endif
 
                 ImGui.TreePop();
             }

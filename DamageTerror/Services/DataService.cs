@@ -17,6 +17,9 @@ public class DataService : IDisposable
     private float lastPeriodicSaveTime;
     private long lastCombatDataTicks;
     private readonly List<string[]> pendingLogLines = new();
+#if DEBUG
+    private readonly List<string> rawLogLineAccumulator = new();
+#endif
 
     private const float PeriodicSaveInterval = 30f;
     private const double StalenessTimeoutSeconds = 15.0;
@@ -282,6 +285,10 @@ public class DataService : IDisposable
             StatusTracker.Reset();
             EncounterTimer.Restart();
             lastPeriodicSaveTime = 0f;
+#if DEBUG
+            lock (rawLogLineAccumulator)
+                rawLogLineAccumulator.Clear();
+#endif
 
             isNewEncounter = true;
             OnNewEncounter?.Invoke();
@@ -426,6 +433,10 @@ public class DataService : IDisposable
                 if (active != null)
                 {
                     CaptureGraphData(active);
+#if DEBUG
+                    lock (rawLogLineAccumulator)
+                        active.RawLogLines = new List<string>(rawLogLineAccumulator);
+#endif
                     Store.Save();
                 }
             }
@@ -442,7 +453,13 @@ public class DataService : IDisposable
         {
             var active = Store.ActiveEncounter;
             if (active != null)
+            {
                 CaptureGraphData(active);
+#if DEBUG
+                lock (rawLogLineAccumulator)
+                    active.RawLogLines = new List<string>(rawLogLineAccumulator);
+#endif
+            }
 
             if (Store.CopyActiveToHistory())
                 Store.Save(force: true);
@@ -461,6 +478,10 @@ public class DataService : IDisposable
         }
 
         CaptureGraphData(outgoing);
+#if DEBUG
+        lock (rawLogLineAccumulator)
+            outgoing.RawLogLines = new List<string>(rawLogLineAccumulator);
+#endif
         return outgoing;
     }
 
@@ -531,6 +552,10 @@ public class DataService : IDisposable
         foreach (var line in snapshot)
         {
             SkillTracker.ProcessLogLine(line);
+#if DEBUG
+            lock (rawLogLineAccumulator)
+                rawLogLineAccumulator.Add(string.Join("|", line));
+#endif
         }
     }
 
@@ -581,6 +606,67 @@ public class DataService : IDisposable
     {
         OnPlayerChanged(name, id);
     }
+
+#if DEBUG
+    /// <summary>
+    /// Re-process stored raw log lines for a historical encounter using current
+    /// plugin settings (e.g. DotCalcMode). Updates skill breakdowns, statuses,
+    /// positionals, and event data in-place. Aggregate stats are preserved.
+    /// </summary>
+    public void RecalculateFromLogLines(EncounterSnapshot encounter)
+    {
+        if (encounter.RawLogLines.Count == 0)
+            return;
+
+        var tempTimer = new EncounterTimer();
+        tempTimer.SetElapsed(0f);
+
+        var tempGraphTracker = new GraphDataTracker(log);
+        tempGraphTracker.SetTimer(tempTimer);
+
+        var tempStatusTracker = new StatusTracker(ServiceManager.DataManager, log);
+        tempStatusTracker.SetTimer(tempTimer);
+
+        var tempSkillTracker = new SkillTracker(ServiceManager.DataManager, log, PositionalTable, config);
+        tempSkillTracker.SetDependencies(tempTimer, tempGraphTracker, tempStatusTracker);
+        tempStatusTracker.SetSkillTracker(tempSkillTracker);
+
+        // Parse the timestamp from each log line and advance the timer
+        // so that skill events get correct TimeSec values.
+        DateTime? startTime = null;
+        foreach (var raw in encounter.RawLogLines)
+        {
+            var fields = raw.Split('|');
+            if (fields.Length >= 2 && DateTime.TryParse(fields[1], out var ts))
+            {
+                startTime ??= ts;
+                tempTimer.SetElapsed((float)(ts - startTime.Value).TotalSeconds);
+            }
+            tempSkillTracker.ProcessLogLine(fields);
+        }
+
+        foreach (var c in encounter.Combatants)
+        {
+            c.Skills = tempSkillTracker.GetSkills(c.Name);
+            c.HealingSkills = tempSkillTracker.GetHealSkills(c.Name);
+            c.Stuns = tempSkillTracker.GetStunCount(c.Name);
+            c.SkillIssue = tempSkillTracker.GetSkillIssueCount(c.Name);
+            c.DamageDown = tempSkillTracker.GetDamageDownCount(c.Name);
+            c.PositionalHits = tempSkillTracker.GetPositionalHits(c.Name);
+            c.PositionalMisses = tempSkillTracker.GetPositionalMisses(c.Name);
+            c.Positionals = c.PositionalHits + c.PositionalMisses;
+
+            encounter.SkillEvents[c.Name] = tempSkillTracker.GetSkillEvents(c.Name);
+            encounter.DamageTakenEvents[c.Name] = tempSkillTracker.GetDamageTakenEvents(c.Name);
+            encounter.ItemEvents[c.Name] = tempSkillTracker.GetItemEvents(c.Name);
+            encounter.StatusHistory[c.Name] = tempStatusTracker.GetStatusHistory(c.Name);
+            encounter.StatusesReceived[c.Name] = tempStatusTracker.GetStatusesReceived(c.Name);
+        }
+
+        Store.Save(force: true);
+        log.Debug($"Recalculated encounter '{encounter.Encounter.Title}' from {encounter.RawLogLines.Count} raw log lines");
+    }
+#endif
 
     public void Dispose()
     {

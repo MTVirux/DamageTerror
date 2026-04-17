@@ -959,6 +959,10 @@ public class SkillTracker
         if (line.Length < 9)
             return;
 
+        // IINACT field layout for type 26/30:
+        //   [0]=type, [1]=timestamp, [2]=statusId(hex), [3]=statusName,
+        //   [4]=duration, [5]=sourceId, [6]=sourceName,
+        //   [7]=targetId, [8]=targetName, [9]=count, ...
         var statusIdHex = line[2];
         var statusName = line[3];
         var sourceName = line[6];
@@ -1055,38 +1059,6 @@ public class SkillTracker
 
         bool isHoT = string.Equals(dotOrHot, "HoT", StringComparison.OrdinalIgnoreCase);
         bool isDoT = !isHoT;
-
-        // IINACT mode: trust the parser's simulation and attribute the full
-        // aggregate amount to the named source without potency splitting.
-        if (config.DotCalcMode == DotCalcMode.Iinact)
-        {
-            var label = isHoT ? "HoT" : "DoT";
-            lock (syncLock)
-            {
-                if (isDoT)
-                {
-                    AccumulateSkill(damageData, sourceName, label, amount, 0, SkillDamageType.Magic);
-                    AccumulateSkill(dotTickData, sourceName, label, amount, 0, SkillDamageType.Magic);
-                    RecordEvent(sourceName, label, amount, false, 0, isDoTTick: true);
-
-                    if (!string.IsNullOrEmpty(targetName))
-                        RecordDamageTakenEvent(targetName, label, amount, 0);
-                }
-                else
-                {
-                    AccumulateSkill(healData, sourceName, label, amount, 0, SkillDamageType.Magic);
-                    AccumulateSkill(hotTickData, sourceName, label, amount, 0, SkillDamageType.Magic);
-                    RecordEvent(sourceName, label, amount, true, 0, isHoTTick: true);
-                }
-            }
-
-            if (isDoT)
-                graphTracker?.RecordLogLineEvent(sourceName, amount, 0);
-            else
-                graphTracker?.RecordLogLineEvent(sourceName, 0, amount);
-
-            return;
-        }
 
         // Collect all sources with matching DoT/HoT statuses on this target,
         // including the status ID for potency lookup.
