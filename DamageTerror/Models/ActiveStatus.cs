@@ -6,49 +6,33 @@ namespace DamageTerror.Models;
 /// </summary>
 public struct ActiveStatus
 {
-    /// <summary>Player who applied this status.</summary>
     public string SourceName;
-
-    /// <summary>Entity this status is applied to.</summary>
     public string TargetName;
-
-    /// <summary>FFXIV status effect ID.</summary>
     public uint StatusId;
-
-    /// <summary>Localized name of the status effect.</summary>
     public string StatusName;
 
-    /// <summary>Encounter-relative time when the status was applied (seconds).</summary>
+    /// <summary>Encounter-relative time (seconds).</summary>
     public float AppliedAtSec;
 
-    /// <summary>Duration in seconds as reported by the game.</summary>
     public float Duration;
 
-    /// <summary>True if this status has an effectively infinite duration (>= 9999s).</summary>
+    /// <summary>True if duration >= 9999s.</summary>
     public bool IsPermanent;
 
-    /// <summary>True if this status deals periodic damage (DoT).</summary>
     public bool IsDoT;
-
-    /// <summary>True if this status applies periodic healing (HoT).</summary>
     public bool IsHoT;
-
-    /// <summary>True if this is a buff (beneficial). False if debuff (detrimental).</summary>
     public bool IsBuff;
 
     /// <summary>Name of the action (type 21/22) that applied this status, if resolved.</summary>
     public string? ApplyingActionName;
 
-    /// <summary>Encounter-relative time when this status was removed, if applicable (seconds).
-    /// Set when the status is moved to the recently-removed buffer.</summary>
+    /// <summary>Encounter-relative time when moved to the recently-removed buffer.</summary>
     public float RemovedAtSec;
 
-    /// <summary>Least significant byte of the expected non-crit tick damage, extracted from the
-    /// 0x0E status-application effect in the Type 21/22 line that applied this status.</summary>
+    /// <summary>LSB of expected non-crit tick damage from the 0x0E status-application effect.</summary>
     public byte DamageLowByte;
 
-    /// <summary>Crit rate × 10 as a byte from the 0x0E effect flags (200 = 20.0% crit).
-    /// Overflows at 25.6%, so only reliable when value ≤ 255.</summary>
+    /// <summary>Crit rate × 10 from 0x0E effect flags (200 = 20.0%). Overflows at 25.6%.</summary>
     public byte CritLowByte;
 
     /// <summary>True if DamageLowByte/CritLowByte were populated from a 0x0E effect pair.</summary>
