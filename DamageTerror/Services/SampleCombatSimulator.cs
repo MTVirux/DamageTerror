@@ -329,9 +329,9 @@ internal sealed class SampleCombatSimulator
         snapshot.Encounter.IsActive = false;
     }
 
-    private sealed class ActiveBuff
+    private readonly struct ActiveBuff
     {
-        public StatusApplication Application = null!;
-        public float ExpiresAt;
+        public required StatusApplication Application { get; init; }
+        public required float ExpiresAt { get; init; }
     }
 }
