@@ -20,9 +20,7 @@ public sealed class StatusTracker
     private EncounterTimer? timer;
     private SkillTracker? skillTracker;
 
-    // (targetName, statusId) -> ActiveStatus
     // Multiple sources can apply the same status to the same target (e.g. two SCHs both apply Bio).
-    // Key is (targetName, statusId, sourceName) to handle this.
     private readonly Dictionary<(string Target, uint StatusId, string Source), ActiveStatus> activeStatuses = new();
 
     // Recently-removed DoT/HoT statuses, kept briefly so that type 24 ticks
@@ -31,19 +29,14 @@ public sealed class StatusTracker
     private readonly List<ActiveStatus> recentlyRemovedDots = new();
     private const float RecentlyRemovedGraceSec = 6f; // ~2 server ticks
 
-    // Historical record: all status applications this encounter (for uptime calculation)
     private readonly Dictionary<string, List<StatusApplication>> statusHistory = new(StringComparer.OrdinalIgnoreCase);
 
-    // Historical record: statuses received by each target (keyed by target name)
     private readonly Dictionary<string, List<StatusApplication>> receivedHistory = new(StringComparer.OrdinalIgnoreCase);
 
-    // Cache: statusId -> isDoT (true), isHoT, or neither
     private readonly ConcurrentDictionary<uint, StatusClassification> classificationCache = new();
 
-    // Well-known DoT status IDs — aggregated from per-job definitions.
     private static readonly HashSet<uint> KnownDotStatusIds = JobRegistry.GetKnownDotStatusIds();
 
-    // Ground-effect DoTs — aggregated from per-job definitions.
     private static readonly Dictionary<uint, string> GroundEffectDotIds = JobRegistry.GetGroundEffectDotIds();
 
     // Reverse map: skill name -> ground-effect status IDs (multiple IDs for PvE + PvP variants)
@@ -57,7 +50,6 @@ public sealed class StatusTracker
     private readonly Dictionary<(string Source, uint StatusId), float> pendingGroundEffects = new();
     private const float PendingGroundEffectTimeoutSec = 5f;
 
-    // Well-known HoT status IDs — aggregated from per-job definitions.
     private static readonly HashSet<uint> KnownHotStatusIds = JobRegistry.GetKnownHotStatusIds();
 
     public StatusTracker(IDataManager dataManager, IPluginLog log)
@@ -402,21 +394,18 @@ public sealed class StatusTracker
         if (classificationCache.TryGetValue(statusId, out var cached))
             return cached;
 
-        var result = new StatusClassification();
+        var isDoT = false;
+        var isHoT = false;
+        var isBuff = false;
 
-        // Check hardcoded known sets first
         if (KnownDotStatusIds.Contains(statusId))
-        {
-            result.IsDoT = true;
-            result.IsBuff = false;
-        }
+            isDoT = true;
         else if (KnownHotStatusIds.Contains(statusId))
         {
-            result.IsHoT = true;
-            result.IsBuff = true;
+            isHoT = true;
+            isBuff = true;
         }
 
-        // Attempt Lumina lookup to classify buff vs debuff
         try
         {
             var sheet = dataManager.GetExcelSheet<Lumina.Excel.Sheets.Status>();
@@ -424,10 +413,7 @@ public sealed class StatusTracker
             {
                 var row = sheet.GetRowOrDefault(statusId);
                 if (row.HasValue)
-                {
-                    // StatusCategory: 1 = buff (beneficial), 2 = debuff (detrimental)
-                    result.IsBuff = row.Value.StatusCategory == 1;
-                }
+                    isBuff = row.Value.StatusCategory == 1;
             }
         }
         catch (Exception ex)
@@ -435,14 +421,15 @@ public sealed class StatusTracker
             ServiceManager.PluginLog.Debug($"Failed to classify status {statusId}: {ex.Message}");
         }
 
+        var result = new StatusClassification { IsDoT = isDoT, IsHoT = isHoT, IsBuff = isBuff };
         classificationCache[statusId] = result;
         return result;
     }
 
-    private struct StatusClassification
+    private readonly struct StatusClassification
     {
-        public bool IsDoT;
-        public bool IsHoT;
-        public bool IsBuff;
+        public bool IsDoT { get; init; }
+        public bool IsHoT { get; init; }
+        public bool IsBuff { get; init; }
     }
 }
