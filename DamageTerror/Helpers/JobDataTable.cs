@@ -16,6 +16,7 @@ public static class JobDataTable
     public static readonly string[] MeleeDpsJobs = JobRegistry.MeleeDpsJobs;
     public static readonly string[] RangedDpsJobs = JobRegistry.RangedDpsJobs;
     public static readonly string[] CasterDpsJobs = JobRegistry.CasterDpsJobs;
+    public static readonly string[] DoHLJobs = JobRegistry.DoHLJobs;
     public static readonly string[] BaseClassJobs = JobRegistry.BaseClassJobs;
     public static readonly string[] AllAbbreviations = JobRegistry.AllAbbreviations;
 
