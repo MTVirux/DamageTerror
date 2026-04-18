@@ -415,6 +415,7 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.BeginDisabled(!isOngoing);
             if (IconMenuItem("Cut Encounter", FontAwesomeIcon.Cut))
             {
+                plugin.DataService.EndEncounter();
                 plugin.DataService.Store.ArchiveActive();
                 plugin.DataService.Store.Save();
             }

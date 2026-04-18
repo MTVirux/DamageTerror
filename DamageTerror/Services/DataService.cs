@@ -179,7 +179,10 @@ public sealed class DataService : IDisposable
 
     public void EndEncounter()
     {
-        activeSource?.EndEncounter();
+        var command = config.EndEncounterMode == EndEncounterMode.Endenc
+            ? "/endenc"
+            : "/echo end";
+        ECommons.Automation.Chat.SendMessage(command);
     }
 
     public void Stop()
