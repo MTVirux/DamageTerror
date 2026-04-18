@@ -113,7 +113,7 @@ public sealed class GeneralTab
 
             ImGui.Spacing();
 
-            var dotCalcLabels = new[] { "DamageTerror Refined", "IINACT / ACT (trust parser)" };
+            var dotCalcLabels = new[] { "DamageTerror", "IINACT / ACT" };
             var dotCalcIndex = (int)config.DotCalcMode;
             ImGui.SetNextItemWidth(280);
             if (ImGui.Combo("DoT calculation", ref dotCalcIndex, dotCalcLabels, dotCalcLabels.Length))
