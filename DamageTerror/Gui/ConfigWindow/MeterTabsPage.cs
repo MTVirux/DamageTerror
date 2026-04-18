@@ -270,7 +270,7 @@ public static class MeterTabsPage
         }
 
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Switch between traditional bars and a line graph overlay.\nGraph mode plots metrics over time for all combatants.");
+            ImGui.SetTooltip("Switch between traditional bars and a line graph overlay.\nGraph mode plots metrics over time for all combatants.\nYou can toggle the view mode from the titlebar or context menu.");
 
         if (tab.ViewMode == ViewMode.LineGraph)
         {
