@@ -104,13 +104,6 @@ public sealed class GeneralTab
                 changed = true;
             }
 
-            var hideHeader = config.HideWindowHeader;
-            if (ImGui.Checkbox("Hide window header", ref hideHeader))
-            {
-                config.HideWindowHeader = hideHeader;
-                changed = true;
-            }
-
             ImGui.Spacing();
 
             var dotCalcLabels = new[] { "DamageTerror (recommended)", "IINACT / ACT (no DoT Breakdown)" };
