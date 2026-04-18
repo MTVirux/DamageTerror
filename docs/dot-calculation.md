@@ -296,7 +296,7 @@ Default fallback for unknown statuses: `DefaultPotency = 50`.
 | MCH | 1866 | Bioblaster | 50 | 50 | |
 | DRK | 749 | Salted Earth | 50 | — | Yes |
 | NIN | 501 | Doton | 50 | — | Yes |
-| SMN | 2706 | Slipstream | 30 | — | |
+| SMN | 2706 | Slipstream | 30 | — | Yes |
 | BLU | 18 | Poison | 30 | — | |
 | BLU | 1714 | Bleeding | 50 | — | |
 | BLU | 1723 | Windburn | 20 | — | |
