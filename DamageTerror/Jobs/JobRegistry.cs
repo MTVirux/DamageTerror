@@ -17,6 +17,10 @@ public static class JobRegistry
         new BLM(), new SMN(), new RDM(), new PCT(), new BLU(),
         // Base Classes
         new GLA(), new MRD(), new CNJ(), new PGL(), new LNC(), new ARC(), new ROG(), new THM(), new ACN(),
+        // Crafters
+        new CRP(), new BSM(), new ARM(), new GSM(), new LTW(), new WVR(), new ALC(), new CUL(),
+        // Gatherers
+        new MIN(), new BTN(), new FSH(),
         // Special
         new LMB(),
     ];
@@ -38,6 +42,7 @@ public static class JobRegistry
     public static readonly string[] MeleeDpsJobs = GetAbbreviations(JobRole.MeleeDps, baseClasses: false);
     public static readonly string[] RangedDpsJobs = GetAbbreviations(JobRole.RangedDps, baseClasses: false);
     public static readonly string[] CasterDpsJobs = GetAbbreviations(JobRole.CasterDps, baseClasses: false);
+    public static readonly string[] DoHLJobs = GetAbbreviations(JobRole.DoHL, baseClasses: false);
     public static readonly string[] BaseClassJobs = AllDefinitions.Where(d => d.IsBaseClass).Select(d => d.Abbreviation).ToArray();
     public static readonly string[] AllAbbreviations = AllDefinitions.Select(d => d.Abbreviation).ToArray();
 

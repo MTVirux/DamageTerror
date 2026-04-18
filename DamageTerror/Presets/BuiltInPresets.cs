@@ -52,6 +52,7 @@ public static class BuiltInPresets
         RangedDpsColor = new(1.00f, 0.60f, 0.0f, 1.0f),
         CasterDpsColor = new(0.49f, 0.34f, 0.76f, 1.0f),
         LimitBreakColor = new(0.90f, 0.75f, 0.10f, 1.0f),
+        DoHLColor = new(0.65f, 0.50f, 0.28f, 1.0f),
         DefaultJobColor = new(0.46f, 0.46f, 0.46f, 1.0f),
 
         // Background & Text
@@ -238,6 +239,7 @@ public static class BuiltInPresets
         RangedDpsColor = new(1.00f, 0.55f, 0.15f, 1.0f),
         CasterDpsColor = new(0.52f, 0.35f, 0.72f, 1.0f),
         LimitBreakColor = new(1.0f, 0.70f, 0.15f, 1.0f),
+        DoHLColor = new(0.72f, 0.52f, 0.25f, 1.0f),
         DefaultJobColor = new(0.48f, 0.48f, 0.48f, 1.0f),
 
         // Background & Text
@@ -424,6 +426,7 @@ public static class BuiltInPresets
         RangedDpsColor = new(0.85f, 0.50f, 0.20f, 1.0f),
         CasterDpsColor = new(0.55f, 0.35f, 0.70f, 1.0f),
         LimitBreakColor = new(0.90f, 0.75f, 0.20f, 1.0f),
+        DoHLColor = new(0.68f, 0.48f, 0.22f, 1.0f),
         DefaultJobColor = new(0.45f, 0.45f, 0.45f, 1.0f),
 
         // Background & Text
@@ -610,6 +613,7 @@ public static class BuiltInPresets
         RangedDpsColor = new(0.90f, 0.55f, 0.15f, 1.0f),
         CasterDpsColor = new(0.60f, 0.30f, 0.80f, 1.0f),
         LimitBreakColor = new(1.0f, 0.80f, 0.0f, 1.0f),
+        DoHLColor = new(0.70f, 0.55f, 0.30f, 1.0f),
         DefaultJobColor = new(0.50f, 0.50f, 0.50f, 1.0f),
         JobColors = new Dictionary<string, Vector4>
         {
@@ -821,6 +825,7 @@ public static class BuiltInPresets
         RangedDpsColor = new(0.82f, 0.50f, 0.18f, 1.0f),
         CasterDpsColor = new(0.50f, 0.32f, 0.70f, 1.0f),
         LimitBreakColor = new(0.90f, 0.72f, 0.10f, 1.0f),
+        DoHLColor = new(0.66f, 0.50f, 0.26f, 1.0f),
         DefaultJobColor = new(0.42f, 0.42f, 0.42f, 1.0f),
 
         // Background & Text
@@ -1007,6 +1012,7 @@ public static class BuiltInPresets
         RangedDpsColor = new(0.80f, 0.50f, 0.20f, 1.0f),
         CasterDpsColor = new(0.52f, 0.32f, 0.68f, 1.0f),
         LimitBreakColor = new(0.80f, 0.68f, 0.15f, 1.0f),
+        DoHLColor = new(0.62f, 0.48f, 0.24f, 1.0f),
         DefaultJobColor = new(0.45f, 0.45f, 0.45f, 1.0f),
         JobColors = new Dictionary<string, Vector4>
         {

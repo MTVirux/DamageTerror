@@ -110,6 +110,7 @@ public sealed class Configuration : IPluginConfiguration
     public Vector4 RangedDpsColor { get; set; } = new(0.9f, 0.5f, 0.2f, 1.0f);
     public Vector4 CasterDpsColor { get; set; } = new(0.6f, 0.3f, 0.8f, 1.0f);
     public Vector4 LimitBreakColor { get; set; } = new(1.0f, 0.80f, 0.0f, 1.0f);
+    public Vector4 DoHLColor { get; set; } = new(0.70f, 0.55f, 0.30f, 1.0f);
     public Vector4 DefaultJobColor { get; set; } = new(0.5f, 0.5f, 0.5f, 1.0f);
 
     public bool UsePerJobColors { get; set; } = true;

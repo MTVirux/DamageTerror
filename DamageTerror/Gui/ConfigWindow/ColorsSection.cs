@@ -27,6 +27,7 @@ internal static class ColorsSection
             changed |= ConfigHelpers.ColorEditProp("Melee DPS", config.MeleeDpsColor, v => config.MeleeDpsColor = v);
             changed |= ConfigHelpers.ColorEditProp("Phys Ranged DPS", config.RangedDpsColor, v => config.RangedDpsColor = v);
             changed |= ConfigHelpers.ColorEditProp("Caster DPS", config.CasterDpsColor, v => config.CasterDpsColor = v);
+            changed |= ConfigHelpers.ColorEditProp("DoH/DoL", config.DoHLColor, v => config.DoHLColor = v);
             changed |= ConfigHelpers.ColorEditProp("Limit Break", config.LimitBreakColor, v => config.LimitBreakColor = v);
             changed |= ConfigHelpers.ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
         }
@@ -37,6 +38,7 @@ internal static class ColorsSection
             changed |= ConfigHelpers.DrawPerJobColorGroup("Melee DPS", JobDataTable.MeleeDpsJobs, config);
             changed |= ConfigHelpers.DrawPerJobColorGroup("Phys Ranged DPS", JobDataTable.RangedDpsJobs, config);
             changed |= ConfigHelpers.DrawPerJobColorGroup("Caster DPS", JobDataTable.CasterDpsJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("DoH/DoL", JobDataTable.DoHLJobs, config);
             changed |= ConfigHelpers.DrawPerJobColorGroup("Base Classes", JobDataTable.BaseClassJobs, config);
             changed |= ConfigHelpers.ColorEditProp("Limit Break", config.LimitBreakColor, v => config.LimitBreakColor = v);
             changed |= ConfigHelpers.ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
@@ -57,6 +59,7 @@ internal static class ColorsSection
             config.MeleeDpsColor = new Vector4(0.8f, 0.2f, 0.2f, 1.0f);
             config.RangedDpsColor = new Vector4(0.9f, 0.5f, 0.2f, 1.0f);
             config.CasterDpsColor = new Vector4(0.6f, 0.3f, 0.8f, 1.0f);
+            config.DoHLColor = new Vector4(0.70f, 0.55f, 0.30f, 1.0f);
             config.LimitBreakColor = new Vector4(1.0f, 0.5f, 0.0f, 1.0f);
             config.DefaultJobColor = new Vector4(0.5f, 0.5f, 0.5f, 1.0f);
             config.JobColors.Clear();

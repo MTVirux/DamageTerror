@@ -13,4 +13,5 @@ public enum JobRole
     CasterDps = 4,
     LimitBreak = 5,
     Default = 6,
+    DoHL = 7,
 }

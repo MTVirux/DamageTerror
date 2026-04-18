@@ -21,6 +21,7 @@ public static class JobColorHelper
             JobRole.RangedDps => config.RangedDpsColor,
             JobRole.CasterDps => config.CasterDpsColor,
             JobRole.LimitBreak => config.LimitBreakColor,
+            JobRole.DoHL => config.DoHLColor,
             _ => config.DefaultJobColor,
         };
     }
