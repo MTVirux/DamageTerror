@@ -90,7 +90,7 @@ public sealed class Configuration : IPluginConfiguration
     public bool HideOutOfCombat { get; set; } = false;
     public float HideOutOfCombatDelay { get; set; } = 5f;
 
-    public bool SkipZeroEdpsEncounters { get; set; } = false;
+    public bool SkipZeroEdpsEncounters { get; set; } = true;
 
     public DotCalcMode DotCalcMode { get; set; } = DotCalcMode.Refined;
 
