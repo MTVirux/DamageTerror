@@ -15,6 +15,4 @@ public interface IDataSource : IDisposable
     Task ConnectAsync(CancellationToken ct = default);
 
     void Disconnect();
-
-    void EndEncounter();
 }

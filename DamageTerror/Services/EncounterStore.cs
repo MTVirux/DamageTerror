@@ -525,6 +525,7 @@ public sealed class EncounterStore
         if (string.IsNullOrEmpty(savePath))
             return;
 
+        List<EncounterSnapshot> snapshot;
         lock (syncLock)
         {
             if (!force && !dirty)
@@ -536,30 +537,29 @@ public sealed class EncounterStore
                 return;
 
             dirty = false;
+            snapshot = new List<EncounterSnapshot>(history);
         }
 
-        try
+        var path = savePath;
+        Task.Run(() =>
         {
-            List<EncounterSnapshot> snapshot;
-            lock (syncLock)
+            try
             {
-                snapshot = new List<EncounterSnapshot>(history);
+                var json = JsonConvert.SerializeObject(snapshot, Formatting.None, new JsonSerializerSettings
+                {
+                    DefaultValueHandling = DefaultValueHandling.Ignore,
+                });
+
+                var dir = System.IO.Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(dir))
+                    System.IO.Directory.CreateDirectory(dir);
+
+                System.IO.File.WriteAllText(path, json);
             }
-
-            var json = JsonConvert.SerializeObject(snapshot, Formatting.None, new JsonSerializerSettings
+            catch (Exception ex)
             {
-                DefaultValueHandling = DefaultValueHandling.Ignore,
-            });
-
-            var dir = System.IO.Path.GetDirectoryName(savePath);
-            if (!string.IsNullOrEmpty(dir))
-                System.IO.Directory.CreateDirectory(dir);
-
-            System.IO.File.WriteAllText(savePath, json);
-        }
-        catch (Exception ex)
-        {
-            ServiceManager.PluginLog.Warning($"Failed to save encounter history: {ex.Message}");
-        }
+                ServiceManager.PluginLog.Warning($"Failed to save encounter history: {ex.Message}");
+            }
+        });
     }
 }

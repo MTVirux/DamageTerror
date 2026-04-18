@@ -94,6 +94,8 @@ public sealed class Configuration : IPluginConfiguration
 
     public DotCalcMode DotCalcMode { get; set; } = DotCalcMode.Refined;
 
+    public EndEncounterMode EndEncounterMode { get; set; } = EndEncounterMode.Echo;
+
     public HistoryLimitMode HistoryLimitMode { get; set; } = HistoryLimitMode.Count;
     public int MaxEncounterHistory { get; set; } = 50;
     public int MaxEncounterHistoryDays { get; set; } = 30;
