@@ -113,7 +113,7 @@ public sealed class GeneralTab
 
             ImGui.Spacing();
 
-            var dotCalcLabels = new[] { "DamageTerror", "IINACT / ACT" };
+            var dotCalcLabels = new[] { "DamageTerror (recommended)", "IINACT / ACT (no DoT Breakdown)" };
             var dotCalcIndex = (int)config.DotCalcMode;
             ImGui.SetNextItemWidth(280);
             if (ImGui.Combo("DoT calculation", ref dotCalcIndex, dotCalcLabels, dotCalcLabels.Length))
@@ -122,8 +122,8 @@ public sealed class GeneralTab
                 changed = true;
             }
             ConfigHelpers.HelpMarker(
-                "DamageTerror Refined: distributes aggregated DoT ticks across active statuses using potency weights, with low-byte data from status application effects for per-tick snapping and crit rate.\n" +
-                "IINACT / ACT: trusts the parser's own DoT simulation and attributes each tick to the named source as-is.");
+                "DamageTerror: distributes aggregated DoT ticks across active statuses using potency weights. (needed for dot skill breakdown)\n" +
+                "IINACT / ACT: trusts the parser's own DoT simulation and attributes each tick to the named source as-is. (no DoT skill breakdown)");
 
             var endEncLabels = new[] { "/echo end (ACT + IINACT)", "/endenc (IINACT only) (Silent)" };
             var endEncIndex = (int)config.EndEncounterMode;
