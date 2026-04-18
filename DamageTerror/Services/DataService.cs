@@ -284,7 +284,7 @@ public sealed class DataService : IDisposable
 
             SkillTracker.Reset();
             GraphTracker.Reset();
-            StatusTracker.Reset();
+            StatusTracker.ResetKeepingActiveDoTs();
             EncounterTimer.Restart();
             lastPeriodicSaveTime = 0f;
 #if DEBUG

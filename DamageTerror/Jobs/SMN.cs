@@ -16,8 +16,12 @@ public sealed class SMN : JobDefinitionBase
 
     public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
     {
-        2706, // Slipstream (Garuda)
         3231, // Scarlet Flame (PvP)
+    };
+
+    public override IReadOnlyDictionary<uint, string> GroundEffectDots { get; } = new Dictionary<uint, string>
+    {
+        { 2706, "Slipstream" },
     };
 
     public override string MaxHitSkill => "Akh Morn";
