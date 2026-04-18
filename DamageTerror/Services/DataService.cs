@@ -551,13 +551,32 @@ public sealed class DataService : IDisposable
             pendingLogLines.Clear();
         }
 
+        // Process Type 24 (DoT/HoT tick) lines in a second pass so that all
+        // status gain/loss events (Type 26/30) from the same batch are handled
+        // first. Without this, the first tick of a fight can arrive before or
+        // alongside its Type 26 status-gain line, causing a fallback to "DoT".
+        List<string[]>? deferredTicks = null;
         foreach (var line in snapshot)
         {
-            SkillTracker.ProcessLogLine(line);
+            if (line.Length >= 2 && line[0] == "24")
+            {
+                deferredTicks ??= new List<string[]>();
+                deferredTicks.Add(line);
+            }
+            else
+            {
+                SkillTracker.ProcessLogLine(line);
+            }
 #if DEBUG
             lock (rawLogLineAccumulator)
                 rawLogLineAccumulator.Add(string.Join("|", line));
 #endif
+        }
+
+        if (deferredTicks != null)
+        {
+            foreach (var line in deferredTicks)
+                SkillTracker.ProcessLogLine(line);
         }
     }
 

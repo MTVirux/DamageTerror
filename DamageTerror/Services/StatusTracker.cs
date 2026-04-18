@@ -370,6 +370,41 @@ public sealed class StatusTracker
         }
     }
 
+    /// <summary>
+    /// Resets tracking state but carries forward any active DoT/HoT statuses
+    /// so that the first tick of a new encounter is attributed correctly when
+    /// the DoT was applied just before the encounter boundary.
+    /// </summary>
+    public void ResetKeepingActiveDoTs()
+    {
+        lock (syncLock)
+        {
+            // Snapshot DoT/HoT statuses (including ground-effect statuses)
+            // before clearing everything.
+            var carried = new List<(( string Target, uint StatusId, string Source) Key, ActiveStatus Status)>();
+            foreach (var kv in activeStatuses)
+            {
+                if (kv.Value.IsDoT || kv.Value.IsHoT || GroundEffectDotIds.ContainsKey(kv.Value.StatusId))
+                    carried.Add((kv.Key, kv.Value));
+            }
+
+            activeStatuses.Clear();
+            recentlyRemovedDots.Clear();
+            pendingGroundEffects.Clear();
+            statusHistory.Clear();
+            receivedHistory.Clear();
+
+            // Re-inject with time reset to encounter start.
+            foreach (var (key, status) in carried)
+            {
+                var restored = status;
+                restored.AppliedAtSec = 0f;
+                restored.RemovedAtSec = 0f;
+                activeStatuses[key] = restored;
+            }
+        }
+    }
+
     private void RecordRemoval(ActiveStatus status, float removalTime)
     {
         if (statusHistory.TryGetValue(status.SourceName, out var history))
