@@ -800,6 +800,17 @@ public sealed class SkillTracker
         return result;
     }
 
+    /// <summary>Hardcoded damage type overrides for status-based detonations (e.g. Wildfire).</summary>
+    private static readonly Dictionary<uint, SkillDamageType> StatusDamageTypeOverrides = new()
+    {
+        { 2310, SkillDamageType.Physical }, // Wildfire (MCH)
+    };
+
+    private SkillDamageType LookupStatusDamageType(uint statusId)
+    {
+        return StatusDamageTypeOverrides.GetValueOrDefault(statusId, SkillDamageType.Unknown);
+    }
+
     /// <summary>
     /// Resolve a status effect's display name from active statuses or Lumina.
     /// Used for non-DoT status detonations (e.g. Wildfire) that arrive via Type 24 lines.
@@ -1401,9 +1412,10 @@ public sealed class SkillTracker
                     if (isDoT && !string.IsNullOrEmpty(sourceName))
                     {
                         var skillName = ResolveStatusName(effectStatusId, targetName);
+                        var damageType = LookupStatusDamageType(effectStatusId);
                         lock (syncLock)
                         {
-                            AccumulateSkill(damageData, sourceName, skillName, amount, 0, SkillDamageType.Unknown);
+                            AccumulateSkill(damageData, sourceName, skillName, amount, 0, damageType);
                             RecordEvent(sourceName, skillName, amount, false, 0);
                             if (!string.IsNullOrEmpty(targetName))
                                 RecordDamageTakenEvent(targetName, skillName, amount, 0);
