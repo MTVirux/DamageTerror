@@ -40,6 +40,11 @@ public sealed class AST : JobDefinitionBase
         956,  // Wheel of Fortune
     };
 
+    public override IReadOnlyDictionary<uint, string> GroundEffectDots { get; } = new Dictionary<uint, string>
+    {
+        { 1122, "Earthly Star" },
+    };
+
     public override string MaxHitSkill => "Fall Malefic";
 
     public override string[] DamageSkillNames =>
