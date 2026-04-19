@@ -96,6 +96,26 @@ public sealed class SkillTracker
     /// effects in Type 21/22 lines, consumed when the matching Type 26 (GainsEffect) arrives.</summary>
     private readonly Dictionary<(string Source, string Target, uint StatusId), (byte DamageLowByte, byte CritLowByte)> pendingLowBytes = new();
 
+    /// <summary>Maps entity hex ID → entity name for all combatants seen via Type 03 (AddCombatant).</summary>
+    private readonly Dictionary<string, string> entityIdToName = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Maps pet entity hex ID → owner entity hex ID for pet-to-owner remapping.</summary>
+    private readonly Dictionary<string, string> petToOwnerId = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Known ground-effect entity names sourced from GroundEffectDots values across all job definitions
+    /// (e.g. "Earthly Star", "Salted Earth"). Used to detect when a ground entity is the source of a Type 21/22 line.</summary>
+    private static readonly HashSet<string> GroundEffectEntityNames = new(
+        JobRegistry.GetGroundEffectDotIds().Values.Distinct(), StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Maps ground-effect entity name → owner (player) name.
+    /// Populated when a player uses a ground-effect placement skill (Type 21/22).</summary>
+    private readonly Dictionary<string, string> groundEffectEntityOwners = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Pet skill accumulation: owner → pet name → skill name → accum.
+    /// Displayed as category entries in the skill breakdown.</summary>
+    private readonly Dictionary<string, Dictionary<string, Dictionary<string, SkillAccum>>> petDamageData = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Dictionary<string, Dictionary<string, SkillAccum>>> petHealData = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Default crit damage multiplier fallback when per-source dynamic estimate is unavailable.</summary>
     private const double DefaultCritMulti = 1.65;
 
@@ -220,6 +240,23 @@ public sealed class SkillTracker
 
         var type = line[0];
 
+        if (type == "03")
+        {
+            ProcessAddCombatant(line);
+            if (line.Length >= 7)
+                log.Debug($"[PetDebug] Type03 id={line[2]} name={line[3]} ownerId={line[6]}");
+            return;
+        }
+
+        // Debug: log all Type 21/22 lines where source or skill matches a ground-effect entity name.
+        if ((type == "21" || type == "22") && line.Length >= 10)
+        {
+            var dbgSrc = line[3];
+            var dbgSkill = line[5];
+            if (GroundEffectEntityNames.Contains(dbgSrc) || GroundEffectEntityNames.Contains(dbgSkill))
+                log.Debug($"[PetDebug] Type{type} srcId={line[2]} src={dbgSrc} actId={line[4]} skill={dbgSkill} tgt={line[7]}");
+        }
+
         if (type == "26" || type == "30")
         {
             ProcessStatusLine(type, line);
@@ -244,6 +281,53 @@ public sealed class SkillTracker
 
         if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(skillName))
             return;
+
+        // Register entity ID → name from every ability line so pet-to-owner
+        // resolution works even if the owner's Type 03 was missed.
+        var sourceId = line[2];
+        if (!string.IsNullOrEmpty(sourceId) && !string.IsNullOrEmpty(sourceName))
+        {
+            lock (syncLock)
+                entityIdToName[sourceId] = sourceName;
+        }
+
+        // Resolve pet-to-owner via Type 03 entity ID mapping.
+        string? petOwnerName = null;
+        string? petEntityName = null;
+        if (!string.IsNullOrEmpty(sourceId))
+        {
+            lock (syncLock)
+            {
+                if (petToOwnerId.TryGetValue(sourceId, out var ownerId)
+                    && entityIdToName.TryGetValue(ownerId, out var ownerName))
+                {
+                    petOwnerName = ownerName;
+                    petEntityName = sourceName;
+                }
+            }
+        }
+
+        // Ground-effect burst entity: when a ground entity (e.g. "Earthly Star")
+        // deals Type 21/22 damage, resolve the owner from the name-based map.
+        if (petOwnerName == null && GroundEffectEntityNames.Contains(sourceName))
+        {
+            lock (syncLock)
+            {
+                if (groundEffectEntityOwners.TryGetValue(sourceName, out var owner))
+                {
+                    petOwnerName = owner;
+                    petEntityName = sourceName;
+                }
+            }
+        }
+        // When a player casts a ground-effect placement skill, record the mapping.
+        else if (petOwnerName == null && GroundEffectEntityNames.Contains(skillName))
+        {
+            lock (syncLock)
+            {
+                groundEffectEntityOwners[skillName] = sourceName;
+            }
+        }
 
         // Separate item uses (item_XXXX) into their own tracking.
         if (skillName.StartsWith("item_", StringComparison.OrdinalIgnoreCase))
@@ -390,6 +474,34 @@ public sealed class SkillTracker
         if (dmgAmount <= 0 && healAmount <= 0)
             return;
 
+        // Pet-sourced skills go into separate pet dictionaries so they appear
+        // as a named category in the skill breakdown instead of inline.
+        if (petOwnerName != null && petEntityName != null)
+        {
+            log.Debug($"[PetDebug] PetAccum owner={petOwnerName} pet={petEntityName} skill={skillName} dmg={dmgAmount} heal={healAmount}");
+            lock (syncLock)
+            {
+                if (dmgAmount > 0)
+                {
+                    AccumulatePetSkill(petDamageData, petOwnerName, petEntityName, skillName, dmgAmount, dmgSeverity, damageType);
+                    RecordEvent(petOwnerName, skillName, dmgAmount, false, dmgSeverity, targetName);
+
+                    if (!string.IsNullOrEmpty(targetName))
+                        RecordDamageTakenEvent(targetName, skillName, dmgAmount, dmgSeverity);
+                }
+                if (healAmount > 0)
+                {
+                    AccumulatePetSkill(petHealData, petOwnerName, petEntityName, skillName, healAmount, healSeverity, damageType);
+                    RecordEvent(petOwnerName, skillName, healAmount, true, healSeverity, targetName);
+                }
+            }
+
+            if (dmgAmount > 0 || healAmount > 0)
+                graphTracker?.RecordLogLineEvent(petOwnerName, dmgAmount, healAmount);
+
+            return;
+        }
+
         lock (syncLock)
         {
             if (dmgAmount > 0)
@@ -429,6 +541,43 @@ public sealed class SkillTracker
             skills = new Dictionary<string, SkillAccum>();
             store[sourceName] = skills;
         }
+
+        if (!skills.TryGetValue(skillName, out var existing))
+            existing = default;
+
+        existing.Amount += amount;
+        existing.Hits++;
+        if (isCritDirectHit)
+            existing.CritDirectHits++;
+        else if (isCrit)
+            existing.Crits++;
+        else if (isDirectHit)
+            existing.DirectHits++;
+
+        if (existing.DamageType == SkillDamageType.Unknown && damageType != SkillDamageType.Unknown)
+            existing.DamageType = damageType;
+
+        skills[skillName] = existing;
+    }
+
+    private void AccumulatePetSkill(Dictionary<string, Dictionary<string, Dictionary<string, SkillAccum>>> store,
+        string ownerName, string petName, string skillName, long amount, byte severity, SkillDamageType damageType)
+    {
+        if (!store.TryGetValue(ownerName, out var pets))
+        {
+            pets = new Dictionary<string, Dictionary<string, SkillAccum>>(StringComparer.OrdinalIgnoreCase);
+            store[ownerName] = pets;
+        }
+
+        if (!pets.TryGetValue(petName, out var skills))
+        {
+            skills = new Dictionary<string, SkillAccum>(StringComparer.OrdinalIgnoreCase);
+            pets[petName] = skills;
+        }
+
+        bool isCrit = (severity & CritFlag) != 0;
+        bool isDirectHit = (severity & DirectHitFlag) != 0;
+        bool isCritDirectHit = isCrit && isDirectHit;
 
         if (!skills.TryGetValue(skillName, out var existing))
             existing = default;
@@ -651,14 +800,49 @@ public sealed class SkillTracker
         return result;
     }
 
+    /// <summary>
+    /// Resolve a status effect's display name from active statuses or Lumina.
+    /// Used for non-DoT status detonations (e.g. Wildfire) that arrive via Type 24 lines.
+    /// </summary>
+    private string ResolveStatusName(uint statusId, string targetName)
+    {
+        if (statusTracker != null)
+        {
+            var statuses = statusTracker.GetActiveStatuses(targetName);
+            foreach (var s in statuses)
+            {
+                if (s.StatusId == statusId)
+                    return s.StatusName;
+            }
+        }
+
+        try
+        {
+            var sheet = dataManager.GetExcelSheet<Lumina.Excel.Sheets.Status>();
+            if (sheet != null)
+            {
+                var row = sheet.GetRowOrDefault(statusId);
+                if (row.HasValue)
+                {
+                    var name = row.Value.Name.ToString();
+                    if (!string.IsNullOrEmpty(name))
+                        return name;
+                }
+            }
+        }
+        catch { }
+
+        return $"Status {statusId}";
+    }
+
     public List<SkillEntry> GetSkills(string combatantName)
     {
-        return BuildSkillList(damageData, dotTickData, combatantName, "DoT");
+        return BuildSkillList(damageData, dotTickData, petDamageData, combatantName, "DoT");
     }
 
     public List<SkillEntry> GetHealSkills(string combatantName)
     {
-        return BuildSkillList(healData, hotTickData, combatantName, "HoT");
+        return BuildSkillList(healData, hotTickData, petHealData, combatantName, "HoT");
     }
 
     public List<SkillUseEvent> GetSkillEvents(string combatantName)
@@ -732,6 +916,32 @@ public sealed class SkillTracker
     public int GetPositionalHits(string combatantName) => GetCountLocked(positionalHitCounts, combatantName);
     public int GetPositionalMisses(string combatantName) => GetCountLocked(positionalMissCounts, combatantName);
 
+    private void ProcessAddCombatant(string[] line)
+    {
+        if (line.Length < 7)
+            return;
+
+        var entityId = line[2];
+        var entityName = line[3];
+        var ownerId = line[6];
+
+        if (string.IsNullOrEmpty(entityId) || string.IsNullOrEmpty(entityName))
+            return;
+
+        lock (syncLock)
+        {
+            entityIdToName[entityId] = entityName;
+
+            if (!string.IsNullOrEmpty(ownerId)
+                && ownerId != "0"
+                && long.TryParse(ownerId, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var ownerIdNum)
+                && ownerIdNum != 0)
+            {
+                petToOwnerId[entityId] = ownerId;
+            }
+        }
+    }
+
     public void Reset()
     {
         lock (syncLock)
@@ -756,6 +966,10 @@ public sealed class SkillTracker
             damageTypeCache.Clear();
             combatantDotStats.Clear();
             pendingLowBytes.Clear();
+            groundEffectEntityOwners.Clear();
+            petDamageData.Clear();
+            petHealData.Clear();
+            // entityIdToName, petToOwnerId are zone-level; survive encounter resets.
         }
     }
 
@@ -860,55 +1074,113 @@ public sealed class SkillTracker
     private List<SkillEntry> BuildSkillList(
         Dictionary<string, Dictionary<string, SkillAccum>> store,
         Dictionary<string, Dictionary<string, SkillAccum>> tickStore,
+        Dictionary<string, Dictionary<string, Dictionary<string, SkillAccum>>> petStore,
         string combatantName,
         string tickLabel)
     {
         lock (syncLock)
         {
-            if (!store.TryGetValue(combatantName, out var skills))
-                return new List<SkillEntry>();
-
-            // Look up tick data for this combatant (may be null)
+            store.TryGetValue(combatantName, out var skills);
             tickStore.TryGetValue(combatantName, out var ticks);
 
-            var list = skills.Select(kv =>
+            var list = new List<SkillEntry>();
+
+            if (skills != null)
             {
-                var a = kv.Value;
-                var entry = new SkillEntry
+                foreach (var kv in skills)
                 {
-                    Name = kv.Key,
-                    TotalDamage = a.Amount,
-                    HitCount = a.Hits,
-                    DamageType = a.DamageType,
-                };
-                if (a.Hits > 0)
-                {
-                    entry.CritPct = (double)(a.Crits + a.CritDirectHits) / a.Hits * 100.0;
-                    entry.DirectHitPct = (double)(a.DirectHits + a.CritDirectHits) / a.Hits * 100.0;
-                    entry.CritDirectHitPct = (double)a.CritDirectHits / a.Hits * 100.0;
-                }
-
-                // Attach tick sub-entry if this skill has periodic ticks
-                if (ticks != null && ticks.TryGetValue(kv.Key, out var tickAccum) && tickAccum.Hits > 0)
-                {
-                    var tickEntry = new SkillEntry
+                    var a = kv.Value;
+                    var entry = new SkillEntry
                     {
-                        Name = $"{kv.Key} ({tickLabel})",
-                        TotalDamage = tickAccum.Amount,
-                        HitCount = tickAccum.Hits,
-                        DamageType = tickAccum.DamageType,
+                        Name = kv.Key,
+                        TotalDamage = a.Amount,
+                        HitCount = a.Hits,
+                        DamageType = a.DamageType,
                     };
-                    if (tickAccum.Hits > 0)
+                    if (a.Hits > 0)
                     {
-                        tickEntry.CritPct = (double)(tickAccum.Crits + tickAccum.CritDirectHits) / tickAccum.Hits * 100.0;
-                        tickEntry.DirectHitPct = (double)(tickAccum.DirectHits + tickAccum.CritDirectHits) / tickAccum.Hits * 100.0;
-                        tickEntry.CritDirectHitPct = (double)tickAccum.CritDirectHits / tickAccum.Hits * 100.0;
+                        entry.CritPct = (double)(a.Crits + a.CritDirectHits) / a.Hits * 100.0;
+                        entry.DirectHitPct = (double)(a.DirectHits + a.CritDirectHits) / a.Hits * 100.0;
+                        entry.CritDirectHitPct = (double)a.CritDirectHits / a.Hits * 100.0;
                     }
-                    entry.SubEntries = new List<SkillEntry> { tickEntry };
-                }
 
-                return entry;
-            }).OrderByDescending(s => s.TotalDamage).ToList();
+                    if (ticks != null && ticks.TryGetValue(kv.Key, out var tickAccum) && tickAccum.Hits > 0)
+                    {
+                        var tickEntry = new SkillEntry
+                        {
+                            Name = $"{kv.Key} ({tickLabel})",
+                            TotalDamage = tickAccum.Amount,
+                            HitCount = tickAccum.Hits,
+                            DamageType = tickAccum.DamageType,
+                        };
+                        if (tickAccum.Hits > 0)
+                        {
+                            tickEntry.CritPct = (double)(tickAccum.Crits + tickAccum.CritDirectHits) / tickAccum.Hits * 100.0;
+                            tickEntry.DirectHitPct = (double)(tickAccum.DirectHits + tickAccum.CritDirectHits) / tickAccum.Hits * 100.0;
+                            tickEntry.CritDirectHitPct = (double)tickAccum.CritDirectHits / tickAccum.Hits * 100.0;
+                        }
+                        entry.SubEntries = new List<SkillEntry> { tickEntry };
+                    }
+
+                    list.Add(entry);
+                }
+            }
+
+            // Merge pet categories: each pet becomes a top-level entry with its skills as sub-entries.
+            if (petStore.TryGetValue(combatantName, out var pets))
+            {
+                log.Debug($"[PetDebug] BuildSkillList found {pets.Count} pet(s) for {combatantName}");
+                foreach (var (petName, petSkills) in pets)
+                {
+                    long petTotal = 0;
+                    int petHits = 0;
+                    int petCrits = 0;
+                    int petDirectHits = 0;
+                    int petCritDirectHits = 0;
+                    var subEntries = new List<SkillEntry>();
+
+                    foreach (var (sName, acc) in petSkills)
+                    {
+                        petTotal += acc.Amount;
+                        petHits += acc.Hits;
+                        petCrits += acc.Crits + acc.CritDirectHits;
+                        petDirectHits += acc.DirectHits + acc.CritDirectHits;
+                        petCritDirectHits += acc.CritDirectHits;
+
+                        var sub = new SkillEntry
+                        {
+                            Name = sName,
+                            TotalDamage = acc.Amount,
+                            HitCount = acc.Hits,
+                            DamageType = acc.DamageType,
+                        };
+                        if (acc.Hits > 0)
+                        {
+                            sub.CritPct = (double)(acc.Crits + acc.CritDirectHits) / acc.Hits * 100.0;
+                            sub.DirectHitPct = (double)(acc.DirectHits + acc.CritDirectHits) / acc.Hits * 100.0;
+                            sub.CritDirectHitPct = (double)acc.CritDirectHits / acc.Hits * 100.0;
+                        }
+                        subEntries.Add(sub);
+                    }
+
+                    var petEntry = new SkillEntry
+                    {
+                        Name = petName,
+                        TotalDamage = petTotal,
+                        HitCount = petHits,
+                        SubEntries = subEntries.OrderByDescending(s => s.TotalDamage).ToList(),
+                    };
+                    if (petHits > 0)
+                    {
+                        petEntry.CritPct = (double)petCrits / petHits * 100.0;
+                        petEntry.DirectHitPct = (double)petDirectHits / petHits * 100.0;
+                        petEntry.CritDirectHitPct = (double)petCritDirectHits / petHits * 100.0;
+                    }
+                    list.Add(petEntry);
+                }
+            }
+
+            list.Sort((a, b) => b.TotalDamage.CompareTo(a.TotalDamage));
 
             var total = list.Sum(s => s.TotalDamage);
             if (total > 0)
@@ -1102,9 +1374,10 @@ public sealed class SkillTracker
         // that one specific ground effect only.  Regular (aggregate) lines
         // have effectId=0 and carry the combined damage of ALL status-effect
         // DoTs/HoTs on the target from ALL sources.
+        long eid = 0;
         bool isGroundEffect = !string.IsNullOrEmpty(effectIdHex)
                               && effectIdHex != "0"
-                              && long.TryParse(effectIdHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var eid)
+                              && long.TryParse(effectIdHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out eid)
                               && eid != 0;
 
         var sourceSkills = new Dictionary<string, List<(string Name, uint StatusId, byte DamageLowByte, byte CritLowByte, bool HasLowByteData)>>(StringComparer.OrdinalIgnoreCase);
@@ -1118,6 +1391,28 @@ public sealed class SkillTracker
         {
             if (isGroundEffect)
             {
+                // Non-DoT status detonation (e.g. Wildfire): attribute as
+                // direct damage from the source, not as a periodic tick.
+                var effectStatusId = (uint)eid;
+                if (!statusTracker.IsDoT(effectStatusId)
+                    && !statusTracker.IsHoT(effectStatusId)
+                    && !statusTracker.IsGroundEffectDot(effectStatusId))
+                {
+                    if (isDoT && !string.IsNullOrEmpty(sourceName))
+                    {
+                        var skillName = ResolveStatusName(effectStatusId, targetName);
+                        lock (syncLock)
+                        {
+                            AccumulateSkill(damageData, sourceName, skillName, amount, 0, SkillDamageType.Unknown);
+                            RecordEvent(sourceName, skillName, amount, false, 0);
+                            if (!string.IsNullOrEmpty(targetName))
+                                RecordDamageTakenEvent(targetName, skillName, amount, 0);
+                        }
+                        graphTracker?.RecordLogLineEvent(sourceName, amount, 0);
+                    }
+                    return;
+                }
+
                 // Ground-effect line: attribute only to the source's ground
                 // effect skill.  The sourceName IS meaningful here.
                 if (isDoT && !string.IsNullOrEmpty(sourceName))

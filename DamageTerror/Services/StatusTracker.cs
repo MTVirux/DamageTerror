@@ -310,6 +310,7 @@ public sealed class StatusTracker
 
     public bool IsDoT(uint statusId) => ClassifyStatus(statusId).IsDoT;
     public bool IsHoT(uint statusId) => ClassifyStatus(statusId).IsHoT;
+    public bool IsGroundEffectDot(uint statusId) => GroundEffectDotIds.ContainsKey(statusId);
 
     /// <summary>
     /// Returns ground-effect DoT skill names for which the given source has an active self-buff.
