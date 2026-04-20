@@ -20,7 +20,7 @@ internal static class FontSection
             if (enableFont && fontService != null && uiBuilder != null && !fontService.IsInitialized)
             {
                 try { fontService.Initialize(uiBuilder); }
-                catch (Exception ex) { ServiceManager.PluginLog.Error($"Failed to initialize font service: {ex.Message}"); }
+                catch (Exception ex) { ServiceManager.LogError(LogChannel.FontService, $"Failed to initialize font service: {ex.Message}"); }
             }
         }
 

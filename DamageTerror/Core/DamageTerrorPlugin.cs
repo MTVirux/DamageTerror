@@ -54,7 +54,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         }
         catch (Exception ex)
         {
-            pluginLog.Error(ex, "Failed to load plugin config (possibly outdated enum values). Creating fresh config.");
+            ServiceManager.LogError(LogChannel.Plugin, ex, "Failed to load plugin config (possibly outdated enum values). Creating fresh config.");
         }
 
         if (cfg == null)
@@ -73,6 +73,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         this.Config = cfg;
         this.Config.Save = this.SaveConfig;
+        ServiceManager.Config = this.Config;
         Gui.ConfigWindow.LayoutPage.EnsureLayoutComplete(cfg);
 
         foreach (var tab in cfg.MeterTabs)
@@ -150,7 +151,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             }
             catch (Exception ex)
             {
-                pluginLog.Error($"Failed to start data service: {ex.Message}");
+                ServiceManager.LogError(LogChannel.Plugin, $"Failed to start data service: {ex.Message}");
             }
         });
     }
@@ -194,7 +195,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
     private void SafeDispose(Action action)
     {
         try { action(); }
-        catch (Exception ex) { this.pluginLog.Error($"Error during disposal: {ex.Message}"); }
+        catch (Exception ex) { ServiceManager.LogError(LogChannel.Plugin, $"Error during disposal: {ex.Message}"); }
     }
 
     public void OpenPopoutTab(Guid tabId)
@@ -245,7 +246,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
     {
         var contentType = Content.ContentType;
         var contentName = Content.ContentName ?? "Unknown";
-        this.pluginLog.Information($"Territory changed: {contentName} (ID: {territoryId}, Type: {contentType})");
+        ServiceManager.LogInfo(LogChannel.Plugin, $"Territory changed: {contentName} (ID: {territoryId}, Type: {contentType})");
     }
 
     private void OnCommand(string command, string arguments)
@@ -283,7 +284,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         if (matching.Count == 0)
         {
-            this.pluginLog.Warning($"No popout group found matching '{groupName}'.");
+            ServiceManager.LogWarning(LogChannel.Plugin, $"No popout group found matching '{groupName}'.");
             return;
         }
 

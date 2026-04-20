@@ -454,7 +454,7 @@ public sealed class StatusTracker
         }
         catch (Exception ex)
         {
-            ServiceManager.PluginLog.Debug($"Failed to classify status {statusId}: {ex.Message}");
+            ServiceManager.LogDebug(LogChannel.StatusTracker, $"Failed to classify status {statusId}: {ex.Message}");
         }
 
         var result = new StatusClassification { IsDoT = isDoT, IsHoT = isHoT, IsBuff = isBuff };

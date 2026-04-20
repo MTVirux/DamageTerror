@@ -101,7 +101,7 @@ public sealed class PartyMembershipService
             }
             catch (Exception ex)
             {
-                ServiceManager.PluginLog.Debug($"Party query failed: {ex.Message}");
+                ServiceManager.LogDebug(LogChannel.PartyMembership, $"Party query failed: {ex.Message}");
             }
         }
     }

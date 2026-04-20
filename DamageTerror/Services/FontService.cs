@@ -43,7 +43,7 @@ public sealed class FontService : IDisposable
         }
         catch (Exception ex)
         {
-            pluginLog.Error($"[FontService] Failed to create font atlas: {ex.Message}");
+            ServiceManager.LogError(LogChannel.FontService, $"[FontService] Failed to create font atlas: {ex.Message}");
             return;
         }
 
@@ -75,7 +75,7 @@ public sealed class FontService : IDisposable
         }
         catch (Exception ex)
         {
-            pluginLog.Error($"[FontService] Failed to deserialize font spec: {ex.Message}");
+            ServiceManager.LogError(LogChannel.FontService, $"[FontService] Failed to deserialize font spec: {ex.Message}");
             return;
         }
 
@@ -89,7 +89,7 @@ public sealed class FontService : IDisposable
         }
         catch (Exception ex)
         {
-            pluginLog.Error($"[FontService] Failed to create font handle: {ex.Message}");
+            ServiceManager.LogError(LogChannel.FontService, $"[FontService] Failed to create font handle: {ex.Message}");
         }
     }
 
@@ -109,7 +109,7 @@ public sealed class FontService : IDisposable
             }
             catch (Exception ex)
             {
-                pluginLog.Error($"[FontService] Font push failed: {ex.Message}");
+                ServiceManager.LogError(LogChannel.FontService, $"[FontService] Font push failed: {ex.Message}");
             }
         }
 
@@ -173,7 +173,7 @@ public sealed class FontService : IDisposable
         }
         catch (Exception ex)
         {
-            pluginLog.Error($"[FontService] Failed to serialize font spec: {ex.Message}");
+            ServiceManager.LogError(LogChannel.FontService, $"[FontService] Failed to serialize font spec: {ex.Message}");
             return;
         }
 
