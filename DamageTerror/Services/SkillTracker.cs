@@ -126,6 +126,10 @@ public sealed class SkillTracker
     private const double DotOutlierHighThreshold = 3.0;
     private const int DotMinHitsForOutlierFilter = 10;
 
+    /// <summary>FFXIV player entity IDs start with 0x10; enemies start with 0x40.</summary>
+    private static bool IsPlayerEntity(string hexEntityId)
+        => hexEntityId.Length >= 2 && hexEntityId[0] == '1' && hexEntityId[1] == '0';
+
     private readonly IDataManager dataManager;
     private readonly IPluginLog log;
     private readonly PositionalTable positionalTable;
@@ -1496,6 +1500,25 @@ public sealed class SkillTracker
         // StatusTracker has no data (e.g. plugin started mid-encounter).
         if (sourceSkills.Count == 0)
         {
+            // If the target is a player entity, this is an enemy DoT/HoT ticking
+            // on a player — record as damage taken only, not as damage dealt/healed.
+            var targetId = line[2];
+            if (IsPlayerEntity(targetId))
+            {
+#if DEBUG
+                dotFallbackCount++;
+#endif
+                if (isDoT)
+                {
+                    lock (syncLock)
+                    {
+                        if (!string.IsNullOrEmpty(targetName))
+                            RecordDamageTakenEvent(targetName, "DoT", amount, 0);
+                    }
+                }
+                return;
+            }
+
 #if DEBUG
             dotFallbackCount++;
 #endif
