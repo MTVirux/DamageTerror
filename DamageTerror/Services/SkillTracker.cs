@@ -1382,8 +1382,10 @@ public sealed class SkillTracker
         bool isHoT = string.Equals(dotOrHot, "HoT", StringComparison.OrdinalIgnoreCase);
         bool isDoT = !isHoT;
 
-        dotHotLineCount++;
-        if (isDoT) dotLineCount++;
+        #if DEBUG
+            dotHotLineCount++;
+            if (isDoT) dotLineCount++;
+        #endif
 
         // Ground-effect lines have a non-zero effectId and carry damage for
         // that one specific ground effect only.  Regular (aggregate) lines
