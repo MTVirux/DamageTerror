@@ -579,6 +579,10 @@ public sealed class Configuration : IPluginConfiguration
     public Vector2 ConfigWindowPos { get; set; } = new Vector2(100, 100);
     public Vector2 ConfigWindowSize { get; set; } = new Vector2(400, 350);
 
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    public HashSet<LogChannel> DisabledLogChannels { get; set; } = new();
+
     [JsonIgnore]
     public float BaseFontSizePt => EnableCustomFont && CustomFontSizePt > 0 ? CustomFontSizePt : FontDefaults.BaseSizePt;
 

@@ -36,7 +36,7 @@ public sealed class GifAnimator : IDisposable
         // Property 0x5100 = frame delay in hundredths of a second
         byte[]? delayBytes = null;
         try { delayBytes = image.GetPropertyItem(0x5100)?.Value; }
-        catch (Exception ex) { ServiceManager.PluginLog.Debug($"GIF frame delay property not found: {ex.Message}"); }
+        catch (Exception ex) { ServiceManager.LogDebug(LogChannel.GifAnimator, $"GIF frame delay property not found: {ex.Message}"); }
 
         for (var i = 0; i < frameCount; i++)
         {
@@ -107,7 +107,7 @@ public sealed class GifAnimator : IDisposable
         }
         catch (Exception ex)
         {
-            ServiceManager.PluginLog.Warning($"Failed to clean up GIF temp directory: {ex.Message}");
+            ServiceManager.LogWarning(LogChannel.GifAnimator, $"Failed to clean up GIF temp directory: {ex.Message}");
         }
     }
 }

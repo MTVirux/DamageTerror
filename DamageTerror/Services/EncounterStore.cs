@@ -397,15 +397,15 @@ public sealed class EncounterStore
         }
         catch (JsonException ex)
         {
-            ServiceManager.PluginLog.Warning($"Encounter history is corrupt and could not be loaded: {ex.Message}");
+            ServiceManager.LogWarning(LogChannel.EncounterStore, $"Encounter history is corrupt and could not be loaded: {ex.Message}");
         }
         catch (System.IO.IOException ex)
         {
-            ServiceManager.PluginLog.Warning($"Failed to read encounter history file: {ex.Message}");
+            ServiceManager.LogWarning(LogChannel.EncounterStore, $"Failed to read encounter history file: {ex.Message}");
         }
         catch (Exception ex)
         {
-            ServiceManager.PluginLog.Warning($"Unexpected error loading encounter history: {ex.Message}");
+            ServiceManager.LogWarning(LogChannel.EncounterStore, $"Unexpected error loading encounter history: {ex.Message}");
         }
     }
 
@@ -558,7 +558,7 @@ public sealed class EncounterStore
             }
             catch (Exception ex)
             {
-                ServiceManager.PluginLog.Warning($"Failed to save encounter history: {ex.Message}");
+                ServiceManager.LogWarning(LogChannel.EncounterStore, $"Failed to save encounter history: {ex.Message}");
             }
         });
     }

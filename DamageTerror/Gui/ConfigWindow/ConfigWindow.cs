@@ -35,6 +35,9 @@ public sealed class ConfigWindow : Window, IDisposable
         Formatting,
         History,
         SampleData,
+#if DEBUG
+        Debug,
+#endif
     }
 
     private static readonly (ConfigPage Page, string Label, string? Group, FontAwesomeIcon Icon)[] PageEntries =
@@ -57,6 +60,9 @@ public sealed class ConfigWindow : Window, IDisposable
         (ConfigPage.Font,         "Fonts",                  "Appearance",   FontAwesomeIcon.Font),
         (ConfigPage.History,      "History",                null,           FontAwesomeIcon.History),
         (ConfigPage.SampleData,  "Sample Data",            null,           FontAwesomeIcon.Flask),
+#if DEBUG
+        (ConfigPage.Debug,       "Debug",                  null,           FontAwesomeIcon.Bug),
+#endif
     };
 
     public ConfigWindow(DamageTerrorPlugin plugin, PresetManager presetManager)
@@ -236,6 +242,12 @@ public sealed class ConfigWindow : Window, IDisposable
             case ConfigPage.SampleData:
                 sampleDataPage.Draw();
                 break;
+
+#if DEBUG
+            case ConfigPage.Debug:
+                changed |= DebugSection.Draw(config);
+                break;
+#endif
         }
 
         return changed;

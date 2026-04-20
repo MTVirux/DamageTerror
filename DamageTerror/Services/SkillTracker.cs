@@ -244,7 +244,7 @@ public sealed class SkillTracker
         {
             ProcessAddCombatant(line);
             if (line.Length >= 7)
-                log.Debug($"[PetDebug] Type03 id={line[2]} name={line[3]} ownerId={line[6]}");
+                ServiceManager.LogDebug(LogChannel.PetDebug, $"[PetDebug] Type03 id={line[2]} name={line[3]} ownerId={line[6]}");
             return;
         }
 
@@ -254,7 +254,7 @@ public sealed class SkillTracker
             var dbgSrc = line[3];
             var dbgSkill = line[5];
             if (GroundEffectEntityNames.Contains(dbgSrc) || GroundEffectEntityNames.Contains(dbgSkill))
-                log.Debug($"[PetDebug] Type{type} srcId={line[2]} src={dbgSrc} actId={line[4]} skill={dbgSkill} tgt={line[7]}");
+                ServiceManager.LogDebug(LogChannel.PetDebug, $"[PetDebug] Type{type} srcId={line[2]} src={dbgSrc} actId={line[4]} skill={dbgSkill} tgt={line[7]}");
         }
 
         if (type == "26" || type == "30")
@@ -478,7 +478,7 @@ public sealed class SkillTracker
         // as a named category in the skill breakdown instead of inline.
         if (petOwnerName != null && petEntityName != null)
         {
-            log.Debug($"[PetDebug] PetAccum owner={petOwnerName} pet={petEntityName} skill={skillName} dmg={dmgAmount} heal={healAmount}");
+            ServiceManager.LogDebug(LogChannel.PetDebug, $"[PetDebug] PetAccum owner={petOwnerName} pet={petEntityName} skill={skillName} dmg={dmgAmount} heal={healAmount}");
             lock (syncLock)
             {
                 if (dmgAmount > 0)
@@ -793,7 +793,7 @@ public sealed class SkillTracker
         }
         catch (Exception ex)
         {
-            ServiceManager.PluginLog.Debug($"Failed to look up damage type for action {actionId}: {ex.Message}");
+            ServiceManager.LogDebug(LogChannel.SkillTracker, $"Failed to look up damage type for action {actionId}: {ex.Message}");
         }
 
         damageTypeCache[actionId] = result;
@@ -1140,7 +1140,7 @@ public sealed class SkillTracker
             // Merge pet categories: each pet becomes a top-level entry with its skills as sub-entries.
             if (petStore.TryGetValue(combatantName, out var pets))
             {
-                log.Debug($"[PetDebug] BuildSkillList found {pets.Count} pet(s) for {combatantName}");
+                ServiceManager.LogDebug(LogChannel.PetDebug, $"[PetDebug] BuildSkillList found {pets.Count} pet(s) for {combatantName}");
                 foreach (var (petName, petSkills) in pets)
                 {
                     long petTotal = 0;
@@ -1450,7 +1450,7 @@ public sealed class SkillTracker
                 var statuses = statusTracker.GetActiveStatuses(targetName);
 #if DEBUG
                 if (isDoT && dotAggregateCount <= 5)
-                    log.Debug($"[DoTDiag] Aggregate #{dotAggregateCount}: target={targetName} amt={amount} activeStatuses={statuses.Count} dotStatuses={statuses.Count(s => s.IsDoT)}");
+                    ServiceManager.LogDebug(LogChannel.DoTDiag, $"[DoTDiag] Aggregate #{dotAggregateCount}: target={targetName} amt={amount} activeStatuses={statuses.Count} dotStatuses={statuses.Count(s => s.IsDoT)}");
 #endif
                 foreach (var s in statuses)
                 {
