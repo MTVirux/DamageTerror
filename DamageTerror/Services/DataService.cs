@@ -318,7 +318,15 @@ public sealed class DataService : IDisposable
         prevSnapshotActive = snapshot.Encounter.IsActive;
 
         if (!isNewEncounter)
-            DrainPendingLogLines();
+        {
+            if (snapshot.Encounter.IsActive || isEncounterEnd)
+                DrainPendingLogLines();
+            else
+            {
+                lock (pendingLogLines)
+                    pendingLogLines.Clear();
+            }
+        }
 
         if (!string.IsNullOrEmpty(PlayerName))
             snapshot.PlayerName = PlayerName;
