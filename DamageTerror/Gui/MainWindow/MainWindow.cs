@@ -456,6 +456,11 @@ public sealed class MainWindow : Window, IDisposable
             if (IconMenuItem("Open Settings", FontAwesomeIcon.Cog))
                 plugin.OpenConfigUi();
 
+            ImGui.Separator();
+
+            if (IconMenuItem("Close Window", FontAwesomeIcon.Times))
+                IsOpen = false;
+
             ImGui.EndPopup();
         }
         ImGui.PopStyleVar();
