@@ -54,7 +54,11 @@ public sealed class Configuration : IPluginConfiguration
         new MeterTab("DPS", TabFilterMode.All, SortField.EncDps, true),
         new MeterTab("Healing", TabFilterMode.All, SortField.EncHps, true)
         {
-            VisibleColumns = new() { BarColumn.Hps },
+            VisibleColumns = new() { BarColumn.Hps, BarColumn.Healed, BarColumn.HealPercent },
+        },
+        new MeterTab("Solo", TabFilterMode.All, SortField.EncDps, true)
+        {
+            GroupFilter = GroupFilter.Solo,
         },
     };
 
@@ -75,9 +79,9 @@ public sealed class Configuration : IPluginConfiguration
     public List<LayoutElement> Layout { get; set; } = new()
     {
         LayoutElement.EncounterSelect,
+        LayoutElement.CombatantBars,
         LayoutElement.MeterTabs,
         LayoutElement.StatusBar,
-        LayoutElement.CombatantBars,
     };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
