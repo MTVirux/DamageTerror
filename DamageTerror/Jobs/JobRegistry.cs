@@ -34,6 +34,7 @@ public static class JobRegistry
     private static readonly Dictionary<uint, int> AggregatedDotInitialHitPotencies = BuildAggregatedDict(j => j.DotInitialHitPotencies);
     private static readonly HashSet<uint> AggregatedKnownDotStatusIds = BuildAggregatedSet(j => j.KnownDotStatusIds);
     private static readonly HashSet<uint> AggregatedKnownHotStatusIds = BuildAggregatedSet(j => j.KnownHotStatusIds);
+    private static readonly HashSet<uint> AggregatedKnownReflectStatusIds = BuildAggregatedSet(j => j.KnownReflectStatusIds);
     private static readonly Dictionary<uint, string> AggregatedGroundEffectDots = BuildGroundEffectDots();
 
     // ── Role-grouped arrays ──
@@ -99,6 +100,7 @@ public static class JobRegistry
 
     public static HashSet<uint> GetKnownDotStatusIds() => AggregatedKnownDotStatusIds;
     public static HashSet<uint> GetKnownHotStatusIds() => AggregatedKnownHotStatusIds;
+    public static HashSet<uint> GetKnownReflectStatusIds() => AggregatedKnownReflectStatusIds;
     public static Dictionary<uint, string> GetGroundEffectDotIds() => AggregatedGroundEffectDots;
 
     // ── Positional fallbacks ──

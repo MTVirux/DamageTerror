@@ -82,6 +82,12 @@ public sealed class SkillTracker
         "ダメージ低下",
     };
 
+    /// <summary>Status IDs whose presence on a target causes incoming damage to be reflected
+    /// back to the attacker. The reflect arrives as a second 0x03 damage effect inside the
+    /// attacker's Type 21/22 line and must be re-attributed to the target.
+    /// Sourced from each job definition's <see cref="JobDefinitionBase.KnownReflectStatusIds"/>.</summary>
+    private static readonly HashSet<uint> ReflectStatusIds = JobRegistry.GetKnownReflectStatusIds();
+
     private Dictionary<string, List<SkillUseEvent>>? seededEvents;
     private Dictionary<string, List<SkillUseEvent>>? seededDamageTakenEvents;
     private Dictionary<string, List<SkillUseEvent>>? seededItemEvents;
@@ -355,11 +361,15 @@ public sealed class SkillTracker
         // Scan all 8 effect pairs (fields 8-23).
         // A single ability can have both damage and healing in different pairs
         // (e.g. drain abilities like Souleater, Energy Drain).
+        // A second 0x03 damage effect is captured separately as a reflect
+        // candidate (e.g. WAR's Damnation reflects incoming damage back).
         long dmgAmount = 0;
         byte dmgSeverity = 0;
         int dmgBonusPercent = -1;
         long healAmount = 0;
         byte healSeverity = 0;
+        long reflectAmount = 0;
+        byte reflectSeverity = 0;
         for (int i = 0; i < 8; i++)
         {
             int flagIdx = 8 + i * 2;
@@ -384,6 +394,11 @@ public sealed class SkillTracker
                 dmgAmount = result.Amount;
                 dmgSeverity = result.Severity;
                 dmgBonusPercent = result.BonusPercent;
+            }
+            else if (reflectAmount == 0)
+            {
+                reflectAmount = result.Amount;
+                reflectSeverity = result.Severity;
             }
         }
 
@@ -531,6 +546,39 @@ public sealed class SkillTracker
         // outside the skill lock to avoid nested locking.
         if (dmgAmount > 0 || healAmount > 0)
             graphTracker?.RecordLogLineEvent(sourceName, dmgAmount, healAmount);
+
+        // A second damage effect on an enemy-on-player ability line is reflected
+        // damage (e.g. Damnation). Re-attribute it to the line's target as the
+        // active reflect-status skill, with the line's source as the new target.
+        if (reflectAmount > 0 && !string.IsNullOrEmpty(targetName))
+        {
+            var reflectSkill = ResolveActiveReflectSkill(targetName);
+            if (reflectSkill != null)
+            {
+                lock (syncLock)
+                {
+                    AccumulateSkill(damageData, targetName, reflectSkill, reflectAmount, reflectSeverity, SkillDamageType.Unknown);
+                    RecordEvent(targetName, reflectSkill, reflectAmount, false, reflectSeverity, sourceName);
+                    RecordDamageTakenEvent(sourceName, reflectSkill, reflectAmount, reflectSeverity);
+                }
+                graphTracker?.RecordLogLineEvent(targetName, reflectAmount, 0);
+            }
+        }
+    }
+
+    /// <summary>Returns the name of the first active reflect status on the target,
+    /// or null if no known reflect status is active.</summary>
+    private string? ResolveActiveReflectSkill(string targetName)
+    {
+        if (statusTracker == null)
+            return null;
+
+        foreach (var s in statusTracker.GetActiveStatuses(targetName))
+        {
+            if (ReflectStatusIds.Contains(s.StatusId))
+                return s.StatusName;
+        }
+        return null;
     }
 
     private void AccumulateSkill(Dictionary<string, Dictionary<string, SkillAccum>> store,

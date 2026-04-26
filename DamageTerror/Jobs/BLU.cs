@@ -37,4 +37,11 @@ public sealed class BLU : JobDefinitionBase
     {
         2495, // Angel's Snack
     };
+
+    public override IReadOnlySet<uint> KnownReflectStatusIds { get; } = new HashSet<uint>
+    {
+        1720, // Ice Spikes
+        1724, // Veil of the Whorl
+        3631, // Schiltron
+    };
 }

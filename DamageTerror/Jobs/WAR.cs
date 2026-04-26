@@ -20,6 +20,12 @@ public sealed class WAR : JobDefinitionBase
         2108, // Shake It Off (Over Time)
     };
 
+    public override IReadOnlySet<uint> KnownReflectStatusIds { get; } = new HashSet<uint>
+    {
+        89,   // Vengeance
+        3832, // Damnation
+    };
+
     public override string MaxHitSkill => "Primal Rend";
 
     public override string[] DamageSkillNames =>
