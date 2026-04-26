@@ -25,6 +25,9 @@ public abstract class JobDefinitionBase
     // ── Known HoT status IDs for classification ──
     public virtual IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>();
 
+    // ── Status IDs whose presence on a target reflects incoming damage back to the attacker ──
+    public virtual IReadOnlySet<uint> KnownReflectStatusIds { get; } = new HashSet<uint>();
+
     // ── Ground-effect DoT IDs (statusId → skill name) ──
     public virtual IReadOnlyDictionary<uint, string> GroundEffectDots { get; } = new Dictionary<uint, string>();
 
