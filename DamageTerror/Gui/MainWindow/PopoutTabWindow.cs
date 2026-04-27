@@ -16,7 +16,8 @@ public sealed class PopoutTabWindow : Window, IDisposable
     private readonly CombatantDetailPanel detailPanel;
     private readonly StatusBarComponent statusBarComponent;
     private TitleBarButton? lockButton;
-    private DateTime? combatEndTime;
+    private MeterVisibilityState visibilityState;
+    private bool wasDrawnLastFrame = true;
     private bool suppressClose;
 
     public Guid TabId => tabId;
@@ -75,7 +76,20 @@ public sealed class PopoutTabWindow : Window, IDisposable
     }
 
     public override bool DrawConditions()
-        => MeterWindowHelper.ShouldDraw(plugin.Config, ref combatEndTime);
+    {
+        var ok = MeterWindowHelper.ShouldDraw(plugin.Config, ref visibilityState);
+        if (!ok)
+            wasDrawnLastFrame = false;
+        return ok;
+    }
+
+    public bool WasDrawnLastFrame => wasDrawnLastFrame;
+
+    public void RequestVisibilityOverride()
+    {
+        visibilityState.UserOverride = true;
+        visibilityState.ObservedCombatSinceOverride = false;
+    }
 
     private PopoutWindowPin? GetPin()
     {
@@ -96,6 +110,7 @@ public sealed class PopoutTabWindow : Window, IDisposable
     public override void PreDraw()
     {
         RespectCloseHotkey = !plugin.Config.IgnoreEscClose;
+        wasDrawnLastFrame = false;
 
         var forceShowHeader = MeterWindowHelper.IsModifierActive(plugin.Config);
 
@@ -138,6 +153,8 @@ public sealed class PopoutTabWindow : Window, IDisposable
 
     public override void Draw()
     {
+        wasDrawnLastFrame = true;
+
         var padLeft = plugin.Config.WindowPaddingLeft;
         var padRight = plugin.Config.WindowPaddingRight;
         var padTop = plugin.Config.WindowPaddingTop;

@@ -41,7 +41,7 @@ public sealed class MainWindow : Window, IDisposable
     private TitleBarButton? lockButton;
     private TitleBarButton? viewModeButton;
     private MeterTab? currentActiveTab;
-    private DateTime? combatEndTime;
+    private MeterVisibilityState visibilityState;
     private int selectedMeterTab;
     private bool wasDrawnLastFrame = true;
     private GifAnimator? gifAnimator;
@@ -156,7 +156,20 @@ public sealed class MainWindow : Window, IDisposable
     }
 
     public override bool DrawConditions()
-        => MeterWindowHelper.ShouldDraw(plugin.Config, ref combatEndTime);
+    {
+        var ok = MeterWindowHelper.ShouldDraw(plugin.Config, ref visibilityState);
+        if (!ok)
+            wasDrawnLastFrame = false;
+        return ok;
+    }
+
+    public bool WasDrawnLastFrame => wasDrawnLastFrame;
+
+    public void RequestVisibilityOverride()
+    {
+        visibilityState.UserOverride = true;
+        visibilityState.ObservedCombatSinceOverride = false;
+    }
 
     public override void PreDraw()
     {
