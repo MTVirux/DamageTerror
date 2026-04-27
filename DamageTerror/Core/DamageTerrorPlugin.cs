@@ -158,7 +158,11 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public static string Name => "Damage Terror";
 
-    public void OpenMainUi() => this.mainWindow.IsOpen = true;
+    public void OpenMainUi()
+    {
+        this.mainWindow.IsOpen = true;
+        this.mainWindow.RequestVisibilityOverride();
+    }
 
     public void OpenConfigUi() => this.configWindow.IsOpen = true;
 
@@ -254,10 +258,23 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         var args = arguments.Trim();
         if (string.IsNullOrWhiteSpace(args))
         {
-            var newState = !this.mainWindow.IsOpen;
-            this.mainWindow.IsOpen = newState;
-            foreach (var popout in this.popoutWindows.Values)
-                popout.SetVisible(newState);
+            var visible = this.mainWindow.IsOpen && this.mainWindow.WasDrawnLastFrame;
+            if (visible)
+            {
+                this.mainWindow.IsOpen = false;
+                foreach (var popout in this.popoutWindows.Values)
+                    popout.SetVisible(false);
+            }
+            else
+            {
+                this.mainWindow.IsOpen = true;
+                this.mainWindow.RequestVisibilityOverride();
+                foreach (var popout in this.popoutWindows.Values)
+                {
+                    popout.SetVisible(true);
+                    popout.RequestVisibilityOverride();
+                }
+            }
         }
         else if (args.Equals("config", StringComparison.OrdinalIgnoreCase))
             this.configWindow.IsOpen = !this.configWindow.IsOpen;
@@ -290,6 +307,10 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         var anyVisible = matching.Any(w => w.IsOpen);
         foreach (var window in matching)
+        {
             window.SetVisible(!anyVisible);
+            if (!anyVisible)
+                window.RequestVisibilityOverride();
+        }
     }
 }

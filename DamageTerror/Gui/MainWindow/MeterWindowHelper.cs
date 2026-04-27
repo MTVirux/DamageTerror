@@ -4,6 +4,13 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
+internal struct MeterVisibilityState
+{
+    public DateTime? CombatEndTime;
+    public bool UserOverride;
+    public bool ObservedCombatSinceOverride;
+}
+
 internal static class MeterWindowHelper
 {
     /// <summary>Persists across frames: current toggle state for modifier key mode.</summary>
@@ -59,7 +66,7 @@ internal static class MeterWindowHelper
         };
     }
 
-    public static bool ShouldDraw(Configuration config, ref DateTime? combatEndTime)
+    public static bool ShouldDraw(Configuration config, ref MeterVisibilityState state)
     {
         if (!Svc.ClientState.IsLoggedIn)
             return false;
@@ -69,19 +76,33 @@ internal static class MeterWindowHelper
 
         if (!config.HideOutOfCombat)
         {
-            combatEndTime = null;
+            state = default;
             return true;
         }
 
         if (Svc.Condition[ConditionFlag.InCombat])
         {
-            combatEndTime = null;
+            state.CombatEndTime = null;
+            if (state.UserOverride)
+                state.ObservedCombatSinceOverride = true;
             return true;
         }
 
-        combatEndTime ??= DateTime.UtcNow;
-        var elapsed = (DateTime.UtcNow - combatEndTime.Value).TotalSeconds;
-        return elapsed < config.HideOutOfCombatDelay;
+        state.CombatEndTime ??= DateTime.UtcNow;
+        var elapsed = (DateTime.UtcNow - state.CombatEndTime.Value).TotalSeconds;
+        var graceExpired = elapsed >= config.HideOutOfCombatDelay;
+
+        // Override is cleared once a full combat cycle has completed after it was set.
+        if (graceExpired && state.UserOverride && state.ObservedCombatSinceOverride)
+        {
+            state.UserOverride = false;
+            state.ObservedCombatSinceOverride = false;
+        }
+
+        if (state.UserOverride)
+            return true;
+
+        return !graceExpired;
     }
 
     public static void DrawMeterHeader(Configuration config, MeterTab? activeTab)
