@@ -19,7 +19,7 @@
   "AssemblyVersion": "1.2.0.4",
   "RepoUrl": "https://github.com/MTVirux/DamageTerror",
   "ApplicableVersion": "any",
-  "DalamudApiLevel": 14,
+  "DalamudApiLevel": 15,
   "ImageUrls": null,
   "IconUrl": null
 }
