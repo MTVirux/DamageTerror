@@ -63,14 +63,6 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             this.PluginInterface.SavePluginConfig(cfg);
         }
 
-#pragma warning disable CS0612
-        if (cfg.DotCalcMode == DotCalcMode.Plugin)
-        {
-            cfg.DotCalcMode = DotCalcMode.Refined;
-            this.PluginInterface.SavePluginConfig(cfg);
-        }
-#pragma warning restore CS0612
-
         this.Config = cfg;
         this.Config.Save = this.SaveConfig;
         ServiceManager.Config = this.Config;
@@ -246,7 +238,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     private void DrawUi() => this.windowSystem.Draw();
 
-    private void OnTerritoryChanged(ushort territoryId)
+    private void OnTerritoryChanged(uint territoryId)
     {
         var contentType = Content.ContentType;
         var contentName = Content.ContentName ?? "Unknown";
