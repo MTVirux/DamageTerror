@@ -24,7 +24,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path potency-changes | Out-Null
           $captured = & ./update-potencies.ps1 *>&1 | Out-String
           Write-Host $captured
-          $dirty = git status --porcelain -- DamageTerror/DamageTerror/Jobs/
+          $dirty = git status --porcelain -- DamageTerror/Jobs/
           if ([string]::IsNullOrWhiteSpace($dirty)) {
             Write-Host "No potency changes detected; skipping summary."
           } else {
