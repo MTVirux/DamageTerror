@@ -47,16 +47,33 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
       - name: Build
         run: |
-          $ver = '${{ github.ref_name }}' -replace 'testing_'
-          invoke-expression 'dotnet build --no-restore --configuration Debug --nologo -p:Version=$ver -p:FileVersion=$ver -p:AssemblyVersion=$ver'
-      - name: Write version into json
+          dotnet build --no-restore --configuration Debug --nologo
+      - name: Write testing version into json
         run: |
           $ver = '${{ github.ref_name }}' -replace 'testing_'
           $path = './DamageTerror/bin/Debug/DamageTerror.json'
           $json = Get-Content -Raw $path | ConvertFrom-Json
-          $json.AssemblyVersion = $ver
+          if ($json.PSObject.Properties.Name -contains 'TestingAssemblyVersion') {
+            $json.TestingAssemblyVersion = $ver
+          } else {
+            $json | Add-Member -NotePropertyName 'TestingAssemblyVersion' -NotePropertyValue $ver
+          }
           $content = $json | ConvertTo-Json
           set-content -Path $path -Value $content
+      - name: Verify manifest matches repo.json
+        # Belt-and-suspenders: fail the build now (not at user install time) if AssemblyVersion drifts.
+        run: |
+          $manifest = Get-Content -Raw './DamageTerror/bin/Debug/DamageTerror.json' | ConvertFrom-Json
+          $repo = (Get-Content -Raw './repo.json' | ConvertFrom-Json)[0]
+          if ($manifest.AssemblyVersion -ne $repo.AssemblyVersion) {
+            Write-Error "Manifest AssemblyVersion ($($manifest.AssemblyVersion)) does not match repo.json AssemblyVersion ($($repo.AssemblyVersion)). Dalamud will reject the install."
+            exit 1
+          }
+          $expectedTesting = '${{ github.ref_name }}' -replace 'testing_'
+          if ($manifest.TestingAssemblyVersion -ne $expectedTesting) {
+            Write-Error "Manifest TestingAssemblyVersion ($($manifest.TestingAssemblyVersion)) does not match tag version ($expectedTesting)."
+            exit 1
+          }
       - name: Archive
         run: Compress-Archive -Path DamageTerror/bin/Debug/* -DestinationPath DamageTerror.zip
       - name: Upload a Build Artifact
