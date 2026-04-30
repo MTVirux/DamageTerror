@@ -10,22 +10,22 @@ public sealed class WHM : JobDefinitionBase
 
     public override IReadOnlyDictionary<uint, int> DotTickPotencies { get; } = new Dictionary<uint, int>
     {
-        { 1871, 65 },  // Dia
-        { 143, 50 },   // Aero
+        { 1871, 85 },  // Dia
+        { 143, 30 },   // Aero
         { 144, 50 },   // Aero II
         { 798, 50 },   // Aero III
     };
 
     public override IReadOnlyDictionary<uint, int> DotInitialHitPotencies { get; } = new Dictionary<uint, int>
     {
-        { 1871, 65 },  // Dia
+        { 1871, 85 },  // Dia
     };
 
     public override IReadOnlyDictionary<uint, int> HotTickPotencies { get; } = new Dictionary<uint, int>
     {
         { 158, 250 },  // Regen
         { 150, 150 },  // Medica II
-        { 3880, 150 }, // Medica III
+        { 3880, 175 }, // Medica III
         { 1911, 100 }, // Asylum
     };
 

@@ -12,7 +12,7 @@ public sealed class SGE : JobDefinitionBase
     {
         { 2614, 40 },  // Eukrasian Dosis
         { 2615, 60 },  // Eukrasian Dosis II
-        { 2616, 75 },  // Eukrasian Dosis III
+        { 2616, 90 },  // Eukrasian Dosis III
         { 3897, 40 },  // Eukrasian Dyskrasia
         { 3976, 50 },  // Eukrasian Dosis III (PvP)
     };

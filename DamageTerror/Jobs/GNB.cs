@@ -10,13 +10,13 @@ public sealed class GNB : JobDefinitionBase
 
     public override IReadOnlyDictionary<uint, int> DotTickPotencies { get; } = new Dictionary<uint, int>
     {
-        { 1837, 60 },  // Sonic Break
+        { 1837, 120 },  // Sonic Break
         { 1838, 60 },  // Bow Shock
     };
 
     public override IReadOnlyDictionary<uint, int> DotInitialHitPotencies { get; } = new Dictionary<uint, int>
     {
-        { 1837, 300 }, // Sonic Break
+        { 1837, 340 }, // Sonic Break
         { 1838, 150 }, // Bow Shock
     };
 
