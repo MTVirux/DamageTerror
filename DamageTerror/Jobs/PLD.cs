@@ -15,7 +15,7 @@ public sealed class PLD : JobDefinitionBase
 
     public override IReadOnlyDictionary<uint, int> DotInitialHitPotencies { get; } = new Dictionary<uint, int>
     {
-        { 248, 120 },  // Circle of Scorn
+        { 248, 140 },  // Circle of Scorn
     };
 
     public override IReadOnlyDictionary<uint, int> HotTickPotencies { get; } = new Dictionary<uint, int>

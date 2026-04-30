@@ -10,9 +10,9 @@ public sealed class SCH : JobDefinitionBase
 
     public override IReadOnlyDictionary<uint, int> DotTickPotencies { get; } = new Dictionary<uint, int>
     {
-        { 1895, 75 },  // Biolysis
-        { 189, 20 },   // Bio II
-        { 3883, 50 },  // Baneful Impaction
+        { 1895, 85 },  // Biolysis
+        { 189, 40 },   // Bio II
+        { 3883, 140 },  // Baneful Impaction
         { 2039, 50 },  // Biolysis (PvP)
     };
 

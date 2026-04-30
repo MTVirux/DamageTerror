@@ -10,16 +10,16 @@ public sealed class AST : JobDefinitionBase
 
     public override IReadOnlyDictionary<uint, int> DotTickPotencies { get; } = new Dictionary<uint, int>
     {
-        { 838, 40 },   // Combust
-        { 843, 50 },   // Combust II
-        { 1881, 55 },  // Combust III
+        { 838, 50 },   // Combust
+        { 843, 60 },   // Combust II
+        { 1881, 70 },  // Combust III
     };
 
     public override IReadOnlyDictionary<uint, int> HotTickPotencies { get; } = new Dictionary<uint, int>
     {
         { 835, 250 },  // Aspected Benefic
         { 836, 150 },  // Aspected Helios
-        { 3894, 150 }, // Helios Conjunction
+        { 3894, 175 }, // Helios Conjunction
         { 848, 100 },  // Collective Unconscious
         { 956, 100 },  // Wheel of Fortune
     };

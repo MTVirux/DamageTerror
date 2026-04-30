@@ -10,10 +10,10 @@ public sealed class BLM : JobDefinitionBase
 
     public override IReadOnlyDictionary<uint, int> DotTickPotencies { get; } = new Dictionary<uint, int>
     {
-        { 163, 35 },   // Thunder III
-        { 1210, 30 },  // Thunder IV
-        { 3871, 30 },  // High Thunder
-        { 3872, 30 },  // High Thunder II
+        { 163, 50 },   // Thunder III
+        { 1210, 35 },  // Thunder IV
+        { 3871, 60 },  // High Thunder
+        { 3872, 40 },  // High Thunder II
     };
 
     public override IReadOnlyDictionary<uint, int> DotInitialHitPotencies { get; } = new Dictionary<uint, int>
@@ -21,7 +21,7 @@ public sealed class BLM : JobDefinitionBase
         { 163, 120 },  // Thunder III
         { 1210, 80 },  // Thunder IV
         { 3871, 150 }, // High Thunder
-        { 3872, 80 },  // High Thunder II
+        { 3872, 100 },  // High Thunder II
     };
 
     public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
