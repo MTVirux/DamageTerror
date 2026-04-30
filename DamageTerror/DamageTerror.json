@@ -1,4 +1,5 @@
 {
+  "_comment": "Local-dev stub. CI overwrites this with repo.json content at release time. Edit repo.json (the single source of truth); this file only exists so local debug builds load with sensible metadata.",
   "Author": "MTVirux",
   "Name": "Damage Terror",
   "Punchline": "Native ImGui damage meter overlay powered by IINACT",
@@ -22,5 +23,5 @@
   "ApplicableVersion": "any",
   "DalamudApiLevel": 15,
   "ImageUrls": null,
-  "IconUrl": null
+  "IconUrl": "https://raw.githubusercontent.com/MTVirux/DamageTerror/master/images/icon.png"
 }
