@@ -26,31 +26,18 @@ jobs:
         run: |
           $ver = '${{ github.ref_name }}'
           invoke-expression 'dotnet build --no-restore --configuration Release --nologo -p:Version=$ver -p:FileVersion=$ver -p:AssemblyVersion=$ver'
-      - name: Write version into jsons
+      - name: Verify repo.json matches tag
         run: |
-          $ver = '${{ github.ref_name }}'
-          $path = './DamageTerror/bin/Release/DamageTerror.json'
-          $json = Get-Content -Raw $path | ConvertFrom-Json
-          $json.AssemblyVersion = $ver
-          if ($json.PSObject.Properties.Name -contains 'TestingAssemblyVersion') {
-            $json.TestingAssemblyVersion = $ver
-          } else {
-            $json | Add-Member -NotePropertyName 'TestingAssemblyVersion' -NotePropertyValue $ver
-          }
-          $content = $json | ConvertTo-Json
-          set-content -Path $path -Value $content
-      - name: Verify manifest matches repo.json
-        run: |
-          $manifest = Get-Content -Raw './DamageTerror/bin/Release/DamageTerror.json' | ConvertFrom-Json
           $expected = '${{ github.ref_name }}'
-          if ($manifest.AssemblyVersion -ne $expected) {
-            Write-Error "Manifest AssemblyVersion ($($manifest.AssemblyVersion)) does not match release tag ($expected)."
+          $repo = (Get-Content -Raw './repo.json' | ConvertFrom-Json)[0]
+          if ($repo.AssemblyVersion -ne $expected) {
+            Write-Error "repo.json AssemblyVersion ($($repo.AssemblyVersion)) does not match tag ($expected). Did release.ps1 fail to commit?"
             exit 1
           }
-          if ($manifest.TestingAssemblyVersion -ne $expected) {
-            Write-Error "Manifest TestingAssemblyVersion ($($manifest.TestingAssemblyVersion)) does not match release tag ($expected)."
-            exit 1
-          }
+      - name: Generate bin manifest from repo.json
+        run: |
+          $repo = Get-Content -Raw './repo.json' | ConvertFrom-Json
+          $repo[0] | ConvertTo-Json -Depth 10 | Set-Content './DamageTerror/bin/Release/DamageTerror.json'
       - name: Archive
         run: Compress-Archive -Path DamageTerror/bin/Release/* -DestinationPath DamageTerror.zip
       - name: Upload a Build Artifact

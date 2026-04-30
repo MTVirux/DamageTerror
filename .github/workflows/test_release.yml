@@ -48,32 +48,18 @@ jobs:
       - name: Build
         run: |
           dotnet build --no-restore --configuration Debug --nologo
-      - name: Write testing version into json
+      - name: Verify repo.json matches tag
         run: |
-          $ver = '${{ github.ref_name }}' -replace 'testing_'
-          $path = './DamageTerror/bin/Debug/DamageTerror.json'
-          $json = Get-Content -Raw $path | ConvertFrom-Json
-          if ($json.PSObject.Properties.Name -contains 'TestingAssemblyVersion') {
-            $json.TestingAssemblyVersion = $ver
-          } else {
-            $json | Add-Member -NotePropertyName 'TestingAssemblyVersion' -NotePropertyValue $ver
-          }
-          $content = $json | ConvertTo-Json
-          set-content -Path $path -Value $content
-      - name: Verify manifest matches repo.json
-        # Belt-and-suspenders: fail the build now (not at user install time) if AssemblyVersion drifts.
-        run: |
-          $manifest = Get-Content -Raw './DamageTerror/bin/Debug/DamageTerror.json' | ConvertFrom-Json
+          $expected = '${{ github.ref_name }}' -replace 'testing_'
           $repo = (Get-Content -Raw './repo.json' | ConvertFrom-Json)[0]
-          if ($manifest.AssemblyVersion -ne $repo.AssemblyVersion) {
-            Write-Error "Manifest AssemblyVersion ($($manifest.AssemblyVersion)) does not match repo.json AssemblyVersion ($($repo.AssemblyVersion)). Dalamud will reject the install."
+          if ($repo.TestingAssemblyVersion -ne $expected) {
+            Write-Error "repo.json TestingAssemblyVersion ($($repo.TestingAssemblyVersion)) does not match tag ($expected). Did testing.ps1 fail to commit?"
             exit 1
           }
-          $expectedTesting = '${{ github.ref_name }}' -replace 'testing_'
-          if ($manifest.TestingAssemblyVersion -ne $expectedTesting) {
-            Write-Error "Manifest TestingAssemblyVersion ($($manifest.TestingAssemblyVersion)) does not match tag version ($expectedTesting)."
-            exit 1
-          }
+      - name: Generate bin manifest from repo.json
+        run: |
+          $repo = Get-Content -Raw './repo.json' | ConvertFrom-Json
+          $repo[0] | ConvertTo-Json -Depth 10 | Set-Content './DamageTerror/bin/Debug/DamageTerror.json'
       - name: Archive
         run: Compress-Archive -Path DamageTerror/bin/Debug/* -DestinationPath DamageTerror.zip
       - name: Upload a Build Artifact
