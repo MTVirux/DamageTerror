@@ -47,7 +47,8 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
       - name: Build
         run: |
-          dotnet build --no-restore --configuration Debug --nologo
+          $ver = '${{ github.ref_name }}' -replace 'testing_'
+          invoke-expression 'dotnet build --no-restore --configuration Debug --nologo -p:Version=$ver -p:FileVersion=$ver -p:AssemblyVersion=$ver'
       - name: Verify repo.json matches tag
         run: |
           $expected = '${{ github.ref_name }}' -replace 'testing_'
