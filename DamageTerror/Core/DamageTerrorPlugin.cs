@@ -20,6 +20,8 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public FontService FontService { get; private set; } = null!;
 
+    public ConfigBackupService ConfigBackup { get; private set; } = null!;
+
     private readonly WindowSystem windowSystem = new(typeof(DamageTerrorPlugin).AssemblyQualifiedName);
     private readonly Gui.MainWindow.MainWindow mainWindow;
     private readonly Gui.ConfigWindow.ConfigWindow configWindow;
@@ -47,6 +49,8 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         ECommonsMain.Init(pluginInterface, this);
         ServiceManager.Initialize(pluginInterface, playerState, dataManager, pluginLog, textureProvider);
 
+        this.ConfigBackup = new ConfigBackupService(pluginInterface.ConfigFile.FullName, pluginLog);
+
         Configuration? cfg = null;
         try
         {
@@ -54,8 +58,33 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         }
         catch (Exception ex)
         {
-            ServiceManager.LogError(LogChannel.Plugin, ex, "Failed to load plugin config (possibly outdated enum values). Creating fresh config.");
-            BackupBrokenConfig();
+            ServiceManager.LogError(LogChannel.Plugin, ex, "Failed to load plugin config (possibly outdated enum values).");
+
+            // Snapshot the broken file for forensics, then try .bak before
+            // falling back to defaults. The user only loses customisation
+            // when both the live config AND the backup are unreadable.
+            var brokenPath = this.ConfigBackup.SaveBrokenSnapshot();
+            if (brokenPath != null)
+                ServiceManager.LogWarning(LogChannel.Plugin, $"Saved broken config to {brokenPath}");
+
+            if (this.ConfigBackup.HasBackup() && this.ConfigBackup.RestoreFromFile(this.ConfigBackup.BackupPath))
+            {
+                try
+                {
+                    cfg = this.PluginInterface.GetPluginConfig() as Configuration;
+                    if (cfg != null)
+                        ServiceManager.LogWarning(LogChannel.Plugin, "Recovered config from automatic backup.");
+                }
+                catch (Exception bex)
+                {
+                    ServiceManager.LogError(LogChannel.Plugin, bex, "Backup config also failed to load. Falling back to defaults.");
+                    cfg = null;
+                }
+            }
+            else
+            {
+                ServiceManager.LogWarning(LogChannel.Plugin, "No automatic backup available; falling back to defaults.");
+            }
         }
 
         if (cfg == null)
@@ -68,6 +97,10 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.Config.Save = this.SaveConfig;
         ServiceManager.Config = this.Config;
         Gui.ConfigWindow.LayoutPage.EnsureLayoutComplete(cfg);
+
+        // Seed an initial .bak so a first-launch user with no prior backup
+        // still has a recovery point if their next save somehow corrupts.
+        this.ConfigBackup.WriteBackupFromLiveConfig(force: true);
 
         foreach (var tab in cfg.MeterTabs)
         {
@@ -159,7 +192,13 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public void OpenConfigUi() => this.configWindow.IsOpen = true;
 
-    public void SaveConfig() => this.PluginInterface.SavePluginConfig(this.Config);
+    public void SaveConfig()
+    {
+        this.PluginInterface.SavePluginConfig(this.Config);
+        // Throttled inside the service — color picker drags etc. won't actually
+        // hit disk for the .bak more than once per cooldown window.
+        this.ConfigBackup.WriteBackupFromLiveConfig();
+    }
 
     public void Dispose()
     {
@@ -199,25 +238,6 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         catch (Exception ex) { ServiceManager.LogError(LogChannel.Plugin, $"Error during disposal: {ex.Message}"); }
     }
 
-    private void BackupBrokenConfig()
-    {
-        try
-        {
-            var src = this.PluginInterface.ConfigFile.FullName;
-            if (!System.IO.File.Exists(src)) return;
-
-            var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var dst = $"{src}.broken_{ts}";
-            System.IO.File.Copy(src, dst, overwrite: true);
-            ServiceManager.LogWarning(LogChannel.Plugin, $"Saved a copy of the broken config to {dst} before resetting to defaults.");
-        }
-        catch (Exception ex)
-        {
-            // Best-effort — if the copy fails the user just loses the broken file,
-            // which is no worse than the current behaviour.
-            ServiceManager.LogWarning(LogChannel.Plugin, $"Could not back up broken config: {ex.Message}");
-        }
-    }
 
     public void OpenPopoutTab(Guid tabId)
     {
