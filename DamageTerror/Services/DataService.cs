@@ -1,5 +1,6 @@
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using ECommons.DalamudServices;
 
 namespace DamageTerror.Services;
 
@@ -8,6 +9,7 @@ public sealed class DataService : IDisposable
     private readonly IDalamudPluginInterface pluginInterface;
     private readonly IPluginLog log;
     private readonly Configuration config;
+    private readonly object sourceLock = new();
     private IDataSource? activeSource;
     private CancellationTokenSource? cts;
     private volatile bool disposed;
@@ -15,6 +17,9 @@ public sealed class DataService : IDisposable
     private volatile bool playerChanged;
     private float lastPeriodicSaveTime;
     private long lastCombatDataTicks;
+    private long lastIpcProbeTicks;
+    private volatile bool ipcProbeInFlight;
+    private bool frameworkSubscribed;
     private readonly List<string[]> pendingLogLines = new();
 #if DEBUG
     private readonly List<string> rawLogLineAccumulator = new();
@@ -22,6 +27,7 @@ public sealed class DataService : IDisposable
 
     private const float PeriodicSaveInterval = 30f;
     private const double StalenessTimeoutSeconds = 15.0;
+    private static readonly TimeSpan IpcProbeInterval = TimeSpan.FromSeconds(30);
 
     public EncounterTimer EncounterTimer { get; } = new();
     public SkillTracker SkillTracker { get; }
@@ -106,6 +112,8 @@ public sealed class DataService : IDisposable
 
         cts = new CancellationTokenSource();
 
+        SubscribeFrameworkUpdate();
+
         if (config.PreferIpc)
         {
             ConnectionStatus = "Connecting via IPC...";
@@ -116,7 +124,7 @@ public sealed class DataService : IDisposable
 
             void ConnectedHandler()
             {
-                activeSource = ipc;
+                lock (sourceLock) activeSource = ipc;
                 ConnectionStatus = "Connected (IPC)";
                 log.Information("Using IPC data source");
             }
@@ -128,7 +136,7 @@ public sealed class DataService : IDisposable
             if (ipc.IsConnected)
             {
                 ipc.OnConnected -= ConnectedHandler;
-                activeSource = ipc;
+                lock (sourceLock) activeSource = ipc;
                 ConnectionStatus = "Connected (IPC)";
                 log.Information("Using IPC data source");
                 return;
@@ -162,13 +170,125 @@ public sealed class DataService : IDisposable
 
         await ws.ConnectAsync(cts.Token).ConfigureAwait(false);
 
-        activeSource = ws;
+        lock (sourceLock) activeSource = ws;
 
         if (!ws.IsConnected)
         {
             ConnectionStatus = "Waiting for IINACT (WebSocket reconnecting...)";
             log.Information("WebSocket not yet connected, auto-reconnect is active");
         }
+    }
+
+    private void SubscribeFrameworkUpdate()
+    {
+        if (frameworkSubscribed) return;
+        try
+        {
+            Svc.Framework.Update += OnFrameworkUpdate;
+            frameworkSubscribed = true;
+        }
+        catch (Exception ex)
+        {
+            log.Debug($"Framework subscribe failed: {ex.Message}");
+        }
+    }
+
+    private void UnsubscribeFrameworkUpdate()
+    {
+        if (!frameworkSubscribed) return;
+        try { Svc.Framework.Update -= OnFrameworkUpdate; }
+        catch (Exception ex) { log.Debug($"Framework unsubscribe failed: {ex.Message}"); }
+        frameworkSubscribed = false;
+    }
+
+    private void OnFrameworkUpdate(IFramework framework)
+    {
+        // Once we've fallen back to WebSocket (e.g. IINACT loaded after us),
+        // periodically retry IPC so we can upgrade transports without forcing
+        // the user to reload the plugin.
+        if (disposed) return;
+        if (!config.PreferIpc) return;
+        if (ipcProbeInFlight) return;
+        if (activeSource is not WebSocketDataSource) return;
+
+        // Defer the swap during a live encounter — both sources would briefly
+        // double-deliver LogLine events through OnLogLine, double-counting
+        // hits / DoT ticks / status changes in SkillTracker.
+        var active = Store.ActiveEncounter;
+        if (active != null && active.Encounter.IsActive) return;
+
+        var lastTicks = Interlocked.Read(ref lastIpcProbeTicks);
+        var elapsed = DateTime.UtcNow - new DateTime(lastTicks, DateTimeKind.Utc);
+        if (elapsed < IpcProbeInterval) return;
+
+        Interlocked.Exchange(ref lastIpcProbeTicks, DateTime.UtcNow.Ticks);
+        ipcProbeInFlight = true;
+
+        var token = cts?.Token ?? CancellationToken.None;
+        _ = Task.Run(async () =>
+        {
+            try { await TryUpgradeToIpcAsync(token).ConfigureAwait(false); }
+            catch (Exception ex) { log.Debug($"IPC upgrade probe failed: {ex.Message}"); }
+            finally { ipcProbeInFlight = false; }
+        }, token);
+    }
+
+    private async Task TryUpgradeToIpcAsync(CancellationToken ct)
+    {
+        if (disposed || ct.IsCancellationRequested) return;
+
+        WebSocketDataSource? currentWs;
+        lock (sourceLock) currentWs = activeSource as WebSocketDataSource;
+        if (currentWs == null) return;
+
+        var ipc = new IpcDataSource(pluginInterface, log);
+        ipc.OnCombatData += OnCombatData;
+        ipc.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
+        ipc.OnLogLine += OnLogLine;
+
+        try
+        {
+            await ipc.ConnectAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            log.Debug($"IPC probe connect threw: {ex.Message}");
+        }
+
+        // Bail out if the probe didn't connect, we were disposed/cancelled,
+        // the active source changed (Stop/Reconnect), or an encounter became
+        // active between the gate check and now (would double-deliver log
+        // lines until the WebSocket is disposed).
+        bool swap = false;
+        var activeEnc = Store.ActiveEncounter;
+        var encounterActive = activeEnc != null && activeEnc.Encounter.IsActive;
+        lock (sourceLock)
+        {
+            if (!disposed && !ct.IsCancellationRequested && ipc.IsConnected
+                && !encounterActive
+                && ReferenceEquals(activeSource, currentWs))
+            {
+                activeSource = ipc;
+                swap = true;
+            }
+        }
+
+        if (!swap)
+        {
+            ipc.OnCombatData -= OnCombatData;
+            ipc.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
+            ipc.OnLogLine -= OnLogLine;
+            ipc.Dispose();
+            return;
+        }
+
+        ConnectionStatus = "Connected (IPC)";
+        log.Information("Upgraded WebSocket → IPC after IINACT became available");
+
+        currentWs.OnCombatData -= OnCombatData;
+        currentWs.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
+        currentWs.OnLogLine -= OnLogLine;
+        currentWs.Dispose();
     }
 
     public async Task ReconnectAsync()
@@ -187,17 +307,25 @@ public sealed class DataService : IDisposable
 
     public void Stop()
     {
+        UnsubscribeFrameworkUpdate();
+
         cts?.Cancel();
         cts?.Dispose();
         cts = null;
 
-        if (activeSource != null)
+        IDataSource? source;
+        lock (sourceLock)
         {
-            activeSource.OnCombatData -= OnCombatData;
-            activeSource.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
-            activeSource.OnLogLine -= OnLogLine;
-            activeSource.Dispose();
+            source = activeSource;
             activeSource = null;
+        }
+
+        if (source != null)
+        {
+            source.OnCombatData -= OnCombatData;
+            source.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
+            source.OnLogLine -= OnLogLine;
+            source.Dispose();
         }
 
         ConnectionStatus = "Disconnected";
