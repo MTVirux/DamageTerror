@@ -55,6 +55,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         catch (Exception ex)
         {
             ServiceManager.LogError(LogChannel.Plugin, ex, "Failed to load plugin config (possibly outdated enum values). Creating fresh config.");
+            BackupBrokenConfig();
         }
 
         if (cfg == null)
@@ -196,6 +197,26 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
     {
         try { action(); }
         catch (Exception ex) { ServiceManager.LogError(LogChannel.Plugin, $"Error during disposal: {ex.Message}"); }
+    }
+
+    private void BackupBrokenConfig()
+    {
+        try
+        {
+            var src = this.PluginInterface.ConfigFile.FullName;
+            if (!System.IO.File.Exists(src)) return;
+
+            var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var dst = $"{src}.broken_{ts}";
+            System.IO.File.Copy(src, dst, overwrite: true);
+            ServiceManager.LogWarning(LogChannel.Plugin, $"Saved a copy of the broken config to {dst} before resetting to defaults.");
+        }
+        catch (Exception ex)
+        {
+            // Best-effort — if the copy fails the user just loses the broken file,
+            // which is no worse than the current behaviour.
+            ServiceManager.LogWarning(LogChannel.Plugin, $"Could not back up broken config: {ex.Message}");
+        }
     }
 
     public void OpenPopoutTab(Guid tabId)
