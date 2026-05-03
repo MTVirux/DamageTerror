@@ -267,7 +267,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
     {
         var contentType = Content.ContentType;
         var contentName = Content.ContentName ?? "Unknown";
-        ServiceManager.LogInfo(LogChannel.Plugin, $"Territory changed: {contentName} (ID: {territoryId}, Type: {contentType})");
+        ServiceManager.LogDebug(LogChannel.Plugin, $"Territory changed: {contentName} (ID: {territoryId}, Type: {contentType})");
     }
 
     private void OnCommand(string command, string arguments)
