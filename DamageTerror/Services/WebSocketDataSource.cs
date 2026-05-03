@@ -90,10 +90,26 @@ public sealed class WebSocketDataSource : IDataSource
 
         while (!ct.IsCancellationRequested && !disposed)
         {
-            if (ws?.State == WebSocketState.Open)
+            var local = ws;
+            if (local?.State == WebSocketState.Open)
             {
                 retryDelay = InitialRetryDelayMs;
-                await ReceiveLoopAsync(ct).ConfigureAwait(false);
+                try
+                {
+                    await ReceiveLoopAsync(local, ct).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    // Without this, an unexpected throw from ReceiveAsync
+                    // (e.g. WebSocketException on an abrupt server close) would
+                    // tear down the receiveTask and leave the meter offline
+                    // forever — the exception would never surface anywhere.
+                    log.Debug($"WebSocket receive loop failed, will reconnect: {ex.Message}");
+                }
             }
 
             if (ct.IsCancellationRequested || disposed)
@@ -117,19 +133,19 @@ public sealed class WebSocketDataSource : IDataSource
         }
     }
 
-    private async Task ReceiveLoopAsync(CancellationToken ct)
+    private async Task ReceiveLoopAsync(ClientWebSocket socket, CancellationToken ct)
     {
         var buffer = new byte[64 * 1024];
         var messageBuilder = new StringBuilder();
 
-        while (!ct.IsCancellationRequested && ws?.State == WebSocketState.Open)
+        while (!ct.IsCancellationRequested && socket.State == WebSocketState.Open)
         {
             messageBuilder.Clear();
             WebSocketReceiveResult result;
 
             do
             {
-                result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct).ConfigureAwait(false);
+                result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), ct).ConfigureAwait(false);
 
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
@@ -168,23 +184,34 @@ public sealed class WebSocketDataSource : IDataSource
 
     public void Disconnect()
     {
-        try
+        // Cancel first so the receive loop wakes up and unwinds before we
+        // touch the socket — otherwise ReceiveAsync would throw on a disposed
+        // ClientWebSocket inside the catch block of ReceiveAndReconnectLoopAsync.
+        try { cts?.Cancel(); }
+        catch (Exception ex) { log.Debug($"WebSocket cancel error: {ex.Message}"); }
+
+        // Capture and null the field so concurrent readers see "no socket"
+        // immediately. We then close+dispose the captured local off the UI
+        // thread, since CloseAsync's handshake can hang for the full 2s
+        // timeout when the server has gone away ungracefully.
+        var local = ws;
+        ws = null;
+        if (local == null)
+            return;
+
+        if (local.State == WebSocketState.Open)
         {
-            cts?.Cancel();
-            if (ws?.State == WebSocketState.Open)
-            {
-                ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Plugin closing",
-                    CancellationToken.None).Wait(TimeSpan.FromSeconds(2));
-            }
+            _ = local.CloseAsync(WebSocketCloseStatus.NormalClosure, "Plugin closing", CancellationToken.None)
+                .ContinueWith(t =>
+                {
+                    if (t.Exception != null)
+                        log.Debug($"WebSocket close completed with error: {t.Exception.GetBaseException().Message}");
+                    local.Dispose();
+                }, TaskScheduler.Default);
         }
-        catch (Exception ex)
+        else
         {
-            log.Debug($"WebSocket disconnect error: {ex.Message}");
-        }
-        finally
-        {
-            ws?.Dispose();
-            ws = null;
+            local.Dispose();
         }
     }
 
