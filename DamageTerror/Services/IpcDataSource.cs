@@ -39,8 +39,17 @@ public sealed class IpcDataSource : IDataSource
             receiver.RegisterFunc(OnDataReceived);
 
             // Ask IINACT to create its handler pair for "DamageTerror".
+            // IINACT initializes OverlayIpcHandler inside a Task.Run, so this can
+            // legitimately return false if DamageTerror loads first — falling
+            // through would silently set connected=true and the meter would sit
+            // forever waiting on a no-op subscribe.
             var createSub = pluginInterface.GetIpcSubscriber<string, bool>("IINACT.CreateSubscriber");
-            createSub.InvokeFunc("DamageTerror");
+            if (!createSub.InvokeFunc("DamageTerror"))
+            {
+                log.Debug("IINACT.CreateSubscriber returned false; IINACT not ready, will retry");
+                connected = false;
+                return Task.CompletedTask;
+            }
 
             // Subscribe to the command gate IINACT created for us.
             sender = pluginInterface.GetIpcSubscriber<JObject, bool>("IINACT.IpcProvider.DamageTerror");
