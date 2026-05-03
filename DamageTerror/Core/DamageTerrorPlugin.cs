@@ -165,25 +165,29 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         if (this.disposed) return;
         this.disposed = true;
 
-        SafeDispose(() => this.PluginInterface.SavePluginConfig(this.Config));
-        SafeDispose(() => this.DataService.Dispose());
+        // Detach UI/event handlers FIRST so no Draw or callback can fire after
+        // we start tearing down the services they reach into. The previous
+        // order disposed DataService before unhooking Draw, leaving a window
+        // where a Draw tick could dereference a disposed service.
+        SafeDispose(() => this.PluginInterface.UiBuilder.Draw -= this.DrawUi);
+        SafeDispose(() => this.PluginInterface.UiBuilder.OpenConfigUi -= this.OpenConfigUi);
+        SafeDispose(() => this.PluginInterface.UiBuilder.OpenMainUi -= this.OpenMainUi);
+        SafeDispose(() => Svc.ClientState.TerritoryChanged -= this.OnTerritoryChanged);
+        SafeDispose(() => this.commandManager.RemoveHandler("/dt"));
+
+        SafeDispose(() => this.windowSystem.RemoveAllWindows());
 
         foreach (var popout in this.popoutWindows.Values)
             SafeDispose(() => popout.Dispose());
         this.popoutWindows.Clear();
 
-        this.windowSystem.RemoveAllWindows();
         SafeDispose(() => this.mainWindow.Dispose());
         SafeDispose(() => this.configWindow.Dispose());
         SafeDispose(() => this.FontService.Dispose());
+        SafeDispose(() => this.DataService.Dispose());
 
-        Svc.ClientState.TerritoryChanged -= this.OnTerritoryChanged;
-
-        this.PluginInterface.UiBuilder.Draw -= this.DrawUi;
-        this.PluginInterface.UiBuilder.OpenConfigUi -= this.OpenConfigUi;
-        this.PluginInterface.UiBuilder.OpenMainUi -= this.OpenMainUi;
-
-        this.commandManager.RemoveHandler("/dt");
+        // Save last so a config write can't race a Draw tick that reads from it.
+        SafeDispose(() => this.PluginInterface.SavePluginConfig(this.Config));
 
         ECommonsMain.Dispose();
     }
