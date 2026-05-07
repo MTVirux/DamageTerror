@@ -223,13 +223,20 @@ public sealed class EncounterStore
             if (active != null && active != snapshot && prevSnapshotActive
                 && snapshot.Encounter.IsActive)
             {
+                List<string>? carried = null;
                 foreach (var prior in active.Combatants)
                 {
                     var stillPresent = snapshot.Combatants.Find(c =>
                         string.Equals(c.Name, prior.Name, StringComparison.OrdinalIgnoreCase));
                     if (stillPresent == null)
+                    {
                         snapshot.Combatants.Add(prior);
+                        (carried ??= new List<string>()).Add(prior.Name);
+                    }
                 }
+                if (carried != null)
+                    ServiceManager.LogDebug(LogChannel.DataService,
+                        $"Carried {carried.Count} combatant(s) absent from snapshot: {string.Join(", ", carried)}");
             }
 
             active = snapshot;

@@ -483,6 +483,8 @@ public sealed class DataService : IDisposable
                 && JobDataTable.GetRole(c.Job) == JobRole.Default
                 && JobDataTable.GetRole(existingEntry.Job) != JobRole.Default)
             {
+                ServiceManager.LogDebug(LogChannel.DataService,
+                    $"Recovered Job for {c.Name}: '{c.Job}' -> '{existingEntry.Job}'");
                 c.Job = existingEntry.Job;
             }
 
