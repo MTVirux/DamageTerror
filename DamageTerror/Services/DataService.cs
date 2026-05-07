@@ -479,6 +479,13 @@ public sealed class DataService : IDisposable
             var existingEntry = existing?.Combatants.Find(p =>
                 string.Equals(p.Name, c.Name, StringComparison.OrdinalIgnoreCase));
 
+            if (existingEntry != null
+                && JobDataTable.GetRole(c.Job) == JobRole.Default
+                && JobDataTable.GetRole(existingEntry.Job) != JobRole.Default)
+            {
+                c.Job = existingEntry.Job;
+            }
+
             var trackerDmg = trackerSkills.Sum(s => s.TotalDamage);
             var existingDmg = existingEntry?.Skills?.Sum(s => s.TotalDamage) ?? 0;
             c.Skills = trackerDmg >= existingDmg ? trackerSkills : existingEntry!.Skills;
