@@ -220,6 +220,18 @@ public sealed class EncounterStore
                 snapshot.Timestamp = active.Timestamp;
             }
 
+            if (active != null && active != snapshot && prevSnapshotActive
+                && snapshot.Encounter.IsActive)
+            {
+                foreach (var prior in active.Combatants)
+                {
+                    var stillPresent = snapshot.Combatants.Find(c =>
+                        string.Equals(c.Name, prior.Name, StringComparison.OrdinalIgnoreCase));
+                    if (stillPresent == null)
+                        snapshot.Combatants.Add(prior);
+                }
+            }
+
             active = snapshot;
             prevSnapshotActive = snapshot.Encounter.IsActive;
 
