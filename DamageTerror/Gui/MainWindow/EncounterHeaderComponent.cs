@@ -33,7 +33,11 @@ public sealed class EncounterHeaderComponent
         var formattedPlayer = !string.IsNullOrEmpty(playerName)
             ? $"  ({NameFormatHelper.GetDisplayName(playerName, "", true, config)})"
             : "";
-        return $"{icon} {enc.ZoneName}{title}{time}  |  {enc.Duration}  |  {ValueFormatter.Format(enc.EncDps, ValueDisplayFormat.Raw, 0)} eDPS{formattedPlayer}{idSuffix}";
+        var replayBadge = dataService.Store.IsReplayActive
+            && ReferenceEquals(enc, dataService.Store.ActiveEncounter?.Encounter)
+            ? "  [REPLAY]"
+            : "";
+        return $"{icon} {enc.ZoneName}{title}{time}  |  {enc.Duration}  |  {ValueFormatter.Format(enc.EncDps, ValueDisplayFormat.Raw, 0)} eDPS{formattedPlayer}{idSuffix}{replayBadge}";
     }
 
     public EncounterSnapshot? SelectedEncounter
@@ -130,7 +134,7 @@ public sealed class EncounterHeaderComponent
                         if (ImGui.Selectable(activeLabel, selectedIndex == -1))
                         {
                             selectedIndex = -1;
-                            if (dataService.Store.IsSampleSimulating)
+                            if (dataService.Store.IsSampleSimulating || dataService.Store.IsReplayActive)
                                 dataService.Store.ClearSampleData();
                         }
 

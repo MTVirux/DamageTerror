@@ -20,7 +20,12 @@ public sealed class EncounterStore
     private bool sampleDataActive;
     private EncounterSnapshot? previewBackup;
     private SampleCombatSimulator? sampleSimulator;
+    private EncounterReplaySimulator? replaySimulator;
     private Func<CombatantEntry?>? pendingFactory;
+    /// <summary>Tracks the IsActive state of the most recent incoming snapshot,
+    /// regardless of sampleDataActive gating. Used to detect a fresh live encounter
+    /// starting during replay so the meter can yield to live combat.</summary>
+    private bool lastIncomingActive;
 
     public EncounterStore(Configuration config)
     {
@@ -86,6 +91,16 @@ public sealed class EncounterStore
         get { lock (syncLock) return sampleSimulator?.IsRunning ?? false; }
     }
 
+    public bool IsReplayActive
+    {
+        get { lock (syncLock) return replaySimulator != null; }
+    }
+
+    public EncounterReplaySimulator? ReplaySimulator
+    {
+        get { lock (syncLock) return replaySimulator; }
+    }
+
     public event Action? OnSampleDataLoaded;
 
     public void LoadSampleData(EncounterSnapshot sample, bool simulate = false, Func<CombatantEntry?>? combatantFactory = null)
@@ -94,6 +109,8 @@ public sealed class EncounterStore
         {
             sampleSimulator?.Stop();
             sampleSimulator = null;
+            replaySimulator?.Stop();
+            replaySimulator = null;
 
             if (!sampleDataActive)
                 previewBackup = active;
@@ -106,6 +123,118 @@ public sealed class EncounterStore
         }
 
         OnSampleDataLoaded?.Invoke();
+    }
+
+    /// <summary>
+    /// Begin replaying a finished encounter. Source is left untouched; the meter
+    /// shows a fresh working clone that the simulator mutates each tick to
+    /// reflect the encounter state at the simulated time.
+    /// </summary>
+    public void LoadReplay(EncounterSnapshot source)
+    {
+        if (source == null) throw new ArgumentNullException(nameof(source));
+
+        // Make sure structural events exist (older saves that pre-date SkillEvents
+        // capture rely on synthesis from per-combatant Skills aggregates).
+        source.ValidateAndRepair();
+
+        var working = CloneSnapshotShellForReplay(source);
+
+        lock (syncLock)
+        {
+            sampleSimulator?.Stop();
+            sampleSimulator = null;
+            replaySimulator?.Stop();
+            replaySimulator = null;
+            pendingFactory = null;
+
+            if (!sampleDataActive)
+                previewBackup = active;
+            sampleDataActive = true;
+            active = working;
+            replaySimulator = new EncounterReplaySimulator(source, working, 1f);
+        }
+
+        OnSampleDataLoaded?.Invoke();
+    }
+
+    private static EncounterSnapshot CloneSnapshotShellForReplay(EncounterSnapshot source)
+    {
+        // JSON round-trip gives a full deep clone. One-shot cost on replay start.
+        var json = JsonConvert.SerializeObject(source);
+        var clone = JsonConvert.DeserializeObject<EncounterSnapshot>(json)
+            ?? throw new InvalidOperationException("Failed to clone encounter for replay.");
+
+        clone.Encounter.IsActive = true;
+        clone.Encounter.Duration = "00:00";
+        clone.Encounter.TotalDamage = 0;
+        clone.Encounter.TotalHealed = 0;
+        clone.Encounter.EncDps = 0;
+        clone.Encounter.EncHps = 0;
+        clone.Encounter.Kills = 0;
+        clone.Encounter.Deaths = 0;
+
+        foreach (var c in clone.Combatants)
+        {
+            c.Damage = 0;
+            c.Healed = 0;
+            c.DamageTaken = 0;
+            c.EncDps = 0;
+            c.EncHps = 0;
+            c.RaidDps = 0;
+            c.RaidHps = 0;
+            c.InstantDps = 0;
+            c.InstantHps = 0;
+            c.PeakDps = 0;
+            c.DamagePercent = "0%";
+            c.HealedPercent = "0%";
+            c.DamageTakenPercent = "0%";
+            c.MaxHit = string.Empty;
+            c.MaxHitDamage = 0;
+            c.MaxHeal = string.Empty;
+            c.MaxHealAmount = 0;
+            c.Hits = 0;
+            c.Misses = 0;
+            c.Swings = 0;
+            c.HitRate = 0;
+            c.CritHitCount = 0;
+            c.DirectHitCount = 0;
+            c.CritDirectHitCount = 0;
+            c.CritPct = 0;
+            c.DirectHitPct = 0;
+            c.CritDirectHitPct = 0;
+            c.Deaths = 0;
+            c.Kills = 0;
+            c.OverhealAmount = 0;
+            c.OverhealPct = 0;
+            c.HealsTaken = 0;
+            c.AbsorbHeal = 0;
+            c.HealCount = 0;
+            c.CritHealPct = 0;
+            c.PowerDrain = 0;
+            c.PowerHeal = 0;
+            c.Stuns = 0;
+            c.SkillIssue = 0;
+            c.DamageDown = 0;
+            c.Positionals = 0;
+            c.PositionalHits = 0;
+            c.PositionalMisses = 0;
+            c.DamageShield = 0;
+            c.MaxHealWardName = string.Empty;
+            c.MaxHealWardAmount = 0;
+            c.Skills = new List<SkillEntry>();
+            c.HealingSkills = new List<SkillEntry>();
+        }
+
+        clone.SkillEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
+        clone.DamageTakenEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
+        clone.ItemEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
+        clone.GraphData = new Dictionary<string, List<GraphSample>>(StringComparer.OrdinalIgnoreCase);
+        clone.StatusHistory = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
+        clone.StatusesReceived = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
+        clone.RawLogLines = new List<string>();
+
+        return clone;
     }
 
     public void SetSampleSimulation(bool enabled)
@@ -129,6 +258,7 @@ public sealed class EncounterStore
         lock (syncLock)
         {
             sampleSimulator?.Tick();
+            replaySimulator?.Tick();
         }
     }
 
@@ -139,6 +269,8 @@ public sealed class EncounterStore
             if (!sampleDataActive) return;
             sampleSimulator?.Stop();
             sampleSimulator = null;
+            replaySimulator?.Stop();
+            replaySimulator = null;
             pendingFactory = null;
             sampleDataActive = false;
             active = previewBackup;
@@ -150,8 +282,31 @@ public sealed class EncounterStore
     {
         lock (syncLock)
         {
+            var incomingActive = snapshot.Encounter.IsActive;
+            var newFightStarting = incomingActive && !lastIncomingActive;
+            lastIncomingActive = incomingActive;
+
             if (sampleDataActive)
-                return false;
+            {
+                // Replay yields to live combat when a fresh fight starts. Sample
+                // data stays sticky (its lifecycle is explicitly user-controlled).
+                if (replaySimulator != null && newFightStarting)
+                {
+                    replaySimulator.Stop();
+                    replaySimulator = null;
+                    pendingFactory = null;
+                    sampleDataActive = false;
+                    active = previewBackup;
+                    previewBackup = null;
+                    // Treat the previous active as no-longer-live so the archive
+                    // branch below closes it out before the new fight begins.
+                    prevSnapshotActive = false;
+                }
+                else
+                {
+                    return false;
+                }
+            }
 
             var archived = false;
 

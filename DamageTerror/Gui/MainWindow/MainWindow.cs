@@ -330,6 +330,7 @@ public sealed class MainWindow : Window, IDisposable
             {
                 case LayoutElement.EncounterSelect:
                     headerComponent.Render();
+                    DrawReplayBar();
                     if (encounter == null)
                     {
                         if (plugin.DataService.IsConnected)
@@ -733,6 +734,70 @@ public sealed class MainWindow : Window, IDisposable
 
     private void DrawMeterHeader(MeterTab? activeTab)
         => MeterWindowHelper.DrawMeterHeader(plugin.Config, activeTab);
+
+    private void DrawReplayBar()
+    {
+        var sim = plugin.DataService.Store.ReplaySimulator;
+        if (sim == null) return;
+
+        var rowHeight = ImGui.GetFrameHeight() + 6f;
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.20f, 0.05f, 0.05f, 0.85f));
+        if (ImGui.BeginChild("##replayBar", new Vector2(-1, rowHeight), false))
+        {
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextColored(new Vector4(1f, 0.55f, 0.55f, 1f), "[REPLAY]");
+
+            ImGui.SameLine();
+            var playLabel = sim.IsRunning ? "Pause##rpyToggle" : "Play##rpyToggle";
+            if (ImGui.SmallButton(playLabel))
+            {
+                if (sim.IsRunning) sim.Pause();
+                else sim.Resume();
+            }
+
+            ImGui.SameLine();
+            var d = sim.DurationSeconds;
+            var seekTarget = sim.ElapsedSeconds;
+            ImGui.SetNextItemWidth(-235f);
+            var sliderLabel = $"{FormatMmSs(sim.ElapsedSeconds)} / {FormatMmSs(d)}";
+            if (ImGui.SliderFloat("##rpySeek", ref seekTarget, 0f, d, sliderLabel))
+                sim.Seek(seekTarget);
+
+            ImGui.SameLine();
+            DrawSpeedButton(sim, 0.5f, "0.5x##rpy0_5");
+            ImGui.SameLine();
+            DrawSpeedButton(sim, 1f, "1x##rpy1");
+            ImGui.SameLine();
+            DrawSpeedButton(sim, 2f, "2x##rpy2");
+            ImGui.SameLine();
+            DrawSpeedButton(sim, 4f, "4x##rpy4");
+
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Stop##rpyStop"))
+                plugin.DataService.Store.ClearSampleData();
+        }
+        ImGui.EndChild();
+        ImGui.PopStyleColor();
+    }
+
+    private static void DrawSpeedButton(EncounterReplaySimulator sim, float speed, string label)
+    {
+        var isActive = Math.Abs(sim.Speed - speed) < 0.01f;
+        if (isActive)
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.30f, 0.55f, 0.30f, 1f));
+        if (ImGui.SmallButton(label))
+            sim.Speed = speed;
+        if (isActive)
+            ImGui.PopStyleColor();
+    }
+
+    private static string FormatMmSs(float t)
+    {
+        if (t < 0f) t = 0f;
+        var mins = (int)(t / 60f);
+        var secs = (int)(t % 60f);
+        return $"{mins:D2}:{secs:D2}";
+    }
 
     internal static List<CombatantEntry> GetSortedCombatants(EncounterSnapshot encounter,
         SortField sortBy, bool desc, MeterTab? activeTab,
