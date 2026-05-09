@@ -22,6 +22,7 @@ public sealed class WebSocketDataSource : IDataSource
     public event Action<EncounterSnapshot>? OnCombatData;
     public event Action<string, uint>? OnPrimaryPlayerChanged;
     public event Action<string[]>? OnLogLine;
+    public event Action<JObject>? OnRawCombatData;
     public event Action? OnConnected;
 
     public bool IsConnected => ws?.State == WebSocketState.Open;
@@ -174,7 +175,7 @@ public sealed class WebSocketDataSource : IDataSource
         try
         {
             var data = JObject.Parse(message);
-            DataSourceDispatcher.Dispatch(data, OnCombatData, OnPrimaryPlayerChanged, OnLogLine);
+            DataSourceDispatcher.Dispatch(data, OnCombatData, OnPrimaryPlayerChanged, OnLogLine, OnRawCombatData);
         }
         catch (JsonException ex)
         {

@@ -1,3 +1,5 @@
+using Newtonsoft.Json.Linq;
+
 namespace DamageTerror.Services;
 
 public interface IDataSource : IDisposable
@@ -7,6 +9,8 @@ public interface IDataSource : IDisposable
     event Action<string, uint>? OnPrimaryPlayerChanged;
 
     event Action<string[]>? OnLogLine;
+
+    event Action<JObject>? OnRawCombatData;
 
     event Action? OnConnected;
 

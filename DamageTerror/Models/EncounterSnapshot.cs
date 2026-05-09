@@ -42,6 +42,10 @@ public sealed class EncounterSnapshot
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public List<string> RawLogLines { get; set; } = new();
 
+    /// <summary>Raw IINACT CombatData JSON frames captured during the encounter. Debug-only; used for offline replay through the parser pipeline.</summary>
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public List<string> RawCombatDataFrames { get; set; } = new();
+
     /// <summary>
     /// Rebuild dictionaries with case-insensitive comparers after JSON deserialization,
     /// since Newtonsoft.Json creates them with the default (case-sensitive) comparer.

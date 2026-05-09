@@ -8,13 +8,15 @@ internal static class DataSourceDispatcher
         JObject data,
         Action<EncounterSnapshot>? onCombatData,
         Action<string, uint>? onPrimaryPlayerChanged,
-        Action<string[]>? onLogLine)
+        Action<string[]>? onLogLine,
+        Action<JObject>? onRawCombatData = null)
     {
         var type = data["type"]?.ToString();
 
         switch (type)
         {
             case "CombatData":
+                onRawCombatData?.Invoke(data);
                 var snapshot = CombatDataParser.Parse(data);
                 if (snapshot != null)
                     onCombatData?.Invoke(snapshot);

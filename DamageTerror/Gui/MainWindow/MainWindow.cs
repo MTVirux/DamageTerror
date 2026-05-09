@@ -314,9 +314,15 @@ public sealed class MainWindow : Window, IDisposable
 
         if (!plugin.DataService.IsConnected && encounter == null)
         {
-            ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-            if (ImGui.Button("Reconnect"))
-                SpawnReconnect();
+            if (!plugin.DataService.DisconnectNoticeDismissed)
+            {
+                ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
+                if (ImGui.Button("Reconnect##disconnect-notice"))
+                    SpawnReconnect();
+                ImGui.SameLine();
+                if (ImGui.Button("Dismiss##disconnect-notice"))
+                    plugin.DataService.DismissDisconnectNotice();
+            }
             ImGui.EndChild();
             return;
         }
@@ -337,11 +343,14 @@ public sealed class MainWindow : Window, IDisposable
                         {
                             ImGui.TextDisabled("No combat data, go hit something!");
                         }
-                        else
+                        else if (!plugin.DataService.DisconnectNoticeDismissed)
                         {
                             ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-                            if (ImGui.Button("Reconnect"))
+                            if (ImGui.Button("Reconnect##disconnect-notice-encsel"))
                                 SpawnReconnect();
+                            ImGui.SameLine();
+                            if (ImGui.Button("Dismiss##disconnect-notice-encsel"))
+                                plugin.DataService.DismissDisconnectNotice();
                         }
                         ImGui.EndChild();
                         return;

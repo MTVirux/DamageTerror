@@ -384,6 +384,15 @@ public sealed class EncounterHistoryTab
                         SetStatus("Recalculated from raw log lines!");
                     }
                 }
+                if (enc.RawCombatDataFrames.Count > 0)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton($"Replay CombatData##{i}"))
+                    {
+                        plugin.DataService.ReplayCombatData(enc);
+                        SetStatus($"Replayed {enc.RawCombatDataFrames.Count} CombatData frames — see plugin log.");
+                    }
+                }
 #endif
 
                 ImGui.TreePop();

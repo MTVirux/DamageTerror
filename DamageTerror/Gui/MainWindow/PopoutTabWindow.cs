@@ -225,9 +225,15 @@ public sealed class PopoutTabWindow : Window, IDisposable
 
         if (!plugin.DataService.IsConnected && encounter == null)
         {
-            ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-            if (ImGui.Button("Reconnect"))
-                Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+            if (!plugin.DataService.DisconnectNoticeDismissed)
+            {
+                ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
+                if (ImGui.Button("Reconnect##disconnect-notice-popout"))
+                    Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+                ImGui.SameLine();
+                if (ImGui.Button("Dismiss##disconnect-notice-popout"))
+                    plugin.DataService.DismissDisconnectNotice();
+            }
             ImGui.EndChild();
             return;
         }
@@ -249,11 +255,14 @@ public sealed class PopoutTabWindow : Window, IDisposable
                     {
                         if (plugin.DataService.IsConnected)
                             ImGui.TextDisabled("No combat data, go hit something!");
-                        else
+                        else if (!plugin.DataService.DisconnectNoticeDismissed)
                         {
                             ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-                            if (ImGui.Button("Reconnect"))
+                            if (ImGui.Button("Reconnect##disconnect-notice-popout-encsel"))
                                 Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+                            ImGui.SameLine();
+                            if (ImGui.Button("Dismiss##disconnect-notice-popout-encsel"))
+                                plugin.DataService.DismissDisconnectNotice();
                         }
                         ImGui.EndChild();
                         return;

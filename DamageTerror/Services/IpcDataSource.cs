@@ -17,6 +17,7 @@ public sealed class IpcDataSource : IDataSource
     public event Action<EncounterSnapshot>? OnCombatData;
     public event Action<string, uint>? OnPrimaryPlayerChanged;
     public event Action<string[]>? OnLogLine;
+    public event Action<JObject>? OnRawCombatData;
     public event Action? OnConnected;
 
     public bool IsConnected => connected;
@@ -86,7 +87,7 @@ public sealed class IpcDataSource : IDataSource
     {
         try
         {
-            DataSourceDispatcher.Dispatch(data, OnCombatData, OnPrimaryPlayerChanged, OnLogLine);
+            DataSourceDispatcher.Dispatch(data, OnCombatData, OnPrimaryPlayerChanged, OnLogLine, OnRawCombatData);
         }
         catch (Exception ex)
         {

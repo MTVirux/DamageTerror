@@ -1,6 +1,7 @@
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using ECommons.DalamudServices;
+using Newtonsoft.Json.Linq;
 
 namespace DamageTerror.Services;
 
@@ -23,6 +24,7 @@ public sealed class DataService : IDisposable
     private readonly List<string[]> pendingLogLines = new();
 #if DEBUG
     private readonly List<string> rawLogLineAccumulator = new();
+    private readonly List<string> rawCombatDataAccumulator = new();
 #endif
 
     private const float PeriodicSaveInterval = 30f;
@@ -39,6 +41,9 @@ public sealed class DataService : IDisposable
     public uint PlayerId { get; private set; }
     public bool IsConnected => activeSource?.IsConnected ?? false;
     public string ConnectionStatus { get; private set; } = "Not connected";
+    public bool DisconnectNoticeDismissed { get; private set; }
+
+    public void DismissDisconnectNotice() => DisconnectNoticeDismissed = true;
 
     /// <summary>Raised when a new encounter boundary is detected (active encounter starts).</summary>
     public event Action? OnNewEncounter;
@@ -121,11 +126,15 @@ public sealed class DataService : IDisposable
             ipc.OnCombatData += OnCombatData;
             ipc.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
             ipc.OnLogLine += OnLogLine;
+#if DEBUG
+            ipc.OnRawCombatData += OnRawCombatData;
+#endif
 
             void ConnectedHandler()
             {
                 lock (sourceLock) activeSource = ipc;
                 ConnectionStatus = "Connected (IPC)";
+                DisconnectNoticeDismissed = false;
                 log.Information("Using IPC data source");
             }
 
@@ -138,6 +147,7 @@ public sealed class DataService : IDisposable
                 ipc.OnConnected -= ConnectedHandler;
                 lock (sourceLock) activeSource = ipc;
                 ConnectionStatus = "Connected (IPC)";
+                DisconnectNoticeDismissed = false;
                 log.Information("Using IPC data source");
                 return;
             }
@@ -146,6 +156,9 @@ public sealed class DataService : IDisposable
             ipc.OnCombatData -= OnCombatData;
             ipc.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
             ipc.OnLogLine -= OnLogLine;
+#if DEBUG
+            ipc.OnRawCombatData -= OnRawCombatData;
+#endif
             ipc.Dispose();
             log.Information("IPC unavailable, falling back to WebSocket");
         }
@@ -162,9 +175,13 @@ public sealed class DataService : IDisposable
         ws.OnCombatData += OnCombatData;
         ws.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
         ws.OnLogLine += OnLogLine;
+#if DEBUG
+        ws.OnRawCombatData += OnRawCombatData;
+#endif
         ws.OnConnected += () =>
         {
             ConnectionStatus = "Connected (WebSocket)";
+            DisconnectNoticeDismissed = false;
             log.Information("WebSocket connected");
         };
 
@@ -245,6 +262,9 @@ public sealed class DataService : IDisposable
         ipc.OnCombatData += OnCombatData;
         ipc.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
         ipc.OnLogLine += OnLogLine;
+#if DEBUG
+        ipc.OnRawCombatData += OnRawCombatData;
+#endif
 
         try
         {
@@ -278,21 +298,29 @@ public sealed class DataService : IDisposable
             ipc.OnCombatData -= OnCombatData;
             ipc.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
             ipc.OnLogLine -= OnLogLine;
+#if DEBUG
+            ipc.OnRawCombatData -= OnRawCombatData;
+#endif
             ipc.Dispose();
             return;
         }
 
         ConnectionStatus = "Connected (IPC)";
+        DisconnectNoticeDismissed = false;
         log.Information("Upgraded WebSocket → IPC after IINACT became available");
 
         currentWs.OnCombatData -= OnCombatData;
         currentWs.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
         currentWs.OnLogLine -= OnLogLine;
+#if DEBUG
+        currentWs.OnRawCombatData -= OnRawCombatData;
+#endif
         currentWs.Dispose();
     }
 
     public async Task ReconnectAsync()
     {
+        DisconnectNoticeDismissed = false;
         Stop();
         await StartAsync().ConfigureAwait(false);
     }
@@ -325,6 +353,9 @@ public sealed class DataService : IDisposable
             source.OnCombatData -= OnCombatData;
             source.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
             source.OnLogLine -= OnLogLine;
+#if DEBUG
+            source.OnRawCombatData -= OnRawCombatData;
+#endif
             source.Dispose();
         }
 
@@ -418,6 +449,8 @@ public sealed class DataService : IDisposable
 #if DEBUG
             lock (rawLogLineAccumulator)
                 rawLogLineAccumulator.Clear();
+            lock (rawCombatDataAccumulator)
+                rawCombatDataAccumulator.Clear();
 #endif
 
             isNewEncounter = true;
@@ -574,6 +607,8 @@ public sealed class DataService : IDisposable
 #if DEBUG
                     lock (rawLogLineAccumulator)
                         active.RawLogLines = new List<string>(rawLogLineAccumulator);
+                    lock (rawCombatDataAccumulator)
+                        active.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
 #endif
                     Store.Save();
                 }
@@ -596,6 +631,8 @@ public sealed class DataService : IDisposable
 #if DEBUG
                 lock (rawLogLineAccumulator)
                     active.RawLogLines = new List<string>(rawLogLineAccumulator);
+                lock (rawCombatDataAccumulator)
+                    active.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
 #endif
             }
 
@@ -619,6 +656,8 @@ public sealed class DataService : IDisposable
 #if DEBUG
         lock (rawLogLineAccumulator)
             outgoing.RawLogLines = new List<string>(rawLogLineAccumulator);
+        lock (rawCombatDataAccumulator)
+            outgoing.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
 #endif
         return outgoing;
     }
@@ -765,6 +804,53 @@ public sealed class DataService : IDisposable
     }
 
 #if DEBUG
+    private void OnRawCombatData(JObject data)
+    {
+        lock (rawCombatDataAccumulator)
+            rawCombatDataAccumulator.Add(data.ToString(Newtonsoft.Json.Formatting.None));
+    }
+
+    /// <summary>
+    /// Replay captured raw IINACT CombatData frames through the live parsing
+    /// pipeline. Resets trackers, then dispatches each frame through
+    /// <see cref="CombatDataParser.Parse"/> and <see cref="OnCombatData"/> so
+    /// the captured fight drives a fresh active encounter offline.
+    /// </summary>
+    public void ReplayCombatData(EncounterSnapshot encounter)
+    {
+        if (encounter.RawCombatDataFrames.Count == 0)
+            return;
+
+        Store.RemoveActive();
+        SkillTracker.Reset();
+        GraphTracker.Reset();
+        StatusTracker.Reset();
+        EncounterTimer.Reset();
+        prevSnapshotActive = false;
+        lock (pendingLogLines) pendingLogLines.Clear();
+
+        log.Debug($"[Replay] Starting replay of {encounter.RawCombatDataFrames.Count} CombatData frames");
+
+        foreach (var json in encounter.RawCombatDataFrames)
+        {
+            JObject data;
+            try { data = JObject.Parse(json); }
+            catch (Exception ex)
+            {
+                log.Debug($"[Replay] Failed to parse frame: {ex.Message}");
+                continue;
+            }
+
+            var snapshot = CombatDataParser.Parse(data);
+            if (snapshot == null) continue;
+
+            log.Debug($"[Replay] title='{snapshot.Encounter.Title}' active={snapshot.Encounter.IsActive} combatants={snapshot.Combatants.Count}");
+            OnCombatData(snapshot);
+        }
+
+        log.Debug($"[Replay] Done — final active='{Store.ActiveEncounter?.Encounter.Title}'");
+    }
+
     /// <summary>
     /// Re-process stored raw log lines for a historical encounter using current
     /// plugin settings (e.g. DotCalcMode). Updates skill breakdowns, statuses,
