@@ -29,7 +29,39 @@ public static class CombatDataParser
             c.RaidHps = raidHps;
         }
 
+        ResolveEncounterTitle(snapshot);
+
         return snapshot;
+    }
+
+    // IINACT names encounters after the first player it sees take damage,
+    // which in alliance / field-operation content is usually a random teammate.
+    private static void ResolveEncounterTitle(EncounterSnapshot snapshot)
+    {
+        var title = snapshot.Encounter.Title;
+
+        if (!string.IsNullOrEmpty(title))
+        {
+            var match = snapshot.Combatants.Find(c =>
+                string.Equals(c.Name, title, StringComparison.OrdinalIgnoreCase));
+            if (match != null && string.IsNullOrEmpty(match.Job))
+                return;
+        }
+
+        CombatantEntry? boss = null;
+        long maxDamageTaken = 0;
+        foreach (var c in snapshot.Combatants)
+        {
+            if (!string.IsNullOrEmpty(c.Job)) continue;
+            if (c.DamageTaken > maxDamageTaken)
+            {
+                boss = c;
+                maxDamageTaken = c.DamageTaken;
+            }
+        }
+
+        if (boss != null)
+            snapshot.Encounter.Title = boss.Name;
     }
 
     private static CombatEncounter ParseEncounter(JObject enc, string? isActive)

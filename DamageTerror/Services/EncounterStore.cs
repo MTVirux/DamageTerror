@@ -375,6 +375,20 @@ public sealed class EncounterStore
                 snapshot.Timestamp = active.Timestamp;
             }
 
+            // IINACT trims its Combatants list to participants that recently
+            // dealt or took damage, so idle or distant alliance members blink
+            // out mid-fight.
+            if (active != null && prevSnapshotActive && active != snapshot)
+            {
+                foreach (var prev in active.Combatants)
+                {
+                    var stillPresent = snapshot.Combatants.Any(c =>
+                        string.Equals(c.Name, prev.Name, StringComparison.OrdinalIgnoreCase));
+                    if (!stillPresent)
+                        snapshot.Combatants.Add(prev);
+                }
+            }
+
             active = snapshot;
             prevSnapshotActive = snapshot.Encounter.IsActive;
 
