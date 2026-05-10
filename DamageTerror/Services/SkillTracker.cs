@@ -279,291 +279,10 @@ public sealed class SkillTracker
             return;
         }
 
-        if (line.Length < 10)
-            return;
-
         if (type != "21" && type != "22")
             return;
 
-        var sourceName = line[3];
-        var targetName = line.Length > 7 ? line[7] : null;
-        var skillName = string.Equals(line[5], "Attack", StringComparison.OrdinalIgnoreCase) ? "Auto Attack" : line[5];
-
-        if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(skillName))
-            return;
-
-        // Register entity ID → name from every ability line so pet-to-owner
-        // resolution works even if the owner's Type 03 was missed.
-        var sourceId = line[2];
-        if (!string.IsNullOrEmpty(sourceId) && !string.IsNullOrEmpty(sourceName))
-        {
-            lock (syncLock)
-                entityIdToName[sourceId] = sourceName;
-        }
-
-        // Resolve pet-to-owner via Type 03 entity ID mapping.
-        string? petOwnerName = null;
-        string? petEntityName = null;
-        if (!string.IsNullOrEmpty(sourceId))
-        {
-            lock (syncLock)
-            {
-                if (petToOwnerId.TryGetValue(sourceId, out var ownerId)
-                    && entityIdToName.TryGetValue(ownerId, out var ownerName))
-                {
-                    petOwnerName = ownerName;
-                    petEntityName = sourceName;
-                }
-            }
-        }
-
-        // Ground-effect burst entity: when a ground entity (e.g. "Earthly Star")
-        // deals Type 21/22 damage, resolve the owner from the name-based map.
-        if (petOwnerName == null && GroundEffectEntityNames.Contains(sourceName))
-        {
-            lock (syncLock)
-            {
-                if (groundEffectEntityOwners.TryGetValue(sourceName, out var owner))
-                {
-                    petOwnerName = owner;
-                    petEntityName = sourceName;
-                }
-            }
-        }
-        // When a player casts a ground-effect placement skill, record the mapping.
-        else if (petOwnerName == null && GroundEffectEntityNames.Contains(skillName))
-        {
-            lock (syncLock)
-            {
-                groundEffectEntityOwners[skillName] = sourceName;
-            }
-        }
-
-        // Separate item uses (item_XXXX) into their own tracking.
-        if (skillName.StartsWith("item_", StringComparison.OrdinalIgnoreCase))
-        {
-            lock (syncLock)
-            {
-                RecordItemEvent(sourceName, skillName, targetName);
-            }
-            return;
-        }
-
-        // Pre-register ground-effect DoTs so the first tick is attributed
-        // correctly even if the status gain (type 26) arrives after the tick.
-        statusTracker?.NotifyGroundEffectSkillUsed(sourceName, skillName);
-
-        var damageType = SkillDamageType.Unknown;
-        uint actionId = 0;
-        if (line.Length > 4 && uint.TryParse(line[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out actionId))
-            damageType = LookupDamageType(actionId);
-
-        // Scan all 8 effect pairs (fields 8-23).
-        // A single ability can have both damage and healing in different pairs
-        // (e.g. drain abilities like Souleater, Energy Drain).
-        // A second 0x03 damage effect is captured separately as a reflect
-        // candidate (e.g. WAR's Damnation reflects incoming damage back).
-        long dmgAmount = 0;
-        byte dmgSeverity = 0;
-        int dmgBonusPercent = -1;
-        long healAmount = 0;
-        byte healSeverity = 0;
-        long reflectAmount = 0;
-        byte reflectSeverity = 0;
-        for (int i = 0; i < 8; i++)
-        {
-            int flagIdx = 8 + i * 2;
-            int valIdx = flagIdx + 1;
-            if (valIdx >= line.Length)
-                break;
-
-            var result = DecodeEffect(line[flagIdx], line[valIdx]);
-            if (result.Amount <= 0)
-                continue;
-
-            if (result.EffectType == 4)
-            {
-                if (healAmount == 0)
-                {
-                    healAmount = result.Amount;
-                    healSeverity = result.Severity;
-                }
-            }
-            else if (dmgAmount == 0)
-            {
-                dmgAmount = result.Amount;
-                dmgSeverity = result.Severity;
-                dmgBonusPercent = result.BonusPercent;
-            }
-            else if (reflectAmount == 0)
-            {
-                reflectAmount = result.Amount;
-                reflectSeverity = result.Severity;
-            }
-        }
-
-        // Scan for 0x0E/0x0F status-application effects to extract low-byte
-        // refinement data (damage lowbyte + crit lowbyte) for DoT simulation,
-        // and calibrate per-source damage-per-potency-point coefficients from
-        // DoT initial hits.
-        if (config.DotCalcMode != DotCalcMode.Iinact)
-        {
-            for (int i = 0; i < 8; i++)
-            {
-                int flagIdx = 8 + i * 2;
-                int valIdx = flagIdx + 1;
-                if (valIdx >= line.Length)
-                    break;
-
-                if (string.IsNullOrEmpty(line[flagIdx]) || string.IsNullOrEmpty(line[valIdx]))
-                    continue;
-
-                if (!uint.TryParse(line[flagIdx], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var sFlags))
-                    continue;
-                if (!uint.TryParse(line[valIdx], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var sRaw))
-                    continue;
-
-                var sEffectType = (byte)(sFlags & 0xFF);
-                // 0x0E = status applied to target, 0x0F = status applied to caster
-                if (sEffectType != 0x0E && sEffectType != 0x0F)
-                    continue;
-
-                // Upper 16 bits of the value field contain the status ID.
-                var appliedStatusId = (uint)((sRaw >> 16) & 0xFFFF);
-                if (appliedStatusId == 0)
-                    continue;
-
-                // Byte 1 of flags = damage lowbyte, Byte 2 = crit lowbyte
-                var damageLB = (byte)((sFlags >> 8) & 0xFF);
-                var critLB = (byte)((sFlags >> 16) & 0xFF);
-
-                // Determine the target of the status: 0x0E = targetName, 0x0F = sourceName (self-buff)
-                var statusTarget = sEffectType == 0x0E ? targetName : sourceName;
-                if (string.IsNullOrEmpty(statusTarget))
-                    continue;
-
-                // Refined mode: store low-byte data for per-application refinement.
-                if (config.DotCalcMode != DotCalcMode.Iinact)
-                {
-                    lock (syncLock)
-                    {
-                        pendingLowBytes[(sourceName, statusTarget, appliedStatusId)] = (damageLB, critLB);
-                    }
-                }
-
-                // Calibrate per-potency coefficient from DoT initial hits.
-                // If this ability dealt direct damage AND applied a known DoT with
-                // a catalogued initial hit potency, use it to derive the coefficient.
-                if (dmgAmount > 0)
-                {
-                    var initialPot = DotPotencyTable.GetInitialHitPotency(appliedStatusId);
-                    if (initialPot > 0)
-                    {
-                        lock (syncLock)
-                        {
-                            CalibrateFromDotHit(sourceName, dmgAmount, dmgSeverity, initialPot);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Track positional hits/misses for known melee positional actions.
-        // Uses CSV lookup table approach inspired by DamageInfoPlugin:
-        // https://github.com/perchbirdd/DamageInfoPlugin
-        if (dmgAmount > 0 && dmgBonusPercent >= 0 && positionalTable.IsPositional(actionId))
-        {
-            lock (syncLock)
-            {
-                if (positionalTable.IsPositionalMiss(actionId, dmgBonusPercent))
-                    positionalMissCounts[sourceName] = positionalMissCounts.GetValueOrDefault(sourceName) + 1;
-                else
-                    positionalHitCounts[sourceName] = positionalHitCounts.GetValueOrDefault(sourceName) + 1;
-            }
-        }
-
-        // Count Leg Sweep / Low Blow uses regardless of whether they deal damage.
-        if (string.Equals(skillName, "Leg Sweep", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(skillName, "Low Blow", StringComparison.OrdinalIgnoreCase))
-        {
-            lock (syncLock)
-                stunCounts[sourceName] = stunCounts.GetValueOrDefault(sourceName) + 1;
-        }
-
-        if (dmgAmount <= 0 && healAmount <= 0)
-            return;
-
-        // Pet-sourced skills go into separate pet dictionaries so they appear
-        // as a named category in the skill breakdown instead of inline.
-        if (petOwnerName != null && petEntityName != null)
-        {
-            ServiceManager.LogDebug(LogChannel.PetDebug, $"[PetDebug] PetAccum owner={petOwnerName} pet={petEntityName} skill={skillName} dmg={dmgAmount} heal={healAmount}");
-            lock (syncLock)
-            {
-                if (dmgAmount > 0)
-                {
-                    AccumulatePetSkill(petDamageData, petOwnerName, petEntityName, skillName, dmgAmount, dmgSeverity, damageType);
-                    RecordEvent(petOwnerName, skillName, dmgAmount, false, dmgSeverity, targetName);
-
-                    if (!string.IsNullOrEmpty(targetName))
-                        RecordDamageTakenEvent(targetName, skillName, dmgAmount, dmgSeverity);
-                }
-                if (healAmount > 0)
-                {
-                    AccumulatePetSkill(petHealData, petOwnerName, petEntityName, skillName, healAmount, healSeverity, damageType);
-                    RecordEvent(petOwnerName, skillName, healAmount, true, healSeverity, targetName);
-                }
-            }
-
-            if (dmgAmount > 0 || healAmount > 0)
-                graphTracker?.RecordLogLineEvent(petOwnerName, dmgAmount, healAmount);
-
-            return;
-        }
-
-        lock (syncLock)
-        {
-            if (dmgAmount > 0)
-            {
-                AccumulateSkill(damageData, sourceName, skillName, dmgAmount, dmgSeverity, damageType);
-                RecordEvent(sourceName, skillName, dmgAmount, false, dmgSeverity, targetName);
-
-                if (!string.IsNullOrEmpty(targetName))
-                    RecordDamageTakenEvent(targetName, skillName, dmgAmount, dmgSeverity);
-
-                // Feed per-combatant stats for DoT/HoT tick simulation (exclude auto-attacks).
-                if (!string.Equals(skillName, "Auto Attack", StringComparison.OrdinalIgnoreCase))
-                    AccumulateCombatantStats(sourceName, dmgAmount, dmgSeverity);
-            }
-            if (healAmount > 0)
-            {
-                AccumulateSkill(healData, sourceName, skillName, healAmount, healSeverity, damageType);
-                RecordEvent(sourceName, skillName, healAmount, true, healSeverity, targetName);
-            }
-        }
-
-        // Feed high-resolution damage/heal totals into the graph tracker
-        // outside the skill lock to avoid nested locking.
-        if (dmgAmount > 0 || healAmount > 0)
-            graphTracker?.RecordLogLineEvent(sourceName, dmgAmount, healAmount);
-
-        // A second damage effect on an enemy-on-player ability line is reflected
-        // damage (e.g. Damnation). Re-attribute it to the line's target as the
-        // active reflect-status skill, with the line's source as the new target.
-        if (reflectAmount > 0 && !string.IsNullOrEmpty(targetName))
-        {
-            var reflectSkill = ResolveActiveReflectSkill(targetName);
-            if (reflectSkill != null)
-            {
-                lock (syncLock)
-                {
-                    AccumulateSkill(damageData, targetName, reflectSkill, reflectAmount, reflectSeverity, SkillDamageType.Unknown);
-                    RecordEvent(targetName, reflectSkill, reflectAmount, false, reflectSeverity, sourceName);
-                    RecordDamageTakenEvent(sourceName, reflectSkill, reflectAmount, reflectSeverity);
-                }
-                graphTracker?.RecordLogLineEvent(targetName, reflectAmount, 0);
-            }
-        }
+        ProcessAbilityLine(line);
     }
 
     /// <summary>Returns the name of the first active reflect status on the target,
@@ -1674,5 +1393,373 @@ public sealed class SkillTracker
             else
                 graphTracker?.RecordLogLineEvent(src, 0, srcShare);
         }
+    }
+
+    private readonly struct AbilityLineContext
+    {
+        public required string SourceId { get; init; }
+        public required string SourceName { get; init; }
+        public string? TargetName { get; init; }
+        public required string SkillName { get; init; }
+        public uint ActionId { get; init; }
+        public SkillDamageType DamageType { get; init; }
+        public string? PetOwnerName { get; init; }
+        public string? PetEntityName { get; init; }
+    }
+
+    private readonly struct AbilityEffectAmounts
+    {
+        public long Damage { get; init; }
+        public byte DamageSeverity { get; init; }
+        public int DamageBonusPercent { get; init; }
+        public long Heal { get; init; }
+        public byte HealSeverity { get; init; }
+        public long Reflect { get; init; }
+        public byte ReflectSeverity { get; init; }
+
+        public bool HasDamageOrHeal => Damage > 0 || Heal > 0;
+    }
+
+    private bool TryParseAbilityLine(string[] line, out AbilityLineContext ctx)
+    {
+        ctx = default;
+        if (line.Length < 10) return false;
+
+        var sourceName = line[3];
+        var skillName = string.Equals(line[5], "Attack", StringComparison.OrdinalIgnoreCase)
+            ? "Auto Attack"
+            : line[5];
+
+        if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(skillName))
+            return false;
+
+        var sourceId = line[2] ?? string.Empty;
+        var targetName = line.Length > 7 ? line[7] : null;
+
+        var damageType = SkillDamageType.Unknown;
+        uint actionId = 0;
+        if (line.Length > 4 && uint.TryParse(line[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out actionId))
+            damageType = LookupDamageType(actionId);
+
+        ctx = new AbilityLineContext
+        {
+            SourceId = sourceId,
+            SourceName = sourceName,
+            TargetName = targetName,
+            SkillName = skillName,
+            ActionId = actionId,
+            DamageType = damageType,
+        };
+        return true;
+    }
+
+    private AbilityLineContext ResolvePetOrGroundEffect(AbilityLineContext ctx)
+    {
+        var sourceId = ctx.SourceId;
+        var sourceName = ctx.SourceName;
+        var skillName = ctx.SkillName;
+
+        if (!string.IsNullOrEmpty(sourceId) && !string.IsNullOrEmpty(sourceName))
+        {
+            lock (syncLock)
+                entityIdToName[sourceId] = sourceName;
+        }
+
+        string? petOwnerName = null;
+        string? petEntityName = null;
+
+        if (!string.IsNullOrEmpty(sourceId))
+        {
+            lock (syncLock)
+            {
+                if (petToOwnerId.TryGetValue(sourceId, out var ownerId)
+                    && entityIdToName.TryGetValue(ownerId, out var ownerName))
+                {
+                    petOwnerName = ownerName;
+                    petEntityName = sourceName;
+                }
+            }
+        }
+
+        if (petOwnerName == null && GroundEffectEntityNames.Contains(sourceName))
+        {
+            lock (syncLock)
+            {
+                if (groundEffectEntityOwners.TryGetValue(sourceName, out var owner))
+                {
+                    petOwnerName = owner;
+                    petEntityName = sourceName;
+                }
+            }
+        }
+        else if (petOwnerName == null && GroundEffectEntityNames.Contains(skillName))
+        {
+            lock (syncLock)
+            {
+                groundEffectEntityOwners[skillName] = sourceName;
+            }
+        }
+
+        return ctx with { PetOwnerName = petOwnerName, PetEntityName = petEntityName };
+    }
+
+    // Scan all 8 effect pairs (fields 8-23).
+    // A single ability can have both damage and healing in different pairs
+    // (e.g. drain abilities like Souleater, Energy Drain).
+    // A second 0x03 damage effect is captured separately as a reflect
+    // candidate (e.g. WAR's Damnation reflects incoming damage back).
+    private AbilityEffectAmounts DecodeAbilityEffects(string[] line)
+    {
+        long dmgAmount = 0;
+        byte dmgSeverity = 0;
+        int dmgBonusPercent = -1;
+        long healAmount = 0;
+        byte healSeverity = 0;
+        long reflectAmount = 0;
+        byte reflectSeverity = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            int flagIdx = 8 + i * 2;
+            int valIdx = flagIdx + 1;
+            if (valIdx >= line.Length)
+                break;
+
+            var result = DecodeEffect(line[flagIdx], line[valIdx]);
+            if (result.Amount <= 0)
+                continue;
+
+            if (result.EffectType == 4)
+            {
+                if (healAmount == 0)
+                {
+                    healAmount = result.Amount;
+                    healSeverity = result.Severity;
+                }
+            }
+            else if (dmgAmount == 0)
+            {
+                dmgAmount = result.Amount;
+                dmgSeverity = result.Severity;
+                dmgBonusPercent = result.BonusPercent;
+            }
+            else if (reflectAmount == 0)
+            {
+                reflectAmount = result.Amount;
+                reflectSeverity = result.Severity;
+            }
+        }
+
+        return new AbilityEffectAmounts
+        {
+            Damage = dmgAmount,
+            DamageSeverity = dmgSeverity,
+            DamageBonusPercent = dmgBonusPercent,
+            Heal = healAmount,
+            HealSeverity = healSeverity,
+            Reflect = reflectAmount,
+            ReflectSeverity = reflectSeverity,
+        };
+    }
+
+    // Scan for 0x0E/0x0F status-application effects to extract low-byte
+    // refinement data (damage lowbyte + crit lowbyte) for DoT simulation,
+    // and calibrate per-source damage-per-potency-point coefficients from
+    // DoT initial hits.
+    private void CalibrateStatusLowBytes(string[] line, in AbilityLineContext ctx, long dmgAmount, byte dmgSeverity)
+    {
+        if (config.DotCalcMode == DotCalcMode.Iinact) return;
+
+        var sourceName = ctx.SourceName;
+        var targetName = ctx.TargetName;
+
+        for (int i = 0; i < 8; i++)
+        {
+            int flagIdx = 8 + i * 2;
+            int valIdx = flagIdx + 1;
+            if (valIdx >= line.Length)
+                break;
+
+            if (string.IsNullOrEmpty(line[flagIdx]) || string.IsNullOrEmpty(line[valIdx]))
+                continue;
+
+            if (!uint.TryParse(line[flagIdx], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var sFlags))
+                continue;
+            if (!uint.TryParse(line[valIdx], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var sRaw))
+                continue;
+
+            var sEffectType = (byte)(sFlags & 0xFF);
+            if (sEffectType != 0x0E && sEffectType != 0x0F)
+                continue;
+
+            var appliedStatusId = (uint)((sRaw >> 16) & 0xFFFF);
+            if (appliedStatusId == 0)
+                continue;
+
+            var damageLB = (byte)((sFlags >> 8) & 0xFF);
+            var critLB = (byte)((sFlags >> 16) & 0xFF);
+
+            var statusTarget = sEffectType == 0x0E ? targetName : sourceName;
+            if (string.IsNullOrEmpty(statusTarget))
+                continue;
+
+            lock (syncLock)
+            {
+                pendingLowBytes[(sourceName, statusTarget, appliedStatusId)] = (damageLB, critLB);
+            }
+
+            if (dmgAmount > 0)
+            {
+                var initialPot = DotPotencyTable.GetInitialHitPotency(appliedStatusId);
+                if (initialPot > 0)
+                {
+                    lock (syncLock)
+                    {
+                        CalibrateFromDotHit(sourceName, dmgAmount, dmgSeverity, initialPot);
+                    }
+                }
+            }
+        }
+    }
+
+    // Track positional hits/misses for known melee positional actions.
+    // Uses CSV lookup table approach inspired by DamageInfoPlugin:
+    // https://github.com/perchbirdd/DamageInfoPlugin
+    private void RecordPositionalAndStun(in AbilityLineContext ctx, long dmgAmount, int dmgBonusPercent)
+    {
+        if (dmgAmount > 0 && dmgBonusPercent >= 0 && positionalTable.IsPositional(ctx.ActionId))
+        {
+            lock (syncLock)
+            {
+                if (positionalTable.IsPositionalMiss(ctx.ActionId, dmgBonusPercent))
+                    positionalMissCounts[ctx.SourceName] = positionalMissCounts.GetValueOrDefault(ctx.SourceName) + 1;
+                else
+                    positionalHitCounts[ctx.SourceName] = positionalHitCounts.GetValueOrDefault(ctx.SourceName) + 1;
+            }
+        }
+
+        // Count Leg Sweep / Low Blow uses regardless of whether they deal damage.
+        if (string.Equals(ctx.SkillName, "Leg Sweep", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(ctx.SkillName, "Low Blow", StringComparison.OrdinalIgnoreCase))
+        {
+            lock (syncLock)
+                stunCounts[ctx.SourceName] = stunCounts.GetValueOrDefault(ctx.SourceName) + 1;
+        }
+    }
+
+    // Pet-sourced skills go into separate pet dictionaries so they appear
+    // as a named category in the skill breakdown instead of inline.
+    private void AccumulateAbilitySkill(in AbilityLineContext ctx, long dmg, byte dmgSev, long heal, byte healSev)
+    {
+        if (ctx.PetOwnerName != null && ctx.PetEntityName != null)
+        {
+            ServiceManager.LogDebug(LogChannel.PetDebug,
+                $"[PetDebug] PetAccum owner={ctx.PetOwnerName} pet={ctx.PetEntityName} skill={ctx.SkillName} dmg={dmg} heal={heal}");
+
+            lock (syncLock)
+            {
+                if (dmg > 0)
+                {
+                    AccumulatePetSkill(petDamageData, ctx.PetOwnerName, ctx.PetEntityName, ctx.SkillName, dmg, dmgSev, ctx.DamageType);
+                    RecordEvent(ctx.PetOwnerName, ctx.SkillName, dmg, false, dmgSev, ctx.TargetName);
+
+                    if (!string.IsNullOrEmpty(ctx.TargetName))
+                        RecordDamageTakenEvent(ctx.TargetName, ctx.SkillName, dmg, dmgSev);
+                }
+                if (heal > 0)
+                {
+                    AccumulatePetSkill(petHealData, ctx.PetOwnerName, ctx.PetEntityName, ctx.SkillName, heal, healSev, ctx.DamageType);
+                    RecordEvent(ctx.PetOwnerName, ctx.SkillName, heal, true, healSev, ctx.TargetName);
+                }
+            }
+
+            if (dmg > 0 || heal > 0)
+                graphTracker?.RecordLogLineEvent(ctx.PetOwnerName, dmg, heal);
+
+            return;
+        }
+
+        lock (syncLock)
+        {
+            if (dmg > 0)
+            {
+                AccumulateSkill(damageData, ctx.SourceName, ctx.SkillName, dmg, dmgSev, ctx.DamageType);
+                RecordEvent(ctx.SourceName, ctx.SkillName, dmg, false, dmgSev, ctx.TargetName);
+
+                if (!string.IsNullOrEmpty(ctx.TargetName))
+                    RecordDamageTakenEvent(ctx.TargetName, ctx.SkillName, dmg, dmgSev);
+
+                // Feed per-combatant stats for DoT/HoT tick simulation (exclude auto-attacks).
+                if (!string.Equals(ctx.SkillName, "Auto Attack", StringComparison.OrdinalIgnoreCase))
+                    AccumulateCombatantStats(ctx.SourceName, dmg, dmgSev);
+            }
+            if (heal > 0)
+            {
+                AccumulateSkill(healData, ctx.SourceName, ctx.SkillName, heal, healSev, ctx.DamageType);
+                RecordEvent(ctx.SourceName, ctx.SkillName, heal, true, healSev, ctx.TargetName);
+            }
+        }
+
+        // Feed high-resolution damage/heal totals into the graph tracker
+        // outside the skill lock to avoid nested locking.
+        if (dmg > 0 || heal > 0)
+            graphTracker?.RecordLogLineEvent(ctx.SourceName, dmg, heal);
+    }
+
+    // A second damage effect on an enemy-on-player ability line is reflected
+    // damage (e.g. Damnation). Re-attribute it to the line's target as the
+    // active reflect-status skill, with the line's source as the new target.
+    private void RecordReflectDamage(in AbilityLineContext ctx, long reflectAmount, byte reflectSeverity)
+    {
+        if (reflectAmount <= 0 || string.IsNullOrEmpty(ctx.TargetName))
+            return;
+
+        var reflectSkill = ResolveActiveReflectSkill(ctx.TargetName);
+        if (reflectSkill == null)
+            return;
+
+        lock (syncLock)
+        {
+            AccumulateSkill(damageData, ctx.TargetName, reflectSkill, reflectAmount, reflectSeverity, SkillDamageType.Unknown);
+            RecordEvent(ctx.TargetName, reflectSkill, reflectAmount, false, reflectSeverity, ctx.SourceName);
+            RecordDamageTakenEvent(ctx.SourceName, reflectSkill, reflectAmount, reflectSeverity);
+        }
+
+        graphTracker?.RecordLogLineEvent(ctx.TargetName, reflectAmount, 0);
+    }
+
+    private void ProcessAbilityLine(string[] line)
+    {
+        if (!TryParseAbilityLine(line, out var ctx))
+            return;
+
+        ctx = ResolvePetOrGroundEffect(ctx);
+
+        if (ctx.SkillName.StartsWith("item_", StringComparison.OrdinalIgnoreCase))
+        {
+            lock (syncLock)
+                RecordItemEvent(ctx.SourceName, ctx.SkillName, ctx.TargetName);
+            return;
+        }
+
+        statusTracker?.NotifyGroundEffectSkillUsed(ctx.SourceName, ctx.SkillName);
+
+        var effects = DecodeAbilityEffects(line);
+
+        CalibrateStatusLowBytes(line, ctx, effects.Damage, effects.DamageSeverity);
+        RecordPositionalAndStun(ctx, effects.Damage, effects.DamageBonusPercent);
+
+        if (!effects.HasDamageOrHeal)
+        {
+            // Reflect alone (no primary damage/heal) is not handled today.
+            return;
+        }
+
+        AccumulateAbilitySkill(ctx, effects.Damage, effects.DamageSeverity, effects.Heal, effects.HealSeverity);
+
+        // Reflect attribution does not run for pet-sourced lines (matches the original
+        // ProcessLogLine where the pet branch returned before reaching the reflect block).
+        if (ctx.PetOwnerName == null)
+            RecordReflectDamage(ctx, effects.Reflect, effects.ReflectSeverity);
     }
 }
