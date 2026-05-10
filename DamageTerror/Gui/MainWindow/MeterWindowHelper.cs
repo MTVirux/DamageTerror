@@ -11,6 +11,35 @@ internal struct MeterVisibilityState
     public bool ObservedCombatSinceOverride;
 }
 
+internal struct MeterWindowContext
+{
+    public required Configuration Config;
+    public required EncounterSnapshot? Encounter;
+    public MeterTab? ActiveTab;
+    public SortField SortBy;
+    public bool SortDescending;
+    public required string CurrentPlayerName;
+    public List<CombatantEntry>? Combatants;
+    public double MaxVal;
+    public GroupAggregates? GroupAggregates;
+    public required float AfterBarsHeight;
+    public required bool UseTabBar;
+    public required bool IsViewingLive;
+    public required string ChildId;
+    public Action? DrawReplayBar;
+    public Action? DrawMeterTabButtons;
+    public required EncounterHeaderComponent HeaderComponent;
+    public required CombatantBarComponent BarComponent;
+    public required GraphViewComponent GraphViewComponent;
+    public required CombatantDetailPanel DetailPanel;
+    public required StatusBarComponent StatusBarComponent;
+    public required bool IsConnected;
+    public required bool DisconnectNoticeDismissed;
+    public required Action SpawnReconnect;
+    public required Action DismissDisconnectNotice;
+    public required string ReconnectButtonIdSuffix;
+}
+
 internal static class MeterWindowHelper
 {
     /// <summary>Persists across frames: current toggle state for modifier key mode.</summary>
@@ -244,5 +273,107 @@ internal static class MeterWindowHelper
             }
         }
         return height;
+    }
+
+    public static void RenderCombatantBars(in MeterWindowContext ctx)
+    {
+        var availY = ImGui.GetContentRegionAvail().Y;
+        var childHeight = ctx.AfterBarsHeight > 0 ? Math.Max(0f, availY - ctx.AfterBarsHeight) : 0f;
+        if (!ImGui.BeginChild(ctx.ChildId, new Vector2(0, childHeight), false))
+        {
+            ImGui.EndChild();
+            return;
+        }
+
+        var viewMode = ctx.ActiveTab?.ViewMode ?? ViewMode.Bars;
+
+        if (viewMode == ViewMode.LineGraph)
+        {
+            ctx.GraphViewComponent.Render(ctx.Combatants!, ctx.Encounter, ctx.IsViewingLive, ctx.ActiveTab, ctx.CurrentPlayerName);
+        }
+        else
+        {
+            if (ctx.Config.ShowMeterHeader)
+                DrawMeterHeader(ctx.Config, ctx.ActiveTab);
+
+            for (int i = 0; i < ctx.Combatants!.Count; i++)
+            {
+                var combatant = ctx.Combatants[i];
+                if (ctx.BarComponent.Render(combatant, ctx.MaxVal, i, ctx.SortBy, ctx.ActiveTab, ctx.CurrentPlayerName, ctx.GroupAggregates))
+                    ctx.DetailPanel.Toggle(combatant.Name);
+
+                ctx.DetailPanel.Render(combatant, ctx.Encounter, ctx.IsViewingLive, ctx.ActiveTab);
+            }
+        }
+        ImGui.EndChild();
+    }
+
+    public static void RenderLayoutElements(ref MeterWindowContext ctx, ref bool earlyReturn)
+    {
+        var modifierActive = IsModifierActive(ctx.Config);
+        foreach (var element in ctx.Config.Layout)
+        {
+            if (ctx.Config.CtrlShiftOnlyElements.Contains(element) && !modifierActive
+                && !(element == LayoutElement.EncounterSelect && ctx.HeaderComponent.IsComboOpen))
+                continue;
+
+            switch (element)
+            {
+                case LayoutElement.EncounterSelect:
+                    ctx.HeaderComponent.Render();
+                    ctx.DrawReplayBar?.Invoke();
+                    if (ctx.Encounter == null)
+                    {
+                        if (ctx.IsConnected)
+                        {
+                            ImGui.TextDisabled("No combat data, go hit something!");
+                        }
+                        else if (!ctx.DisconnectNoticeDismissed)
+                        {
+                            ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
+                            if (ImGui.Button($"Reconnect##disconnect-notice-encsel{ctx.ReconnectButtonIdSuffix}"))
+                                ctx.SpawnReconnect();
+                            ImGui.SameLine();
+                            if (ImGui.Button($"Dismiss##disconnect-notice-encsel{ctx.ReconnectButtonIdSuffix}"))
+                                ctx.DismissDisconnectNotice();
+                        }
+                        earlyReturn = true;
+                        return;
+                    }
+                    break;
+
+                case LayoutElement.MeterTabs:
+                    if (ctx.Encounter == null) break;
+                    if (ctx.UseTabBar && ctx.DrawMeterTabButtons != null)
+                    {
+                        ctx.DrawMeterTabButtons();
+                        // Caller's DrawMeterTabButtons callback updates ctx.ActiveTab/SortBy/Combatants/MaxVal/GroupAggregates
+                        // when the user clicks a different tab; helper picks up the new values on the next iteration.
+                    }
+                    break;
+
+                case LayoutElement.StatusBar:
+                    if (ctx.Encounter != null)
+                        ctx.StatusBarComponent.Render(ctx.Encounter, ctx.CurrentPlayerName, ctx.ActiveTab, ctx.GroupAggregates);
+                    break;
+
+                case LayoutElement.CombatantBars:
+                    if (ctx.Encounter == null) break;
+                    if (ctx.Combatants == null || ctx.Combatants.Count == 0)
+                    {
+                        ImGui.TextDisabled(ctx.UseTabBar ? "No combatants match this tab's filter." : "No combatant data.");
+                    }
+                    else
+                    {
+                        RenderCombatantBars(in ctx);
+                    }
+                    if (ctx.AfterBarsHeight > 0)
+                    {
+                        var contentMaxY = ImGui.GetWindowContentRegionMax().Y;
+                        ImGui.SetCursorPosY(contentMaxY - ctx.AfterBarsHeight);
+                    }
+                    break;
+            }
+        }
     }
 }

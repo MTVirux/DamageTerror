@@ -160,7 +160,6 @@ public sealed class PopoutTabWindow : Window, IDisposable
         var padTop = plugin.Config.WindowPaddingTop;
         var padBottom = plugin.Config.WindowPaddingBottom;
 
-        // If the status bar is the last visible layout element, skip bottom padding
         var modifierActiveEarly = MeterWindowHelper.IsModifierActive(plugin.Config);
         LayoutElement? lastVisibleEl = null;
         foreach (var el in plugin.Config.Layout)
@@ -221,7 +220,6 @@ public sealed class PopoutTabWindow : Window, IDisposable
         var afterBarsHeight = MeterWindowHelper.CalculateAfterBarsHeight(
             config, statusBarComponent.GetHeight, headerComponent.GetHeight,
             encounter != null, false, skipElements);
-        var modifierHeld = MeterWindowHelper.IsModifierActive(config);
 
         if (!plugin.DataService.IsConnected && encounter == null)
         {
@@ -238,60 +236,43 @@ public sealed class PopoutTabWindow : Window, IDisposable
             return;
         }
 
-        var modifierActive = MeterWindowHelper.IsModifierActive(config);
-        foreach (var element in config.Layout)
+        var ctx = new MeterWindowContext
         {
-            // Skip MeterTabs — this popout is already a single tab
-            if (element == LayoutElement.MeterTabs)
-                continue;
-            if (config.CtrlShiftOnlyElements.Contains(element) && !modifierActive)
-                continue;
+            Config = config,
+            Encounter = encounter,
+            ActiveTab = tab,
+            SortBy = sortBy,
+            SortDescending = sortDesc,
+            CurrentPlayerName = currentPlayerName,
+            Combatants = combatants,
+            MaxVal = maxVal,
+            GroupAggregates = null,
+            AfterBarsHeight = afterBarsHeight,
+            UseTabBar = false,
+            IsViewingLive = headerComponent.IsViewingLive,
+            ChildId = "##popoutCombatants",
+            DrawReplayBar = null,
+            DrawMeterTabButtons = null,
+            HeaderComponent = headerComponent,
+            BarComponent = barComponent,
+            GraphViewComponent = graphViewComponent,
+            DetailPanel = detailPanel,
+            StatusBarComponent = statusBarComponent,
+            IsConnected = plugin.DataService.IsConnected,
+            DisconnectNoticeDismissed = plugin.DataService.DisconnectNoticeDismissed,
+            SpawnReconnect = () => Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false)),
+            DismissDisconnectNotice = () => plugin.DataService.DismissDisconnectNotice(),
+            ReconnectButtonIdSuffix = "-popout",
+        };
 
-            switch (element)
-            {
-                case LayoutElement.EncounterSelect:
-                    headerComponent.Render();
-                    if (encounter == null)
-                    {
-                        if (plugin.DataService.IsConnected)
-                            ImGui.TextDisabled("No combat data, go hit something!");
-                        else if (!plugin.DataService.DisconnectNoticeDismissed)
-                        {
-                            ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-                            if (ImGui.Button("Reconnect##disconnect-notice-popout-encsel"))
-                                Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
-                            ImGui.SameLine();
-                            if (ImGui.Button("Dismiss##disconnect-notice-popout-encsel"))
-                                plugin.DataService.DismissDisconnectNotice();
-                        }
-                        ImGui.EndChild();
-                        return;
-                    }
-                    break;
-
-                case LayoutElement.StatusBar:
-                    if (encounter != null)
-                        statusBarComponent.Render(encounter, currentPlayerName, tab);
-                    break;
-
-                case LayoutElement.CombatantBars:
-                    if (encounter == null) break;
-                    if (combatants == null || combatants.Count == 0)
-                    {
-                        ImGui.TextDisabled("No combatants match this tab's filter.");
-                    }
-                    else
-                    {
-                        DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, tab, currentPlayerName, encounter, headerComponent.IsViewingLive);
-                    }
-                    if (afterBarsHeight > 0)
-                    {
-                        var contentMaxY = ImGui.GetWindowContentRegionMax().Y;
-                        ImGui.SetCursorPosY(contentMaxY - afterBarsHeight);
-                    }
-                    break;
-            }
+        var earlyReturn = false;
+        MeterWindowHelper.RenderLayoutElements(ref ctx, ref earlyReturn);
+        if (earlyReturn)
+        {
+            ImGui.EndChild();
+            return;
         }
+
         ImGui.EndChild();
     }
 
@@ -311,36 +292,4 @@ public sealed class PopoutTabWindow : Window, IDisposable
         }
         plugin.ClosePopoutTab(tabId);
     }
-
-    private void DrawCombatantBars(List<CombatantEntry> combatants, double maxVal, SortField sortBy, float reservedHeight, MeterTab activeTab, string currentPlayerName, EncounterSnapshot snapshot, bool isLive)
-    {
-        var availY = ImGui.GetContentRegionAvail().Y;
-        var childHeight = reservedHeight > 0 ? Math.Max(0f, availY - reservedHeight) : 0f;
-
-        if (ImGui.BeginChild("##popoutCombatants", new Vector2(0, childHeight), false))
-        {
-            if (activeTab.ViewMode == ViewMode.LineGraph)
-            {
-                graphViewComponent.Render(combatants, snapshot, isLive, activeTab, currentPlayerName);
-            }
-            else
-            {
-                if (plugin.Config.ShowMeterHeader)
-                    DrawMeterHeader(activeTab);
-
-                for (int i = 0; i < combatants.Count; i++)
-                {
-                    var combatant = combatants[i];
-                    if (barComponent.Render(combatant, maxVal, i, sortBy, activeTab, currentPlayerName))
-                        detailPanel.Toggle(combatant.Name);
-
-                    detailPanel.Render(combatant, snapshot, isLive, activeTab);
-                }
-            }
-        }
-        ImGui.EndChild();
-    }
-
-    private void DrawMeterHeader(MeterTab activeTab)
-        => MeterWindowHelper.DrawMeterHeader(plugin.Config, activeTab);
 }

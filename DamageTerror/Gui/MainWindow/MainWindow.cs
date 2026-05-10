@@ -327,88 +327,73 @@ public sealed class MainWindow : Window, IDisposable
             return;
         }
 
-        foreach (var element in config.Layout)
+        var ctx = new MeterWindowContext
         {
-            if (config.CtrlShiftOnlyElements.Contains(element) && !modifierActive
-                && !(element == LayoutElement.EncounterSelect && headerComponent.IsComboOpen))
-                continue;
-            switch (element)
+            Config = config,
+            Encounter = encounter,
+            ActiveTab = activeTab,
+            SortBy = sortBy,
+            SortDescending = sortDesc,
+            CurrentPlayerName = currentPlayerName,
+            Combatants = combatants,
+            MaxVal = maxVal,
+            GroupAggregates = groupAggregates,
+            AfterBarsHeight = afterBarsHeight,
+            UseTabBar = useTabBar,
+            IsViewingLive = headerComponent.IsViewingLive,
+            ChildId = "##combatants",
+            DrawReplayBar = DrawReplayBar,
+            DrawMeterTabButtons = null,
+            HeaderComponent = headerComponent,
+            BarComponent = barComponent,
+            GraphViewComponent = graphViewComponent,
+            DetailPanel = detailPanel,
+            StatusBarComponent = statusBarComponent,
+            IsConnected = plugin.DataService.IsConnected,
+            DisconnectNoticeDismissed = plugin.DataService.DisconnectNoticeDismissed,
+            SpawnReconnect = SpawnReconnect,
+            DismissDisconnectNotice = () => plugin.DataService.DismissDisconnectNotice(),
+            ReconnectButtonIdSuffix = "",
+        };
+
+        ctx.DrawMeterTabButtons = () =>
+        {
+            DrawMeterTabButtons(config);
+            var newTab = config.MeterTabs[selectedMeterTab];
+            if (newTab != ctx.ActiveTab)
             {
-                case LayoutElement.EncounterSelect:
-                    headerComponent.Render();
-                    DrawReplayBar();
-                    if (encounter == null)
-                    {
-                        if (plugin.DataService.IsConnected)
-                        {
-                            ImGui.TextDisabled("No combat data, go hit something!");
-                        }
-                        else if (!plugin.DataService.DisconnectNoticeDismissed)
-                        {
-                            ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-                            if (ImGui.Button("Reconnect##disconnect-notice-encsel"))
-                                SpawnReconnect();
-                            ImGui.SameLine();
-                            if (ImGui.Button("Dismiss##disconnect-notice-encsel"))
-                                plugin.DataService.DismissDisconnectNotice();
-                        }
-                        ImGui.EndChild();
-                        return;
-                    }
-                    break;
+                ctx.ActiveTab = newTab;
+                ctx.SortBy = newTab.SortBy;
+                ctx.SortDescending = newTab.SortDescending;
 
-                case LayoutElement.MeterTabs:
-                    if (encounter == null) break;
-                    if (useTabBar)
-                    {
-                        DrawMeterTabButtons(config);
+                if (newTab.GroupFilter is GroupFilter.Party or GroupFilter.Alliance)
+                {
+                    partyNames ??= plugin.PartyService.GetPartyMemberNames();
+                    allianceNames ??= plugin.PartyService.GetAllianceMemberNames();
+                }
 
-                        var newTab = config.MeterTabs[selectedMeterTab];
-                        if (newTab != activeTab)
-                        {
-                            activeTab = newTab;
-                            sortBy = activeTab.SortBy;
-                            sortDesc = activeTab.SortDescending;
+                var newCombatants = GetSortedCombatants(encounter!, ctx.SortBy, ctx.SortDescending, newTab, partyNames, allianceNames);
+                StampRanks(newCombatants);
+                var newGroupAgg = GroupAggregates.Compute(newCombatants);
+                var newMaxVal = newCombatants.Count > 0
+                    ? newCombatants.Sum(c => CombatantBarComponent.GetSortValue(c, ctx.SortBy))
+                    : 0;
 
-                                if (activeTab.GroupFilter is GroupFilter.Party or GroupFilter.Alliance)
-                            {
-                                partyNames ??= plugin.PartyService.GetPartyMemberNames();
-                                allianceNames ??= plugin.PartyService.GetAllianceMemberNames();
-                            }
-
-                            combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
-                            StampRanks(combatants);
-                            groupAggregates = GroupAggregates.Compute(combatants);
-                            maxVal = combatants.Count > 0
-                                ? combatants.Sum(c => CombatantBarComponent.GetSortValue(c, sortBy))
-                                : 0;
-                        }
-                    }
-                    break;
-
-                case LayoutElement.StatusBar:
-                    if (encounter != null)
-                        statusBarComponent.Render(encounter, currentPlayerName, activeTab, groupAggregates);
-                    break;
-
-                case LayoutElement.CombatantBars:
-                    if (encounter == null) break;
-                    if (combatants == null || combatants.Count == 0)
-                    {
-                        ImGui.TextDisabled(useTabBar ? "No combatants match this tab's filter." : "No combatant data.");
-                    }
-                    else
-                    {
-                        DrawCombatantBars(combatants, maxVal, sortBy, afterBarsHeight, activeTab, currentPlayerName, encounter, headerComponent.IsViewingLive, groupAggregates);
-                    }
-                    if (afterBarsHeight > 0)
-                    {
-                        var contentMaxY = ImGui.GetWindowContentRegionMax().Y;
-                        ImGui.SetCursorPosY(contentMaxY - afterBarsHeight);
-                    }
-                    break;
+                ctx.Combatants = newCombatants;
+                ctx.GroupAggregates = newGroupAgg;
+                ctx.MaxVal = newMaxVal;
+                currentActiveTab = newTab;
             }
+        };
+
+        var earlyReturn = false;
+        MeterWindowHelper.RenderLayoutElements(ref ctx, ref earlyReturn);
+        if (earlyReturn)
+        {
+            ImGui.EndChild();
+            return;
         }
+
         ImGui.EndChild();
 
         DrawContextMenu();
@@ -581,40 +566,6 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().X, cursor.Y + buttonHeight));
     }
 
-    private void DrawCombatantBars(List<CombatantEntry> combatants, double maxVal, SortField sortBy, float reservedHeight, MeterTab? activeTab, string currentPlayerName, EncounterSnapshot? snapshot, bool isLive, GroupAggregates? groupAggregates = null)
-    {
-        var availY = ImGui.GetContentRegionAvail().Y;
-        var childHeight = reservedHeight > 0 ? Math.Max(0f, availY - reservedHeight) : 0f;
-
-        if (ImGui.BeginChild("##combatants", new Vector2(0, childHeight), false))
-        {
-            var viewMode = activeTab?.ViewMode ?? ViewMode.Bars;
-
-            if (viewMode == ViewMode.LineGraph)
-            {
-                graphViewComponent.Render(combatants, snapshot, isLive, activeTab, currentPlayerName);
-            }
-            else
-            {
-                if (plugin.Config.ShowMeterHeader)
-                {
-                    DrawMeterHeader(activeTab);
-                }
-
-                for (int i = 0; i < combatants.Count; i++)
-                {
-                    var combatant = combatants[i];
-                    if (barComponent.Render(combatant, maxVal, i, sortBy, activeTab, currentPlayerName, groupAggregates))
-                    {
-                        detailPanel.Toggle(combatant.Name);
-                    }
-
-                    detailPanel.Render(combatant, snapshot, isLive, activeTab);
-                }
-            }
-        }
-        ImGui.EndChild();
-    }
 
     private static bool IsGif(string path)
         => path.EndsWith(".gif", StringComparison.OrdinalIgnoreCase);
@@ -741,8 +692,6 @@ public sealed class MainWindow : Window, IDisposable
         }
     }
 
-    private void DrawMeterHeader(MeterTab? activeTab)
-        => MeterWindowHelper.DrawMeterHeader(plugin.Config, activeTab);
 
     private void DrawReplayBar()
     {
