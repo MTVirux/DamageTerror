@@ -406,239 +406,31 @@ public sealed class DataService : IDisposable
             playerChanged = false;
         }
 
-        if (string.IsNullOrEmpty(PlayerName))
-        {
-            try
-            {
-                var ps = ServiceManager.PlayerState;
-                if (ps is { IsLoaded: true })
-                {
-                    var name = ps.CharacterName;
-                    if (!string.IsNullOrEmpty(name))
-                    {
-                        PlayerName = name;
-                        log.Debug($"Player name from IPlayerState: {name}");
-                    }
-                }
-            }
-            catch (Exception ex) { log.Debug($"IPlayerState not available yet: {ex.Message}"); }
-        }
+        EnsurePlayerName();
+        RewriteYouNameInCombatants(snapshot);
 
-        if (!string.IsNullOrEmpty(PlayerName))
-        {
-            foreach (var c in snapshot.Combatants)
-            {
-                if (string.Equals(c.Name, "YOU", StringComparison.OrdinalIgnoreCase))
-                    c.Name = PlayerName;
-            }
-        }
+        var frame = HandleEncounterTransition(snapshot);
 
-        // Detect new encounter boundary — ensure the outgoing encounter
-        // has a final skills snapshot before resetting the tracker.
-        var isNewEncounter = false;
-        var isEncounterEnd = false;
-        if (snapshot.Encounter.IsActive && !prevSnapshotActive)
-        {
-            var outgoing = FinalizeOutgoingEncounter();
-
-            SkillTracker.Reset();
-            GraphTracker.Reset();
-            StatusTracker.ResetKeepingActiveDoTs();
-            EncounterTimer.Restart();
-            lastPeriodicSaveTime = 0f;
-#if DEBUG
-            lock (rawLogLineAccumulator)
-                rawLogLineAccumulator.Clear();
-            lock (rawCombatDataAccumulator)
-                rawCombatDataAccumulator.Clear();
-#endif
-
-            isNewEncounter = true;
-            OnNewEncounter?.Invoke();
-
-            // Re-seed graph data so the line chart remains visible while
-            // the live tracker accumulates its first few samples.
-            if (outgoing != null)
-            {
-                if (outgoing.GraphData.Count > 0)
-                    GraphTracker.SeedHistorical(outgoing.GraphData);
-            }
-
-            // Replay any log lines that arrived between the last CombatData
-            // and this one so the first skill of a new encounter is not lost.
-            DrainPendingLogLines();
-        }
-
-        // Detect encounter ending — combat was active and is now inactive.
-        // Archive so it appears in history immediately.
-        if (!snapshot.Encounter.IsActive && prevSnapshotActive)
-        {
-            isEncounterEnd = true;
-        }
-
-        prevSnapshotActive = snapshot.Encounter.IsActive;
-
-        if (!isNewEncounter)
-        {
-            if (snapshot.Encounter.IsActive || isEncounterEnd)
-                DrainPendingLogLines();
-            else
-            {
-                lock (pendingLogLines)
-                    pendingLogLines.Clear();
-            }
-        }
+        DrainPendingLogLinesIfNeeded(frame);
 
         if (!string.IsNullOrEmpty(PlayerName))
             snapshot.PlayerName = PlayerName;
 
-        // When a new encounter just started the tracker was reset, so the
-        // active encounter in the store still holds the *previous* fight's
-        // data.  Using it as a fallback would carry stale skill breakdowns
-        // into the new encounter.  Null it out so the fresh tracker wins.
-        var existing = isNewEncounter ? null : Store.ActiveEncounter;
-
-        // Resolve home worlds from the current party list
         var worldMap = ResolvePartyWorldMap();
 
-        foreach (var c in snapshot.Combatants)
-        {
-            var trackerSkills = SkillTracker.GetSkills(c.Name);
-            var trackerHealSkills = SkillTracker.GetHealSkills(c.Name);
-
-            // Preserve existing skills from the active encounter when the tracker
-            // has less data (e.g. after a plugin reload where the tracker restarted
-            // but CombatData still has cumulative totals).
-            var existingEntry = existing?.Combatants.Find(p =>
-                string.Equals(p.Name, c.Name, StringComparison.OrdinalIgnoreCase));
-
-            var trackerDmg = trackerSkills.Sum(s => s.TotalDamage);
-            var existingDmg = existingEntry?.Skills?.Sum(s => s.TotalDamage) ?? 0;
-            c.Skills = trackerDmg >= existingDmg ? trackerSkills : existingEntry!.Skills;
-
-            var trackerHeal = trackerHealSkills.Sum(s => s.TotalDamage);
-            var existingHeal = existingEntry?.HealingSkills?.Sum(s => s.TotalDamage) ?? 0;
-            c.HealingSkills = trackerHeal >= existingHeal ? trackerHealSkills : existingEntry!.HealingSkills;
-
-            // Derive heal count from tracked healing skills when the parser value is missing.
-            var trackerHealCount = c.HealingSkills.Sum(s => s.HitCount);
-            if (trackerHealCount > c.HealCount)
-                c.HealCount = trackerHealCount;
-
-            // Derive stun count from tracked Leg Sweep / Low Blow uses.
-            var trackerStuns = SkillTracker.GetStunCount(c.Name);
-            if (trackerStuns > c.Stuns)
-                c.Stuns = trackerStuns;
-
-            var trackerSkillIssue = SkillTracker.GetSkillIssueCount(c.Name);
-            if (trackerSkillIssue > c.SkillIssue)
-                c.SkillIssue = trackerSkillIssue;
-
-            var trackerDamageDown = SkillTracker.GetDamageDownCount(c.Name);
-            if (trackerDamageDown > c.DamageDown)
-                c.DamageDown = trackerDamageDown;
-
-            var trackerPositionalHits = SkillTracker.GetPositionalHits(c.Name);
-            var trackerPositionalMisses = SkillTracker.GetPositionalMisses(c.Name);
-            c.PositionalHits = Math.Max(c.PositionalHits, trackerPositionalHits);
-            c.PositionalMisses = Math.Max(c.PositionalMisses, trackerPositionalMisses);
-            c.Positionals = c.PositionalHits + c.PositionalMisses;
-
-            if (!string.IsNullOrEmpty(PlayerName) && string.Equals(c.Name, PlayerName, StringComparison.OrdinalIgnoreCase))
-                c.IsLocalPlayer = true;
-
-            // Resolve home world: party list > existing entry > empty
-            if (worldMap.TryGetValue(c.Name, out var world))
-                c.HomeWorld = world;
-            else if (!string.IsNullOrEmpty(existingEntry?.HomeWorld))
-                c.HomeWorld = existingEntry!.HomeWorld;
-        }
-
-        var prev = existing;
+        MergeTrackerAndExistingPerCombatant(frame, worldMap);
 
         var archived = Store.Update(snapshot);
 
-        GraphTracker.WindowSeconds = Math.Min(config.GraphSmoothingWindow, config.GraphViewSmoothingWindow);
-        GraphTracker.SampleIntervalSeconds = Math.Min(config.GraphUpdateInterval, config.GraphViewUpdateInterval);
-        GraphTracker.RecordSample(snapshot);
+        UpdateGraphAndInstantValues(snapshot);
+        UpdatePeakDps(frame);
 
-        // Feed sliding-window instant values back into each combatant entry
-        // so columns, details panel, and tooltips show live iDPS / iHPS.
-        foreach (var c in snapshot.Combatants)
-        {
-            var samples = GraphTracker.GetSamples(c.Name);
-            if (samples.Count > 0)
-            {
-                var latest = samples[^1];
-                c.InstantDps = latest.Dps;
-                c.InstantHps = latest.Hps;
-            }
-        }
-
-        // Track peak DPS as the highest instantaneous DPS achieved during the encounter.
-        if (prev != null && !isNewEncounter)
-        {
-            foreach (var c in snapshot.Combatants)
-            {
-                var prevEntry = prev.Combatants.Find(p =>
-                    string.Equals(p.Name, c.Name, StringComparison.OrdinalIgnoreCase));
-                var prevPeak = prevEntry?.PeakDps ?? 0;
-                c.PeakDps = Math.Max(c.InstantDps, prevPeak);
-            }
-        }
-        else
-        {
-            foreach (var c in snapshot.Combatants)
-                c.PeakDps = c.InstantDps;
-        }
-
-        // Periodically capture graph data during active encounters so that
-        // at most ~30 seconds of data is lost on an unexpected shutdown.
-        if (snapshot.Encounter.IsActive)
-        {
-            var elapsed = EncounterTimer.ElapsedSeconds;
-            if (elapsed - lastPeriodicSaveTime >= PeriodicSaveInterval)
-            {
-                lastPeriodicSaveTime = elapsed;
-                var active = Store.ActiveEncounter;
-                if (active != null)
-                {
-                    CaptureGraphData(active);
-#if DEBUG
-                    lock (rawLogLineAccumulator)
-                        active.RawLogLines = new List<string>(rawLogLineAccumulator);
-                    lock (rawCombatDataAccumulator)
-                        active.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
-#endif
-                    Store.Save();
-                }
-            }
-        }
+        MaybePeriodicSave(frame);
 
         if (archived)
             Store.Save();
 
-        // Copy the encounter into history now that Store.Update() has
-        // applied it as active with the final snapshot data. Use
-        // CopyActiveToHistory so the encounter stays visible in the
-        // main window until the next encounter starts.
-        if (isEncounterEnd)
-        {
-            var active = Store.ActiveEncounter;
-            if (active != null)
-            {
-                CaptureGraphData(active);
-#if DEBUG
-                lock (rawLogLineAccumulator)
-                    active.RawLogLines = new List<string>(rawLogLineAccumulator);
-                lock (rawCombatDataAccumulator)
-                    active.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
-#endif
-            }
-
-            if (Store.CopyActiveToHistory())
-                Store.Save(force: true);
-        }
+        MaybeCopyToHistoryOnEnd(frame);
     }
 
     private EncounterSnapshot? FinalizeOutgoingEncounter()
@@ -929,5 +721,273 @@ public sealed class DataService : IDisposable
         Store.ArchiveActive();
         Store.Save(force: true);
         PositionalTable.Dispose();
+    }
+
+    private void EnsurePlayerName()
+    {
+        if (!string.IsNullOrEmpty(PlayerName))
+            return;
+
+        try
+        {
+            var ps = ServiceManager.PlayerState;
+            if (ps is { IsLoaded: true })
+            {
+                var name = ps.CharacterName;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    PlayerName = name;
+                    log.Debug($"Player name from IPlayerState: {name}");
+                }
+            }
+        }
+        catch (Exception ex) { log.Debug($"IPlayerState not available yet: {ex.Message}"); }
+    }
+
+    private void RewriteYouNameInCombatants(EncounterSnapshot snapshot)
+    {
+        if (string.IsNullOrEmpty(PlayerName))
+            return;
+
+        foreach (var c in snapshot.Combatants)
+        {
+            if (string.Equals(c.Name, "YOU", StringComparison.OrdinalIgnoreCase))
+                c.Name = PlayerName;
+        }
+    }
+
+    // Detect new encounter boundary — ensure the outgoing encounter
+    // has a final skills snapshot before resetting the tracker.
+    private CombatDataFrame HandleEncounterTransition(EncounterSnapshot snapshot)
+    {
+        var isNewEncounter = false;
+        var isEncounterEnd = false;
+        EncounterSnapshot? outgoing = null;
+
+        if (snapshot.Encounter.IsActive && !prevSnapshotActive)
+        {
+            outgoing = FinalizeOutgoingEncounter();
+
+            SkillTracker.Reset();
+            GraphTracker.Reset();
+            StatusTracker.ResetKeepingActiveDoTs();
+            EncounterTimer.Restart();
+            lastPeriodicSaveTime = 0f;
+#if DEBUG
+            lock (rawLogLineAccumulator)
+                rawLogLineAccumulator.Clear();
+            lock (rawCombatDataAccumulator)
+                rawCombatDataAccumulator.Clear();
+#endif
+
+            isNewEncounter = true;
+            OnNewEncounter?.Invoke();
+
+            // Re-seed graph data so the line chart remains visible while
+            // the live tracker accumulates its first few samples.
+            if (outgoing != null && outgoing.GraphData.Count > 0)
+                GraphTracker.SeedHistorical(outgoing.GraphData);
+        }
+
+        // Detect encounter ending — combat was active and is now inactive.
+        // Archive so it appears in history immediately.
+        if (!snapshot.Encounter.IsActive && prevSnapshotActive)
+            isEncounterEnd = true;
+
+        prevSnapshotActive = snapshot.Encounter.IsActive;
+
+        var existing = isNewEncounter ? null : Store.ActiveEncounter;
+        var previousActive = existing;
+
+        return new CombatDataFrame
+        {
+            Snapshot = snapshot,
+            IsActive = snapshot.Encounter.IsActive,
+            IsNewEncounter = isNewEncounter,
+            IsEncounterEnd = isEncounterEnd,
+            Existing = existing,
+            PreviousActive = previousActive,
+        };
+    }
+
+    // Replay any log lines that arrived between the last CombatData and this one so
+    // the first skill of a new encounter is not lost. For ongoing or just-ending
+    // encounters drain too; outside combat, clear the buffer to avoid leaks.
+    private void DrainPendingLogLinesIfNeeded(in CombatDataFrame frame)
+    {
+        if (frame.IsNewEncounter)
+        {
+            DrainPendingLogLines();
+            return;
+        }
+
+        if (frame.IsActive || frame.IsEncounterEnd)
+        {
+            DrainPendingLogLines();
+        }
+        else
+        {
+            lock (pendingLogLines)
+                pendingLogLines.Clear();
+        }
+    }
+
+    private void MergeTrackerAndExistingPerCombatant(in CombatDataFrame frame, IReadOnlyDictionary<string, string> worldMap)
+    {
+        var snapshot = frame.Snapshot;
+        var existing = frame.Existing;
+
+        foreach (var c in snapshot.Combatants)
+        {
+            var trackerSkills = SkillTracker.GetSkills(c.Name);
+            var trackerHealSkills = SkillTracker.GetHealSkills(c.Name);
+
+            var existingEntry = existing?.Combatants.Find(p =>
+                string.Equals(p.Name, c.Name, StringComparison.OrdinalIgnoreCase));
+
+            // Preserve existing skills from the active encounter when the tracker
+            // has less data (e.g. after a plugin reload where the tracker restarted
+            // but CombatData still has cumulative totals).
+            var trackerDmg = trackerSkills.Sum(s => s.TotalDamage);
+            var existingDmg = existingEntry?.Skills?.Sum(s => s.TotalDamage) ?? 0;
+            c.Skills = trackerDmg >= existingDmg ? trackerSkills : existingEntry!.Skills;
+
+            var trackerHeal = trackerHealSkills.Sum(s => s.TotalDamage);
+            var existingHeal = existingEntry?.HealingSkills?.Sum(s => s.TotalDamage) ?? 0;
+            c.HealingSkills = trackerHeal >= existingHeal ? trackerHealSkills : existingEntry!.HealingSkills;
+
+            // Derive heal count from tracked healing skills when the parser value is missing.
+            var trackerHealCount = c.HealingSkills.Sum(s => s.HitCount);
+            if (trackerHealCount > c.HealCount)
+                c.HealCount = trackerHealCount;
+
+            // Derive stun count from tracked Leg Sweep / Low Blow uses.
+            var trackerStuns = SkillTracker.GetStunCount(c.Name);
+            if (trackerStuns > c.Stuns)
+                c.Stuns = trackerStuns;
+
+            var trackerSkillIssue = SkillTracker.GetSkillIssueCount(c.Name);
+            if (trackerSkillIssue > c.SkillIssue)
+                c.SkillIssue = trackerSkillIssue;
+
+            var trackerDamageDown = SkillTracker.GetDamageDownCount(c.Name);
+            if (trackerDamageDown > c.DamageDown)
+                c.DamageDown = trackerDamageDown;
+
+            var trackerPositionalHits = SkillTracker.GetPositionalHits(c.Name);
+            var trackerPositionalMisses = SkillTracker.GetPositionalMisses(c.Name);
+            c.PositionalHits = Math.Max(c.PositionalHits, trackerPositionalHits);
+            c.PositionalMisses = Math.Max(c.PositionalMisses, trackerPositionalMisses);
+            c.Positionals = c.PositionalHits + c.PositionalMisses;
+
+            if (!string.IsNullOrEmpty(PlayerName) && string.Equals(c.Name, PlayerName, StringComparison.OrdinalIgnoreCase))
+                c.IsLocalPlayer = true;
+
+            // Resolve home world: party list > existing entry > empty
+            if (worldMap.TryGetValue(c.Name, out var world))
+                c.HomeWorld = world;
+            else if (!string.IsNullOrEmpty(existingEntry?.HomeWorld))
+                c.HomeWorld = existingEntry!.HomeWorld;
+        }
+    }
+
+    private void UpdateGraphAndInstantValues(EncounterSnapshot snapshot)
+    {
+        GraphTracker.WindowSeconds = Math.Min(config.GraphSmoothingWindow, config.GraphViewSmoothingWindow);
+        GraphTracker.SampleIntervalSeconds = Math.Min(config.GraphUpdateInterval, config.GraphViewUpdateInterval);
+        GraphTracker.RecordSample(snapshot);
+
+        // Feed sliding-window instant values back into each combatant entry
+        // so columns, details panel, and tooltips show live iDPS / iHPS.
+        foreach (var c in snapshot.Combatants)
+        {
+            var samples = GraphTracker.GetSamples(c.Name);
+            if (samples.Count > 0)
+            {
+                var latest = samples[^1];
+                c.InstantDps = latest.Dps;
+                c.InstantHps = latest.Hps;
+            }
+        }
+    }
+
+    private void UpdatePeakDps(in CombatDataFrame frame)
+    {
+        var snapshot = frame.Snapshot;
+        var prev = frame.PreviousActive;
+
+        // Track peak DPS as the highest instantaneous DPS achieved during the encounter.
+        if (prev != null && !frame.IsNewEncounter)
+        {
+            foreach (var c in snapshot.Combatants)
+            {
+                var prevEntry = prev.Combatants.Find(p =>
+                    string.Equals(p.Name, c.Name, StringComparison.OrdinalIgnoreCase));
+                var prevPeak = prevEntry?.PeakDps ?? 0;
+                c.PeakDps = Math.Max(c.InstantDps, prevPeak);
+            }
+        }
+        else
+        {
+            foreach (var c in snapshot.Combatants)
+                c.PeakDps = c.InstantDps;
+        }
+    }
+
+    // Periodically capture graph data during active encounters so that
+    // at most ~30 seconds of data is lost on an unexpected shutdown.
+    private void MaybePeriodicSave(in CombatDataFrame frame)
+    {
+        if (!frame.IsActive) return;
+
+        var elapsed = EncounterTimer.ElapsedSeconds;
+        if (elapsed - lastPeriodicSaveTime < PeriodicSaveInterval) return;
+
+        lastPeriodicSaveTime = elapsed;
+        var active = Store.ActiveEncounter;
+        if (active == null) return;
+
+        CaptureGraphData(active);
+#if DEBUG
+        lock (rawLogLineAccumulator)
+            active.RawLogLines = new List<string>(rawLogLineAccumulator);
+        lock (rawCombatDataAccumulator)
+            active.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
+#endif
+        Store.Save();
+    }
+
+    // Copy the encounter into history now that Store.Update() has
+    // applied it as active with the final snapshot data. Use
+    // CopyActiveToHistory so the encounter stays visible in the
+    // main window until the next encounter starts.
+    private void MaybeCopyToHistoryOnEnd(in CombatDataFrame frame)
+    {
+        if (!frame.IsEncounterEnd) return;
+
+        var active = Store.ActiveEncounter;
+        if (active != null)
+        {
+            CaptureGraphData(active);
+#if DEBUG
+            lock (rawLogLineAccumulator)
+                active.RawLogLines = new List<string>(rawLogLineAccumulator);
+            lock (rawCombatDataAccumulator)
+                active.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
+#endif
+        }
+
+        if (Store.CopyActiveToHistory())
+            Store.Save(force: true);
+    }
+
+    private readonly struct CombatDataFrame
+    {
+        public required EncounterSnapshot Snapshot { get; init; }
+        public required bool IsActive { get; init; }
+        public required bool IsNewEncounter { get; init; }
+        public required bool IsEncounterEnd { get; init; }
+        public EncounterSnapshot? Existing { get; init; }
+        public EncounterSnapshot? PreviousActive { get; init; }
     }
 }
