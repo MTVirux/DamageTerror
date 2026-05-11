@@ -49,11 +49,11 @@ internal static class GraphViewSection
 
         if (ImGui.CollapsingHeader("Skill Markers##graphview", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            changed |= ConfigHelpers.DrawSkillMarkerSection("gv_dps", "DPS Markers", config.GraphViewDpsMarkers);
+            changed |= ConfigHelpers.DrawSkillMarkerSection("gv_dps", "DPS Markers", config.GraphViewMarkers[MetricType.Dps]);
             ImGui.Spacing();
-            changed |= ConfigHelpers.DrawSkillMarkerSection("gv_hps", "HPS Markers", config.GraphViewHpsMarkers);
+            changed |= ConfigHelpers.DrawSkillMarkerSection("gv_hps", "HPS Markers", config.GraphViewMarkers[MetricType.Hps]);
             ImGui.Spacing();
-            changed |= ConfigHelpers.DrawSkillMarkerSection("gv_dtps", "DTPS Markers", config.GraphViewDtpsMarkers);
+            changed |= ConfigHelpers.DrawSkillMarkerSection("gv_dtps", "DTPS Markers", config.GraphViewMarkers[MetricType.Dtps]);
         }
 
         ImGui.Spacing();
@@ -84,9 +84,9 @@ internal static class GraphViewSection
             config.GraphViewYAxisHeadroom = 1.1f;
             config.GraphViewYAxisTickCount = 8;
             config.GraphViewMouseTextOpacity = 0.6f;
-            config.GraphViewDpsMarkers = new SkillMarkerConfig();
-            config.GraphViewHpsMarkers = new SkillMarkerConfig();
-            config.GraphViewDtpsMarkers = new SkillMarkerConfig();
+            config.GraphViewMarkers[MetricType.Dps] = new SkillMarkerConfig();
+            config.GraphViewMarkers[MetricType.Hps] = new SkillMarkerConfig();
+            config.GraphViewMarkers[MetricType.Dtps] = new SkillMarkerConfig();
             changed = true;
         }
 

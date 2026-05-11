@@ -143,9 +143,39 @@ public sealed class ThemePreset
     public float GraphAutoScrollSmoothing { get; set; } = 8f;
     public float GraphFontSize { get; set; } = 14f;
 
-    public SkillMarkerConfig DetailDpsMarkers { get; set; } = new();
-    public SkillMarkerConfig DetailHpsMarkers { get; set; } = new();
-    public SkillMarkerConfig DetailDtpsMarkers { get; set; } = new();
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<MetricType, SkillMarkerConfig> DetailMarkers { get; set; } = new()
+    {
+        [MetricType.Dps] = new SkillMarkerConfig(),
+        [MetricType.Hps] = new SkillMarkerConfig(),
+        [MetricType.Dtps] = new SkillMarkerConfig(),
+    };
+
+    // Legacy-JSON migration shims: old preset files with flat DetailDpsMarkers etc.
+    // keys route through these private setters into DetailMarkers above.
+    [JsonProperty("DetailDpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? DetailDpsMarkersLegacy
+    {
+        get => null;
+        set => DetailMarkers[MetricType.Dps] = value ?? new SkillMarkerConfig();
+    }
+
+    [JsonProperty("DetailHpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? DetailHpsMarkersLegacy
+    {
+        get => null;
+        set => DetailMarkers[MetricType.Hps] = value ?? new SkillMarkerConfig();
+    }
+
+    [JsonProperty("DetailDtpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? DetailDtpsMarkersLegacy
+    {
+        get => null;
+        set => DetailMarkers[MetricType.Dtps] = value ?? new SkillMarkerConfig();
+    }
 
     public bool GraphViewAutoHeight { get; set; } = false;
     public float GraphViewHeight { get; set; } = 260f;
@@ -172,9 +202,37 @@ public sealed class ThemePreset
     public int GraphViewYAxisTickCount { get; set; } = 14;
     public float GraphViewMouseTextOpacity { get; set; } = 0.6f;
 
-    public SkillMarkerConfig GraphViewDpsMarkers { get; set; } = new();
-    public SkillMarkerConfig GraphViewHpsMarkers { get; set; } = new();
-    public SkillMarkerConfig GraphViewDtpsMarkers { get; set; } = new();
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<MetricType, SkillMarkerConfig> GraphViewMarkers { get; set; } = new()
+    {
+        [MetricType.Dps] = new SkillMarkerConfig(),
+        [MetricType.Hps] = new SkillMarkerConfig(),
+        [MetricType.Dtps] = new SkillMarkerConfig(),
+    };
+
+    [JsonProperty("GraphViewDpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? GraphViewDpsMarkersLegacy
+    {
+        get => null;
+        set => GraphViewMarkers[MetricType.Dps] = value ?? new SkillMarkerConfig();
+    }
+
+    [JsonProperty("GraphViewHpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? GraphViewHpsMarkersLegacy
+    {
+        get => null;
+        set => GraphViewMarkers[MetricType.Hps] = value ?? new SkillMarkerConfig();
+    }
+
+    [JsonProperty("GraphViewDtpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? GraphViewDtpsMarkersLegacy
+    {
+        get => null;
+        set => GraphViewMarkers[MetricType.Dtps] = value ?? new SkillMarkerConfig();
+    }
 
     public bool ShowJobIcons { get; set; } = true;
     public bool ShowNameOnBar { get; set; } = true;

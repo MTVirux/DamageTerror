@@ -94,6 +94,19 @@ internal static class ThemePropertyMirror
                 if (!db.TryGetValue(kv.Key, out var bv) || !bv.Equals(kv.Value)) return false;
             return true;
         }
+        // Dictionary<MetricType, SkillMarkerConfig> deep equality (DetailMarkers, GraphViewMarkers).
+        if (a is Dictionary<MetricType, SkillMarkerConfig> mda &&
+            b is Dictionary<MetricType, SkillMarkerConfig> mdb)
+        {
+            if (mda.Count != mdb.Count) return false;
+            foreach (var kv in mda)
+            {
+                if (!mdb.TryGetValue(kv.Key, out var other)) return false;
+                if (!ValuesEqual(kv.Value, other)) return false;  // recurses into SkillMarkerConfig branch
+            }
+            return true;
+        }
+
         // SkillMarkerConfig: two distinct instances with equal field values count as equal.
         if (a is SkillMarkerConfig sa && b is SkillMarkerConfig sb)
         {
@@ -145,7 +158,8 @@ internal static class ThemePropertyMirror
         private static CopyStrategy SelectStrategy(PropertyInfo presetProp)
         {
             if (presetProp.Name == nameof(ThemePreset.JobColors)) return JobColorsStrategy.Instance;
-            if (presetProp.PropertyType == typeof(SkillMarkerConfig)) return SkillMarkerStrategy.Instance;
+            if (presetProp.PropertyType == typeof(Dictionary<MetricType, SkillMarkerConfig>))
+                return MarkerDictionaryStrategy.Instance;
             return ScalarStrategy.Instance;
         }
 
@@ -207,15 +221,24 @@ internal static class ThemePropertyMirror
         }
     }
 
-    /// <summary>Calls SkillMarkerConfig.Clone() in both directions.</summary>
-    private sealed class SkillMarkerStrategy : CopyStrategy
+    /// <summary>
+    /// Deep-clones Dictionary&lt;MetricType, SkillMarkerConfig&gt; by cloning each
+    /// value entry. Used for DetailMarkers and GraphViewMarkers properties.
+    /// </summary>
+    private sealed class MarkerDictionaryStrategy : CopyStrategy
     {
-        public static readonly SkillMarkerStrategy Instance = new();
+        public static readonly MarkerDictionaryStrategy Instance = new();
 
-        public override object? CopyForApply(object? value)
-            => value is SkillMarkerConfig src ? src.Clone() : new SkillMarkerConfig();
+        public override object? CopyForApply(object? value) => Copy(value);
+        public override object? CopyForCapture(object? value) => Copy(value);
 
-        public override object? CopyForCapture(object? value)
-            => value is SkillMarkerConfig src ? src.Clone() : new SkillMarkerConfig();
+        private static Dictionary<MetricType, SkillMarkerConfig> Copy(object? value)
+        {
+            var src = value as Dictionary<MetricType, SkillMarkerConfig> ?? new();
+            var dst = new Dictionary<MetricType, SkillMarkerConfig>(src.Count);
+            foreach (var kv in src)
+                dst[kv.Key] = kv.Value.Clone();
+            return dst;
+        }
     }
 }

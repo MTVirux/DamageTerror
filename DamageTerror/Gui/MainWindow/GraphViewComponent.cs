@@ -227,9 +227,9 @@ public sealed class GraphViewComponent
                 // ── Skill use markers per combatant, split by metric type ──
                 if (!combatantHidden)
                 {
-                    var dpsMc = config.GraphViewDpsMarkers;
-                    var hpsMc = config.GraphViewHpsMarkers;
-                    var dtpsMc = config.GraphViewDtpsMarkers;
+                    var dpsMc = config.GraphViewMarkers[MetricType.Dps];
+                    var hpsMc = config.GraphViewMarkers[MetricType.Hps];
+                    var dtpsMc = config.GraphViewMarkers[MetricType.Dtps];
 
                     List<SkillUseEvent>? sourceEvents = null;
                     if ((dpsMc?.ShowMarkers == true && dpsVals != null)
@@ -269,9 +269,9 @@ public sealed class GraphViewComponent
             // Uses plot-space coordinates (from GetPlotMousePos, which accounts for zoom/pan)
             // with per-axis normalization by plot pixel size, giving uniform hover behaviour
             // regardless of where markers sit on the graph or the current zoom level.
-            var anyMarkersEnabled = config.GraphViewDpsMarkers.ShowMarkers
-                                || config.GraphViewHpsMarkers.ShowMarkers
-                                || config.GraphViewDtpsMarkers.ShowMarkers;
+            var anyMarkersEnabled = config.GraphViewMarkers[MetricType.Dps].ShowMarkers
+                                || config.GraphViewMarkers[MetricType.Hps].ShowMarkers
+                                || config.GraphViewMarkers[MetricType.Dtps].ShowMarkers;
             if (anyMarkersEnabled && ImPlot.IsPlotHovered())
             {
                 var mouse = ImPlot.GetPlotMousePos();
@@ -282,9 +282,9 @@ public sealed class GraphViewComponent
                 SkillMarkerConfig? bestMc = null;
                 var bestIsDamageTaken = false;
 
-                var ttDpsMc = config.GraphViewDpsMarkers;
-                var ttHpsMc = config.GraphViewHpsMarkers;
-                var ttDtpsMc = config.GraphViewDtpsMarkers;
+                var ttDpsMc = config.GraphViewMarkers[MetricType.Dps];
+                var ttHpsMc = config.GraphViewMarkers[MetricType.Hps];
+                var ttDtpsMc = config.GraphViewMarkers[MetricType.Dtps];
 
                 foreach (var (combatant, samples) in allSeries)
                 {

@@ -442,9 +442,40 @@ public sealed class Configuration : IPluginConfiguration
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public HashSet<string> DetailExpandedSections { get; set; } = new();
 
-    public SkillMarkerConfig DetailDpsMarkers { get; set; } = new();
-    public SkillMarkerConfig DetailHpsMarkers { get; set; } = new();
-    public SkillMarkerConfig DetailDtpsMarkers { get; set; } = new();
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<MetricType, SkillMarkerConfig> DetailMarkers { get; set; } = new()
+    {
+        [MetricType.Dps] = new SkillMarkerConfig(),
+        [MetricType.Hps] = new SkillMarkerConfig(),
+        [MetricType.Dtps] = new SkillMarkerConfig(),
+    };
+
+    // Legacy-JSON migration shims: old configs with flat DetailDpsMarkers etc. keys
+    // route through these private setters into DetailMarkers above. Getter returns
+    // null so NullValueHandling.Ignore prevents re-serialization.
+    [JsonProperty("DetailDpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? DetailDpsMarkersLegacy
+    {
+        get => null;
+        set => DetailMarkers[MetricType.Dps] = value ?? new SkillMarkerConfig();
+    }
+
+    [JsonProperty("DetailHpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? DetailHpsMarkersLegacy
+    {
+        get => null;
+        set => DetailMarkers[MetricType.Hps] = value ?? new SkillMarkerConfig();
+    }
+
+    [JsonProperty("DetailDtpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? DetailDtpsMarkersLegacy
+    {
+        get => null;
+        set => DetailMarkers[MetricType.Dtps] = value ?? new SkillMarkerConfig();
+    }
 
     public bool ShowTooltip { get; set; } = true;
     public float TooltipDelay { get; set; } = 0.3f;
@@ -529,9 +560,37 @@ public sealed class Configuration : IPluginConfiguration
     public int GraphViewYAxisTickCount { get; set; } = 14;
     public float GraphViewMouseTextOpacity { get; set; } = 0.6f;
 
-    public SkillMarkerConfig GraphViewDpsMarkers { get; set; } = new();
-    public SkillMarkerConfig GraphViewHpsMarkers { get; set; } = new();
-    public SkillMarkerConfig GraphViewDtpsMarkers { get; set; } = new();
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public Dictionary<MetricType, SkillMarkerConfig> GraphViewMarkers { get; set; } = new()
+    {
+        [MetricType.Dps] = new SkillMarkerConfig(),
+        [MetricType.Hps] = new SkillMarkerConfig(),
+        [MetricType.Dtps] = new SkillMarkerConfig(),
+    };
+
+    [JsonProperty("GraphViewDpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? GraphViewDpsMarkersLegacy
+    {
+        get => null;
+        set => GraphViewMarkers[MetricType.Dps] = value ?? new SkillMarkerConfig();
+    }
+
+    [JsonProperty("GraphViewHpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? GraphViewHpsMarkersLegacy
+    {
+        get => null;
+        set => GraphViewMarkers[MetricType.Hps] = value ?? new SkillMarkerConfig();
+    }
+
+    [JsonProperty("GraphViewDtpsMarkers", NullValueHandling = NullValueHandling.Ignore,
+                  DefaultValueHandling = DefaultValueHandling.Ignore)]
+    private SkillMarkerConfig? GraphViewDtpsMarkersLegacy
+    {
+        get => null;
+        set => GraphViewMarkers[MetricType.Dtps] = value ?? new SkillMarkerConfig();
+    }
 
     public Vector4 SkillDamageFillColor { get; set; } = new(0.35f, 0.35f, 0.55f, 0.7f);
     public Vector4 SkillPhysicalFillColor { get; set; } = new(0.55f, 0.30f, 0.25f, 0.7f);

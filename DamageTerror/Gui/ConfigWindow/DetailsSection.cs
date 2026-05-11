@@ -171,11 +171,11 @@ internal static class DetailsSection
 
         if (ImGui.CollapsingHeader("Skill Markers##details", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            changed |= ConfigHelpers.DrawSkillMarkerSection("dt_dps", "DPS Markers", config.DetailDpsMarkers);
+            changed |= ConfigHelpers.DrawSkillMarkerSection("dt_dps", "DPS Markers", config.DetailMarkers[MetricType.Dps]);
             ImGui.Spacing();
-            changed |= ConfigHelpers.DrawSkillMarkerSection("dt_hps", "HPS Markers", config.DetailHpsMarkers);
+            changed |= ConfigHelpers.DrawSkillMarkerSection("dt_hps", "HPS Markers", config.DetailMarkers[MetricType.Hps]);
             ImGui.Spacing();
-            changed |= ConfigHelpers.DrawSkillMarkerSection("dt_dtps", "DTPS Markers", config.DetailDtpsMarkers);
+            changed |= ConfigHelpers.DrawSkillMarkerSection("dt_dtps", "DTPS Markers", config.DetailMarkers[MetricType.Dtps]);
         }
 
         ImGui.Spacing();

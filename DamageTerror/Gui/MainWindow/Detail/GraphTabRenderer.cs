@@ -162,9 +162,9 @@ internal sealed class GraphTabRenderer : IDetailTabRenderer
                 }
             }
 
-            var dpsMc = config.DetailDpsMarkers;
-            var hpsMc = config.DetailHpsMarkers;
-            var dtpsMc = config.DetailDtpsMarkers;
+            var dpsMc = config.DetailMarkers[MetricType.Dps];
+            var hpsMc = config.DetailMarkers[MetricType.Hps];
+            var dtpsMc = config.DetailMarkers[MetricType.Dtps];
 
             List<SkillUseEvent>? sourceEvents = null;
             if ((dpsMc.ShowMarkers && dpsVals != null)
