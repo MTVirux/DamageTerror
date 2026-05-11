@@ -99,45 +99,7 @@ internal static class DetailsSection
 
         if (ImGui.CollapsingHeader("Graph", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var graphHeight = config.GraphHeight;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Graph height", ref graphHeight, 60f, 300f, "%.0f px"))
-            {
-                config.GraphHeight = graphHeight;
-                changed = true;
-            }
-
-            var lineThickness = config.GraphLineThickness;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Line thickness", ref lineThickness, 1f, 5f, "%.1f"))
-            {
-                config.GraphLineThickness = lineThickness;
-                changed = true;
-            }
-
-            var graphFontSize = config.GraphFontSize;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Font size##graph", ref graphFontSize, 6f, 40f, "%.1fpt"))
-            {
-                config.GraphFontSize = graphFontSize;
-                changed = true;
-            }
-
-            var smoothing = config.GraphSmoothingWindow;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Smoothing window", ref smoothing, 1f, 30f, "%.0f sec"))
-            {
-                config.GraphSmoothingWindow = smoothing;
-                changed = true;
-            }
-
-            var updateInterval = config.GraphUpdateInterval;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Update interval", ref updateInterval, 0.1f, 2f, "%.2f sec"))
-            {
-                config.GraphUpdateInterval = updateInterval;
-                changed = true;
-            }
+            changed |= GraphConfigBlock.Draw(config, isGraphView: false);
 
             ImGui.Spacing();
             ImGui.TextDisabled("Series visibility");
@@ -164,135 +126,11 @@ internal static class DetailsSection
             }
 
             ImGui.Spacing();
-            ImGui.TextDisabled("Colors");
+            ImGui.TextDisabled("Series Colors");
 
             changed |= ConfigHelpers.ColorEditProp("iDPS line", config.GraphDpsColor, v => config.GraphDpsColor = v);
             changed |= ConfigHelpers.ColorEditProp("iHPS line", config.GraphHpsColor, v => config.GraphHpsColor = v);
             changed |= ConfigHelpers.ColorEditProp("iDTPS line", config.GraphDtpsColor, v => config.GraphDtpsColor = v);
-            changed |= ConfigHelpers.ColorEditProp("Graph background", config.GraphBackgroundColor, v => config.GraphBackgroundColor = v);
-            changed |= ConfigHelpers.ColorEditProp("Grid lines", config.GraphGridColor, v => config.GraphGridColor = v);
-
-            ImGui.Spacing();
-            ImGui.TextDisabled("Display Options");
-
-            var graphShowLegend = config.GraphShowLegend;
-            if (ImGui.Checkbox("Show legend##graph", ref graphShowLegend))
-            {
-                config.GraphShowLegend = graphShowLegend;
-                changed = true;
-            }
-
-            var graphShowGrid = config.GraphShowGrid;
-            if (ImGui.Checkbox("Show grid lines##graph", ref graphShowGrid))
-            {
-                config.GraphShowGrid = graphShowGrid;
-                changed = true;
-            }
-
-            var graphShowXAxis = config.GraphShowXAxisLabels;
-            if (ImGui.Checkbox("Show X axis labels##graph", ref graphShowXAxis))
-            {
-                config.GraphShowXAxisLabels = graphShowXAxis;
-                changed = true;
-            }
-
-            var graphShowYAxis = config.GraphShowYAxisLabels;
-            if (ImGui.Checkbox("Show Y axis labels##graph", ref graphShowYAxis))
-            {
-                config.GraphShowYAxisLabels = graphShowYAxis;
-                changed = true;
-            }
-
-            ImGui.Spacing();
-            ImGui.TextDisabled("Value Labels");
-
-            var showLabels = config.GraphShowLabels;
-            if (ImGui.Checkbox("Show value labels##graph", ref showLabels))
-            {
-                config.GraphShowLabels = showLabels;
-                changed = true;
-            }
-
-            var labelOffsetX = config.GraphLabelOffsetX;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Label offset X##graph", ref labelOffsetX, -20f, 40f, "%.0f px"))
-            {
-                config.GraphLabelOffsetX = labelOffsetX;
-                changed = true;
-            }
-
-            var labelOffsetY = config.GraphLabelOffsetY;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Label offset Y##graph", ref labelOffsetY, -20f, 20f, "%.0f px"))
-            {
-                config.GraphLabelOffsetY = labelOffsetY;
-                changed = true;
-            }
-
-            ImGui.Spacing();
-            ImGui.TextDisabled("Axis & Mouse Text");
-
-            var autoScroll = config.GraphAutoScroll;
-            if (ImGui.Checkbox("Auto-scroll##graph", ref autoScroll))
-            {
-                config.GraphAutoScroll = autoScroll;
-                changed = true;
-            }
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("During combat, scroll the graph to show only the most recent time window instead of the full encounter.");
-
-            if (config.GraphAutoScroll)
-            {
-                var scrollWindow = config.GraphAutoScrollWindow;
-                ImGui.SetNextItemWidth(200);
-                if (ImGui.SliderFloat("Scroll window##graph", ref scrollWindow, 15f, 300f, "%.0f sec"))
-                {
-                    config.GraphAutoScrollWindow = scrollWindow;
-                    changed = true;
-                }
-
-                var scrollSmooth = config.GraphAutoScrollSmoothing;
-                ImGui.SetNextItemWidth(200);
-                if (ImGui.SliderFloat("Scroll smoothing##graph", ref scrollSmooth, 1f, 30f, "%.1f"))
-                {
-                    config.GraphAutoScrollSmoothing = scrollSmooth;
-                    changed = true;
-                }
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("How quickly the graph scrolls to the new position. Higher = snappier, lower = smoother.");
-            }
-
-            var xPadding = config.GraphXAxisPadding;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("X axis padding##graph", ref xPadding, 1.0f, 2.0f, "%.2fx"))
-            {
-                config.GraphXAxisPadding = xPadding;
-                changed = true;
-            }
-
-            var yHeadroom = config.GraphYAxisHeadroom;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Y axis headroom##graph", ref yHeadroom, 1.0f, 2.0f, "%.2fx"))
-            {
-                config.GraphYAxisHeadroom = yHeadroom;
-                changed = true;
-            }
-
-            var yTickCount = config.GraphYAxisTickCount;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderInt("Y axis tick count##graph", ref yTickCount, 2, 16))
-            {
-                config.GraphYAxisTickCount = yTickCount;
-                changed = true;
-            }
-
-            var mouseOpacity = config.GraphMouseTextOpacity;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Mouse text opacity##graph", ref mouseOpacity, 0f, 1f, "%.2f"))
-            {
-                config.GraphMouseTextOpacity = mouseOpacity;
-                changed = true;
-            }
 
             ImGui.Spacing();
 
