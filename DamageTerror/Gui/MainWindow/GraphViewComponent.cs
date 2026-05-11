@@ -105,7 +105,7 @@ public sealed class GraphViewComponent
 
         var metricCount = (showDps ? 1 : 0) + (showHps ? 1 : 0) + (showDtps ? 1 : 0);
 
-        var gs = GraphSettings.FromGraphView(config);
+        var gs = GraphSettings.From(config, isGraphView: true);
         GraphRenderHelper.PushGraphStyles(in gs);
         var (plotFlags, xAxisFlags, yAxisFlags) = GraphRenderHelper.ComputePlotFlags(in gs, maxVal);
 

@@ -89,7 +89,7 @@ internal sealed class GraphTabRenderer : IDetailTabRenderer
             if (dtpsVals != null && dtpsVals[i] > maxVal) maxVal = dtpsVals[i];
         }
 
-        var gs = GraphSettings.FromDetail(config);
+        var gs = GraphSettings.From(config, isGraphView: false);
         GraphRenderHelper.PushGraphStyles(in gs);
         var (plotFlags, xAxisFlags, yAxisFlags) = GraphRenderHelper.ComputePlotFlags(in gs, maxVal);
 

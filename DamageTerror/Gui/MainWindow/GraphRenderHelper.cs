@@ -22,41 +22,44 @@ internal struct GraphSettings
     public int YAxisTickCount;
     public float MouseTextOpacity;
 
-    public static GraphSettings FromGraphView(Configuration config) => new()
+    public static GraphSettings From(Configuration config, bool isGraphView)
     {
-        BackgroundColor = config.GraphViewBackgroundColor,
-        GridColor = config.GraphViewGridColor,
-        ShowLegend = config.GraphViewShowLegend,
-        ShowGrid = config.GraphViewShowGrid,
-        ShowXAxisLabels = config.GraphViewShowXAxisLabels,
-        ShowYAxisLabels = config.GraphViewShowYAxisLabels,
-        AutoScroll = config.GraphViewAutoScroll,
-        AutoScrollWindow = config.GraphViewAutoScrollWindow,
-        AutoScrollSmoothing = config.GraphViewAutoScrollSmoothing,
-        XAxisPadding = config.GraphViewXAxisPadding,
-        XAxisMinSec = config.GraphViewXAxisMinSec,
-        YAxisHeadroom = config.GraphViewYAxisHeadroom,
-        YAxisTickCount = config.GraphViewYAxisTickCount,
-        MouseTextOpacity = config.GraphViewMouseTextOpacity,
-    };
-
-    public static GraphSettings FromDetail(Configuration config) => new()
-    {
-        BackgroundColor = config.GraphBackgroundColor,
-        GridColor = config.GraphGridColor,
-        ShowLegend = config.GraphShowLegend,
-        ShowGrid = config.GraphShowGrid,
-        ShowXAxisLabels = config.GraphShowXAxisLabels,
-        ShowYAxisLabels = config.GraphShowYAxisLabels,
-        AutoScroll = config.GraphAutoScroll,
-        AutoScrollWindow = config.GraphAutoScrollWindow,
-        AutoScrollSmoothing = config.GraphAutoScrollSmoothing,
-        XAxisPadding = config.GraphXAxisPadding,
-        XAxisMinSec = config.GraphXAxisMinSec,
-        YAxisHeadroom = config.GraphYAxisHeadroom,
-        YAxisTickCount = config.GraphYAxisTickCount,
-        MouseTextOpacity = config.GraphMouseTextOpacity,
-    };
+        return isGraphView
+            ? new GraphSettings
+            {
+                BackgroundColor = config.GraphViewBackgroundColor,
+                GridColor = config.GraphViewGridColor,
+                ShowLegend = config.GraphViewShowLegend,
+                ShowGrid = config.GraphViewShowGrid,
+                ShowXAxisLabels = config.GraphViewShowXAxisLabels,
+                ShowYAxisLabels = config.GraphViewShowYAxisLabels,
+                AutoScroll = config.GraphViewAutoScroll,
+                AutoScrollWindow = config.GraphViewAutoScrollWindow,
+                AutoScrollSmoothing = config.GraphViewAutoScrollSmoothing,
+                XAxisPadding = config.GraphViewXAxisPadding,
+                XAxisMinSec = config.GraphViewXAxisMinSec,
+                YAxisHeadroom = config.GraphViewYAxisHeadroom,
+                YAxisTickCount = config.GraphViewYAxisTickCount,
+                MouseTextOpacity = config.GraphViewMouseTextOpacity,
+            }
+            : new GraphSettings
+            {
+                BackgroundColor = config.GraphBackgroundColor,
+                GridColor = config.GraphGridColor,
+                ShowLegend = config.GraphShowLegend,
+                ShowGrid = config.GraphShowGrid,
+                ShowXAxisLabels = config.GraphShowXAxisLabels,
+                ShowYAxisLabels = config.GraphShowYAxisLabels,
+                AutoScroll = config.GraphAutoScroll,
+                AutoScrollWindow = config.GraphAutoScrollWindow,
+                AutoScrollSmoothing = config.GraphAutoScrollSmoothing,
+                XAxisPadding = config.GraphXAxisPadding,
+                XAxisMinSec = config.GraphXAxisMinSec,
+                YAxisHeadroom = config.GraphYAxisHeadroom,
+                YAxisTickCount = config.GraphYAxisTickCount,
+                MouseTextOpacity = config.GraphMouseTextOpacity,
+            };
+    }
 }
 
 internal static class GraphRenderHelper
