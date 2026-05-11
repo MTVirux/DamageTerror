@@ -12,610 +12,444 @@ public static class BuiltInPresets
     };
 
 
-    public static ThemePreset Kagerou() => new()
+    public static ThemePreset Kagerou()
     {
-        Name = "Kagerou",
-        Description = "Classic MiniParse style — sharp bars, dark background, compact layout.",
-        IsBuiltIn = true,
+        var p = Default();
+        p.Name = "Kagerou";
+        p.Description = "Classic MiniParse style — sharp bars, dark background, compact layout.";
 
         // Bar Styling
-        BarHeight = 20f,
-        BarSpacing = 1f,
-        BarRounding = 0f,
-        IconSize = 14f,
-        BarAlpha = 0.75f,
-        BarFontSize = 12.9f,
-        BarLeftPadding = 3f,
-        BarRightPadding = 4f,
-        BarColumnSpacing = 5f,
-        IconTextPadding = 3f,
+        p.BarHeight = 20f;
+        p.IconSize = 14f;
+        p.BarAlpha = 0.75f;
+        p.BarFontSize = 12.9f;
+        p.BarLeftPadding = 3f;
+        p.BarRightPadding = 4f;
+        p.BarColumnSpacing = 5f;
+        p.IconTextPadding = 3f;
 
         // Self Highlighting
-        SelfBarHighlight = true,
-        SelfBarHighlightColor = new(0.35f, 0.55f, 0.95f, 0.9f),
-        UseSelfNameColor = false,
-        SelfNameColor = new(1.0f, 0.9f, 0.4f, 1.0f),
+        p.SelfBarHighlight = true;
+        p.SelfBarHighlightColor = new(0.35f, 0.55f, 0.95f, 0.9f);
 
         // Value Formatting
-        ValueDisplayFormat = ValueDisplayFormat.Commas,
-        AbbreviatedDecimalPlaces = 1,
-        RawDecimalPlaces = 0,
-        PercentDecimalPlaces = 1,
-        AbbreviatedKThreshold = 10_000,
-        AbbreviatedMThreshold = 1_000_000,
+        p.ValueDisplayFormat = ValueDisplayFormat.Commas;
+        p.RawDecimalPlaces = 0;
 
         // Role Colors
-        UsePerJobColors = false,
-        TankColor = new(0.24f, 0.32f, 0.71f, 1.0f),
-        HealerColor = new(0.30f, 0.64f, 0.31f, 1.0f),
-        MeleeDpsColor = new(0.90f, 0.22f, 0.21f, 1.0f),
-        RangedDpsColor = new(1.00f, 0.60f, 0.0f, 1.0f),
-        CasterDpsColor = new(0.49f, 0.34f, 0.76f, 1.0f),
-        LimitBreakColor = new(0.90f, 0.75f, 0.10f, 1.0f),
-        DoHLColor = new(0.65f, 0.50f, 0.28f, 1.0f),
-        DefaultJobColor = new(0.46f, 0.46f, 0.46f, 1.0f),
+        p.UsePerJobColors = false;
+        p.TankColor = new(0.24f, 0.32f, 0.71f, 1.0f);
+        p.HealerColor = new(0.30f, 0.64f, 0.31f, 1.0f);
+        p.MeleeDpsColor = new(0.90f, 0.22f, 0.21f, 1.0f);
+        p.RangedDpsColor = new(1.00f, 0.60f, 0.0f, 1.0f);
+        p.CasterDpsColor = new(0.49f, 0.34f, 0.76f, 1.0f);
+        p.LimitBreakColor = new(0.90f, 0.75f, 0.10f, 1.0f);
+        p.DoHLColor = new(0.65f, 0.50f, 0.28f, 1.0f);
+        p.DefaultJobColor = new(0.46f, 0.46f, 0.46f, 1.0f);
 
         // Background & Text
-        BarBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.85f),
-        NameTextColor = new(1f, 1f, 1f, 1f),
-        ValueTextColor = new(1f, 1f, 1f, 1f),
-        WindowBackgroundColor = new(0.055f, 0.055f, 0.055f, 0.95f),
-        WindowPaddingLeft = 8f,
-        WindowPaddingRight = 8f,
-        WindowPaddingTop = 8f,
-        WindowPaddingBottom = 8f,
+        p.BarBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.85f);
+        p.WindowBackgroundColor = new(0.055f, 0.055f, 0.055f, 0.95f);
+        p.WindowPaddingLeft = 8f;
+        p.WindowPaddingRight = 8f;
+        p.WindowPaddingTop = 8f;
+        p.WindowPaddingBottom = 8f;
 
         // Selection Bar
-        ShowEncounterPicker = true,
-        SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f),
-        SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.6f),
-        SelectionBarHeight = 0f,
-        ShowSelectionBarSeparator = true,
-        SelectionBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.5f),
+        p.SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f);
+        p.SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.6f);
+        p.SelectionBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.5f);
 
         // Header
-        ShowMeterHeader = true,
-        HeaderTextColor = new(0.6f, 0.6f, 0.6f, 0.8f),
-        HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
-        HeaderHeight = 18f,
-        HeaderFontSize = 12.3f,
-        HeaderSeparator = true,
-        HeaderSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.4f),
+        p.HeaderTextColor = new(0.6f, 0.6f, 0.6f, 0.8f);
+        p.HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f);
+        p.HeaderHeight = 18f;
+        p.HeaderFontSize = 12.3f;
+        p.HeaderSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.4f);
 
         // Status Bar
-        ShowStatusBar = true,
-        ShowStatusBarTimer = true,
-        StatusBarHeight = 18f,
-        StatusBarFontSize = 12.6f,
-        StatusBarPadding = 4f,
-        ShowStatusBarSeparator = true,
-        StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.9f),
-        StatusBarActiveColor = new(1.0f, 0.6f, 0.0f, 1.0f),
-        StatusBarInactiveColor = new(0.5f, 0.5f, 0.5f, 0.8f),
-        StatusBarLabelColor = new(0.5f, 0.5f, 0.5f, 0.8f),
-        StatusBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.4f),
+        p.StatusBarHeight = 18f;
+        p.StatusBarFontSize = 12.6f;
+        p.StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.9f);
+        p.StatusBarInactiveColor = new(0.5f, 0.5f, 0.5f, 0.8f);
+        p.StatusBarLabelColor = new(0.5f, 0.5f, 0.5f, 0.8f);
+        p.StatusBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.4f);
 
         // Skill Breakdown
-        SkillDamageFillColor = new(0.30f, 0.30f, 0.50f, 0.7f),
-        SkillPhysicalFillColor = new(0.50f, 0.25f, 0.20f, 0.7f),
-        SkillMagicFillColor = new(0.25f, 0.25f, 0.55f, 0.7f),
-        SkillHealingFillColor = new(0.20f, 0.45f, 0.25f, 0.7f),
-        SkillRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f),
-        SkillTextColor = new(1f, 1f, 1f, 0.9f),
-        SkillHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.9f),
-        SkillRowHeight = 13f,
-        SkillColumnPadding = 5f,
-        SkillBarRounding = 0f,
-        SkillFontSize = 11.9f,
+        p.SkillDamageFillColor = new(0.30f, 0.30f, 0.50f, 0.7f);
+        p.SkillPhysicalFillColor = new(0.50f, 0.25f, 0.20f, 0.7f);
+        p.SkillMagicFillColor = new(0.25f, 0.25f, 0.55f, 0.7f);
+        p.SkillHealingFillColor = new(0.20f, 0.45f, 0.25f, 0.7f);
+        p.SkillRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f);
+        p.SkillHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.9f);
+        p.SkillRowHeight = 13f;
+        p.SkillColumnPadding = 5f;
+        p.SkillFontSize = 11.9f;
 
         // Buff/Debuff
-        BuffFillColor = new(0.25f, 0.40f, 0.55f, 0.7f),
-        DebuffFillColor = new(0.55f, 0.25f, 0.25f, 0.7f),
-        BuffRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f),
-        BuffTextColor = new(1f, 1f, 1f, 0.9f),
-        BuffHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.9f),
-        BuffRowHeight = 13f,
-        BuffColumnPadding = 5f,
-        BuffBarRounding = 0f,
-        BuffFontSize = 11.9f,
+        p.BuffFillColor = new(0.25f, 0.40f, 0.55f, 0.7f);
+        p.DebuffFillColor = new(0.55f, 0.25f, 0.25f, 0.7f);
+        p.BuffRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f);
+        p.BuffHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.9f);
+        p.BuffRowHeight = 13f;
+        p.BuffColumnPadding = 5f;
+        p.BuffFontSize = 11.9f;
 
         // Detail Panel
-        DetailBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.85f),
-        DetailLabelColor = new(0.6f, 0.6f, 0.6f, 1f),
-        DetailIndent = 6f,
-        DetailFontSize = 12.3f,
+        p.DetailBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.85f);
+        p.DetailLabelColor = new(0.6f, 0.6f, 0.6f, 1f);
+        p.DetailIndent = 6f;
+        p.DetailFontSize = 12.3f;
 
         // Display Flags
-        ShowJobIcons = true,
-        ShowNameOnBar = true,
-        ShowRankNumber = true,
-        ShowJobAbbrevOnBar = false,
+        p.ShowRankNumber = true;
+        p.ShowJobAbbrevOnBar = false;
 
         // Tab Buttons
-        ShowTabBar = true,
-        TabButtonColor = new(0.10f, 0.10f, 0.10f, 0.85f),
-        TabButtonHoveredColor = new(0.18f, 0.18f, 0.18f, 0.9f),
-        TabButtonActiveColor = new(0.24f, 0.32f, 0.71f, 0.9f),
-        TabButtonTextColor = new(0.6f, 0.6f, 0.6f, 0.8f),
-        TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 1.0f),
-        TabButtonHeight = 18f,
-        TabButtonSpacing = 1f,
-        TabButtonRounding = 0f,
-        TabButtonFontSize = 12.3f,
-        TabButtonWidth = 70f,
-        TabButtonStretchToFit = true,
+        p.TabButtonColor = new(0.10f, 0.10f, 0.10f, 0.85f);
+        p.TabButtonHoveredColor = new(0.18f, 0.18f, 0.18f, 0.9f);
+        p.TabButtonActiveColor = new(0.24f, 0.32f, 0.71f, 0.9f);
+        p.TabButtonTextColor = new(0.6f, 0.6f, 0.6f, 0.8f);
+        p.TabButtonHeight = 18f;
+        p.TabButtonSpacing = 1f;
+        p.TabButtonRounding = 0f;
+        p.TabButtonFontSize = 12.3f;
+        p.TabButtonWidth = 70f;
 
         // Tooltip
-        ShowTooltip = true,
-        TooltipDelay = 0.3f,
-        TooltipBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.95f),
-        TooltipTextColor = new(1f, 1f, 1f, 1f),
-        TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 1f),
-        TooltipFontSize = 12.3f,
-        TooltipRounding = 0f,
-        TooltipPadding = 4f,
+        p.TooltipBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.95f);
+        p.TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 1f);
+        p.TooltipFontSize = 12.3f;
+        p.TooltipRounding = 0f;
+        p.TooltipPadding = 4f;
 
         // Detail Graph
-        GraphHeight = 130f,
-        GraphLineThickness = 1.5f,
-        GraphDpsColor = new(0.85f, 0.30f, 0.30f, 1f),
-        GraphHpsColor = new(0.30f, 0.80f, 0.30f, 1f),
-        GraphDtpsColor = new(0.35f, 0.50f, 0.85f, 1f),
-        GraphBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.95f),
-        GraphGridColor = new(0.25f, 0.25f, 0.25f, 0.3f),
-        GraphShowLegend = true,
-        GraphShowGrid = true,
-        GraphShowXAxisLabels = false,
-        GraphShowYAxisLabels = true,
-        GraphShowLabels = true,
-        GraphLabelOffsetX = 16f,
-        GraphLabelOffsetY = 0f,
-        GraphMouseTextOpacity = 0.6f,
-        GraphYAxisHeadroom = 1.1f,
-        GraphYAxisTickCount = 8,
-        GraphXAxisPadding = 1.25f,
-        GraphFontSize = 11.9f,
+        p.GraphHeight = 130f;
+        p.GraphLineThickness = 1.5f;
+        p.GraphDpsColor = new(0.85f, 0.30f, 0.30f, 1f);
+        p.GraphHpsColor = new(0.30f, 0.80f, 0.30f, 1f);
+        p.GraphDtpsColor = new(0.35f, 0.50f, 0.85f, 1f);
+        p.GraphBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.95f);
+        p.GraphGridColor = new(0.25f, 0.25f, 0.25f, 0.3f);
+        p.GraphLabelOffsetX = 16f;
+        p.GraphFontSize = 11.9f;
 
         // Graph View
-        GraphViewAutoHeight = false,
-        GraphViewHeight = 240f,
-        GraphViewLineThickness = 1.5f,
-        GraphViewBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.6f),
-        GraphViewGridColor = new(0.25f, 0.25f, 0.25f, 0.3f),
-        GraphViewShowLegend = true,
-        GraphViewShowGrid = true,
-        GraphViewShowXAxisLabels = false,
-        GraphViewShowYAxisLabels = true,
-        GraphViewHighlightSelf = true,
-        GraphViewSelfLineThickness = 3f,
-        GraphViewShowLabels = true,
-        GraphViewLabelOffsetX = 18f,
-        GraphViewLabelOffsetY = 0f,
-        GraphViewFontSize = 11.9f,
-        GraphViewXAxisPadding = 1.25f,
-        GraphViewYAxisHeadroom = 1.1f,
-        GraphViewYAxisTickCount = 8,
-        GraphViewMouseTextOpacity = 0.6f,
-    };
+        p.GraphViewHeight = 240f;
+        p.GraphViewLineThickness = 1.5f;
+        p.GraphViewBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.6f);
+        p.GraphViewGridColor = new(0.25f, 0.25f, 0.25f, 0.3f);
+        p.GraphViewSelfLineThickness = 3f;
+        p.GraphViewLabelOffsetX = 18f;
+        p.GraphViewFontSize = 11.9f;
+        p.GraphViewXAxisPadding = 1.25f;
+        p.GraphViewYAxisHeadroom = 1.1f;
+        p.GraphViewYAxisTickCount = 8;
+
+        return p;
+    }
 
 
-    public static ThemePreset Ember() => new()
+    public static ThemePreset Ember()
     {
-        Name = "Ember Overlay",
-        Description = "Modern compact bars with warm tones and slight rounding.",
-        IsBuiltIn = true,
+        var p = Default();
+        p.Name = "Ember Overlay";
+        p.Description = "Modern compact bars with warm tones and slight rounding.";
 
         // Bar Styling
-        BarHeight = 20f,
-        BarSpacing = 2f,
-        BarRounding = 3f,
-        IconSize = 14f,
-        BarAlpha = 0.80f,
-        BarFontSize = 13.3f,
-        BarLeftPadding = 5f,
-        BarRightPadding = 6f,
-        BarColumnSpacing = 6f,
-        IconTextPadding = 4f,
+        p.BarHeight = 20f;
+        p.BarSpacing = 2f;
+        p.BarRounding = 3f;
+        p.IconSize = 14f;
+        p.BarAlpha = 0.80f;
+        p.BarFontSize = 13.3f;
+        p.BarLeftPadding = 5f;
 
         // Self Highlighting
-        SelfBarHighlight = true,
-        SelfBarHighlightColor = new(1.0f, 0.55f, 0.15f, 0.85f),
-        UseSelfNameColor = false,
-        SelfNameColor = new(1.0f, 0.85f, 0.3f, 1.0f),
-
-        // Value Formatting
-        ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
-        AbbreviatedDecimalPlaces = 1,
-        RawDecimalPlaces = 1,
-        PercentDecimalPlaces = 1,
-        AbbreviatedKThreshold = 10_000,
-        AbbreviatedMThreshold = 1_000_000,
+        p.SelfBarHighlight = true;
+        p.SelfBarHighlightColor = new(1.0f, 0.55f, 0.15f, 0.85f);
+        p.SelfNameColor = new(1.0f, 0.85f, 0.3f, 1.0f);
 
         // Role Colors
-        UsePerJobColors = false,
-        TankColor = new(0.26f, 0.38f, 0.72f, 1.0f),
-        HealerColor = new(0.30f, 0.60f, 0.32f, 1.0f),
-        MeleeDpsColor = new(0.88f, 0.24f, 0.22f, 1.0f),
-        RangedDpsColor = new(1.00f, 0.55f, 0.15f, 1.0f),
-        CasterDpsColor = new(0.52f, 0.35f, 0.72f, 1.0f),
-        LimitBreakColor = new(1.0f, 0.70f, 0.15f, 1.0f),
-        DoHLColor = new(0.72f, 0.52f, 0.25f, 1.0f),
-        DefaultJobColor = new(0.48f, 0.48f, 0.48f, 1.0f),
+        p.UsePerJobColors = false;
+        p.TankColor = new(0.26f, 0.38f, 0.72f, 1.0f);
+        p.HealerColor = new(0.30f, 0.60f, 0.32f, 1.0f);
+        p.MeleeDpsColor = new(0.88f, 0.24f, 0.22f, 1.0f);
+        p.RangedDpsColor = new(1.00f, 0.55f, 0.15f, 1.0f);
+        p.CasterDpsColor = new(0.52f, 0.35f, 0.72f, 1.0f);
+        p.LimitBreakColor = new(1.0f, 0.70f, 0.15f, 1.0f);
+        p.DoHLColor = new(0.72f, 0.52f, 0.25f, 1.0f);
+        p.DefaultJobColor = new(0.48f, 0.48f, 0.48f, 1.0f);
 
         // Background & Text
-        BarBackgroundColor = new(0.12f, 0.12f, 0.12f, 0.90f),
-        NameTextColor = new(1f, 1f, 1f, 1f),
-        ValueTextColor = new(1f, 1f, 1f, 0.95f),
-        WindowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.92f),
-        WindowPaddingLeft = 8f,
-        WindowPaddingRight = 8f,
-        WindowPaddingTop = 8f,
-        WindowPaddingBottom = 8f,
+        p.BarBackgroundColor = new(0.12f, 0.12f, 0.12f, 0.90f);
+        p.ValueTextColor = new(1f, 1f, 1f, 0.95f);
+        p.WindowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.92f);
+        p.WindowPaddingLeft = 8f;
+        p.WindowPaddingRight = 8f;
+        p.WindowPaddingTop = 8f;
+        p.WindowPaddingBottom = 8f;
 
         // Selection Bar
-        ShowEncounterPicker = true,
-        SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f),
-        SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f),
-        SelectionBarHeight = 2f,
-        ShowSelectionBarSeparator = true,
-        SelectionBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.5f),
+        p.SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f);
+        p.SelectionBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f);
+        p.SelectionBarHeight = 2f;
+        p.SelectionBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.5f);
 
         // Header
-        ShowMeterHeader = true,
-        HeaderTextColor = new(0.65f, 0.65f, 0.65f, 0.85f),
-        HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
-        HeaderHeight = 20f,
-        HeaderFontSize = 12.9f,
-        HeaderSeparator = false,
-        HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.5f),
+        p.HeaderTextColor = new(0.65f, 0.65f, 0.65f, 0.85f);
+        p.HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f);
+        p.HeaderHeight = 20f;
+        p.HeaderFontSize = 12.9f;
+        p.HeaderSeparator = false;
+        p.HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.5f);
 
         // Status Bar
-        ShowStatusBar = true,
-        ShowStatusBarTimer = true,
-        StatusBarHeight = 20f,
-        StatusBarFontSize = 13.3f,
-        StatusBarPadding = 6f,
-        ShowStatusBarSeparator = true,
-        StatusBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.85f),
-        StatusBarActiveColor = new(1.0f, 0.55f, 0.10f, 1.0f),
-        StatusBarInactiveColor = new(0.55f, 0.55f, 0.55f, 0.85f),
-        StatusBarLabelColor = new(0.55f, 0.55f, 0.55f, 0.85f),
-        StatusBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.5f),
+        p.StatusBarFontSize = 13.3f;
+        p.StatusBarPadding = 6f;
+        p.StatusBarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.85f);
+        p.StatusBarActiveColor = new(1.0f, 0.55f, 0.10f, 1.0f);
+        p.StatusBarInactiveColor = new(0.55f, 0.55f, 0.55f, 0.85f);
+        p.StatusBarLabelColor = new(0.55f, 0.55f, 0.55f, 0.85f);
+        p.StatusBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.5f);
 
         // Skill Breakdown
-        SkillDamageFillColor = new(0.35f, 0.35f, 0.55f, 0.7f),
-        SkillPhysicalFillColor = new(0.55f, 0.28f, 0.18f, 0.7f),
-        SkillMagicFillColor = new(0.28f, 0.28f, 0.55f, 0.7f),
-        SkillHealingFillColor = new(0.25f, 0.50f, 0.30f, 0.7f),
-        SkillRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f),
-        SkillTextColor = new(1f, 1f, 1f, 0.9f),
-        SkillHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f),
-        SkillRowHeight = 14f,
-        SkillColumnPadding = 6f,
-        SkillBarRounding = 3f,
-        SkillFontSize = 12.6f,
+        p.SkillPhysicalFillColor = new(0.55f, 0.28f, 0.18f, 0.7f);
+        p.SkillMagicFillColor = new(0.28f, 0.28f, 0.55f, 0.7f);
+        p.SkillRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f);
+        p.SkillHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f);
+        p.SkillBarRounding = 3f;
+        p.SkillFontSize = 12.6f;
 
         // Buff/Debuff
-        BuffFillColor = new(0.30f, 0.42f, 0.55f, 0.7f),
-        DebuffFillColor = new(0.60f, 0.28f, 0.22f, 0.7f),
-        BuffRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f),
-        BuffTextColor = new(1f, 1f, 1f, 0.9f),
-        BuffHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f),
-        BuffRowHeight = 14f,
-        BuffColumnPadding = 6f,
-        BuffBarRounding = 3f,
-        BuffFontSize = 12.6f,
+        p.BuffFillColor = new(0.30f, 0.42f, 0.55f, 0.7f);
+        p.DebuffFillColor = new(0.60f, 0.28f, 0.22f, 0.7f);
+        p.BuffRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.6f);
+        p.BuffHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f);
+        p.BuffBarRounding = 3f;
+        p.BuffFontSize = 12.6f;
 
         // Detail Panel
-        DetailBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.85f),
-        DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f),
-        DetailIndent = 8f,
-        DetailFontSize = 12.9f,
+        p.DetailBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.85f);
+        p.DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f);
+        p.DetailFontSize = 12.9f;
 
         // Display Flags
-        ShowJobIcons = true,
-        ShowNameOnBar = true,
-        ShowRankNumber = true,
-        ShowJobAbbrevOnBar = false,
+        p.ShowRankNumber = true;
+        p.ShowJobAbbrevOnBar = false;
 
         // Tab Buttons
-        ShowTabBar = true,
-        TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.9f),
-        TabButtonHoveredColor = new(0.20f, 0.18f, 0.15f, 0.95f),
-        TabButtonActiveColor = new(1.0f, 0.55f, 0.10f, 0.85f),
-        TabButtonTextColor = new(0.65f, 0.65f, 0.65f, 0.85f),
-        TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 1.0f),
-        TabButtonHeight = 20f,
-        TabButtonSpacing = 2f,
-        TabButtonRounding = 3f,
-        TabButtonFontSize = 13.3f,
-        TabButtonWidth = 80f,
-        TabButtonStretchToFit = true,
+        p.TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.9f);
+        p.TabButtonHoveredColor = new(0.20f, 0.18f, 0.15f, 0.95f);
+        p.TabButtonActiveColor = new(1.0f, 0.55f, 0.10f, 0.85f);
+        p.TabButtonTextColor = new(0.65f, 0.65f, 0.65f, 0.85f);
+        p.TabButtonHeight = 20f;
+        p.TabButtonSpacing = 2f;
+        p.TabButtonRounding = 3f;
+        p.TabButtonFontSize = 13.3f;
+        p.TabButtonWidth = 80f;
 
         // Tooltip
-        ShowTooltip = true,
-        TooltipDelay = 0.3f,
-        TooltipBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.92f),
-        TooltipTextColor = new(1f, 1f, 1f, 1f),
-        TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 1f),
-        TooltipFontSize = 12.9f,
-        TooltipRounding = 3f,
-        TooltipPadding = 6f,
+        p.TooltipBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.92f);
+        p.TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 1f);
+        p.TooltipFontSize = 12.9f;
+        p.TooltipRounding = 3f;
 
         // Detail Graph
-        GraphHeight = 140f,
-        GraphLineThickness = 2f,
-        GraphDpsColor = new(0.95f, 0.45f, 0.20f, 1f),
-        GraphHpsColor = new(0.35f, 0.80f, 0.35f, 1f),
-        GraphDtpsColor = new(0.40f, 0.55f, 0.90f, 1f),
-        GraphBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.92f),
-        GraphGridColor = new(0.30f, 0.30f, 0.30f, 0.3f),
-        GraphShowLegend = true,
-        GraphShowGrid = true,
-        GraphShowXAxisLabels = false,
-        GraphShowYAxisLabels = true,
-        GraphShowLabels = true,
-        GraphLabelOffsetX = 18f,
-        GraphLabelOffsetY = 0f,
-        GraphMouseTextOpacity = 0.6f,
-        GraphYAxisHeadroom = 1.1f,
-        GraphYAxisTickCount = 8,
-        GraphXAxisPadding = 1.25f,
-        GraphFontSize = 12.6f,
+        p.GraphDpsColor = new(0.95f, 0.45f, 0.20f, 1f);
+        p.GraphHpsColor = new(0.35f, 0.80f, 0.35f, 1f);
+        p.GraphBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.92f);
+        p.GraphFontSize = 12.6f;
 
         // Graph View
-        GraphViewAutoHeight = false,
-        GraphViewHeight = 260f,
-        GraphViewLineThickness = 2f,
-        GraphViewBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.6f),
-        GraphViewGridColor = new(0.30f, 0.30f, 0.30f, 0.3f),
-        GraphViewShowLegend = true,
-        GraphViewShowGrid = true,
-        GraphViewShowXAxisLabels = false,
-        GraphViewShowYAxisLabels = true,
-        GraphViewHighlightSelf = true,
-        GraphViewSelfLineThickness = 3.5f,
-        GraphViewShowLabels = true,
-        GraphViewLabelOffsetX = 21f,
-        GraphViewLabelOffsetY = 0f,
-        GraphViewFontSize = 12.6f,
-        GraphViewXAxisPadding = 1.18f,
-        GraphViewYAxisHeadroom = 1.0f,
-        GraphViewYAxisTickCount = 14,
-        GraphViewMouseTextOpacity = 0.6f,
-    };
+        p.GraphViewFontSize = 12.6f;
+
+        return p;
+    }
 
 
-    public static ThemePreset Horizoverlay() => new()
+    public static ThemePreset Horizoverlay()
     {
-        Name = "Horizoverlay",
-        Description = "Minimal horizontal bars — thin, rounded, highly transparent.",
-        IsBuiltIn = true,
+        var p = Default();
+        p.Name = "Horizoverlay";
+        p.Description = "Minimal horizontal bars — thin, rounded, highly transparent.";
 
         // Bar Styling
-        BarHeight = 16f,
-        BarSpacing = 1f,
-        BarRounding = 8f,
-        IconSize = 12f,
-        BarAlpha = 0.60f,
-        BarFontSize = 11.9f,
-        BarLeftPadding = 6f,
-        BarRightPadding = 6f,
-        BarColumnSpacing = 4f,
-        IconTextPadding = 3f,
+        p.BarHeight = 16f;
+        p.BarRounding = 8f;
+        p.IconSize = 12f;
+        p.BarAlpha = 0.60f;
+        p.BarFontSize = 11.9f;
+        p.BarLeftPadding = 6f;
+        p.BarColumnSpacing = 4f;
+        p.IconTextPadding = 3f;
 
         // Self Highlighting
-        SelfBarHighlight = false,
-        SelfBarHighlightColor = new(0.9f, 0.6f, 0.1f, 0.8f),
-        UseSelfNameColor = true,
-        SelfNameColor = new(0.95f, 0.85f, 0.5f, 1.0f),
+        p.SelfBarHighlightColor = new(0.9f, 0.6f, 0.1f, 0.8f);
+        p.UseSelfNameColor = true;
+        p.SelfNameColor = new(0.95f, 0.85f, 0.5f, 1.0f);
 
         // Value Formatting
-        ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
-        AbbreviatedDecimalPlaces = 1,
-        RawDecimalPlaces = 0,
-        PercentDecimalPlaces = 0,
-        AbbreviatedKThreshold = 10_000,
-        AbbreviatedMThreshold = 1_000_000,
+        p.RawDecimalPlaces = 0;
+        p.PercentDecimalPlaces = 0;
 
         // Role Colors
-        UsePerJobColors = false,
-        TankColor = new(0.30f, 0.45f, 0.75f, 1.0f),
-        HealerColor = new(0.30f, 0.65f, 0.35f, 1.0f),
-        MeleeDpsColor = new(0.75f, 0.25f, 0.25f, 1.0f),
-        RangedDpsColor = new(0.85f, 0.50f, 0.20f, 1.0f),
-        CasterDpsColor = new(0.55f, 0.35f, 0.70f, 1.0f),
-        LimitBreakColor = new(0.90f, 0.75f, 0.20f, 1.0f),
-        DoHLColor = new(0.68f, 0.48f, 0.22f, 1.0f),
-        DefaultJobColor = new(0.45f, 0.45f, 0.45f, 1.0f),
+        p.UsePerJobColors = false;
+        p.TankColor = new(0.30f, 0.45f, 0.75f, 1.0f);
+        p.HealerColor = new(0.30f, 0.65f, 0.35f, 1.0f);
+        p.MeleeDpsColor = new(0.75f, 0.25f, 0.25f, 1.0f);
+        p.RangedDpsColor = new(0.85f, 0.50f, 0.20f, 1.0f);
+        p.CasterDpsColor = new(0.55f, 0.35f, 0.70f, 1.0f);
+        p.LimitBreakColor = new(0.90f, 0.75f, 0.20f, 1.0f);
+        p.DoHLColor = new(0.68f, 0.48f, 0.22f, 1.0f);
+        p.DefaultJobColor = new(0.45f, 0.45f, 0.45f, 1.0f);
 
         // Background & Text
-        BarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.50f),
-        NameTextColor = new(1f, 1f, 1f, 0.90f),
-        ValueTextColor = new(1f, 1f, 1f, 0.90f),
-        WindowBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.70f),
-        WindowPaddingLeft = 8f,
-        WindowPaddingRight = 8f,
-        WindowPaddingTop = 8f,
-        WindowPaddingBottom = 8f,
+        p.BarBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.50f);
+        p.NameTextColor = new(1f, 1f, 1f, 0.90f);
+        p.ValueTextColor = new(1f, 1f, 1f, 0.90f);
+        p.WindowBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.70f);
+        p.WindowPaddingLeft = 8f;
+        p.WindowPaddingRight = 8f;
+        p.WindowPaddingTop = 8f;
+        p.WindowPaddingBottom = 8f;
 
         // Selection Bar
-        ShowEncounterPicker = true,
-        SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 0.9f),
-        SelectionBarBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
-        SelectionBarHeight = 0f,
-        ShowSelectionBarSeparator = false,
-        SelectionBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f),
+        p.SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 0.9f);
+        p.ShowSelectionBarSeparator = false;
+        p.SelectionBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f);
 
         // Header
-        ShowMeterHeader = false,
-        HeaderTextColor = new(0.6f, 0.6f, 0.6f, 0.8f),
-        HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
-        HeaderHeight = 18f,
-        HeaderFontSize = 11.9f,
-        HeaderSeparator = false,
-        HeaderSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f),
+        p.ShowMeterHeader = false;
+        p.HeaderTextColor = new(0.6f, 0.6f, 0.6f, 0.8f);
+        p.HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f);
+        p.HeaderHeight = 18f;
+        p.HeaderFontSize = 11.9f;
+        p.HeaderSeparator = false;
+        p.HeaderSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f);
 
         // Status Bar
-        ShowStatusBar = false,
-        ShowStatusBarTimer = true,
-        StatusBarHeight = 18f,
-        StatusBarFontSize = 12.6f,
-        StatusBarPadding = 4f,
-        ShowStatusBarSeparator = false,
-        StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.7f),
-        StatusBarActiveColor = new(0.9f, 0.6f, 0.1f, 1.0f),
-        StatusBarInactiveColor = new(0.5f, 0.5f, 0.5f, 0.7f),
-        StatusBarLabelColor = new(0.5f, 0.5f, 0.5f, 0.7f),
-        StatusBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f),
+        p.ShowStatusBar = false;
+        p.StatusBarHeight = 18f;
+        p.StatusBarFontSize = 12.6f;
+        p.ShowStatusBarSeparator = false;
+        p.StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.7f);
+        p.StatusBarActiveColor = new(0.9f, 0.6f, 0.1f, 1.0f);
+        p.StatusBarInactiveColor = new(0.5f, 0.5f, 0.5f, 0.7f);
+        p.StatusBarLabelColor = new(0.5f, 0.5f, 0.5f, 0.7f);
+        p.StatusBarSeparatorColor = new(0.3f, 0.3f, 0.3f, 0.3f);
 
         // Skill Breakdown
-        SkillDamageFillColor = new(0.30f, 0.30f, 0.50f, 0.6f),
-        SkillPhysicalFillColor = new(0.45f, 0.22f, 0.18f, 0.6f),
-        SkillMagicFillColor = new(0.22f, 0.22f, 0.50f, 0.6f),
-        SkillHealingFillColor = new(0.20f, 0.45f, 0.25f, 0.6f),
-        SkillRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f),
-        SkillTextColor = new(1f, 1f, 1f, 0.85f),
-        SkillHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f),
-        SkillRowHeight = 12f,
-        SkillColumnPadding = 4f,
-        SkillBarRounding = 6f,
-        SkillFontSize = 11.2f,
+        p.SkillDamageFillColor = new(0.30f, 0.30f, 0.50f, 0.6f);
+        p.SkillPhysicalFillColor = new(0.45f, 0.22f, 0.18f, 0.6f);
+        p.SkillMagicFillColor = new(0.22f, 0.22f, 0.50f, 0.6f);
+        p.SkillHealingFillColor = new(0.20f, 0.45f, 0.25f, 0.6f);
+        p.SkillRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f);
+        p.SkillTextColor = new(1f, 1f, 1f, 0.85f);
+        p.SkillHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f);
+        p.SkillRowHeight = 12f;
+        p.SkillColumnPadding = 4f;
+        p.SkillBarRounding = 6f;
+        p.SkillFontSize = 11.2f;
 
         // Buff/Debuff
-        BuffFillColor = new(0.25f, 0.38f, 0.50f, 0.6f),
-        DebuffFillColor = new(0.50f, 0.22f, 0.22f, 0.6f),
-        BuffRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f),
-        BuffTextColor = new(1f, 1f, 1f, 0.85f),
-        BuffHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f),
-        BuffRowHeight = 12f,
-        BuffColumnPadding = 4f,
-        BuffBarRounding = 6f,
-        BuffFontSize = 11.2f,
+        p.BuffFillColor = new(0.25f, 0.38f, 0.50f, 0.6f);
+        p.DebuffFillColor = new(0.50f, 0.22f, 0.22f, 0.6f);
+        p.BuffRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.5f);
+        p.BuffTextColor = new(1f, 1f, 1f, 0.85f);
+        p.BuffHeaderTextColor = new(0.55f, 0.55f, 0.55f, 0.85f);
+        p.BuffRowHeight = 12f;
+        p.BuffColumnPadding = 4f;
+        p.BuffBarRounding = 6f;
+        p.BuffFontSize = 11.2f;
 
         // Detail Panel
-        DetailBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.75f),
-        DetailLabelColor = new(0.6f, 0.6f, 0.6f, 1f),
-        DetailIndent = 6f,
-        DetailFontSize = 11.5f,
+        p.DetailBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.75f);
+        p.DetailLabelColor = new(0.6f, 0.6f, 0.6f, 1f);
+        p.DetailIndent = 6f;
+        p.DetailFontSize = 11.5f;
 
         // Display Flags
-        ShowJobIcons = true,
-        ShowNameOnBar = true,
-        ShowRankNumber = false,
-        ShowJobAbbrevOnBar = false,
+        p.ShowJobAbbrevOnBar = false;
 
         // Tab Buttons
-        ShowTabBar = false,
-        TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.5f),
-        TabButtonHoveredColor = new(0.15f, 0.15f, 0.15f, 0.6f),
-        TabButtonActiveColor = new(0.9f, 0.6f, 0.1f, 0.7f),
-        TabButtonTextColor = new(0.6f, 0.6f, 0.6f, 0.7f),
-        TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 0.9f),
-        TabButtonHeight = 16f,
-        TabButtonSpacing = 1f,
-        TabButtonRounding = 8f,
-        TabButtonFontSize = 11.9f,
-        TabButtonWidth = 60f,
-        TabButtonStretchToFit = true,
+        p.ShowTabBar = false;
+        p.TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.5f);
+        p.TabButtonHoveredColor = new(0.15f, 0.15f, 0.15f, 0.6f);
+        p.TabButtonActiveColor = new(0.9f, 0.6f, 0.1f, 0.7f);
+        p.TabButtonTextColor = new(0.6f, 0.6f, 0.6f, 0.7f);
+        p.TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 0.9f);
+        p.TabButtonHeight = 16f;
+        p.TabButtonSpacing = 1f;
+        p.TabButtonRounding = 8f;
+        p.TabButtonFontSize = 11.9f;
+        p.TabButtonWidth = 60f;
 
         // Tooltip
-        ShowTooltip = true,
-        TooltipDelay = 0.2f,
-        TooltipBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.85f),
-        TooltipTextColor = new(1f, 1f, 1f, 0.9f),
-        TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 0.85f),
-        TooltipFontSize = 11.5f,
-        TooltipRounding = 8f,
-        TooltipPadding = 6f,
+        p.TooltipDelay = 0.2f;
+        p.TooltipBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.85f);
+        p.TooltipTextColor = new(1f, 1f, 1f, 0.9f);
+        p.TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 0.85f);
+        p.TooltipFontSize = 11.5f;
+        p.TooltipRounding = 8f;
 
         // Detail Graph
-        GraphHeight = 100f,
-        GraphLineThickness = 1.5f,
-        GraphDpsColor = new(0.80f, 0.35f, 0.35f, 0.9f),
-        GraphHpsColor = new(0.35f, 0.75f, 0.35f, 0.9f),
-        GraphDtpsColor = new(0.35f, 0.50f, 0.80f, 0.9f),
-        GraphBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.70f),
-        GraphGridColor = new(0.25f, 0.25f, 0.25f, 0.2f),
-        GraphShowLegend = false,
-        GraphShowGrid = true,
-        GraphShowXAxisLabels = false,
-        GraphShowYAxisLabels = true,
-        GraphShowLabels = true,
-        GraphLabelOffsetX = 14f,
-        GraphLabelOffsetY = 0f,
-        GraphMouseTextOpacity = 0.5f,
-        GraphYAxisHeadroom = 1.1f,
-        GraphYAxisTickCount = 6,
-        GraphXAxisPadding = 1.25f,
-        GraphFontSize = 11.2f,
+        p.GraphHeight = 100f;
+        p.GraphLineThickness = 1.5f;
+        p.GraphDpsColor = new(0.80f, 0.35f, 0.35f, 0.9f);
+        p.GraphHpsColor = new(0.35f, 0.75f, 0.35f, 0.9f);
+        p.GraphDtpsColor = new(0.35f, 0.50f, 0.80f, 0.9f);
+        p.GraphBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.70f);
+        p.GraphGridColor = new(0.25f, 0.25f, 0.25f, 0.2f);
+        p.GraphShowLegend = false;
+        p.GraphLabelOffsetX = 14f;
+        p.GraphMouseTextOpacity = 0.5f;
+        p.GraphYAxisTickCount = 6;
+        p.GraphFontSize = 11.2f;
 
         // Graph View
-        GraphViewAutoHeight = true,
-        GraphViewHeight = 200f,
-        GraphViewLineThickness = 1.5f,
-        GraphViewBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.5f),
-        GraphViewGridColor = new(0.25f, 0.25f, 0.25f, 0.2f),
-        GraphViewShowLegend = false,
-        GraphViewShowGrid = true,
-        GraphViewShowXAxisLabels = false,
-        GraphViewShowYAxisLabels = true,
-        GraphViewHighlightSelf = true,
-        GraphViewSelfLineThickness = 3f,
-        GraphViewShowLabels = true,
-        GraphViewLabelOffsetX = 16f,
-        GraphViewLabelOffsetY = 0f,
-        GraphViewFontSize = 11.2f,
-        GraphViewXAxisPadding = 1.25f,
-        GraphViewYAxisHeadroom = 1.1f,
-        GraphViewYAxisTickCount = 6,
-        GraphViewMouseTextOpacity = 0.5f,
-    };
+        p.GraphViewAutoHeight = true;
+        p.GraphViewHeight = 200f;
+        p.GraphViewLineThickness = 1.5f;
+        p.GraphViewBackgroundColor = new(0.04f, 0.04f, 0.04f, 0.5f);
+        p.GraphViewGridColor = new(0.25f, 0.25f, 0.25f, 0.2f);
+        p.GraphViewShowLegend = false;
+        p.GraphViewSelfLineThickness = 3f;
+        p.GraphViewLabelOffsetX = 16f;
+        p.GraphViewFontSize = 11.2f;
+        p.GraphViewXAxisPadding = 1.25f;
+        p.GraphViewYAxisHeadroom = 1.1f;
+        p.GraphViewYAxisTickCount = 6;
+        p.GraphViewMouseTextOpacity = 0.5f;
+
+        return p;
+    }
 
 
-    public static ThemePreset MopiMopi() => new()
+    public static ThemePreset MopiMopi()
     {
-        Name = "MopiMopi",
-        Description = "Colorful rounded bars with unique per-job colors and vibrant styling.",
-        IsBuiltIn = true,
+        var p = Default();
+        p.Name = "MopiMopi";
+        p.Description = "Colorful rounded bars with unique per-job colors and vibrant styling.";
 
         // Bar Styling
-        BarHeight = 22f,
-        BarSpacing = 2f,
-        BarRounding = 6f,
-        IconSize = 16f,
-        BarAlpha = 0.85f,
-        BarFontSize = 14f,
-        BarLeftPadding = 5f,
-        BarRightPadding = 6f,
-        BarColumnSpacing = 6f,
-        IconTextPadding = 4f,
+        p.BarSpacing = 2f;
+        p.BarRounding = 6f;
+        p.IconSize = 16f;
+        p.BarAlpha = 0.85f;
+        p.BarLeftPadding = 5f;
 
         // Self Highlighting
-        SelfBarHighlight = true,
-        SelfBarHighlightColor = new(1.0f, 0.85f, 0.3f, 0.9f),
-        UseSelfNameColor = true,
-        SelfNameColor = new(1.0f, 0.95f, 0.6f, 1.0f),
-
-        // Value Formatting
-        ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
-        AbbreviatedDecimalPlaces = 1,
-        RawDecimalPlaces = 1,
-        PercentDecimalPlaces = 1,
-        AbbreviatedKThreshold = 10_000,
-        AbbreviatedMThreshold = 1_000_000,
+        p.SelfBarHighlight = true;
+        p.UseSelfNameColor = true;
+        p.SelfNameColor = new(1.0f, 0.95f, 0.6f, 1.0f);
 
         // Role Colors
-        UsePerJobColors = true,
-        TankColor = new(0.25f, 0.40f, 0.80f, 1.0f),
-        HealerColor = new(0.25f, 0.70f, 0.35f, 1.0f),
-        MeleeDpsColor = new(0.80f, 0.25f, 0.25f, 1.0f),
-        RangedDpsColor = new(0.90f, 0.55f, 0.15f, 1.0f),
-        CasterDpsColor = new(0.60f, 0.30f, 0.80f, 1.0f),
-        LimitBreakColor = new(1.0f, 0.80f, 0.0f, 1.0f),
-        DoHLColor = new(0.70f, 0.55f, 0.30f, 1.0f),
-        DefaultJobColor = new(0.50f, 0.50f, 0.50f, 1.0f),
-        JobColors = new Dictionary<string, Vector4>
+        p.TankColor = new(0.25f, 0.40f, 0.80f, 1.0f);
+        p.HealerColor = new(0.25f, 0.70f, 0.35f, 1.0f);
+        p.MeleeDpsColor = new(0.80f, 0.25f, 0.25f, 1.0f);
+        p.RangedDpsColor = new(0.90f, 0.55f, 0.15f, 1.0f);
+        p.JobColors = new Dictionary<string, Vector4>
         {
             { "Pld", new(0.45f, 0.60f, 0.95f, 1.0f) },
             { "War", new(0.75f, 0.20f, 0.20f, 1.0f) },
@@ -639,382 +473,271 @@ public static class BuiltInPresets
             { "Rdm", new(0.90f, 0.40f, 0.50f, 1.0f) },
             { "Pct", new(0.80f, 0.60f, 0.85f, 1.0f) },
             { "Blu", new(0.35f, 0.60f, 0.95f, 1.0f) },
-        },
+        };
 
         // Background & Text
-        BarBackgroundColor = new(0.10f, 0.10f, 0.12f, 0.85f),
-        NameTextColor = new(1f, 1f, 1f, 1f),
-        ValueTextColor = new(1f, 1f, 1f, 1f),
-        WindowBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.92f),
-        WindowPaddingLeft = 8f,
-        WindowPaddingRight = 8f,
-        WindowPaddingTop = 8f,
-        WindowPaddingBottom = 8f,
+        p.BarBackgroundColor = new(0.10f, 0.10f, 0.12f, 0.85f);
+        p.WindowBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.92f);
+        p.WindowPaddingLeft = 8f;
+        p.WindowPaddingRight = 8f;
+        p.WindowPaddingTop = 8f;
+        p.WindowPaddingBottom = 8f;
 
         // Selection Bar
-        ShowEncounterPicker = true,
-        SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f),
-        SelectionBarBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.4f),
-        SelectionBarHeight = 2f,
-        ShowSelectionBarSeparator = true,
-        SelectionBarSeparatorColor = new(0.4f, 0.4f, 0.4f, 0.4f),
+        p.SelectionBarTextColor = new(0.9f, 0.9f, 0.9f, 1f);
+        p.SelectionBarBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.4f);
+        p.SelectionBarHeight = 2f;
+        p.SelectionBarSeparatorColor = new(0.4f, 0.4f, 0.4f, 0.4f);
 
         // Header
-        ShowMeterHeader = true,
-        HeaderTextColor = new(0.65f, 0.65f, 0.70f, 0.9f),
-        HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
-        HeaderHeight = 20f,
-        HeaderFontSize = 14f,
-        HeaderSeparator = false,
-        HeaderSeparatorColor = new(0.4f, 0.4f, 0.4f, 0.4f),
+        p.HeaderTextColor = new(0.65f, 0.65f, 0.70f, 0.9f);
+        p.HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f);
+        p.HeaderHeight = 20f;
+        p.HeaderSeparator = false;
+        p.HeaderSeparatorColor = new(0.4f, 0.4f, 0.4f, 0.4f);
 
         // Status Bar
-        ShowStatusBar = true,
-        ShowStatusBarTimer = true,
-        StatusBarHeight = 20f,
-        StatusBarFontSize = 14f,
-        StatusBarPadding = 6f,
-        ShowStatusBarSeparator = true,
-        StatusBarBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.9f),
-        StatusBarActiveColor = new(1.0f, 0.55f, 0.15f, 1.0f),
-        StatusBarInactiveColor = new(0.55f, 0.55f, 0.60f, 0.9f),
-        StatusBarLabelColor = new(0.55f, 0.55f, 0.60f, 0.9f),
-        StatusBarSeparatorColor = new(0.4f, 0.4f, 0.4f, 0.4f),
+        p.StatusBarPadding = 6f;
+        p.StatusBarBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.9f);
+        p.StatusBarActiveColor = new(1.0f, 0.55f, 0.15f, 1.0f);
+        p.StatusBarInactiveColor = new(0.55f, 0.55f, 0.60f, 0.9f);
+        p.StatusBarLabelColor = new(0.55f, 0.55f, 0.60f, 0.9f);
+        p.StatusBarSeparatorColor = new(0.4f, 0.4f, 0.4f, 0.4f);
 
         // Skill Breakdown
-        SkillDamageFillColor = new(0.40f, 0.35f, 0.60f, 0.7f),
-        SkillPhysicalFillColor = new(0.55f, 0.28f, 0.22f, 0.7f),
-        SkillMagicFillColor = new(0.28f, 0.28f, 0.58f, 0.7f),
-        SkillHealingFillColor = new(0.25f, 0.55f, 0.30f, 0.7f),
-        SkillRowBackgroundColor = new(0.10f, 0.10f, 0.12f, 0.6f),
-        SkillTextColor = new(1f, 1f, 1f, 0.9f),
-        SkillHeaderTextColor = new(0.60f, 0.60f, 0.65f, 0.9f),
-        SkillRowHeight = 14f,
-        SkillColumnPadding = 6f,
-        SkillBarRounding = 4f,
-        SkillFontSize = 12.9f,
+        p.SkillDamageFillColor = new(0.40f, 0.35f, 0.60f, 0.7f);
+        p.SkillPhysicalFillColor = new(0.55f, 0.28f, 0.22f, 0.7f);
+        p.SkillMagicFillColor = new(0.28f, 0.28f, 0.58f, 0.7f);
+        p.SkillHealingFillColor = new(0.25f, 0.55f, 0.30f, 0.7f);
+        p.SkillRowBackgroundColor = new(0.10f, 0.10f, 0.12f, 0.6f);
+        p.SkillHeaderTextColor = new(0.60f, 0.60f, 0.65f, 0.9f);
+        p.SkillBarRounding = 4f;
+        p.SkillFontSize = 12.9f;
 
         // Buff/Debuff
-        BuffFillColor = new(0.30f, 0.45f, 0.58f, 0.7f),
-        DebuffFillColor = new(0.58f, 0.28f, 0.28f, 0.7f),
-        BuffRowBackgroundColor = new(0.10f, 0.10f, 0.12f, 0.6f),
-        BuffTextColor = new(1f, 1f, 1f, 0.9f),
-        BuffHeaderTextColor = new(0.60f, 0.60f, 0.65f, 0.9f),
-        BuffRowHeight = 14f,
-        BuffColumnPadding = 6f,
-        BuffBarRounding = 4f,
-        BuffFontSize = 12.9f,
+        p.BuffFillColor = new(0.30f, 0.45f, 0.58f, 0.7f);
+        p.DebuffFillColor = new(0.58f, 0.28f, 0.28f, 0.7f);
+        p.BuffRowBackgroundColor = new(0.10f, 0.10f, 0.12f, 0.6f);
+        p.BuffHeaderTextColor = new(0.60f, 0.60f, 0.65f, 0.9f);
+        p.BuffBarRounding = 4f;
+        p.BuffFontSize = 12.9f;
 
         // Detail Panel
-        DetailBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.85f),
-        DetailLabelColor = new(0.65f, 0.65f, 0.70f, 1f),
-        DetailIndent = 8f,
-        DetailFontSize = 13.3f,
+        p.DetailBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.85f);
+        p.DetailLabelColor = new(0.65f, 0.65f, 0.70f, 1f);
+        p.DetailFontSize = 13.3f;
 
         // Display Flags
-        ShowJobIcons = true,
-        ShowNameOnBar = true,
-        ShowRankNumber = true,
-        ShowJobAbbrevOnBar = false,
+        p.ShowRankNumber = true;
+        p.ShowJobAbbrevOnBar = false;
 
         // Tab Buttons
-        ShowTabBar = true,
-        TabButtonColor = new(0.10f, 0.10f, 0.12f, 0.85f),
-        TabButtonHoveredColor = new(0.20f, 0.20f, 0.25f, 0.9f),
-        TabButtonActiveColor = new(0.60f, 0.30f, 0.80f, 0.85f),
-        TabButtonTextColor = new(0.65f, 0.65f, 0.70f, 0.9f),
-        TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 1.0f),
-        TabButtonHeight = 22f,
-        TabButtonSpacing = 2f,
-        TabButtonRounding = 6f,
-        TabButtonFontSize = 14f,
-        TabButtonWidth = 84f,
-        TabButtonStretchToFit = true,
+        p.TabButtonColor = new(0.10f, 0.10f, 0.12f, 0.85f);
+        p.TabButtonHoveredColor = new(0.20f, 0.20f, 0.25f, 0.9f);
+        p.TabButtonActiveColor = new(0.60f, 0.30f, 0.80f, 0.85f);
+        p.TabButtonTextColor = new(0.65f, 0.65f, 0.70f, 0.9f);
+        p.TabButtonHeight = 22f;
+        p.TabButtonSpacing = 2f;
+        p.TabButtonRounding = 6f;
 
         // Tooltip
-        ShowTooltip = true,
-        TooltipDelay = 0.3f,
-        TooltipBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.95f),
-        TooltipTextColor = new(1f, 1f, 1f, 1f),
-        TooltipLabelColor = new(0.55f, 0.55f, 0.60f, 1f),
-        TooltipFontSize = 12.9f,
-        TooltipRounding = 6f,
-        TooltipPadding = 6f,
+        p.TooltipBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.95f);
+        p.TooltipLabelColor = new(0.55f, 0.55f, 0.60f, 1f);
+        p.TooltipFontSize = 12.9f;
+        p.TooltipRounding = 6f;
 
         // Detail Graph
-        GraphHeight = 145f,
-        GraphLineThickness = 2f,
-        GraphDpsColor = new(0.90f, 0.35f, 0.35f, 1f),
-        GraphHpsColor = new(0.30f, 0.85f, 0.40f, 1f),
-        GraphDtpsColor = new(0.40f, 0.55f, 0.90f, 1f),
-        GraphBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.92f),
-        GraphGridColor = new(0.30f, 0.30f, 0.35f, 0.3f),
-        GraphShowLegend = true,
-        GraphShowGrid = true,
-        GraphShowXAxisLabels = false,
-        GraphShowYAxisLabels = true,
-        GraphShowLabels = true,
-        GraphLabelOffsetX = 18f,
-        GraphLabelOffsetY = 0f,
-        GraphMouseTextOpacity = 0.6f,
-        GraphYAxisHeadroom = 1.1f,
-        GraphYAxisTickCount = 8,
-        GraphXAxisPadding = 1.25f,
-        GraphFontSize = 12.9f,
+        p.GraphHeight = 145f;
+        p.GraphDpsColor = new(0.90f, 0.35f, 0.35f, 1f);
+        p.GraphHpsColor = new(0.30f, 0.85f, 0.40f, 1f);
+        p.GraphBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.92f);
+        p.GraphGridColor = new(0.30f, 0.30f, 0.35f, 0.3f);
+        p.GraphFontSize = 12.9f;
 
         // Graph View
-        GraphViewAutoHeight = false,
-        GraphViewHeight = 270f,
-        GraphViewLineThickness = 2f,
-        GraphViewBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.6f),
-        GraphViewGridColor = new(0.30f, 0.30f, 0.35f, 0.3f),
-        GraphViewShowLegend = true,
-        GraphViewShowGrid = true,
-        GraphViewShowXAxisLabels = false,
-        GraphViewShowYAxisLabels = true,
-        GraphViewHighlightSelf = true,
-        GraphViewSelfLineThickness = 3.5f,
-        GraphViewShowLabels = true,
-        GraphViewLabelOffsetX = 21f,
-        GraphViewLabelOffsetY = 0f,
-        GraphViewFontSize = 12.9f,
-        GraphViewXAxisPadding = 1.18f,
-        GraphViewYAxisHeadroom = 1.0f,
-        GraphViewYAxisTickCount = 14,
-        GraphViewMouseTextOpacity = 0.6f,
-    };
+        p.GraphViewHeight = 270f;
+        p.GraphViewBackgroundColor = new(0.06f, 0.06f, 0.08f, 0.6f);
+        p.GraphViewGridColor = new(0.30f, 0.30f, 0.35f, 0.3f);
+        p.GraphViewFontSize = 12.9f;
+
+        return p;
+    }
 
 
-    public static ThemePreset Ikegami() => new()
+    public static ThemePreset Ikegami()
     {
-        Name = "Ikegami",
-        Description = "Data-dense table layout — all stats visible, compact rows, sharp edges.",
-        IsBuiltIn = true,
+        var p = Default();
+        p.Name = "Ikegami";
+        p.Description = "Data-dense table layout — all stats visible, compact rows, sharp edges.";
 
         // Bar Styling
-        BarHeight = 18f,
-        BarSpacing = 0f,
-        BarRounding = 0f,
-        IconSize = 14f,
-        BarAlpha = 0.50f,
-        BarFontSize = 12.3f,
-        BarLeftPadding = 2f,
-        BarRightPadding = 3f,
-        BarColumnSpacing = 4f,
-        IconTextPadding = 3f,
+        p.BarHeight = 18f;
+        p.BarSpacing = 0f;
+        p.IconSize = 14f;
+        p.BarAlpha = 0.50f;
+        p.BarFontSize = 12.3f;
+        p.BarLeftPadding = 2f;
+        p.BarRightPadding = 3f;
+        p.BarColumnSpacing = 4f;
+        p.IconTextPadding = 3f;
 
         // Self Highlighting
-        SelfBarHighlight = true,
-        SelfBarHighlightColor = new(0.95f, 0.75f, 0.15f, 0.7f),
-        UseSelfNameColor = false,
-        SelfNameColor = new(1.0f, 0.9f, 0.4f, 1.0f),
+        p.SelfBarHighlight = true;
+        p.SelfBarHighlightColor = new(0.95f, 0.75f, 0.15f, 0.7f);
 
         // Value Formatting
-        ValueDisplayFormat = ValueDisplayFormat.Commas,
-        AbbreviatedDecimalPlaces = 0,
-        RawDecimalPlaces = 0,
-        PercentDecimalPlaces = 0,
-        AbbreviatedKThreshold = 10_000,
-        AbbreviatedMThreshold = 1_000_000,
+        p.ValueDisplayFormat = ValueDisplayFormat.Commas;
+        p.AbbreviatedDecimalPlaces = 0;
+        p.RawDecimalPlaces = 0;
+        p.PercentDecimalPlaces = 0;
 
         // Role Colors
-        UsePerJobColors = false,
-        TankColor = new(0.25f, 0.38f, 0.72f, 1.0f),
-        HealerColor = new(0.28f, 0.62f, 0.32f, 1.0f),
-        MeleeDpsColor = new(0.72f, 0.24f, 0.24f, 1.0f),
-        RangedDpsColor = new(0.82f, 0.50f, 0.18f, 1.0f),
-        CasterDpsColor = new(0.50f, 0.32f, 0.70f, 1.0f),
-        LimitBreakColor = new(0.90f, 0.72f, 0.10f, 1.0f),
-        DoHLColor = new(0.66f, 0.50f, 0.26f, 1.0f),
-        DefaultJobColor = new(0.42f, 0.42f, 0.42f, 1.0f),
+        p.UsePerJobColors = false;
+        p.TankColor = new(0.25f, 0.38f, 0.72f, 1.0f);
+        p.HealerColor = new(0.28f, 0.62f, 0.32f, 1.0f);
+        p.MeleeDpsColor = new(0.72f, 0.24f, 0.24f, 1.0f);
+        p.RangedDpsColor = new(0.82f, 0.50f, 0.18f, 1.0f);
+        p.CasterDpsColor = new(0.50f, 0.32f, 0.70f, 1.0f);
+        p.LimitBreakColor = new(0.90f, 0.72f, 0.10f, 1.0f);
+        p.DoHLColor = new(0.66f, 0.50f, 0.26f, 1.0f);
+        p.DefaultJobColor = new(0.42f, 0.42f, 0.42f, 1.0f);
 
         // Background & Text
-        BarBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.75f),
-        NameTextColor = new(1f, 1f, 1f, 0.95f),
-        ValueTextColor = new(1f, 1f, 1f, 0.95f),
-        WindowBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
-        WindowPaddingLeft = 8f,
-        WindowPaddingRight = 8f,
-        WindowPaddingTop = 8f,
-        WindowPaddingBottom = 8f,
+        p.BarBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.75f);
+        p.NameTextColor = new(1f, 1f, 1f, 0.95f);
+        p.ValueTextColor = new(1f, 1f, 1f, 0.95f);
+        p.WindowBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f);
+        p.WindowPaddingLeft = 8f;
+        p.WindowPaddingRight = 8f;
+        p.WindowPaddingTop = 8f;
+        p.WindowPaddingBottom = 8f;
 
         // Selection Bar
-        ShowEncounterPicker = true,
-        SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 1f),
-        SelectionBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.5f),
-        SelectionBarHeight = 0f,
-        ShowSelectionBarSeparator = true,
-        SelectionBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f),
+        p.SelectionBarTextColor = new(0.8f, 0.8f, 0.8f, 1f);
+        p.SelectionBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.5f);
+        p.SelectionBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f);
 
         // Header
-        ShowMeterHeader = true,
-        HeaderTextColor = new(0.75f, 0.75f, 0.75f, 0.95f),
-        HeaderBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.7f),
-        HeaderHeight = 18f,
-        HeaderFontSize = 11.9f,
-        HeaderSeparator = true,
-        HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f),
+        p.HeaderTextColor = new(0.75f, 0.75f, 0.75f, 0.95f);
+        p.HeaderBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.7f);
+        p.HeaderHeight = 18f;
+        p.HeaderFontSize = 11.9f;
+        p.HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f);
 
         // Status Bar
-        ShowStatusBar = true,
-        ShowStatusBarTimer = true,
-        StatusBarHeight = 18f,
-        StatusBarFontSize = 11.9f,
-        StatusBarPadding = 3f,
-        ShowStatusBarSeparator = true,
-        StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.9f),
-        StatusBarActiveColor = new(0.95f, 0.60f, 0.10f, 1.0f),
-        StatusBarInactiveColor = new(0.50f, 0.50f, 0.50f, 0.8f),
-        StatusBarLabelColor = new(0.50f, 0.50f, 0.50f, 0.8f),
-        StatusBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f),
+        p.StatusBarHeight = 18f;
+        p.StatusBarFontSize = 11.9f;
+        p.StatusBarPadding = 3f;
+        p.StatusBarBackgroundColor = new(0.06f, 0.06f, 0.06f, 0.9f);
+        p.StatusBarActiveColor = new(0.95f, 0.60f, 0.10f, 1.0f);
+        p.StatusBarInactiveColor = new(0.50f, 0.50f, 0.50f, 0.8f);
+        p.StatusBarLabelColor = new(0.50f, 0.50f, 0.50f, 0.8f);
+        p.StatusBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.6f);
 
         // Skill Breakdown
-        SkillDamageFillColor = new(0.30f, 0.30f, 0.48f, 0.65f),
-        SkillPhysicalFillColor = new(0.48f, 0.24f, 0.18f, 0.65f),
-        SkillMagicFillColor = new(0.22f, 0.22f, 0.52f, 0.65f),
-        SkillHealingFillColor = new(0.22f, 0.45f, 0.28f, 0.65f),
-        SkillRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.55f),
-        SkillTextColor = new(1f, 1f, 1f, 0.9f),
-        SkillHeaderTextColor = new(0.60f, 0.60f, 0.60f, 0.9f),
-        SkillRowHeight = 13f,
-        SkillColumnPadding = 5f,
-        SkillBarRounding = 0f,
-        SkillFontSize = 11.5f,
+        p.SkillDamageFillColor = new(0.30f, 0.30f, 0.48f, 0.65f);
+        p.SkillPhysicalFillColor = new(0.48f, 0.24f, 0.18f, 0.65f);
+        p.SkillMagicFillColor = new(0.22f, 0.22f, 0.52f, 0.65f);
+        p.SkillHealingFillColor = new(0.22f, 0.45f, 0.28f, 0.65f);
+        p.SkillRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.55f);
+        p.SkillRowHeight = 13f;
+        p.SkillColumnPadding = 5f;
+        p.SkillFontSize = 11.5f;
 
         // Buff/Debuff
-        BuffFillColor = new(0.25f, 0.38f, 0.52f, 0.65f),
-        DebuffFillColor = new(0.52f, 0.25f, 0.25f, 0.65f),
-        BuffRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.55f),
-        BuffTextColor = new(1f, 1f, 1f, 0.9f),
-        BuffHeaderTextColor = new(0.60f, 0.60f, 0.60f, 0.9f),
-        BuffRowHeight = 13f,
-        BuffColumnPadding = 5f,
-        BuffBarRounding = 0f,
-        BuffFontSize = 11.5f,
+        p.BuffFillColor = new(0.25f, 0.38f, 0.52f, 0.65f);
+        p.DebuffFillColor = new(0.52f, 0.25f, 0.25f, 0.65f);
+        p.BuffRowBackgroundColor = new(0.08f, 0.08f, 0.08f, 0.55f);
+        p.BuffRowHeight = 13f;
+        p.BuffColumnPadding = 5f;
+        p.BuffFontSize = 11.5f;
 
         // Detail Panel
-        DetailBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.85f),
-        DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f),
-        DetailIndent = 4f,
-        DetailFontSize = 11.9f,
+        p.DetailBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.85f);
+        p.DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f);
+        p.DetailIndent = 4f;
+        p.DetailFontSize = 11.9f;
 
         // Display Flags
-        ShowJobIcons = true,
-        ShowNameOnBar = true,
-        ShowJobAbbrevOnBar = true,
-        ShowRankNumber = true,
+        p.ShowRankNumber = true;
 
         // Tab Buttons
-        ShowTabBar = true,
-        TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.7f),
-        TabButtonHoveredColor = new(0.15f, 0.15f, 0.15f, 0.8f),
-        TabButtonActiveColor = new(0.25f, 0.38f, 0.72f, 0.85f),
-        TabButtonTextColor = new(0.60f, 0.60f, 0.60f, 0.9f),
-        TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 0.95f),
-        TabButtonHeight = 18f,
-        TabButtonSpacing = 0f,
-        TabButtonRounding = 0f,
-        TabButtonFontSize = 11.9f,
-        TabButtonWidth = 65f,
-        TabButtonStretchToFit = true,
+        p.TabButtonColor = new(0.08f, 0.08f, 0.08f, 0.7f);
+        p.TabButtonHoveredColor = new(0.15f, 0.15f, 0.15f, 0.8f);
+        p.TabButtonActiveColor = new(0.25f, 0.38f, 0.72f, 0.85f);
+        p.TabButtonTextColor = new(0.60f, 0.60f, 0.60f, 0.9f);
+        p.TabButtonActiveTextColor = new(1.0f, 1.0f, 1.0f, 0.95f);
+        p.TabButtonHeight = 18f;
+        p.TabButtonSpacing = 0f;
+        p.TabButtonRounding = 0f;
+        p.TabButtonFontSize = 11.9f;
+        p.TabButtonWidth = 65f;
 
         // Tooltip
-        ShowTooltip = true,
-        TooltipDelay = 0.2f,
-        TooltipBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
-        TooltipTextColor = new(1f, 1f, 1f, 0.95f),
-        TooltipLabelColor = new(0.60f, 0.60f, 0.60f, 0.9f),
-        TooltipFontSize = 11.5f,
-        TooltipRounding = 0f,
-        TooltipPadding = 4f,
+        p.TooltipDelay = 0.2f;
+        p.TooltipBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f);
+        p.TooltipTextColor = new(1f, 1f, 1f, 0.95f);
+        p.TooltipLabelColor = new(0.60f, 0.60f, 0.60f, 0.9f);
+        p.TooltipFontSize = 11.5f;
+        p.TooltipRounding = 0f;
+        p.TooltipPadding = 4f;
 
         // Detail Graph
-        GraphHeight = 120f,
-        GraphLineThickness = 1.5f,
-        GraphDpsColor = new(0.80f, 0.30f, 0.30f, 1f),
-        GraphHpsColor = new(0.30f, 0.75f, 0.30f, 1f),
-        GraphDtpsColor = new(0.35f, 0.50f, 0.80f, 1f),
-        GraphBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f),
-        GraphGridColor = new(0.25f, 0.25f, 0.25f, 0.3f),
-        GraphShowLegend = true,
-        GraphShowGrid = true,
-        GraphShowXAxisLabels = false,
-        GraphShowYAxisLabels = true,
-        GraphShowLabels = true,
-        GraphLabelOffsetX = 15f,
-        GraphLabelOffsetY = 0f,
-        GraphMouseTextOpacity = 0.6f,
-        GraphYAxisHeadroom = 1.1f,
-        GraphYAxisTickCount = 8,
-        GraphXAxisPadding = 1.25f,
-        GraphFontSize = 11.5f,
+        p.GraphHeight = 120f;
+        p.GraphLineThickness = 1.5f;
+        p.GraphDpsColor = new(0.80f, 0.30f, 0.30f, 1f);
+        p.GraphHpsColor = new(0.30f, 0.75f, 0.30f, 1f);
+        p.GraphDtpsColor = new(0.35f, 0.50f, 0.80f, 1f);
+        p.GraphBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.95f);
+        p.GraphGridColor = new(0.25f, 0.25f, 0.25f, 0.3f);
+        p.GraphLabelOffsetX = 15f;
+        p.GraphFontSize = 11.5f;
 
         // Graph View
-        GraphViewAutoHeight = false,
-        GraphViewHeight = 230f,
-        GraphViewLineThickness = 1.5f,
-        GraphViewBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.6f),
-        GraphViewGridColor = new(0.25f, 0.25f, 0.25f, 0.3f),
-        GraphViewShowLegend = true,
-        GraphViewShowGrid = true,
-        GraphViewShowXAxisLabels = false,
-        GraphViewShowYAxisLabels = true,
-        GraphViewHighlightSelf = true,
-        GraphViewSelfLineThickness = 3f,
-        GraphViewShowLabels = true,
-        GraphViewLabelOffsetX = 17f,
-        GraphViewLabelOffsetY = 0f,
-        GraphViewFontSize = 11.5f,
-        GraphViewXAxisPadding = 1.25f,
-        GraphViewYAxisHeadroom = 1.1f,
-        GraphViewYAxisTickCount = 8,
-        GraphViewMouseTextOpacity = 0.6f,
-    };
+        p.GraphViewHeight = 230f;
+        p.GraphViewLineThickness = 1.5f;
+        p.GraphViewBackgroundColor = new(0.05f, 0.05f, 0.05f, 0.6f);
+        p.GraphViewGridColor = new(0.25f, 0.25f, 0.25f, 0.3f);
+        p.GraphViewSelfLineThickness = 3f;
+        p.GraphViewLabelOffsetX = 17f;
+        p.GraphViewFontSize = 11.5f;
+        p.GraphViewXAxisPadding = 1.25f;
+        p.GraphViewYAxisHeadroom = 1.1f;
+        p.GraphViewYAxisTickCount = 8;
+
+        return p;
+    }
 
 
-    public static ThemePreset NextUI() => new()
+    public static ThemePreset NextUI()
     {
-        Name = "Next UI",
-        Description = "Game-integrated look — desaturated per-job colors, subtle rounding, HUD-like feel.",
-        IsBuiltIn = true,
+        var p = Default();
+        p.Name = "Next UI";
+        p.Description = "Game-integrated look — desaturated per-job colors, subtle rounding, HUD-like feel.";
 
         // Bar Styling
-        BarHeight = 22f,
-        BarSpacing = 1f,
-        BarRounding = 2f,
-        IconSize = 16f,
-        BarAlpha = 0.72f,
-        BarFontSize = 13.3f,
-        BarLeftPadding = 4f,
-        BarRightPadding = 5f,
-        BarColumnSpacing = 5f,
-        IconTextPadding = 4f,
+        p.BarRounding = 2f;
+        p.IconSize = 16f;
+        p.BarAlpha = 0.72f;
+        p.BarFontSize = 13.3f;
+        p.BarRightPadding = 5f;
+        p.BarColumnSpacing = 5f;
 
         // Self Highlighting
-        SelfBarHighlight = true,
-        SelfBarHighlightColor = new(0.7f, 0.55f, 0.25f, 0.75f),
-        UseSelfNameColor = false,
-        SelfNameColor = new(0.95f, 0.9f, 0.5f, 1.0f),
-
-        // Value Formatting
-        ValueDisplayFormat = ValueDisplayFormat.Abbreviated,
-        AbbreviatedDecimalPlaces = 1,
-        RawDecimalPlaces = 1,
-        PercentDecimalPlaces = 1,
-        AbbreviatedKThreshold = 10_000,
-        AbbreviatedMThreshold = 1_000_000,
+        p.SelfBarHighlight = true;
+        p.SelfBarHighlightColor = new(0.7f, 0.55f, 0.25f, 0.75f);
+        p.SelfNameColor = new(0.95f, 0.9f, 0.5f, 1.0f);
 
         // Role Colors
-        UsePerJobColors = true,
-        TankColor = new(0.25f, 0.40f, 0.72f, 1.0f),
-        HealerColor = new(0.28f, 0.60f, 0.35f, 1.0f),
-        MeleeDpsColor = new(0.70f, 0.25f, 0.25f, 1.0f),
-        RangedDpsColor = new(0.80f, 0.50f, 0.20f, 1.0f),
-        CasterDpsColor = new(0.52f, 0.32f, 0.68f, 1.0f),
-        LimitBreakColor = new(0.80f, 0.68f, 0.15f, 1.0f),
-        DoHLColor = new(0.62f, 0.48f, 0.24f, 1.0f),
-        DefaultJobColor = new(0.45f, 0.45f, 0.45f, 1.0f),
-        JobColors = new Dictionary<string, Vector4>
+        p.TankColor = new(0.25f, 0.40f, 0.72f, 1.0f);
+        p.HealerColor = new(0.28f, 0.60f, 0.35f, 1.0f);
+        p.MeleeDpsColor = new(0.70f, 0.25f, 0.25f, 1.0f);
+        p.RangedDpsColor = new(0.80f, 0.50f, 0.20f, 1.0f);
+        p.CasterDpsColor = new(0.52f, 0.32f, 0.68f, 1.0f);
+        p.LimitBreakColor = new(0.80f, 0.68f, 0.15f, 1.0f);
+        p.DoHLColor = new(0.62f, 0.48f, 0.24f, 1.0f);
+        p.DefaultJobColor = new(0.45f, 0.45f, 0.45f, 1.0f);
+        p.JobColors = new Dictionary<string, Vector4>
         {
             { "Pld", new(0.38f, 0.52f, 0.82f, 1.0f) },
             { "War", new(0.55f, 0.22f, 0.22f, 1.0f) },
@@ -1038,148 +761,100 @@ public static class BuiltInPresets
             { "Rdm", new(0.78f, 0.35f, 0.42f, 1.0f) },
             { "Pct", new(0.68f, 0.50f, 0.72f, 1.0f) },
             { "Blu", new(0.30f, 0.50f, 0.82f, 1.0f) },
-        },
+        };
 
         // Background & Text
-        BarBackgroundColor = new(0.12f, 0.12f, 0.12f, 0.80f),
-        NameTextColor = new(0.95f, 0.95f, 0.95f, 1f),
-        ValueTextColor = new(0.95f, 0.95f, 0.95f, 1f),
-        WindowBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.92f),
-        WindowPaddingLeft = 8f,
-        WindowPaddingRight = 8f,
-        WindowPaddingTop = 8f,
-        WindowPaddingBottom = 8f,
+        p.BarBackgroundColor = new(0.12f, 0.12f, 0.12f, 0.80f);
+        p.NameTextColor = new(0.95f, 0.95f, 0.95f, 1f);
+        p.ValueTextColor = new(0.95f, 0.95f, 0.95f, 1f);
+        p.WindowBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.92f);
+        p.WindowPaddingLeft = 8f;
+        p.WindowPaddingRight = 8f;
+        p.WindowPaddingTop = 8f;
+        p.WindowPaddingBottom = 8f;
 
         // Selection Bar
-        ShowEncounterPicker = true,
-        SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f),
-        SelectionBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.4f),
-        SelectionBarHeight = 0f,
-        ShowSelectionBarSeparator = true,
-        SelectionBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.45f),
+        p.SelectionBarTextColor = new(0.85f, 0.85f, 0.85f, 1f);
+        p.SelectionBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.4f);
+        p.SelectionBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.45f);
 
         // Header
-        ShowMeterHeader = true,
-        HeaderTextColor = new(0.65f, 0.65f, 0.65f, 0.85f),
-        HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f),
-        HeaderHeight = 20f,
-        HeaderFontSize = 12.9f,
-        HeaderSeparator = true,
-        HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.45f),
+        p.HeaderTextColor = new(0.65f, 0.65f, 0.65f, 0.85f);
+        p.HeaderBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.0f);
+        p.HeaderHeight = 20f;
+        p.HeaderFontSize = 12.9f;
+        p.HeaderSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.45f);
 
         // Status Bar
-        ShowStatusBar = true,
-        ShowStatusBarTimer = true,
-        StatusBarHeight = 20f,
-        StatusBarFontSize = 13.3f,
-        StatusBarPadding = 5f,
-        ShowStatusBarSeparator = true,
-        StatusBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.88f),
-        StatusBarActiveColor = new(0.90f, 0.60f, 0.15f, 1.0f),
-        StatusBarInactiveColor = new(0.55f, 0.55f, 0.55f, 0.85f),
-        StatusBarLabelColor = new(0.55f, 0.55f, 0.55f, 0.85f),
-        StatusBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.45f),
+        p.StatusBarFontSize = 13.3f;
+        p.StatusBarPadding = 5f;
+        p.StatusBarBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.88f);
+        p.StatusBarActiveColor = new(0.90f, 0.60f, 0.15f, 1.0f);
+        p.StatusBarInactiveColor = new(0.55f, 0.55f, 0.55f, 0.85f);
+        p.StatusBarLabelColor = new(0.55f, 0.55f, 0.55f, 0.85f);
+        p.StatusBarSeparatorColor = new(0.35f, 0.35f, 0.35f, 0.45f);
 
         // Skill Breakdown
-        SkillDamageFillColor = new(0.32f, 0.32f, 0.52f, 0.65f),
-        SkillPhysicalFillColor = new(0.50f, 0.26f, 0.20f, 0.65f),
-        SkillMagicFillColor = new(0.25f, 0.25f, 0.52f, 0.65f),
-        SkillHealingFillColor = new(0.22f, 0.48f, 0.28f, 0.65f),
-        SkillRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.58f),
-        SkillTextColor = new(0.95f, 0.95f, 0.95f, 0.9f),
-        SkillHeaderTextColor = new(0.58f, 0.58f, 0.58f, 0.88f),
-        SkillRowHeight = 14f,
-        SkillColumnPadding = 6f,
-        SkillBarRounding = 2f,
-        SkillFontSize = 12.6f,
+        p.SkillDamageFillColor = new(0.32f, 0.32f, 0.52f, 0.65f);
+        p.SkillPhysicalFillColor = new(0.50f, 0.26f, 0.20f, 0.65f);
+        p.SkillMagicFillColor = new(0.25f, 0.25f, 0.52f, 0.65f);
+        p.SkillHealingFillColor = new(0.22f, 0.48f, 0.28f, 0.65f);
+        p.SkillRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.58f);
+        p.SkillTextColor = new(0.95f, 0.95f, 0.95f, 0.9f);
+        p.SkillHeaderTextColor = new(0.58f, 0.58f, 0.58f, 0.88f);
+        p.SkillBarRounding = 2f;
+        p.SkillFontSize = 12.6f;
 
         // Buff/Debuff
-        BuffFillColor = new(0.28f, 0.42f, 0.55f, 0.65f),
-        DebuffFillColor = new(0.55f, 0.28f, 0.28f, 0.65f),
-        BuffRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.58f),
-        BuffTextColor = new(0.95f, 0.95f, 0.95f, 0.9f),
-        BuffHeaderTextColor = new(0.58f, 0.58f, 0.58f, 0.88f),
-        BuffRowHeight = 14f,
-        BuffColumnPadding = 6f,
-        BuffBarRounding = 2f,
-        BuffFontSize = 12.6f,
+        p.BuffFillColor = new(0.28f, 0.42f, 0.55f, 0.65f);
+        p.DebuffFillColor = new(0.55f, 0.28f, 0.28f, 0.65f);
+        p.BuffRowBackgroundColor = new(0.10f, 0.10f, 0.10f, 0.58f);
+        p.BuffTextColor = new(0.95f, 0.95f, 0.95f, 0.9f);
+        p.BuffHeaderTextColor = new(0.58f, 0.58f, 0.58f, 0.88f);
+        p.BuffBarRounding = 2f;
+        p.BuffFontSize = 12.6f;
 
         // Detail Panel
-        DetailBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.82f),
-        DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f),
-        DetailIndent = 8f,
-        DetailFontSize = 12.9f,
+        p.DetailBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.82f);
+        p.DetailLabelColor = new(0.65f, 0.65f, 0.65f, 1f);
+        p.DetailFontSize = 12.9f;
 
         // Display Flags
-        ShowJobIcons = true,
-        ShowNameOnBar = true,
-        ShowRankNumber = false,
-        ShowJobAbbrevOnBar = false,
+        p.ShowJobAbbrevOnBar = false;
 
         // Tab Buttons
-        ShowTabBar = true,
-        TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.8f),
-        TabButtonHoveredColor = new(0.20f, 0.20f, 0.20f, 0.85f),
-        TabButtonActiveColor = new(0.25f, 0.40f, 0.72f, 0.8f),
-        TabButtonTextColor = new(0.65f, 0.65f, 0.65f, 0.85f),
-        TabButtonActiveTextColor = new(0.95f, 0.95f, 0.95f, 1.0f),
-        TabButtonHeight = 20f,
-        TabButtonSpacing = 1f,
-        TabButtonRounding = 2f,
-        TabButtonFontSize = 12.9f,
-        TabButtonWidth = 80f,
-        TabButtonStretchToFit = true,
+        p.TabButtonColor = new(0.12f, 0.12f, 0.12f, 0.8f);
+        p.TabButtonHoveredColor = new(0.20f, 0.20f, 0.20f, 0.85f);
+        p.TabButtonActiveColor = new(0.25f, 0.40f, 0.72f, 0.8f);
+        p.TabButtonTextColor = new(0.65f, 0.65f, 0.65f, 0.85f);
+        p.TabButtonActiveTextColor = new(0.95f, 0.95f, 0.95f, 1.0f);
+        p.TabButtonHeight = 20f;
+        p.TabButtonSpacing = 1f;
+        p.TabButtonRounding = 2f;
+        p.TabButtonFontSize = 12.9f;
+        p.TabButtonWidth = 80f;
 
         // Tooltip
-        ShowTooltip = true,
-        TooltipDelay = 0.3f,
-        TooltipBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.92f),
-        TooltipTextColor = new(0.95f, 0.95f, 0.95f, 1f),
-        TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 0.88f),
-        TooltipFontSize = 12.6f,
-        TooltipRounding = 2f,
-        TooltipPadding = 5f,
+        p.TooltipBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.92f);
+        p.TooltipTextColor = new(0.95f, 0.95f, 0.95f, 1f);
+        p.TooltipLabelColor = new(0.55f, 0.55f, 0.55f, 0.88f);
+        p.TooltipFontSize = 12.6f;
+        p.TooltipRounding = 2f;
+        p.TooltipPadding = 5f;
 
         // Detail Graph
-        GraphHeight = 140f,
-        GraphLineThickness = 2f,
-        GraphDpsColor = new(0.75f, 0.32f, 0.32f, 1f),
-        GraphHpsColor = new(0.32f, 0.70f, 0.35f, 1f),
-        GraphDtpsColor = new(0.35f, 0.48f, 0.78f, 1f),
-        GraphBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.90f),
-        GraphGridColor = new(0.28f, 0.28f, 0.28f, 0.3f),
-        GraphShowLegend = true,
-        GraphShowGrid = true,
-        GraphShowXAxisLabels = false,
-        GraphShowYAxisLabels = true,
-        GraphShowLabels = true,
-        GraphLabelOffsetX = 18f,
-        GraphLabelOffsetY = 0f,
-        GraphMouseTextOpacity = 0.6f,
-        GraphYAxisHeadroom = 1.1f,
-        GraphYAxisTickCount = 8,
-        GraphXAxisPadding = 1.25f,
-        GraphFontSize = 12.6f,
+        p.GraphDpsColor = new(0.75f, 0.32f, 0.32f, 1f);
+        p.GraphHpsColor = new(0.32f, 0.70f, 0.35f, 1f);
+        p.GraphDtpsColor = new(0.35f, 0.48f, 0.78f, 1f);
+        p.GraphBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.90f);
+        p.GraphGridColor = new(0.28f, 0.28f, 0.28f, 0.3f);
+        p.GraphFontSize = 12.6f;
 
         // Graph View
-        GraphViewAutoHeight = false,
-        GraphViewHeight = 260f,
-        GraphViewLineThickness = 2f,
-        GraphViewBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.6f),
-        GraphViewGridColor = new(0.28f, 0.28f, 0.28f, 0.3f),
-        GraphViewShowLegend = true,
-        GraphViewShowGrid = true,
-        GraphViewShowXAxisLabels = false,
-        GraphViewShowYAxisLabels = true,
-        GraphViewHighlightSelf = true,
-        GraphViewSelfLineThickness = 3.5f,
-        GraphViewShowLabels = true,
-        GraphViewLabelOffsetX = 21f,
-        GraphViewLabelOffsetY = 0f,
-        GraphViewFontSize = 12.6f,
-        GraphViewXAxisPadding = 1.18f,
-        GraphViewYAxisHeadroom = 1.0f,
-        GraphViewYAxisTickCount = 14,
-        GraphViewMouseTextOpacity = 0.6f,
-    };
+        p.GraphViewBackgroundColor = new(0.07f, 0.07f, 0.07f, 0.6f);
+        p.GraphViewGridColor = new(0.28f, 0.28f, 0.28f, 0.3f);
+        p.GraphViewFontSize = 12.6f;
+
+        return p;
+    }
 }
