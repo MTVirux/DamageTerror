@@ -343,46 +343,14 @@ public sealed class MeterTab
 
     public MeterTab Clone()
     {
-        return new MeterTab
-        {
-            Name = Name,
-            Group = Group,
-            IsHidden = IsHidden,
-            FilterMode = FilterMode,
-            GroupFilter = GroupFilter,
-            SortBy = SortBy,
-            SortDescending = SortDescending,
-            ViewMode = ViewMode,
-            GraphShowDpsLine = GraphShowDpsLine,
-            GraphShowHpsLine = GraphShowHpsLine,
-            GraphShowDtpsLine = GraphShowDtpsLine,
-            VisibleColumns = new HashSet<BarColumn>(VisibleColumns),
-            ColumnOrder = new List<BarColumn>(ColumnOrder),
-            ColumnHeaderLabels = new Dictionary<BarColumn, string>(ColumnHeaderLabels),
-            ColumnFormatOverrides = ColumnFormatOverrides.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()),
-            ColumnValueColors = new Dictionary<BarColumn, Vector4>(ColumnValueColors),
-            ColumnWidthOverrides = new Dictionary<BarColumn, float>(ColumnWidthOverrides),
-            CustomJobFilter = new List<string>(CustomJobFilter),
-            TooltipFields = new List<TooltipField>(TooltipFields),
-            TooltipFieldLabels = new Dictionary<TooltipField, string>(TooltipFieldLabels),
-            TooltipTopSkillCount = TooltipTopSkillCount,
-            ShowStatusBarTimer = ShowStatusBarTimer,
-            StatusBarColorOverridesActive = StatusBarColorOverridesActive,
-            StatusBarMetrics = new List<BarColumn>(StatusBarMetrics),
-            StatusBarMetricLabels = new Dictionary<BarColumn, string>(StatusBarMetricLabels),
-            DetailColumnLabels = new Dictionary<BarColumn, string>(DetailColumnLabels),
-            DetailVisibleColumns = new HashSet<BarColumn>(DetailVisibleColumns),
-            DetailShowDetailsTab = DetailShowDetailsTab,
-            DetailShowSkillsTab = DetailShowSkillsTab,
-            DetailShowGraphTab = DetailShowGraphTab,
-            DetailShowBuffsTab = DetailShowBuffsTab,
-            DetailShowItemTab = DetailShowItemTab,
-            DetailShowSkillBreakdown = DetailShowSkillBreakdown,
-            MaxSkillBreakdownCount = MaxSkillBreakdownCount,
-            DetailNewLineColumns = new HashSet<BarColumn>(DetailNewLineColumns),
-            DetailSectionOrder = DetailSectionOrder.ToDictionary(kv => kv.Key, kv => new List<BarColumn>(kv.Value)),
-        };
+        var json = JsonConvert.SerializeObject(this, MeterTabCloneJsonSettings);
+        return JsonConvert.DeserializeObject<MeterTab>(json, MeterTabCloneJsonSettings)!;
     }
+
+    private static readonly JsonSerializerSettings MeterTabCloneJsonSettings = new()
+    {
+        ObjectCreationHandling = ObjectCreationHandling.Replace,
+    };
 
     public bool PassesFilter(CombatantEntry combatant, HashSet<string>? partyNames = null, HashSet<string>? allianceNames = null)
     {
