@@ -141,6 +141,10 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         var presetManager = new PresetManager(
             pluginInterface.ConfigDirectory.FullName, pluginLog);
 
+#if DEBUG
+        ThemePropertyMirror.SelfCheckOrThrow(BuiltInPresets.Default(), pluginLog);
+#endif
+
         this.mainWindow = new Gui.MainWindow.MainWindow(this, textureProvider);
         this.configWindow = new Gui.ConfigWindow.ConfigWindow(this, presetManager);
 
