@@ -164,76 +164,7 @@ public sealed class EncounterStore
         var json = JsonConvert.SerializeObject(source);
         var clone = JsonConvert.DeserializeObject<EncounterSnapshot>(json)
             ?? throw new InvalidOperationException("Failed to clone encounter for replay.");
-
-        clone.Encounter.IsActive = true;
-        clone.Encounter.Duration = "00:00";
-        clone.Encounter.TotalDamage = 0;
-        clone.Encounter.TotalHealed = 0;
-        clone.Encounter.EncDps = 0;
-        clone.Encounter.EncHps = 0;
-        clone.Encounter.Kills = 0;
-        clone.Encounter.Deaths = 0;
-
-        foreach (var c in clone.Combatants)
-        {
-            c.Damage = 0;
-            c.Healed = 0;
-            c.DamageTaken = 0;
-            c.EncDps = 0;
-            c.EncHps = 0;
-            c.RaidDps = 0;
-            c.RaidHps = 0;
-            c.InstantDps = 0;
-            c.InstantHps = 0;
-            c.PeakDps = 0;
-            c.DamagePercent = "0%";
-            c.HealedPercent = "0%";
-            c.DamageTakenPercent = "0%";
-            c.MaxHit = string.Empty;
-            c.MaxHitDamage = 0;
-            c.MaxHeal = string.Empty;
-            c.MaxHealAmount = 0;
-            c.Hits = 0;
-            c.Misses = 0;
-            c.Swings = 0;
-            c.HitRate = 0;
-            c.CritHitCount = 0;
-            c.DirectHitCount = 0;
-            c.CritDirectHitCount = 0;
-            c.CritPct = 0;
-            c.DirectHitPct = 0;
-            c.CritDirectHitPct = 0;
-            c.Deaths = 0;
-            c.Kills = 0;
-            c.OverhealAmount = 0;
-            c.OverhealPct = 0;
-            c.HealsTaken = 0;
-            c.AbsorbHeal = 0;
-            c.HealCount = 0;
-            c.CritHealPct = 0;
-            c.PowerDrain = 0;
-            c.PowerHeal = 0;
-            c.Stuns = 0;
-            c.SkillIssue = 0;
-            c.DamageDown = 0;
-            c.Positionals = 0;
-            c.PositionalHits = 0;
-            c.PositionalMisses = 0;
-            c.DamageShield = 0;
-            c.MaxHealWardName = string.Empty;
-            c.MaxHealWardAmount = 0;
-            c.Skills = new List<SkillEntry>();
-            c.HealingSkills = new List<SkillEntry>();
-        }
-
-        clone.SkillEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
-        clone.DamageTakenEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
-        clone.ItemEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
-        clone.GraphData = new Dictionary<string, List<GraphSample>>(StringComparer.OrdinalIgnoreCase);
-        clone.StatusHistory = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
-        clone.StatusesReceived = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
-        clone.RawLogLines = new List<string>();
-
+        clone.ResetCombatStateForReplay();
         return clone;
     }
 

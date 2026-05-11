@@ -137,4 +137,61 @@ public sealed class CombatantEntry
 
     /// <summary>Home world name (e.g. "Spriggan"). Resolved from party list at parse time, persisted with encounter history.</summary>
     public string HomeWorld { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Resets all combat-state fields (live numbers) on this combatant to
+    /// zero / default for replay. Preserves metadata (name, job, recorded
+    /// skills, recorded statuses) — only zeros numeric live-stats fields.
+    /// </summary>
+    public void ResetCombatStateForReplay()
+    {
+        Damage = 0;
+        Healed = 0;
+        DamageTaken = 0;
+        EncDps = 0;
+        EncHps = 0;
+        RaidDps = 0;
+        RaidHps = 0;
+        InstantDps = 0;
+        InstantHps = 0;
+        PeakDps = 0;
+        DamagePercent = "0%";
+        HealedPercent = "0%";
+        DamageTakenPercent = "0%";
+        MaxHit = string.Empty;
+        MaxHitDamage = 0;
+        MaxHeal = string.Empty;
+        MaxHealAmount = 0;
+        Hits = 0;
+        Misses = 0;
+        Swings = 0;
+        HitRate = 0;
+        CritHitCount = 0;
+        DirectHitCount = 0;
+        CritDirectHitCount = 0;
+        CritPct = 0;
+        DirectHitPct = 0;
+        CritDirectHitPct = 0;
+        Deaths = 0;
+        Kills = 0;
+        OverhealAmount = 0;
+        OverhealPct = 0;
+        HealsTaken = 0;
+        AbsorbHeal = 0;
+        HealCount = 0;
+        CritHealPct = 0;
+        PowerDrain = 0;
+        PowerHeal = 0;
+        Stuns = 0;
+        SkillIssue = 0;
+        DamageDown = 0;
+        Positionals = 0;
+        PositionalHits = 0;
+        PositionalMisses = 0;
+        DamageShield = 0;
+        MaxHealWardName = string.Empty;
+        MaxHealWardAmount = 0;
+        Skills = new List<SkillEntry>();
+        HealingSkills = new List<SkillEntry>();
+    }
 }

@@ -145,4 +145,33 @@ public sealed class EncounterSnapshot
             }
         }
     }
+
+    /// <summary>
+    /// Resets all combat-state fields (live numbers) on this snapshot and its
+    /// combatants to zero / default. Used at replay start. Preserves metadata
+    /// (encounter title, combatants, recorded skills/statuses) — only zeros
+    /// numeric live-stats fields.
+    /// </summary>
+    public void ResetCombatStateForReplay()
+    {
+        Encounter.IsActive = true;
+        Encounter.Duration = "00:00";
+        Encounter.TotalDamage = 0;
+        Encounter.TotalHealed = 0;
+        Encounter.EncDps = 0;
+        Encounter.EncHps = 0;
+        Encounter.Kills = 0;
+        Encounter.Deaths = 0;
+
+        foreach (var c in Combatants)
+            c.ResetCombatStateForReplay();
+
+        SkillEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
+        DamageTakenEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
+        ItemEvents = new Dictionary<string, List<SkillUseEvent>>(StringComparer.OrdinalIgnoreCase);
+        GraphData = new Dictionary<string, List<GraphSample>>(StringComparer.OrdinalIgnoreCase);
+        StatusHistory = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
+        StatusesReceived = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
+        RawLogLines = new List<string>();
+    }
 }
