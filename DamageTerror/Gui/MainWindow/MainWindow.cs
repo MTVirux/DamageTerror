@@ -721,7 +721,7 @@ public sealed class MainWindow : Window, IDisposable
             var seekTarget = sim.ElapsedSeconds;
             ImGui.SetNextItemWidth(-235f);
             var sliderLabel = $"{FormatMmSs(sim.ElapsedSeconds)} / {FormatMmSs(d)}";
-            if (ImGui.SliderFloat("##rpySeek", ref seekTarget, 0f, d, sliderLabel))
+            if (ImGui.SliderFloat("##rpySeek", ref seekTarget, 0f, d, sliderLabel, ImGuiSliderFlags.NoInput))
                 sim.Seek(seekTarget);
 
             ImGui.SameLine();
