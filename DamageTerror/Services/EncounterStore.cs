@@ -493,6 +493,12 @@ public sealed class EncounterStore
             if (loaded != null)
             {
                 var anyRepaired = false;
+                lock (syncLock)
+                {
+                    if (MigrateEmbeddedTimelinesLocked(json, loaded))
+                        anyRepaired = true;
+                }
+
                 loaded.RemoveAll(s => double.IsNaN(s.Encounter.EncDps));
                 foreach (var snapshot in loaded)
                 {
@@ -510,9 +516,6 @@ public sealed class EncounterStore
 
                 lock (syncLock)
                 {
-                    if (MigrateEmbeddedTimelinesLocked(json, loaded))
-                        anyRepaired = true;
-
                     history.Clear();
                     history.AddRange(loaded);
 
