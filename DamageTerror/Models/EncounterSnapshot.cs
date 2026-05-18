@@ -25,27 +25,27 @@ public sealed class EncounterSnapshot
     public bool HasTimeline { get; set; }
 
     /// <summary>Per-combatant graph samples, keyed by name. Populated on encounter archive.</summary>
-    [Newtonsoft.Json.JsonIgnore]
+    [JsonIgnore]
     public Dictionary<string, List<GraphSample>> GraphData { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Per-combatant timestamped skill use events, keyed by name. Populated on encounter archive.</summary>
-    [Newtonsoft.Json.JsonIgnore]
+    [JsonIgnore]
     public Dictionary<string, List<SkillUseEvent>> SkillEvents { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Per-combatant timestamped damage-taken events (enemy skills hitting a player), keyed by target name.</summary>
-    [Newtonsoft.Json.JsonIgnore]
+    [JsonIgnore]
     public Dictionary<string, List<SkillUseEvent>> DamageTakenEvents { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Per-combatant timestamped item use events, keyed by name. Populated on encounter archive.</summary>
-    [Newtonsoft.Json.JsonIgnore]
+    [JsonIgnore]
     public Dictionary<string, List<SkillUseEvent>> ItemEvents { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Per-combatant status application history (statuses applied BY this combatant), keyed by source name.</summary>
-    [Newtonsoft.Json.JsonIgnore]
+    [JsonIgnore]
     public Dictionary<string, List<StatusApplication>> StatusHistory { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Per-combatant status received history (statuses applied TO this combatant), keyed by target name.</summary>
-    [Newtonsoft.Json.JsonIgnore]
+    [JsonIgnore]
     public Dictionary<string, List<StatusApplication>> StatusesReceived { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Raw ACT network log lines for the encounter. Populated from imported data or live capture.</summary>
