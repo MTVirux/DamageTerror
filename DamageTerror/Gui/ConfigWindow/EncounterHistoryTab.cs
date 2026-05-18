@@ -14,6 +14,8 @@ public sealed class EncounterHistoryTab
     private string? importError;
     private string? statusMessage;
     private DateTime statusMessageTime;
+    private int pendingDeleteIndex = -1;
+    private bool deleteConfirmOpenedThisFrame;
 
     public EncounterHistoryTab(DamageTerrorPlugin plugin)
     {
@@ -291,8 +293,6 @@ public sealed class EncounterHistoryTab
             return;
         }
 
-        int removeIdx = -1;
-
         var filter = historySearchFilter.Trim();
 
         for (int i = history.Count - 1; i >= 0; i--)
@@ -379,7 +379,7 @@ public sealed class EncounterHistoryTab
                 ImGui.Spacing();
                 if (ImGui.SmallButton("Delete"))
                 {
-                    removeIdx = i;
+                    pendingDeleteIndex = i;
                 }
 
                 ImGui.SameLine();
@@ -450,10 +450,50 @@ public sealed class EncounterHistoryTab
             ImGui.PopID();
         }
 
-        if (removeIdx >= 0)
+        if (pendingDeleteIndex != -1 && !deleteConfirmOpenedThisFrame)
         {
-            store.RemoveHistory(removeIdx);
-            store.Save(force: true);
+            ImGui.OpenPopup("##confirmDeleteEncounterTab");
+            deleteConfirmOpenedThisFrame = true;
+        }
+
+        var modalOpen = true;
+        if (ImGui.BeginPopupModal("##confirmDeleteEncounterTab", ref modalOpen,
+            ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
+        {
+            ImGui.TextUnformatted("Remove this encounter?");
+            ImGui.TextDisabled("This cannot be undone.");
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.65f, 0.2f, 0.2f, 1f));
+            if (ImGui.Button("Remove", new Vector2(100, 0)))
+            {
+                if (pendingDeleteIndex >= 0)
+                {
+                    store.RemoveHistory(pendingDeleteIndex);
+                    store.Save(force: true);
+                }
+                pendingDeleteIndex = -1;
+                deleteConfirmOpenedThisFrame = false;
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.PopStyleColor();
+
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel", new Vector2(100, 0)))
+            {
+                pendingDeleteIndex = -1;
+                deleteConfirmOpenedThisFrame = false;
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
+        else if (!modalOpen)
+        {
+            pendingDeleteIndex = -1;
+            deleteConfirmOpenedThisFrame = false;
         }
     }
 
