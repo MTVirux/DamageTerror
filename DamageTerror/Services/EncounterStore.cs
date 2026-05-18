@@ -425,6 +425,7 @@ public sealed class EncounterStore
 
     public bool RestoreLatestForPlayer(string playerName)
     {
+        EncounterSnapshot? toHydrate;
         lock (syncLock)
         {
             var idx = -1;
@@ -447,8 +448,11 @@ public sealed class EncounterStore
             history.RemoveAt(idx);
             prevSnapshotActive = false;
             dirty = true;
-            return true;
+            toHydrate = active;
         }
+
+        EnsureTimelineLoaded(toHydrate);
+        return true;
     }
 
     public void Clear()
@@ -608,6 +612,7 @@ public sealed class EncounterStore
             return false;
 
         var migrated = 0;
+        var failed = 0;
         for (int i = 0; i < jarr.Count; i++)
         {
             if (jarr[i] is not Newtonsoft.Json.Linq.JObject jobj) continue;
@@ -632,10 +637,20 @@ public sealed class EncounterStore
                 snap.TimelineLoaded = false;
                 migrated++;
             }
+            else
+            {
+                failed++;
+            }
         }
         if (migrated > 0)
             ServiceManager.LogWarning(LogChannel.EncounterStore,
                 $"Migrated {migrated} encounter(s) to split-storage timeline sidecars.");
+        if (failed > 0)
+        {
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Timeline migration: {failed} encounter(s) failed to write sidecar. encounters.json will NOT be rewritten this load; will retry on next launch.");
+            return false;
+        }
         return migrated > 0;
     }
 
@@ -814,7 +829,20 @@ public sealed class EncounterStore
             }
             else
             {
-                snapshot = JsonConvert.DeserializeObject<EncounterSnapshot>(json);
+                snapshot = jobj.ToObject<EncounterSnapshot>();
+                if (snapshot != null)
+                {
+                    var legacyBundle = new TimelineBundle();
+                    var any = false;
+                    any |= TryPopulateDict(jobj["GraphData"], legacyBundle.GraphData);
+                    any |= TryPopulateDict(jobj["SkillEvents"], legacyBundle.SkillEvents);
+                    any |= TryPopulateDict(jobj["DamageTakenEvents"], legacyBundle.DamageTakenEvents);
+                    any |= TryPopulateDict(jobj["ItemEvents"], legacyBundle.ItemEvents);
+                    any |= TryPopulateDict(jobj["StatusHistory"], legacyBundle.StatusHistory);
+                    any |= TryPopulateDict(jobj["StatusesReceived"], legacyBundle.StatusesReceived);
+                    if (any)
+                        legacyBundle.CopyInto(snapshot);
+                }
             }
 
             if (snapshot == null)
