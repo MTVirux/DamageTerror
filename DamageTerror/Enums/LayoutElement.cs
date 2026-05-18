@@ -10,4 +10,5 @@ public enum LayoutElement
     MeterTabs = 1,
     StatusBar = 2,
     CombatantBars = 3,
+    ReplayBar = 4,
 }
