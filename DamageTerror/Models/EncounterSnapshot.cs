@@ -48,6 +48,9 @@ public sealed class EncounterSnapshot
     [JsonIgnore]
     public Dictionary<string, List<StatusApplication>> StatusesReceived { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    [Newtonsoft.Json.JsonIgnore]
+    internal bool TimelineLoaded { get; set; }
+
     /// <summary>Raw ACT network log lines for the encounter. Populated from imported data or live capture.</summary>
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public List<string> RawLogLines { get; set; } = new();

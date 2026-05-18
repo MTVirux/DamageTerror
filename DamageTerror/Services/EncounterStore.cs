@@ -549,29 +549,30 @@ public sealed class EncounterStore
     /// </summary>
     public void EnsureTimelineLoaded(EncounterSnapshot snapshot)
     {
-        if (snapshot == null) return;
         if (timelineStore == null) return;
         if (!snapshot.HasTimeline) return;
 
-        if (snapshot.SkillEvents.Count > 0
-            || snapshot.GraphData.Count > 0
-            || snapshot.DamageTakenEvents.Count > 0
-            || snapshot.ItemEvents.Count > 0
-            || snapshot.StatusHistory.Count > 0
-            || snapshot.StatusesReceived.Count > 0)
-            return;
+        lock (syncLock)
+        {
+            if (snapshot.TimelineLoaded) return;
+        }
 
         var bundle = timelineStore.Load(snapshot.Id);
-        if (bundle == null)
+
+        lock (syncLock)
         {
-            lock (syncLock)
+            if (snapshot.TimelineLoaded) return;
+
+            if (bundle == null)
             {
                 snapshot.HasTimeline = false;
                 dirty = true;
+                return;
             }
-            return;
+
+            bundle.CopyInto(snapshot);
+            snapshot.TimelineLoaded = true;
         }
-        bundle.CopyInto(snapshot);
     }
 
     private void SaveTimelineSidecarLocked(EncounterSnapshot snapshot)
@@ -584,7 +585,10 @@ public sealed class EncounterStore
             return;
         }
         if (timelineStore.Save(bundle))
+        {
             snapshot.HasTimeline = true;
+            snapshot.TimelineLoaded = true;
+        }
     }
 
     public void PruneHistory()
