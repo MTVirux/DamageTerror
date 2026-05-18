@@ -40,10 +40,13 @@ public sealed class EncounterHistoryTab
         ImGui.TextDisabled($"{history.Count} encounter(s) stored.  ({FormatSize(store.StorageSizeBytes)})");
         ConfigHelpers.HelpMarker("Encounter history is saved automatically and persists across restarts.");
 #if DEBUG
-        ImGui.TextColored(new Vector4(1f, 0.85f, 0.3f, 1f),
-            "Please be aware that raw log lines are stored in the debug build and may contain DM and Linkshell messages.");
-        ImGui.TextColored(new Vector4(1f, 0.85f, 0.3f, 1f),
-            "Be careful when sharing.");
+        if (!config.HideDebugFeatures)
+        {
+            ImGui.TextColored(new Vector4(1f, 0.85f, 0.3f, 1f),
+                "Please be aware that raw log lines are stored in the debug build and may contain DM and Linkshell messages.");
+            ImGui.TextColored(new Vector4(1f, 0.85f, 0.3f, 1f),
+                "Be careful when sharing.");
+        }
 #endif
         ImGui.Spacing();
 
@@ -425,22 +428,25 @@ public sealed class EncounterHistoryTab
                     ImGui.SetTooltip("Encounter has no replayable timeline data.");
 
 #if DEBUG
-                if (enc.RawLogLines.Count > 0)
+                if (!plugin.Config.HideDebugFeatures)
                 {
-                    ImGui.SameLine();
-                    if (ImGui.SmallButton($"Recalculate##{i}"))
+                    if (enc.RawLogLines.Count > 0)
                     {
-                        plugin.DataService.RecalculateFromLogLines(enc);
-                        SetStatus("Recalculated from raw log lines!");
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton($"Recalculate##{i}"))
+                        {
+                            plugin.DataService.RecalculateFromLogLines(enc);
+                            SetStatus("Recalculated from raw log lines!");
+                        }
                     }
-                }
-                if (enc.RawCombatDataFrames.Count > 0)
-                {
-                    ImGui.SameLine();
-                    if (ImGui.SmallButton($"Replay CombatData##{i}"))
+                    if (enc.RawCombatDataFrames.Count > 0)
                     {
-                        plugin.DataService.ReplayCombatData(enc);
-                        SetStatus($"Replayed {enc.RawCombatDataFrames.Count} CombatData frames — see plugin log.");
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton($"Replay CombatData##{i}"))
+                        {
+                            plugin.DataService.ReplayCombatData(enc);
+                            SetStatus($"Replayed {enc.RawCombatDataFrames.Count} CombatData frames — see plugin log.");
+                        }
                     }
                 }
 #endif
