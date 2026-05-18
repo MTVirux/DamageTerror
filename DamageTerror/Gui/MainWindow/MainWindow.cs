@@ -260,6 +260,9 @@ public sealed class MainWindow : Window, IDisposable
         var config = plugin.Config;
 
         var encounter = headerComponent.SelectedEncounter;
+        if (encounter != null)
+            plugin.DataService.Store.EnsureTimelineLoaded(encounter);
+
         var currentPlayerName = !string.IsNullOrEmpty(encounter?.PlayerName)
             ? encounter.PlayerName
             : plugin.DataService.PlayerName;

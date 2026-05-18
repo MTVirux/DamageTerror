@@ -265,6 +265,8 @@ public sealed class EncounterHistoryTab
             ImGui.PushID(i);
             if (ImGui.TreeNodeEx(header, ImGuiTreeNodeFlags.None))
             {
+                plugin.DataService.Store.EnsureTimelineLoaded(enc);
+
                 ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Duration:");
                 ImGui.SameLine();
                 ImGui.TextUnformatted(encounter.Duration);

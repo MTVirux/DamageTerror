@@ -77,13 +77,16 @@ public sealed class EncounterStore
 
     public EncounterSnapshot? GetByIndex(int index)
     {
+        EncounterSnapshot? snapshot;
         lock (syncLock)
         {
             if (index < 0) return null;
-            if (index < history.Count) return history[index];
-            if (index == history.Count && active != null) return active;
-            return null;
+            if (index < history.Count) snapshot = history[index];
+            else if (index == history.Count && active != null) snapshot = active;
+            else return null;
         }
+        EnsureTimelineLoaded(snapshot);
+        return snapshot;
     }
 
     public bool IsSampleDataActive
@@ -138,6 +141,8 @@ public sealed class EncounterStore
     public void LoadReplay(EncounterSnapshot source)
     {
         if (source == null) throw new ArgumentNullException(nameof(source));
+
+        EnsureTimelineLoaded(source);
 
         // Make sure structural events exist (older saves that pre-date SkillEvents
         // capture rely on synthesis from per-combatant Skills aggregates).
@@ -648,7 +653,13 @@ public sealed class EncounterStore
 
     public string ExportEncounter(EncounterSnapshot encounter)
     {
-        return JsonConvert.SerializeObject(encounter, ExportSettings);
+        EnsureTimelineLoaded(encounter);
+        var composite = new
+        {
+            Summary = encounter,
+            Timeline = encounter.HasTimeline ? TimelineBundle.FromSnapshot(encounter) : null,
+        };
+        return JsonConvert.SerializeObject(composite, ExportSettings);
     }
 
     public EncounterSnapshot? ImportEncounter(string json, out string? error)
