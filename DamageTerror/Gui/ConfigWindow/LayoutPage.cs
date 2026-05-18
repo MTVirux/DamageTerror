@@ -8,6 +8,7 @@ public static class LayoutPage
     private static readonly Dictionary<LayoutElement, string> ElementLabels = new()
     {
         { LayoutElement.EncounterSelect, "Encounter Select" },
+        { LayoutElement.ReplayBar, "Replay Bar" },
         { LayoutElement.MeterTabs, "Meter Tabs" },
         { LayoutElement.StatusBar, "Status Bar" },
         { LayoutElement.CombatantBars, "Combatant Bars" },
@@ -16,6 +17,7 @@ public static class LayoutPage
     private static readonly Dictionary<LayoutElement, string> ElementDescriptions = new()
     {
         { LayoutElement.EncounterSelect, "The encounter picker and sort controls." },
+        { LayoutElement.ReplayBar, "Playback controls shown only during encounter replay." },
         { LayoutElement.MeterTabs, "Filter tabs (DPS, Heal, Tank, etc.) when enabled." },
         { LayoutElement.StatusBar, "Combat timer, personal DPS, and raid DPS summary." },
         { LayoutElement.CombatantBars, "The main combatant list with bars and details." },
@@ -101,6 +103,7 @@ public static class LayoutPage
             config.Layout = new List<LayoutElement>
             {
                 LayoutElement.EncounterSelect,
+                LayoutElement.ReplayBar,
                 LayoutElement.MeterTabs,
                 LayoutElement.StatusBar,
                 LayoutElement.CombatantBars,
