@@ -14,6 +14,16 @@ public sealed class EncounterSnapshot
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Include)]
     public string PlayerName { get; set; } = string.Empty;
 
+    /// <summary>Stable identifier for this encounter, used as the sidecar filename.
+    /// Set to <c>Timestamp.UtcTicks</c> on archive if zero.</summary>
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Include)]
+    public long Id { get; set; }
+
+    /// <summary>True if this encounter has a timeline sidecar file on disk.
+    /// Persisted with the summary so the picker can offer Replay without disk I/O.</summary>
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Include)]
+    public bool HasTimeline { get; set; }
+
     /// <summary>Per-combatant graph samples, keyed by name. Populated on encounter archive.</summary>
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public Dictionary<string, List<GraphSample>> GraphData { get; set; } = new(StringComparer.OrdinalIgnoreCase);
