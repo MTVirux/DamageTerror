@@ -28,6 +28,8 @@ public sealed class Configuration : IPluginConfiguration
 
     public bool ShowOnStart { get; set; } = true;
 
+    public bool HideDebugFeatures { get; set; } = false;
+
 
     public bool EnableInOverworld { get; set; } = true;
     public bool EnableInDungeons { get; set; } = true;

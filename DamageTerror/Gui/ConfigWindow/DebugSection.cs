@@ -27,7 +27,22 @@ internal static class DebugSection
     {
         var changed = false;
 
-        if (ImGui.CollapsingHeader("Log Channels", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Debug UI Visibility##debugUIVis", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            var hide = config.HideDebugFeatures;
+            if (ImGui.Checkbox("Hide debug-only UI features##hideDebugUI", ref hide))
+            {
+                config.HideDebugFeatures = hide;
+                changed = true;
+            }
+            ConfigHelpers.HelpMarker(
+                "Hides debug-only buttons (Recalculate, Replay CombatData) and any other debug UI surfaces. " +
+                "The Debug page itself stays visible so you can flip this back. Has no effect in release builds.");
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.CollapsingHeader("Log Channels##logCh"))
         {
             ImGui.TextWrapped("Enable or disable log output per service. Disabled channels will not write to the Dalamud log. Useful for silencing noisy services during testing.");
             ImGui.Spacing();
