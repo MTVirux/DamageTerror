@@ -510,6 +510,9 @@ public sealed class EncounterStore
 
                 lock (syncLock)
                 {
+                    if (MigrateEmbeddedTimelinesLocked(json, loaded))
+                        anyRepaired = true;
+
                     history.Clear();
                     history.AddRange(loaded);
 
@@ -578,6 +581,72 @@ public sealed class EncounterStore
             bundle.CopyInto(snapshot);
             snapshot.TimelineLoaded = true;
         }
+    }
+
+    /// <summary>
+    /// Detect encounters loaded from the pre-split monolithic format and migrate
+    /// their embedded timeline streams into sidecar files. The timeline dicts on
+    /// <see cref="EncounterSnapshot"/> are [JsonIgnore], so the embedded data is
+    /// pulled directly from the original JSON tokens before they are dropped.
+    /// </summary>
+    private bool MigrateEmbeddedTimelinesLocked(string fileJson, List<EncounterSnapshot> loaded)
+    {
+        if (timelineStore == null) return false;
+        Newtonsoft.Json.Linq.JArray jarr;
+        try
+        {
+            jarr = Newtonsoft.Json.Linq.JArray.Parse(fileJson);
+        }
+        catch
+        {
+            return false;
+        }
+        if (jarr.Count != loaded.Count)
+            return false;
+
+        var migrated = 0;
+        for (int i = 0; i < jarr.Count; i++)
+        {
+            if (jarr[i] is not Newtonsoft.Json.Linq.JObject jobj) continue;
+            var snap = loaded[i];
+
+            var bundle = new TimelineBundle { EncounterId = 0 };
+            var any = false;
+            any |= TryPopulateDict(jobj["GraphData"], bundle.GraphData);
+            any |= TryPopulateDict(jobj["SkillEvents"], bundle.SkillEvents);
+            any |= TryPopulateDict(jobj["DamageTakenEvents"], bundle.DamageTakenEvents);
+            any |= TryPopulateDict(jobj["ItemEvents"], bundle.ItemEvents);
+            any |= TryPopulateDict(jobj["StatusHistory"], bundle.StatusHistory);
+            any |= TryPopulateDict(jobj["StatusesReceived"], bundle.StatusesReceived);
+            if (!any) continue;
+
+            AssignIdIfMissing(snap);
+            bundle.EncounterId = snap.Id;
+
+            if (timelineStore.Save(bundle))
+            {
+                snap.HasTimeline = true;
+                snap.TimelineLoaded = false;
+                migrated++;
+            }
+        }
+        if (migrated > 0)
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Migrated {migrated} encounter(s) to split-storage timeline sidecars.");
+        return migrated > 0;
+    }
+
+    private static bool TryPopulateDict<TValue>(
+        Newtonsoft.Json.Linq.JToken? token,
+        Dictionary<string, List<TValue>> target)
+    {
+        if (token is not Newtonsoft.Json.Linq.JObject jobj) return false;
+        if (jobj.Count == 0) return false;
+        var converted = jobj.ToObject<Dictionary<string, List<TValue>>>(JsonSerializer.CreateDefault());
+        if (converted == null || converted.Count == 0) return false;
+        foreach (var kvp in converted)
+            target[kvp.Key] = kvp.Value;
+        return true;
     }
 
     private void SaveTimelineSidecarLocked(EncounterSnapshot snapshot)
