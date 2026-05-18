@@ -15,6 +15,7 @@ public sealed class EncounterStore
     private bool isStaleDataSuppressed;
     private bool activeAlreadyInHistory;
     private string? savePath;
+    private TimelineSidecarStore? timelineStore;
     private bool dirty;
     private bool loadedSuccessfully;
     private bool sampleDataActive;
@@ -46,6 +47,10 @@ public sealed class EncounterStore
             catch { return 0; }
         }
     }
+
+    public long TimelineStorageSizeBytes => timelineStore?.TotalSizeBytes() ?? 0;
+    public int TimelineFileCount => timelineStore?.FileCount() ?? 0;
+    public string? TimelineDirectory => timelineStore?.DirectoryPath;
 
     public EncounterSnapshot? ActiveEncounter
     {
@@ -258,7 +263,9 @@ public sealed class EncounterStore
                 if (!activeAlreadyInHistory && !double.IsNaN(active.Encounter.EncDps)
                     && !(config.SkipZeroEdpsEncounters && active.Encounter.EncDps == 0))
                 {
+                    AssignIdIfMissing(active);
                     history.Add(active);
+                    SaveTimelineSidecarLocked(active);
                     dirty = true;
                     archived = true;
                     PruneHistoryLocked();
@@ -333,8 +340,11 @@ public sealed class EncounterStore
         {
             if (index >= 0 && index < history.Count)
             {
+                var snap = history[index];
                 history.RemoveAt(index);
                 dirty = true;
+                if (timelineStore != null && snap.HasTimeline)
+                    timelineStore.Delete(snap.Id);
             }
         }
     }
@@ -359,12 +369,16 @@ public sealed class EncounterStore
                 return false;
 
             active.Encounter.IsActive = false;
+            AssignIdIfMissing(active);
 
             if (!double.IsNaN(active.Encounter.EncDps)
                 && !(config.SkipZeroEdpsEncounters && active.Encounter.EncDps == 0))
             {
                 if (!activeAlreadyInHistory)
+                {
                     history.Add(active);
+                    SaveTimelineSidecarLocked(active);
+                }
                 dirty = true;
             }
 
@@ -387,6 +401,7 @@ public sealed class EncounterStore
                 return false;
 
             active.Encounter.IsActive = false;
+            AssignIdIfMissing(active);
 
             if (double.IsNaN(active.Encounter.EncDps))
                 return false;
@@ -395,6 +410,7 @@ public sealed class EncounterStore
                 return false;
 
             history.Add(active);
+            SaveTimelineSidecarLocked(active);
             dirty = true;
             activeAlreadyInHistory = true;
             PruneHistoryLocked();
@@ -434,6 +450,14 @@ public sealed class EncounterStore
     {
         lock (syncLock)
         {
+            if (timelineStore != null)
+            {
+                foreach (var snap in history)
+                {
+                    if (snap.HasTimeline)
+                        timelineStore.Delete(snap.Id);
+                }
+            }
             history.Clear();
             active = null;
             prevSnapshotActive = false;
@@ -446,6 +470,7 @@ public sealed class EncounterStore
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentException("Save path must not be null or empty.", nameof(path));
         savePath = path;
+        timelineStore = new TimelineSidecarStore(path);
     }
 
     public void Load()
@@ -507,6 +532,59 @@ public sealed class EncounterStore
         {
             ServiceManager.LogWarning(LogChannel.EncounterStore, $"Unexpected error loading encounter history: {ex.Message}");
         }
+    }
+
+    /// <summary>Ensure a snapshot has a stable, unique Id. Idempotent.</summary>
+    private static void AssignIdIfMissing(EncounterSnapshot snapshot)
+    {
+        if (snapshot.Id == 0)
+            snapshot.Id = snapshot.Timestamp.ToUniversalTime().Ticks;
+    }
+
+    /// <summary>
+    /// Load the snapshot's timeline sidecar into its in-memory dictionaries if
+    /// not already loaded. Safe to call repeatedly. If the sidecar is missing or
+    /// unreadable, <see cref="EncounterSnapshot.HasTimeline"/> is flipped to false
+    /// and the dictionaries stay empty.
+    /// </summary>
+    public void EnsureTimelineLoaded(EncounterSnapshot snapshot)
+    {
+        if (snapshot == null) return;
+        if (timelineStore == null) return;
+        if (!snapshot.HasTimeline) return;
+
+        if (snapshot.SkillEvents.Count > 0
+            || snapshot.GraphData.Count > 0
+            || snapshot.DamageTakenEvents.Count > 0
+            || snapshot.ItemEvents.Count > 0
+            || snapshot.StatusHistory.Count > 0
+            || snapshot.StatusesReceived.Count > 0)
+            return;
+
+        var bundle = timelineStore.Load(snapshot.Id);
+        if (bundle == null)
+        {
+            lock (syncLock)
+            {
+                snapshot.HasTimeline = false;
+                dirty = true;
+            }
+            return;
+        }
+        bundle.CopyInto(snapshot);
+    }
+
+    private void SaveTimelineSidecarLocked(EncounterSnapshot snapshot)
+    {
+        if (timelineStore == null) return;
+        var bundle = TimelineBundle.FromSnapshot(snapshot);
+        if (bundle.IsEmpty)
+        {
+            snapshot.HasTimeline = false;
+            return;
+        }
+        if (timelineStore.Save(bundle))
+            snapshot.HasTimeline = true;
     }
 
     public void PruneHistory()
@@ -592,11 +670,13 @@ public sealed class EncounterStore
 
             lock (syncLock)
             {
+                AssignIdIfMissing(snapshot);
                 var idx = history.FindIndex(s => s.Timestamp > snapshot.Timestamp);
                 if (idx < 0)
                     history.Add(snapshot);
                 else
                     history.Insert(idx, snapshot);
+                SaveTimelineSidecarLocked(snapshot);
 
                 dirty = true;
                 PruneHistoryLocked();
