@@ -15,6 +15,10 @@ public sealed class EncounterHeaderComponent
     private string searchFilter = string.Empty;
     private bool comboWasOpen;
 
+    // -1 = nothing pending; -2 = active encounter pending; >=0 = history index pending.
+    private int pendingRemoveIndex = -1;
+    private bool removeConfirmOpenedThisFrame;
+
     public EncounterHeaderComponent(DataService dataService, Configuration config)
     {
         this.dataService = dataService;
@@ -146,10 +150,7 @@ public sealed class EncounterHeaderComponent
                             ImGui.PopFont();
                             ImGui.SameLine();
                             if (ImGui.Selectable("Remove"))
-                            {
-                                dataService.Store.RemoveActive();
-                                selectedIndex = -1;
-                            }
+                                pendingRemoveIndex = -2;
                             ImGui.EndPopup();
                         }
                         ImGui.PopStyleVar();
@@ -178,13 +179,7 @@ public sealed class EncounterHeaderComponent
                         ImGui.PopFont();
                         ImGui.SameLine();
                         if (ImGui.Selectable("Remove"))
-                        {
-                            dataService.Store.RemoveHistory(i);
-                            if (selectedIndex == i)
-                                selectedIndex = -1;
-                            else if (selectedIndex > i)
-                                selectedIndex--;
-                        }
+                            pendingRemoveIndex = i;
                         ImGui.EndPopup();
                     }
                     ImGui.PopStyleVar();
@@ -201,6 +196,61 @@ public sealed class EncounterHeaderComponent
 
         if (selBarPad > 0f)
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + selBarPad);
+
+        // Pending-remove confirmation. Owned by this component so the popup
+        // outlives the combo / context menu that triggered it.
+        if (pendingRemoveIndex != -1 && !removeConfirmOpenedThisFrame)
+        {
+            ImGui.OpenPopup("##confirmRemoveEncounter");
+            removeConfirmOpenedThisFrame = true;
+        }
+
+        var modalOpen = true;
+        if (ImGui.BeginPopupModal("##confirmRemoveEncounter", ref modalOpen,
+            ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
+        {
+            ImGui.TextUnformatted("Remove this encounter?");
+            ImGui.TextDisabled("This cannot be undone.");
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.65f, 0.2f, 0.2f, 1f));
+            if (ImGui.Button("Remove", new Vector2(100, 0)))
+            {
+                if (pendingRemoveIndex == -2)
+                {
+                    dataService.Store.RemoveActive();
+                    selectedIndex = -1;
+                }
+                else if (pendingRemoveIndex >= 0)
+                {
+                    dataService.Store.RemoveHistory(pendingRemoveIndex);
+                    if (selectedIndex == pendingRemoveIndex) selectedIndex = -1;
+                    else if (selectedIndex > pendingRemoveIndex) selectedIndex--;
+                }
+                pendingRemoveIndex = -1;
+                removeConfirmOpenedThisFrame = false;
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.PopStyleColor();
+
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel", new Vector2(100, 0)))
+            {
+                pendingRemoveIndex = -1;
+                removeConfirmOpenedThisFrame = false;
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
+        else if (!modalOpen)
+        {
+            // User dismissed via the X — reset pending state.
+            pendingRemoveIndex = -1;
+            removeConfirmOpenedThisFrame = false;
+        }
 
         ImGui.PopStyleColor();
 
