@@ -715,6 +715,62 @@ public sealed class EncounterStore
 
         if (removed)
             dirty = true;
+
+        PruneTimelinesLocked();
+    }
+
+    private void PruneTimelinesLocked()
+    {
+        if (timelineStore == null) return;
+
+        var referenced = new HashSet<long>();
+        foreach (var snap in history)
+        {
+            if (snap.HasTimeline)
+                referenced.Add(snap.Id);
+        }
+
+        foreach (var id in timelineStore.EnumerateIds().ToList())
+        {
+            if (!referenced.Contains(id))
+                timelineStore.Delete(id);
+        }
+
+        var withTimelines = history
+            .Where(s => s.HasTimeline)
+            .OrderByDescending(s => s.Timestamp)
+            .ToList();
+
+        IEnumerable<EncounterSnapshot> toPurge;
+        if (config.TimelineRetentionMode == HistoryLimitMode.Count)
+        {
+            if (config.MaxTimelineCount <= 0) return;
+            toPurge = withTimelines.Skip(config.MaxTimelineCount);
+        }
+        else
+        {
+            var cutoff = DateTime.UtcNow.AddDays(-config.MaxTimelineDays);
+            toPurge = withTimelines.Where(s => s.Timestamp < cutoff);
+        }
+
+        var purged = false;
+        foreach (var snap in toPurge)
+        {
+            if (timelineStore.Delete(snap.Id))
+            {
+                snap.HasTimeline = false;
+                snap.TimelineLoaded = false;
+                snap.SkillEvents.Clear();
+                snap.GraphData.Clear();
+                snap.DamageTakenEvents.Clear();
+                snap.ItemEvents.Clear();
+                snap.StatusHistory.Clear();
+                snap.StatusesReceived.Clear();
+                purged = true;
+            }
+        }
+        if (purged)
+            dirty = true;
     }
 
     private static readonly JsonSerializerSettings ExportSettings = new()
