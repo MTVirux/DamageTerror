@@ -104,6 +104,10 @@ public sealed class Configuration : IPluginConfiguration
     public int MaxEncounterHistory { get; set; } = 50;
     public int MaxEncounterHistoryDays { get; set; } = 30;
 
+    public HistoryLimitMode TimelineRetentionMode { get; set; } = HistoryLimitMode.Count;
+    public int MaxTimelineCount { get; set; } = 20;
+    public int MaxTimelineDays { get; set; } = 7;
+
     public bool IgnoreEscClose { get; set; } = true;
     public bool HideWindowHeader { get; set; } = true;
     public float BarAlpha { get; set; } = 0.7f;
