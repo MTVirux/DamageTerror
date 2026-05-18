@@ -313,7 +313,7 @@ public sealed class MainWindow : Window, IDisposable
 
         var afterBarsHeight = MeterWindowHelper.CalculateAfterBarsHeight(
             config, statusBarComponent.GetHeight, headerComponent.GetHeight,
-            encounter != null, useTabBar);
+            encounter != null, useTabBar, plugin.DataService.Store.IsReplayActive);
 
         if (!plugin.DataService.IsConnected && encounter == null)
         {
@@ -357,6 +357,7 @@ public sealed class MainWindow : Window, IDisposable
             SpawnReconnect = SpawnReconnect,
             DismissDisconnectNotice = () => plugin.DataService.DismissDisconnectNotice(),
             ReconnectButtonIdSuffix = "",
+            IsReplayActive = plugin.DataService.Store.IsReplayActive,
         };
 
         ctx.DrawMeterTabButtons = () =>

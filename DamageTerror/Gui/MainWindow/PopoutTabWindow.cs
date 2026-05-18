@@ -219,7 +219,7 @@ public sealed class PopoutTabWindow : Window, IDisposable
         var skipElements = new HashSet<LayoutElement> { LayoutElement.MeterTabs };
         var afterBarsHeight = MeterWindowHelper.CalculateAfterBarsHeight(
             config, statusBarComponent.GetHeight, headerComponent.GetHeight,
-            encounter != null, false, skipElements);
+            encounter != null, false, skipElements: skipElements);
 
         if (!plugin.DataService.IsConnected && encounter == null)
         {

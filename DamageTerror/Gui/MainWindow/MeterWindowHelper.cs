@@ -38,6 +38,7 @@ internal struct MeterWindowContext
     public required Action SpawnReconnect;
     public required Action DismissDisconnectNotice;
     public required string ReconnectButtonIdSuffix;
+    public bool IsReplayActive;
 }
 
 internal static class MeterWindowHelper
@@ -237,11 +238,12 @@ internal static class MeterWindowHelper
     }
 
     public static float CalculateAfterBarsHeight(
-        Configuration config, 
+        Configuration config,
         Func<float> getStatusBarHeight,
         Func<float> getHeaderHeight,
         bool hasEncounter,
         bool useTabBar,
+        bool isReplayActive = false,
         HashSet<LayoutElement>? skipElements = null)
     {
         float height = 0f;
@@ -264,6 +266,9 @@ internal static class MeterWindowHelper
                         break;
                     case LayoutElement.MeterTabs when useTabBar && hasEncounter:
                         height += config.TabButtonHeight;
+                        break;
+                    case LayoutElement.ReplayBar when isReplayActive:
+                        height += ImGui.GetFrameHeight() + 6f;
                         break;
                 }
             }
@@ -321,7 +326,6 @@ internal static class MeterWindowHelper
             {
                 case LayoutElement.EncounterSelect:
                     ctx.HeaderComponent.Render();
-                    ctx.DrawReplayBar?.Invoke();
                     if (ctx.Encounter == null)
                     {
                         if (ctx.IsConnected)
@@ -372,6 +376,10 @@ internal static class MeterWindowHelper
                         var contentMaxY = ImGui.GetWindowContentRegionMax().Y;
                         ImGui.SetCursorPosY(contentMaxY - ctx.AfterBarsHeight);
                     }
+                    break;
+
+                case LayoutElement.ReplayBar:
+                    ctx.DrawReplayBar?.Invoke();
                     break;
             }
         }
