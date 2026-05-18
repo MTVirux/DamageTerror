@@ -667,7 +667,28 @@ public sealed class EncounterStore
         error = null;
         try
         {
-            var snapshot = JsonConvert.DeserializeObject<EncounterSnapshot>(json);
+            EncounterSnapshot? snapshot;
+            var jobj = Newtonsoft.Json.Linq.JObject.Parse(json);
+            var summaryToken = jobj["Summary"];
+            if (summaryToken != null)
+            {
+                snapshot = summaryToken.ToObject<EncounterSnapshot>();
+                if (snapshot != null)
+                {
+                    var timelineToken = jobj["Timeline"];
+                    if (timelineToken != null && timelineToken.Type != Newtonsoft.Json.Linq.JTokenType.Null)
+                    {
+                        var bundle = timelineToken.ToObject<TimelineBundle>();
+                        if (bundle != null)
+                            bundle.CopyInto(snapshot);
+                    }
+                }
+            }
+            else
+            {
+                snapshot = JsonConvert.DeserializeObject<EncounterSnapshot>(json);
+            }
+
             if (snapshot == null)
             {
                 error = "Failed to parse encounter JSON.";
