@@ -90,6 +90,54 @@ public sealed class EncounterHistoryTab
         ImGui.InputTextWithHint("##historySearch", "Search by zone, title, player, or job...", ref historySearchFilter, 256);
         ImGui.Spacing();
 
+        if (ImGui.CollapsingHeader("Timeline storage##timelineStorage", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.Indent();
+
+            var mode = (int)config.TimelineRetentionMode;
+            if (ImGui.RadioButton("Keep last N timelines##rmCount", mode == (int)HistoryLimitMode.Count))
+            {
+                config.TimelineRetentionMode = HistoryLimitMode.Count;
+                config.Save?.Invoke();
+                store.PruneHistory();
+            }
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(80f);
+            var keepCount = config.MaxTimelineCount;
+            if (ImGui.InputInt("##maxTimelineCount", ref keepCount, 1, 5))
+            {
+                config.MaxTimelineCount = Math.Max(0, keepCount);
+                config.Save?.Invoke();
+                store.PruneHistory();
+            }
+
+            if (ImGui.RadioButton("Keep timelines for N days##rmDays", mode == (int)HistoryLimitMode.Days))
+            {
+                config.TimelineRetentionMode = HistoryLimitMode.Days;
+                config.Save?.Invoke();
+                store.PruneHistory();
+            }
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(80f);
+            var keepDays = config.MaxTimelineDays;
+            if (ImGui.InputInt("##maxTimelineDays", ref keepDays, 1, 7))
+            {
+                config.MaxTimelineDays = Math.Max(1, keepDays);
+                config.Save?.Invoke();
+                store.PruneHistory();
+            }
+
+            ImGui.Spacing();
+            var summaryMb = store.StorageSizeBytes / (1024.0 * 1024.0);
+            var timelinesMb = store.TimelineStorageSizeBytes / (1024.0 * 1024.0);
+            var totalMb = summaryMb + timelinesMb;
+            ImGui.TextDisabled(
+                $"Storage: encounters.json {summaryMb:F2} MB · {store.TimelineFileCount} timelines ({timelinesMb:F2} MB) · total {totalMb:F2} MB");
+
+            ImGui.Unindent();
+            ImGui.Spacing();
+        }
+
         if (history.Count > 0 && ImGui.Button("Clear All History"))
         {
             ImGui.OpenPopup("##confirmClearHistory");
