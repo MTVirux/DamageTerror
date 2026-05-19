@@ -241,7 +241,8 @@ public sealed class MainWindow : Window, IDisposable
         LayoutElement? lastVisibleEl = null;
         foreach (var el in plugin.Config.Layout)
         {
-            if (plugin.Config.CtrlShiftOnlyElements.Contains(el) && !modifierActive)
+            if (plugin.Config.CtrlShiftOnlyElements.Contains(el) && !modifierActive
+                && !(el == LayoutElement.ReplayBar && plugin.Config.ReplayBarPinned))
                 continue;
             lastVisibleEl = el;
         }
@@ -708,6 +709,26 @@ public sealed class MainWindow : Window, IDisposable
         {
             ImGui.AlignTextToFramePadding();
             ImGui.TextColored(new Vector4(1f, 0.55f, 0.55f, 1f), "[REPLAY]");
+
+            ImGui.SameLine();
+            var pinned = plugin.Config.ReplayBarPinned;
+            var pinIcon = (pinned ? FontAwesomeIcon.Thumbtack : FontAwesomeIcon.MapPin).ToIconString();
+            if (pinned)
+                ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.30f, 0.55f, 0.30f, 1f));
+            ImGui.PushFont(UiBuilder.IconFont);
+            var pinClicked = ImGui.SmallButton($"{pinIcon}##rpyPin");
+            ImGui.PopFont();
+            if (pinned)
+                ImGui.PopStyleColor();
+            if (pinClicked)
+            {
+                plugin.Config.ReplayBarPinned = !pinned;
+                plugin.Config.Save?.Invoke();
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(pinned
+                    ? "Pinned: replay bar stays visible even if the modifier key is required.\nClick to unpin."
+                    : "Pin the replay bar so it stays visible without holding the modifier key.");
 
             ImGui.SameLine();
             var playLabel = sim.IsRunning ? "Pause##rpyToggle" : "Play##rpyToggle";

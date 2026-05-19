@@ -252,7 +252,8 @@ internal static class MeterWindowHelper
         foreach (var el in config.Layout)
         {
             if (skipElements?.Contains(el) == true) continue;
-            if (config.CtrlShiftOnlyElements.Contains(el) && !modifierHeld)
+            if (config.CtrlShiftOnlyElements.Contains(el) && !modifierHeld
+                && !(el == LayoutElement.ReplayBar && config.ReplayBarPinned))
                 continue;
             if (passedBars)
             {
@@ -319,7 +320,8 @@ internal static class MeterWindowHelper
         foreach (var element in ctx.Config.Layout)
         {
             if (ctx.Config.CtrlShiftOnlyElements.Contains(element) && !modifierActive
-                && !(element == LayoutElement.EncounterSelect && ctx.HeaderComponent.IsComboOpen))
+                && !(element == LayoutElement.EncounterSelect && ctx.HeaderComponent.IsComboOpen)
+                && !(element == LayoutElement.ReplayBar && ctx.Config.ReplayBarPinned))
                 continue;
 
             switch (element)
