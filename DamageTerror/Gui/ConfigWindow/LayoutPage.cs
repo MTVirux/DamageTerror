@@ -121,8 +121,16 @@ public static class LayoutPage
 
         foreach (var el in allElements)
         {
-            if (!config.Layout.Contains(el))
+            if (config.Layout.Contains(el)) continue;
+            if (el == LayoutElement.ReplayBar)
+            {
+                var insertAt = Math.Min(1, config.Layout.Count);
+                config.Layout.Insert(insertAt, el);
+            }
+            else
+            {
                 config.Layout.Add(el);
+            }
         }
 
         var seen = new HashSet<LayoutElement>();

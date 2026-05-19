@@ -81,6 +81,7 @@ public sealed class Configuration : IPluginConfiguration
     public List<LayoutElement> Layout { get; set; } = new()
     {
         LayoutElement.EncounterSelect,
+        LayoutElement.ReplayBar,
         LayoutElement.CombatantBars,
         LayoutElement.MeterTabs,
         LayoutElement.StatusBar,
@@ -89,6 +90,8 @@ public sealed class Configuration : IPluginConfiguration
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumCollectionConverter))]
     public HashSet<LayoutElement> CtrlShiftOnlyElements { get; set; } = new();
+
+    public bool ReplayBarPinned { get; set; } = false;
 
     public ModifierCombo ModifierKeyCombo { get; set; } = ModifierCombo.CtrlShift;
     public ModifierMode ModifierKeyMode { get; set; } = ModifierMode.Hold;
