@@ -109,7 +109,7 @@ internal static class SampleDataGenerator
     {
         var combatants = new List<CombatantEntry>
         {
-            MakeCombatant("Vermillion Terror", "Blm", 28200, 0, isLocal: true),
+            MakeCombatant("Vermillion Terror", "Mch", 28200, 0, isLocal: true),
             MakeCombatant("Rtb Baytolachefe", "Pld", 14500, 0),
             MakeCombatant("Marcelo Benevides", "Whm", 8000, 18500),
             MakeCombatant("Red Diamond", "Drg", 26500, 0),
