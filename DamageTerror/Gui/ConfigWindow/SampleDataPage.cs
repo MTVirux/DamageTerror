@@ -117,6 +117,7 @@ internal static class SampleDataGenerator
             MakeCombatant("Nikita Airisu", "Sge", 7800, 0),
             MakeCombatant("Kotoshiro Dazaria", "War", 15600, 0),
             MakeCombatant("Nestfexia Reanna", "Rdm", 30100, 4200),
+            MakeCombatant("Limit Break", "Lmb", 2200, 0),
         };
 
         return BuildSnapshot(combatants, "The Omega Protocol (Ultimate)", "Alphascape V4.0", "08:32");
@@ -130,6 +131,7 @@ internal static class SampleDataGenerator
             MakeCombatant("Y'shtola Rhul", "Blm", 24800, 0),
             MakeCombatant("Estinien Wyrmblood", "Drg", 23100, 0),
             MakeCombatant("Haurchefant Greystone", "Pld", 14200, 0),
+            MakeCombatant("Limit Break", "Lmb", 240, 0),
         };
 
         return BuildSnapshot(combatants, "The Aetherfont", "The Aetherfont", "04:15");
@@ -163,6 +165,8 @@ internal static class SampleDataGenerator
             combatants.Add(MakeCombatant(name, job, dps, hps, isLocal: isFirst));
             isFirst = false;
         }
+
+        combatants.Add(MakeCombatant("Limit Break", "Lmb", 3700, 0));
 
         return BuildSnapshot(combatants, "The Cloud of Darkness", "The World of Darkness", "12:45");
     }
