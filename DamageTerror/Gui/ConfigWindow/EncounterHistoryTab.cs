@@ -9,6 +9,7 @@ public sealed class EncounterHistoryTab
     private readonly DamageTerrorPlugin plugin;
     private string historySearchFilter = string.Empty;
     private int pendingLimitValue;
+    private int pendingTimelineLimitValue;
     private string importJson = string.Empty;
     private string importFilePath = string.Empty;
     private string? importError;
@@ -21,6 +22,7 @@ public sealed class EncounterHistoryTab
     {
         this.plugin = plugin;
         SyncPendingValue();
+        SyncPendingTimelineValue();
     }
 
     private void SyncPendingValue()
@@ -31,13 +33,25 @@ public sealed class EncounterHistoryTab
             : config.MaxEncounterHistoryDays;
     }
 
+    private void SyncPendingTimelineValue()
+    {
+        var config = plugin.Config;
+        pendingTimelineLimitValue = config.TimelineRetentionMode == HistoryLimitMode.Count
+            ? config.MaxTimelineCount
+            : config.MaxTimelineDays;
+    }
+
     public void Draw()
     {
         var config = plugin.Config;
         var store = plugin.DataService.Store;
         var history = store.History;
 
-        ImGui.TextDisabled($"{history.Count} encounter(s) stored.  ({FormatSize(store.StorageSizeBytes)})");
+        var summaryMb = store.StorageSizeBytes / (1024.0 * 1024.0);
+        var timelinesMb = store.TimelineStorageSizeBytes / (1024.0 * 1024.0);
+        var totalMb = summaryMb + timelinesMb;
+        ImGui.TextDisabled(
+            $"{history.Count} encounter(s) stored — encounters.json {summaryMb:F2} MB · {store.TimelineFileCount} timelines ({timelinesMb:F2} MB) · total {totalMb:F2} MB");
         ConfigHelpers.HelpMarker("Encounter history is saved automatically and persists across restarts.");
 #if DEBUG
         if (!config.HideDebugFeatures)
@@ -87,6 +101,46 @@ public sealed class EncounterHistoryTab
         else
             ImGui.TextDisabled($"Currently keeping encounters from the last {config.MaxEncounterHistoryDays} day(s).");
 
+        var timelineModeInt = (int)config.TimelineRetentionMode;
+        ImGui.TextUnformatted("Limit timelines by:");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(100);
+        if (ImGui.Combo("##timelineRetentionMode", ref timelineModeInt, "Count\0Days\0"))
+        {
+            config.TimelineRetentionMode = (HistoryLimitMode)timelineModeInt;
+            config.Save?.Invoke();
+            SyncPendingTimelineValue();
+        }
+
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(100);
+        var timelineInputLabel = config.TimelineRetentionMode == HistoryLimitMode.Count
+            ? "##maxTimelineCount"
+            : "##maxTimelineDays";
+        if (ImGui.InputInt(timelineInputLabel, ref pendingTimelineLimitValue))
+        {
+            var min = config.TimelineRetentionMode == HistoryLimitMode.Count ? 0 : 1;
+            pendingTimelineLimitValue = Math.Max(min, pendingTimelineLimitValue);
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Apply##timelineLimitApply"))
+        {
+            if (config.TimelineRetentionMode == HistoryLimitMode.Count)
+                config.MaxTimelineCount = Math.Max(0, pendingTimelineLimitValue);
+            else
+                config.MaxTimelineDays = Math.Max(1, pendingTimelineLimitValue);
+
+            config.Save?.Invoke();
+            store.PruneHistory();
+            store.Save(force: true);
+        }
+
+        if (config.TimelineRetentionMode == HistoryLimitMode.Count)
+            ImGui.TextDisabled($"Currently keeping up to {config.MaxTimelineCount} timeline(s).");
+        else
+            ImGui.TextDisabled($"Currently keeping timelines from the last {config.MaxTimelineDays} day(s).");
+
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.Spacing();
@@ -94,54 +148,6 @@ public sealed class EncounterHistoryTab
         ImGui.SetNextItemWidth(-1);
         ImGui.InputTextWithHint("##historySearch", "Search by zone, title, player, or job...", ref historySearchFilter, 256);
         ImGui.Spacing();
-
-        if (ImGui.CollapsingHeader("Timeline storage##timelineStorage", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            ImGui.Indent();
-
-            var mode = (int)config.TimelineRetentionMode;
-            if (ImGui.RadioButton("Keep last N timelines##rmCount", mode == (int)HistoryLimitMode.Count))
-            {
-                config.TimelineRetentionMode = HistoryLimitMode.Count;
-                config.Save?.Invoke();
-                store.PruneHistory();
-            }
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(80f);
-            var keepCount = config.MaxTimelineCount;
-            if (ImGui.InputInt("##maxTimelineCount", ref keepCount, 1, 5))
-            {
-                config.MaxTimelineCount = Math.Max(0, keepCount);
-                config.Save?.Invoke();
-                store.PruneHistory();
-            }
-
-            if (ImGui.RadioButton("Keep timelines for N days##rmDays", mode == (int)HistoryLimitMode.Days))
-            {
-                config.TimelineRetentionMode = HistoryLimitMode.Days;
-                config.Save?.Invoke();
-                store.PruneHistory();
-            }
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(80f);
-            var keepDays = config.MaxTimelineDays;
-            if (ImGui.InputInt("##maxTimelineDays", ref keepDays, 1, 7))
-            {
-                config.MaxTimelineDays = Math.Max(1, keepDays);
-                config.Save?.Invoke();
-                store.PruneHistory();
-            }
-
-            ImGui.Spacing();
-            var summaryMb = store.StorageSizeBytes / (1024.0 * 1024.0);
-            var timelinesMb = store.TimelineStorageSizeBytes / (1024.0 * 1024.0);
-            var totalMb = summaryMb + timelinesMb;
-            ImGui.TextDisabled(
-                $"Storage: encounters.json {summaryMb:F2} MB · {store.TimelineFileCount} timelines ({timelinesMb:F2} MB) · total {totalMb:F2} MB");
-
-            ImGui.Unindent();
-            ImGui.Spacing();
-        }
 
         if (history.Count > 0 && ImGui.Button("Clear All History"))
         {
