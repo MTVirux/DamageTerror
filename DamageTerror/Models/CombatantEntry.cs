@@ -56,7 +56,8 @@ public sealed class CombatantEntry
     {
         if (string.IsNullOrEmpty(composite)) return string.Empty;
         var idx = composite.LastIndexOf('-');
-        return idx > 0 ? composite[..idx] : composite;
+        var name = idx > 0 ? composite[..idx] : composite;
+        return SkillNameOverrides.Apply(name);
     }
 
     public int Swings { get; set; }

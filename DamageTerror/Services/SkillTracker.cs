@@ -577,15 +577,6 @@ public sealed class SkillTracker
         { 2310, SkillDamageType.Physical }, // Wildfire (MCH)
     };
 
-    /// <summary>Display-name overrides applied to the skill name carried by ability lines.
-    /// Covers the generic "Attack" auto-attack label and actions whose name does not
-    /// resolve client-side (logged as a "unknown_&lt;hexId&gt;" placeholder).</summary>
-    private static readonly Dictionary<string, string> SkillNameOverrides = new(StringComparer.OrdinalIgnoreCase)
-    {
-        { "Attack", "Auto Attack" },
-        { "unknown_c50d", "『Ｂｅｔｒａｙａｌ』" },
-    };
-
     private SkillDamageType LookupStatusDamageType(uint statusId)
     {
         return StatusDamageTypeOverrides.GetValueOrDefault(statusId, SkillDamageType.Unknown);
@@ -1435,7 +1426,7 @@ public sealed class SkillTracker
         if (line.Length < 10) return false;
 
         var sourceName = line[3];
-        var skillName = SkillNameOverrides.GetValueOrDefault(line[5], line[5]);
+        var skillName = SkillNameOverrides.Apply(line[5]);
 
         if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(skillName))
             return false;
