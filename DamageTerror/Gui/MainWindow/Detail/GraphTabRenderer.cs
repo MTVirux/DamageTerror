@@ -105,62 +105,33 @@ internal sealed class GraphTabRenderer : IDetailTabRenderer
             var hpsHidden = state.HiddenLegendEntries.Contains("iHPS");
             var dtpsHidden = state.HiddenLegendEntries.Contains("iDTPS");
 
-            if (dpsVals != null)
+            void PlotMetricLine(float[] values, Vector4 color, string label, bool hidden)
             {
-                if (dpsHidden)
+                if (hidden)
                     ImPlot.HideNextItem(true, ImPlotCond.Always);
-                ImPlot.PushStyleColor(ImPlotCol.Line, config.GraphDpsColor);
+                ImPlot.PushStyleColor(ImPlotCol.Line, color);
                 ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
-                ImPlot.PlotLine("iDPS", ref times[0], ref dpsVals[0], samples.Count);
+                ImPlot.PlotLine(label, ref times[0], ref values[0], samples.Count);
                 ImPlot.PopStyleVar();
                 ImPlot.PopStyleColor();
 
-                if (config.GraphShowLabels && !dpsHidden)
+                if (config.GraphShowLabels && !hidden)
                 {
-                    var lastVal = dpsVals[^1];
-                    ImPlot.PushStyleColor(ImPlotCol.InlayText, config.GraphDpsColor);
+                    var lastVal = values[^1];
+                    ImPlot.PushStyleColor(ImPlotCol.InlayText, color);
                     ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
                     ImPlot.PopStyleColor();
                 }
             }
+
+            if (dpsVals != null)
+                PlotMetricLine(dpsVals, config.GraphDpsColor, "iDPS", dpsHidden);
 
             if (hpsVals != null)
-            {
-                if (hpsHidden)
-                    ImPlot.HideNextItem(true, ImPlotCond.Always);
-                ImPlot.PushStyleColor(ImPlotCol.Line, config.GraphHpsColor);
-                ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
-                ImPlot.PlotLine("iHPS", ref times[0], ref hpsVals[0], samples.Count);
-                ImPlot.PopStyleVar();
-                ImPlot.PopStyleColor();
-
-                if (config.GraphShowLabels && !hpsHidden)
-                {
-                    var lastVal = hpsVals[^1];
-                    ImPlot.PushStyleColor(ImPlotCol.InlayText, config.GraphHpsColor);
-                    ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
-                    ImPlot.PopStyleColor();
-                }
-            }
+                PlotMetricLine(hpsVals, config.GraphHpsColor, "iHPS", hpsHidden);
 
             if (dtpsVals != null)
-            {
-                if (dtpsHidden)
-                    ImPlot.HideNextItem(true, ImPlotCond.Always);
-                ImPlot.PushStyleColor(ImPlotCol.Line, config.GraphDtpsColor);
-                ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
-                ImPlot.PlotLine("iDTPS", ref times[0], ref dtpsVals[0], samples.Count);
-                ImPlot.PopStyleVar();
-                ImPlot.PopStyleColor();
-
-                if (config.GraphShowLabels && !dtpsHidden)
-                {
-                    var lastVal = dtpsVals[^1];
-                    ImPlot.PushStyleColor(ImPlotCol.InlayText, config.GraphDtpsColor);
-                    ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
-                    ImPlot.PopStyleColor();
-                }
-            }
+                PlotMetricLine(dtpsVals, config.GraphDtpsColor, "iDTPS", dtpsHidden);
 
             var dpsMc = config.DetailMarkers[MetricType.Dps];
             var hpsMc = config.DetailMarkers[MetricType.Hps];

@@ -141,27 +141,30 @@ public sealed class GraphViewComponent
                     if (dtpsVals != null) dtpsVals[i] = samples[i].Dtps;
                 }
 
-                if (dpsVals != null)
+                void PlotMetricLine(float[] values, Vector4 color, string suffix)
                 {
-                    var label = metricCount > 1 ? $"{displayName} (DPS)" : displayName;
+                    var label = metricCount > 1 ? $"{displayName} ({suffix})" : displayName;
                     primaryLabel ??= label;
                     legendLabels.Add((label, combatant.Name));
                     if (hiddenLegendEntries.Contains(label))
                         ImPlot.HideNextItem(true, ImPlotCond.Always);
-                    ImPlot.PushStyleColor(ImPlotCol.Line, jobColor);
+                    ImPlot.PushStyleColor(ImPlotCol.Line, color);
                     ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
-                    ImPlot.PlotLine(label, ref times[0], ref dpsVals[0], samples.Count);
+                    ImPlot.PlotLine(label, ref times[0], ref values[0], samples.Count);
                     ImPlot.PopStyleVar();
                     ImPlot.PopStyleColor();
 
                     if (config.GraphViewShowLabels && !hiddenLegendEntries.Contains(label))
                     {
-                        var lastVal = dpsVals[^1];
-                        ImPlot.PushStyleColor(ImPlotCol.InlayText, jobColor);
+                        var lastVal = values[^1];
+                        ImPlot.PushStyleColor(ImPlotCol.InlayText, color);
                         ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
                         ImPlot.PopStyleColor();
                     }
                 }
+
+                if (dpsVals != null)
+                    PlotMetricLine(dpsVals, jobColor, "DPS");
 
                 if (hpsVals != null)
                 {
@@ -172,24 +175,7 @@ public sealed class GraphViewComponent
                             Math.Min(1f, jobColor.Z * 0.7f + 0.3f),
                             jobColor.W * 0.7f)
                         : jobColor;
-                    var label = metricCount > 1 ? $"{displayName} (HPS)" : displayName;
-                    primaryLabel ??= label;
-                    legendLabels.Add((label, combatant.Name));
-                    if (hiddenLegendEntries.Contains(label))
-                        ImPlot.HideNextItem(true, ImPlotCond.Always);
-                    ImPlot.PushStyleColor(ImPlotCol.Line, hpsColor);
-                    ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
-                    ImPlot.PlotLine(label, ref times[0], ref hpsVals[0], samples.Count);
-                    ImPlot.PopStyleVar();
-                    ImPlot.PopStyleColor();
-
-                    if (config.GraphViewShowLabels && !hiddenLegendEntries.Contains(label))
-                    {
-                        var lastVal = hpsVals[^1];
-                        ImPlot.PushStyleColor(ImPlotCol.InlayText, hpsColor);
-                        ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
-                        ImPlot.PopStyleColor();
-                    }
+                    PlotMetricLine(hpsVals, hpsColor, "HPS");
                 }
 
                 if (dtpsVals != null)
@@ -201,24 +187,7 @@ public sealed class GraphViewComponent
                             jobColor.Z * 0.5f,
                             jobColor.W * 0.6f)
                         : jobColor;
-                    var label = metricCount > 1 ? $"{displayName} (DTPS)" : displayName;
-                    primaryLabel ??= label;
-                    legendLabels.Add((label, combatant.Name));
-                    if (hiddenLegendEntries.Contains(label))
-                        ImPlot.HideNextItem(true, ImPlotCond.Always);
-                    ImPlot.PushStyleColor(ImPlotCol.Line, dtpsColor);
-                    ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
-                    ImPlot.PlotLine(label, ref times[0], ref dtpsVals[0], samples.Count);
-                    ImPlot.PopStyleVar();
-                    ImPlot.PopStyleColor();
-
-                    if (config.GraphViewShowLabels && !hiddenLegendEntries.Contains(label))
-                    {
-                        var lastVal = dtpsVals[^1];
-                        ImPlot.PushStyleColor(ImPlotCol.InlayText, dtpsColor);
-                        ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
-                        ImPlot.PopStyleColor();
-                    }
+                    PlotMetricLine(dtpsVals, dtpsColor, "DTPS");
                 }
 
                 var combatantHidden = primaryLabel != null && hiddenLegendEntries.Contains(primaryLabel);

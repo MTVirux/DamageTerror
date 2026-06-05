@@ -12,7 +12,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public IDalamudPluginInterface PluginInterface { get; init; }
 
-    public Configuration Config { get; private set; } = new Configuration();
+    public Configuration Config { get; private set; } = new();
 
     public DataService DataService { get; private set; } = null!;
 
@@ -89,7 +89,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         if (cfg == null)
         {
-            cfg = new Configuration();
+            cfg = new();
             this.PluginInterface.SavePluginConfig(cfg);
         }
 
@@ -321,7 +321,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             this.configWindow.IsOpen = !this.configWindow.IsOpen;
         else if (args.StartsWith("toggle ", StringComparison.OrdinalIgnoreCase))
         {
-            var groupName = args.Substring(7).Trim();
+            var groupName = args[7..].Trim();
             if (groupName.Length > 0)
                 TogglePopoutGroup(groupName);
         }

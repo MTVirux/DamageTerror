@@ -9,20 +9,10 @@ internal static class NameFormatSection
     {
         var changed = false;
 
-        var showName = config.ShowNameOnBar;
-        if (ImGui.Checkbox("Show player name on bars", ref showName))
-        {
-            config.ShowNameOnBar = showName;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Show player name on bars", config.ShowNameOnBar, v => config.ShowNameOnBar = v);
         ConfigHelpers.HelpMarker("These settings apply everywhere player names are displayed.");
 
-        var showYou = config.ShowYouOnBar;
-        if (ImGui.Checkbox("Show \"YOU\" instead of character name", ref showYou))
-        {
-            config.ShowYouOnBar = showYou;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Show \"YOU\" instead of character name", config.ShowYouOnBar, v => config.ShowYouOnBar = v);
 
         ImGui.Spacing();
 
@@ -37,29 +27,14 @@ internal static class NameFormatSection
             "Truncated (Name...)",
         };
 
-        var selfFmt = (int)config.SelfNameFormat;
-        if (ImGui.Combo("Your name", ref selfFmt, nameFormatLabels, nameFormatLabels.Length))
-        {
-            config.SelfNameFormat = (NameDisplayFormat)selfFmt;
-            changed = true;
-        }
+        changed |= ConfigHelpers.ComboProp("Your name", (int)config.SelfNameFormat, nameFormatLabels, v => config.SelfNameFormat = (NameDisplayFormat)v);
 
-        var othersFmt = (int)config.OthersNameFormat;
-        if (ImGui.Combo("Others' names", ref othersFmt, nameFormatLabels, nameFormatLabels.Length))
-        {
-            config.OthersNameFormat = (NameDisplayFormat)othersFmt;
-            changed = true;
-        }
+        changed |= ConfigHelpers.ComboProp("Others' names", (int)config.OthersNameFormat, nameFormatLabels, v => config.OthersNameFormat = (NameDisplayFormat)v);
 
         if (config.SelfNameFormat == NameDisplayFormat.Truncated
             || config.OthersNameFormat == NameDisplayFormat.Truncated)
         {
-            var truncLen = config.NameTruncateLength;
-            if (ImGui.SliderInt("Max name length", ref truncLen, 3, 30))
-            {
-                config.NameTruncateLength = truncLen;
-                changed = true;
-            }
+            changed |= ConfigHelpers.SliderIntProp("Max name length", config.NameTruncateLength, 3, 30, v => config.NameTruncateLength = v);
         }
 
         ImGui.Spacing();
@@ -67,12 +42,7 @@ internal static class NameFormatSection
         ImGui.Spacing();
         ImGui.TextDisabled("Self name color.");
 
-        var useSelfNameColor = config.UseSelfNameColor;
-        if (ImGui.Checkbox("Custom name color for local player", ref useSelfNameColor))
-        {
-            config.UseSelfNameColor = useSelfNameColor;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Custom name color for local player", config.UseSelfNameColor, v => config.UseSelfNameColor = v);
 
         if (config.UseSelfNameColor)
         {

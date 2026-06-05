@@ -70,10 +70,7 @@ public sealed class PopoutTabWindow : Window, IDisposable
     {
     }
 
-    private MeterTab? FindTab()
-    {
-        return plugin.Config.MeterTabs.FirstOrDefault(t => t.Id == tabId);
-    }
+    private MeterTab? FindTab() => plugin.Config.MeterTabs.FirstOrDefault(t => t.Id == tabId);
 
     public override bool DrawConditions()
     {

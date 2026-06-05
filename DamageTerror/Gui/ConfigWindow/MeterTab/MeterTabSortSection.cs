@@ -13,20 +13,9 @@ internal static class MeterTabSortSection
             return changed;
 
         var sortOptions = Enum.GetNames(typeof(SortField));
-        var currentSort = (int)tab.SortBy;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.Combo("Sort by", ref currentSort, sortOptions, sortOptions.Length))
-        {
-            tab.SortBy = (SortField)currentSort;
-            changed = true;
-        }
+        changed |= ConfigHelpers.ComboProp("Sort by", (int)tab.SortBy, sortOptions, v => tab.SortBy = (SortField)v, 200);
 
-        var sortDesc = tab.SortDescending;
-        if (ImGui.Checkbox("Descending (highest first)", ref sortDesc))
-        {
-            tab.SortDescending = sortDesc;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Descending (highest first)", tab.SortDescending, v => tab.SortDescending = v);
 
         return changed;
     }

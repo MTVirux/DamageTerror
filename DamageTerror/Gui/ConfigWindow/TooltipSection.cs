@@ -9,75 +9,33 @@ internal static class TooltipSection
     {
         var changed = false;
 
-        var showTooltip = config.ShowTooltip;
-        if (ImGui.Checkbox("Show tooltip on hover", ref showTooltip))
-        {
-            config.ShowTooltip = showTooltip;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Show tooltip on hover", config.ShowTooltip, v => config.ShowTooltip = v);
 
         if (!config.ShowTooltip)
         {
             ImGui.BeginDisabled();
         }
 
-        var delay = config.TooltipDelay;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Hover delay", ref delay, 0.0f, 1.0f, "%.2f s"))
-        {
-            config.TooltipDelay = delay;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderFloatProp("Hover delay", config.TooltipDelay, 0.0f, 1.0f, "%.2f s", v => config.TooltipDelay = v, 200);
 
         ImGui.Spacing();
 
         if (ImGui.CollapsingHeader("Appearance", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var fontSize = config.TooltipFontSize;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Font size", ref fontSize, 8f, 24f, "%.1f pt"))
-            {
-                config.TooltipFontSize = fontSize;
-                changed = true;
-            }
-
-            var rounding = config.TooltipRounding;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Rounding", ref rounding, 0f, 12f, "%.1f"))
-            {
-                config.TooltipRounding = rounding;
-                changed = true;
-            }
-
-            var padding = config.TooltipPadding;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Padding", ref padding, 0f, 16f, "%.0f px"))
-            {
-                config.TooltipPadding = padding;
-                changed = true;
-            }
+            changed |= ConfigHelpers.SliderFloatProp("Font size", config.TooltipFontSize, 8f, 24f, "%.1f pt", v => config.TooltipFontSize = v, 200);
+            changed |= ConfigHelpers.SliderFloatProp("Rounding", config.TooltipRounding, 0f, 12f, "%.1f", v => config.TooltipRounding = v, 200);
+            changed |= ConfigHelpers.SliderFloatProp("Padding", config.TooltipPadding, 0f, 16f, "%.0f px", v => config.TooltipPadding = v, 200);
 
             ImGui.Spacing();
 
-            if (ConfigHelpers.ColorEditProp("Background", config.TooltipBackgroundColor, v => config.TooltipBackgroundColor = v))
-                changed = true;
-
-            if (ConfigHelpers.ColorEditProp("Text Color", config.TooltipTextColor, v => config.TooltipTextColor = v))
-                changed = true;
-
-            if (ConfigHelpers.ColorEditProp("Label Color", config.TooltipLabelColor, v => config.TooltipLabelColor = v))
-                changed = true;
+            changed |= ConfigHelpers.ColorEditProp("Background", config.TooltipBackgroundColor, v => config.TooltipBackgroundColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Text Color", config.TooltipTextColor, v => config.TooltipTextColor = v);
+            changed |= ConfigHelpers.ColorEditProp("Label Color", config.TooltipLabelColor, v => config.TooltipLabelColor = v);
         }
 
         if (ImGui.CollapsingHeader("Top Skills"))
         {
-            var skillCount = config.TooltipTopSkillCount;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderInt("Skills to show", ref skillCount, 1, 10))
-            {
-                config.TooltipTopSkillCount = skillCount;
-                changed = true;
-            }
+            changed |= ConfigHelpers.SliderIntProp("Skills to show", config.TooltipTopSkillCount, 1, 10, v => config.TooltipTopSkillCount = v, 200);
             ConfigHelpers.HelpMarker("Number of top skills to show when \"Top Damage Skills\" or\n\"Top Healing Skills\" tooltip fields are enabled.");
         }
 

@@ -124,7 +124,6 @@ public sealed class PositionalTable : IDisposable
                     Id = id,
                     ActionName = actionName,
                     ActionPosition = actionPosition,
-                    Positionals = new Dictionary<int, bool>(),
                 };
                 store[id] = action;
             }
@@ -178,8 +177,7 @@ public sealed class PositionalTable : IDisposable
     public bool IsPositionalHit(uint actionId, int bonusPercent)
     {
         if (!actionStore.TryGetValue((int)actionId, out var action)) return false;
-        if (action.Positionals.TryGetValue(bonusPercent, out var isHit)) return isHit;
-        return false;
+        return action.Positionals.GetValueOrDefault(bonusPercent);
     }
 
     /// <summary>
@@ -199,10 +197,7 @@ public sealed class PositionalTable : IDisposable
         return true;
     }
 
-    public void Dispose()
-    {
-        client.Dispose();
-    }
+    public void Dispose() => client.Dispose();
 
     private void LoadFallback()
     {
@@ -215,7 +210,6 @@ public sealed class PositionalTable : IDisposable
                 Id = entry.ActionId,
                 ActionName = entry.ActionName,
                 ActionPosition = entry.Position,
-                Positionals = new Dictionary<int, bool>(),
             };
             foreach (var (p, h) in entry.Entries)
                 action.Positionals[p] = h;

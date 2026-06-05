@@ -245,10 +245,7 @@ public sealed class EncounterReplaySimulator
         if (!source.SkillEvents.TryGetValue(c.Name, out var src) || src.Count == 0) return;
         if (!skillCursor.TryGetValue(c.Name, out var idx)) idx = 0;
         if (!working.SkillEvents.TryGetValue(c.Name, out var dst))
-        {
-            dst = new List<SkillUseEvent>();
-            working.SkillEvents[c.Name] = dst;
-        }
+            working.SkillEvents[c.Name] = dst = new List<SkillUseEvent>();
         while (idx < src.Count && src[idx].TimeSec <= t)
         {
             var e = src[idx];
@@ -288,10 +285,7 @@ public sealed class EncounterReplaySimulator
         if (!source.DamageTakenEvents.TryGetValue(c.Name, out var src) || src.Count == 0) return;
         if (!damageTakenCursor.TryGetValue(c.Name, out var idx)) idx = 0;
         if (!working.DamageTakenEvents.TryGetValue(c.Name, out var dst))
-        {
-            dst = new List<SkillUseEvent>();
-            working.DamageTakenEvents[c.Name] = dst;
-        }
+            working.DamageTakenEvents[c.Name] = dst = new List<SkillUseEvent>();
         while (idx < src.Count && src[idx].TimeSec <= t)
         {
             var e = src[idx];
@@ -307,10 +301,7 @@ public sealed class EncounterReplaySimulator
         if (!source.ItemEvents.TryGetValue(c.Name, out var src) || src.Count == 0) return;
         if (!itemCursor.TryGetValue(c.Name, out var idx)) idx = 0;
         if (!working.ItemEvents.TryGetValue(c.Name, out var dst))
-        {
-            dst = new List<SkillUseEvent>();
-            working.ItemEvents[c.Name] = dst;
-        }
+            working.ItemEvents[c.Name] = dst = new List<SkillUseEvent>();
         while (idx < src.Count && src[idx].TimeSec <= t)
         {
             dst.Add(src[idx]);
@@ -324,10 +315,7 @@ public sealed class EncounterReplaySimulator
         if (!source.GraphData.TryGetValue(name, out var src) || src.Count == 0) return;
         if (!graphCursor.TryGetValue(name, out var idx)) idx = 0;
         if (!working.GraphData.TryGetValue(name, out var dst))
-        {
-            dst = new List<GraphSample>();
-            working.GraphData[name] = dst;
-        }
+            working.GraphData[name] = dst = new List<GraphSample>();
         while (idx < src.Count && src[idx].TimeSec <= t)
         {
             dst.Add(src[idx]);
@@ -341,10 +329,7 @@ public sealed class EncounterReplaySimulator
         if (!source.StatusHistory.TryGetValue(name, out var src) || src.Count == 0) return;
         if (!statusHistCursor.TryGetValue(name, out var idx)) idx = 0;
         if (!working.StatusHistory.TryGetValue(name, out var dst))
-        {
-            dst = new List<StatusApplication>();
-            working.StatusHistory[name] = dst;
-        }
+            working.StatusHistory[name] = dst = new List<StatusApplication>();
         while (idx < src.Count && src[idx].AppliedAtSec <= t)
         {
             var s = src[idx];
@@ -362,10 +347,7 @@ public sealed class EncounterReplaySimulator
         if (!source.StatusesReceived.TryGetValue(name, out var src) || src.Count == 0) return;
         if (!statusRecvCursor.TryGetValue(name, out var idx)) idx = 0;
         if (!working.StatusesReceived.TryGetValue(name, out var dst))
-        {
-            dst = new List<StatusApplication>();
-            working.StatusesReceived[name] = dst;
-        }
+            working.StatusesReceived[name] = dst = new List<StatusApplication>();
         while (idx < src.Count && src[idx].AppliedAtSec <= t)
         {
             var s = src[idx];
@@ -434,12 +416,8 @@ public sealed class EncounterReplaySimulator
         string combatantName, string skillName, SkillUseEvent e)
     {
         if (!store.TryGetValue(combatantName, out var perSkill))
-        {
-            perSkill = new Dictionary<string, RunningCounter>();
-            store[combatantName] = perSkill;
-        }
-        if (!perSkill.TryGetValue(skillName, out var rc))
-            rc = default;
+            store[combatantName] = perSkill = new Dictionary<string, RunningCounter>();
+        var rc = perSkill.GetValueOrDefault(skillName);
         rc.Total += e.Amount;
         rc.Hits++;
         if (e.IsCrit && e.IsDirectHit) rc.CritDirectHits++;

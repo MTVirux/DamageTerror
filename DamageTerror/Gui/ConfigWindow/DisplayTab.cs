@@ -13,38 +13,15 @@ public sealed class DisplayTab
         {
             ImGui.Spacing();
 
-            var showJob = config.ShowJobAbbrevOnBar;
-            if (ImGui.Checkbox("Job abbreviation text", ref showJob))
-            {
-                config.ShowJobAbbrevOnBar = showJob;
-                changed = true;
-            }
-
-            var showRank = config.ShowRankNumber;
-            if (ImGui.Checkbox("Rank number", ref showRank))
-            {
-                config.ShowRankNumber = showRank;
-                changed = true;
-            }
-
-            var showJobIcons = config.ShowJobIcons;
-            if (ImGui.Checkbox("Job icons", ref showJobIcons))
-            {
-                config.ShowJobIcons = showJobIcons;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Job abbreviation text", config.ShowJobAbbrevOnBar, v => config.ShowJobAbbrevOnBar = v);
+            changed |= ConfigHelpers.CheckboxProp("Rank number", config.ShowRankNumber, v => config.ShowRankNumber = v);
+            changed |= ConfigHelpers.CheckboxProp("Job icons", config.ShowJobIcons, v => config.ShowJobIcons = v);
 
             if (config.ShowJobIcons)
             {
                 ImGui.SameLine();
-                var styleIdx = (int)config.JobIconStyle;
                 var styleLabels = new[] { "Framed", "Plain", "Custom" };
-                ImGui.SetNextItemWidth(120);
-                if (ImGui.Combo("Icon style", ref styleIdx, styleLabels, styleLabels.Length))
-                {
-                    config.JobIconStyle = (JobIconStyle)styleIdx;
-                    changed = true;
-                }
+                changed |= ConfigHelpers.ComboProp("Icon style", (int)config.JobIconStyle, styleLabels, v => config.JobIconStyle = (JobIconStyle)v, 120);
 
                 if (config.JobIconStyle == JobIconStyle.Custom)
                 {

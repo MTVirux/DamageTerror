@@ -79,13 +79,13 @@ internal sealed class BuffsTabRenderer : IDetailTabRenderer
         {
             if (hasReceived && ImGui.BeginTabItem($"Received##{index}"))
             {
-                DrawStatusTable(AggregateStatuses(received, currentTime), encounterDuration, index, "recv", config.BuffFillColor);
+                DrawStatusTable(AggregateStatuses(received, currentTime), encounterDuration, index, "recv");
                 ImGui.EndTabItem();
             }
 
             if (hasApplied && ImGui.BeginTabItem($"Applied##{index}"))
             {
-                DrawStatusTable(AggregateStatuses(applied, currentTime), encounterDuration, index, "appl", config.DebuffFillColor);
+                DrawStatusTable(AggregateStatuses(applied, currentTime), encounterDuration, index, "appl");
                 ImGui.EndTabItem();
             }
 
@@ -124,7 +124,7 @@ internal sealed class BuffsTabRenderer : IDetailTabRenderer
         return result;
     }
 
-    private void DrawStatusTable(List<AggregatedStatus> statuses, float encounterDuration, string index, string idPrefix, Vector4 defaultFillColor)
+    private void DrawStatusTable(List<AggregatedStatus> statuses, float encounterDuration, string index, string idPrefix)
     {
         var availWidth = ImGui.GetContentRegionAvail().X;
         var rowHeight = config.BuffRowHeight;
@@ -173,10 +173,13 @@ internal sealed class BuffsTabRenderer : IDetailTabRenderer
         foreach (var status in statuses)
         {
             var barFraction = status.TotalUptime / maxUptime;
-            var fillColorVec = status.IsDoT ? config.SkillPhysicalFillColor
-                : status.IsHoT ? config.SkillHealingFillColor
-                : status.IsBuff ? config.BuffFillColor
-                : config.DebuffFillColor;
+            var fillColorVec = status switch
+            {
+                { IsDoT: true } => config.SkillPhysicalFillColor,
+                { IsHoT: true } => config.SkillHealingFillColor,
+                { IsBuff: true } => config.BuffFillColor,
+                _ => config.DebuffFillColor,
+            };
             var fillColor = ImGui.ColorConvertFloat4ToU32(fillColorVec);
 
             ImGui.InvisibleButton($"##{idPrefix}_{index}_{rowIdx}", new Vector2(availWidth, rowHeight));

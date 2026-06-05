@@ -357,8 +357,7 @@ public sealed class CombatantBarComponent
 
     public static void EnsureColumnOrderComplete(List<BarColumn> list)
     {
-        var allCols = Enum.GetValues<BarColumn>();
-        foreach (var col in allCols)
+        foreach (var col in Enum.GetValues<BarColumn>())
         {
             if (!list.Contains(col))
                 list.Add(col);
@@ -381,15 +380,6 @@ public sealed class CombatantBarComponent
         var textColor = config.TooltipTextColor;
 
         var tooltipFields = activeTab?.TooltipFields ?? config.TooltipFields;
-        if (tooltipFields.Count == 0)
-        {
-            tooltipFont.Dispose();
-            ImGui.EndTooltip();
-            ImGui.PopStyleColor();
-            ImGui.PopStyleVar(2);
-            return;
-        }
-
         foreach (var field in tooltipFields)
         {
             if (field == TooltipField.TopDamageSkills || field == TooltipField.TopHealingSkills)

@@ -70,8 +70,7 @@ public sealed class GraphDataTracker
 
         lock (syncLock)
         {
-            if (!logLineTotals.TryGetValue(sourceName, out var existing))
-                existing = default;
+            var existing = logLineTotals.GetValueOrDefault(sourceName);
             existing.damage += damageAmount;
             existing.healed += healAmount;
             logLineTotals[sourceName] = existing;
@@ -143,16 +142,10 @@ public sealed class GraphDataTracker
                 var effectiveDamageTaken = cdTotals.damageTaken;
 
                 if (!perCombatant.TryGetValue(name, out var list))
-                {
-                    list = new List<GraphSample>();
-                    perCombatant[name] = list;
-                }
+                    perCombatant[name] = list = new List<GraphSample>();
 
                 if (!slidingWindowBuffer.TryGetValue(name, out var history))
-                {
-                    history = new List<(float, long, long, long)>();
-                    slidingWindowBuffer[name] = history;
-                }
+                    slidingWindowBuffer[name] = history = new List<(float, long, long, long)>();
                 history.Add((timeSec, effectiveDamage, effectiveHealed, effectiveDamageTaken));
 
                 while (history.Count > 2 && history[0].time < windowStart && history[1].time <= windowStart)

@@ -16,6 +16,53 @@ public static class ConfigHelpers
         return false;
     }
 
+    public static bool CheckboxProp(string label, bool value, Action<bool> setter)
+    {
+        var v = value;
+        if (ImGui.Checkbox(label, ref v))
+        {
+            setter(v);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool SliderFloatProp(string label, float value, float min, float max, string format, Action<float> setter, float width = 0f)
+    {
+        var v = value;
+        if (width > 0f) ImGui.SetNextItemWidth(width);
+        if (ImGui.SliderFloat(label, ref v, min, max, format))
+        {
+            setter(v);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool SliderIntProp(string label, int value, int min, int max, Action<int> setter, float width = 0f)
+    {
+        var v = value;
+        if (width > 0f) ImGui.SetNextItemWidth(width);
+        if (ImGui.SliderInt(label, ref v, min, max))
+        {
+            setter(v);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool ComboProp(string label, int value, string[] items, Action<int> setter, float width = 0f)
+    {
+        var v = value;
+        if (width > 0f) ImGui.SetNextItemWidth(width);
+        if (ImGui.Combo(label, ref v, items, items.Length))
+        {
+            setter(v);
+            return true;
+        }
+        return false;
+    }
+
     public static bool DrawPerJobColorGroup(string groupLabel, string[] jobs, Configuration config)
     {
         var changed = false;
@@ -50,29 +97,13 @@ public static class ConfigHelpers
 
         if (ImGui.TreeNodeEx($"{label}##markers_{id}", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var showMarkers = mc.ShowMarkers;
-            if (ImGui.Checkbox($"Show skill markers##sec_{id}", ref showMarkers))
-            {
-                mc.ShowMarkers = showMarkers;
-                changed = true;
-            }
+            changed |= CheckboxProp($"Show skill markers##sec_{id}", mc.ShowMarkers, v => mc.ShowMarkers = v);
 
             changed |= ColorEditProp($"Marker color##sec_{id}", mc.MarkerColor, v => mc.MarkerColor = v);
 
-            var markerSize = mc.MarkerSize;
-            ImGui.SetNextItemWidth(150);
-            if (ImGui.SliderFloat($"Marker size##sec_{id}", ref markerSize, 1f, 10f, "%.1f"))
-            {
-                mc.MarkerSize = markerSize;
-                changed = true;
-            }
+            changed |= SliderFloatProp($"Marker size##sec_{id}", mc.MarkerSize, 1f, 10f, "%.1f", v => mc.MarkerSize = v, 150);
 
-            var showCrit = mc.ShowCritMarkers;
-            if (ImGui.Checkbox($"Color by crit/DH##sec_{id}", ref showCrit))
-            {
-                mc.ShowCritMarkers = showCrit;
-                changed = true;
-            }
+            changed |= CheckboxProp($"Color by crit/DH##sec_{id}", mc.ShowCritMarkers, v => mc.ShowCritMarkers = v);
 
             if (mc.ShowCritMarkers)
             {
@@ -84,42 +115,20 @@ public static class ConfigHelpers
             ImGui.Spacing();
             ImGui.TextDisabled("DoT / HoT Markers");
 
-            var showDotTick = mc.ShowDoTTickMarkers;
-            if (ImGui.Checkbox($"Show DoT/HoT tick markers##sec_{id}", ref showDotTick))
-            {
-                mc.ShowDoTTickMarkers = showDotTick;
-                changed = true;
-            }
+            changed |= CheckboxProp($"Show DoT/HoT tick markers##sec_{id}", mc.ShowDoTTickMarkers, v => mc.ShowDoTTickMarkers = v);
 
             if (mc.ShowDoTTickMarkers)
             {
                 changed |= ColorEditProp($"Tick color##sec_{id}", mc.DoTTickColor, v => mc.DoTTickColor = v);
-                var dotTickSize = mc.DoTTickMarkerSize;
-                ImGui.SetNextItemWidth(150);
-                if (ImGui.SliderFloat($"Tick size##sec_{id}", ref dotTickSize, 1f, 10f, "%.1f"))
-                {
-                    mc.DoTTickMarkerSize = dotTickSize;
-                    changed = true;
-                }
+                changed |= SliderFloatProp($"Tick size##sec_{id}", mc.DoTTickMarkerSize, 1f, 10f, "%.1f", v => mc.DoTTickMarkerSize = v, 150);
             }
 
-            var showDotApp = mc.ShowDoTApplicationMarkers;
-            if (ImGui.Checkbox($"Show DoT/HoT application markers##sec_{id}", ref showDotApp))
-            {
-                mc.ShowDoTApplicationMarkers = showDotApp;
-                changed = true;
-            }
+            changed |= CheckboxProp($"Show DoT/HoT application markers##sec_{id}", mc.ShowDoTApplicationMarkers, v => mc.ShowDoTApplicationMarkers = v);
 
             if (mc.ShowDoTApplicationMarkers)
             {
                 changed |= ColorEditProp($"Application color##sec_{id}", mc.DoTApplicationColor, v => mc.DoTApplicationColor = v);
-                var dotAppSize = mc.DoTApplicationMarkerSize;
-                ImGui.SetNextItemWidth(150);
-                if (ImGui.SliderFloat($"Application size##sec_{id}", ref dotAppSize, 1f, 10f, "%.1f"))
-                {
-                    mc.DoTApplicationMarkerSize = dotAppSize;
-                    changed = true;
-                }
+                changed |= SliderFloatProp($"Application size##sec_{id}", mc.DoTApplicationMarkerSize, 1f, 10f, "%.1f", v => mc.DoTApplicationMarkerSize = v, 150);
             }
 
             ImGui.TreePop();

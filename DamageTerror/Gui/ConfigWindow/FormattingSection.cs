@@ -12,42 +12,18 @@ internal static class FormattingSection
     {
         var changed = false;
 
-        var formatIdx = (int)config.ValueDisplayFormat;
         var formatLabels = new[] { "Abbreviated (12.3K)", "Commas (12,345)", "Raw (12345.6)" };
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.Combo("Number format", ref formatIdx, formatLabels, formatLabels.Length))
-        {
-            config.ValueDisplayFormat = (ValueDisplayFormat)formatIdx;
-            changed = true;
-        }
+        changed |= ConfigHelpers.ComboProp("Number format", (int)config.ValueDisplayFormat, formatLabels, v => config.ValueDisplayFormat = (ValueDisplayFormat)v, 200);
 
         ImGui.Spacing();
 
-        var abbrevDec = config.AbbreviatedDecimalPlaces;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderInt("Abbreviated decimal places", ref abbrevDec, 0, 2))
-        {
-            config.AbbreviatedDecimalPlaces = abbrevDec;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderIntProp("Abbreviated decimal places", config.AbbreviatedDecimalPlaces, 0, 2, v => config.AbbreviatedDecimalPlaces = v, 200);
         ConfigHelpers.HelpMarker("K / M suffixed values");
 
-        var rawDec = config.RawDecimalPlaces;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderInt("Value decimal places", ref rawDec, 0, 2))
-        {
-            config.RawDecimalPlaces = rawDec;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderIntProp("Value decimal places", config.RawDecimalPlaces, 0, 2, v => config.RawDecimalPlaces = v, 200);
         ConfigHelpers.HelpMarker("Raw / Commas values");
 
-        var pctDec = config.PercentDecimalPlaces;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderInt("Percent decimal places", ref pctDec, 0, 2))
-        {
-            config.PercentDecimalPlaces = pctDec;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderIntProp("Percent decimal places", config.PercentDecimalPlaces, 0, 2, v => config.PercentDecimalPlaces = v, 200);
 
         if (config.ValueDisplayFormat == ValueDisplayFormat.Abbreviated)
         {
@@ -80,23 +56,12 @@ internal static class FormattingSection
         ImGui.Spacing();
         ImGui.TextDisabled("Skill Name Abbreviation");
 
-        var skillLen = config.MaxHitSkillNameLength;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderInt("Max skill name length", ref skillLen, 0, 30))
-        {
-            config.MaxHitSkillNameLength = skillLen;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderIntProp("Max skill name length", config.MaxHitSkillNameLength, 0, 30, v => config.MaxHitSkillNameLength = v, 200);
         ConfigHelpers.HelpMarker("Shorten Max Hit / Max Heal skill names when they exceed this length.\nEach word after the first is replaced by its initial. 0 = disabled.");
 
         if (config.MaxHitSkillNameLength > 0)
         {
-            var truncSkill = config.TruncateSkillNames;
-            if (ImGui.Checkbox("Truncate instead of abbreviate", ref truncSkill))
-            {
-                config.TruncateSkillNames = truncSkill;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Truncate instead of abbreviate", config.TruncateSkillNames, v => config.TruncateSkillNames = v);
 
             var preview = ValueFormatter.AbbreviateSkillName("Midare Setsugekka", config.MaxHitSkillNameLength, config.TruncateSkillNames);
             ConfigHelpers.HelpMarker($"e.g. Midare Setsugekka → {preview}");

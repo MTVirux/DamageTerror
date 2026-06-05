@@ -308,13 +308,9 @@ public sealed class SkillTracker
         bool isCritDirectHit = isCrit && isDirectHit;
 
         if (!store.TryGetValue(sourceName, out var skills))
-        {
-            skills = new Dictionary<string, SkillAccum>();
-            store[sourceName] = skills;
-        }
+            store[sourceName] = skills = new Dictionary<string, SkillAccum>();
 
-        if (!skills.TryGetValue(skillName, out var existing))
-            existing = default;
+        var existing = skills.GetValueOrDefault(skillName);
 
         existing.Amount += amount;
         existing.Hits++;
@@ -335,23 +331,16 @@ public sealed class SkillTracker
         string ownerName, string petName, string skillName, long amount, byte severity, SkillDamageType damageType)
     {
         if (!store.TryGetValue(ownerName, out var pets))
-        {
-            pets = new Dictionary<string, Dictionary<string, SkillAccum>>(StringComparer.OrdinalIgnoreCase);
-            store[ownerName] = pets;
-        }
+            store[ownerName] = pets = new Dictionary<string, Dictionary<string, SkillAccum>>(StringComparer.OrdinalIgnoreCase);
 
         if (!pets.TryGetValue(petName, out var skills))
-        {
-            skills = new Dictionary<string, SkillAccum>(StringComparer.OrdinalIgnoreCase);
-            pets[petName] = skills;
-        }
+            pets[petName] = skills = new Dictionary<string, SkillAccum>(StringComparer.OrdinalIgnoreCase);
 
         bool isCrit = (severity & CritFlag) != 0;
         bool isDirectHit = (severity & DirectHitFlag) != 0;
         bool isCritDirectHit = isCrit && isDirectHit;
 
-        if (!skills.TryGetValue(skillName, out var existing))
-            existing = default;
+        var existing = skills.GetValueOrDefault(skillName);
 
         existing.Amount += amount;
         existing.Hits++;
@@ -380,8 +369,7 @@ public sealed class SkillTracker
         bool isCrit = (severity & CritFlag) != 0;
         bool isDH = (severity & DirectHitFlag) != 0;
 
-        if (!combatantDotStats.TryGetValue(sourceName, out var stats))
-            stats = default;
+        var stats = combatantDotStats.GetValueOrDefault(sourceName);
 
         // Use dynamic crit multiplier when available, otherwise fall back to default.
         var critMulti = stats.DynamicCritMulti > 0 ? stats.DynamicCritMulti : DefaultCritMulti;
@@ -435,8 +423,7 @@ public sealed class SkillTracker
         if (initialPotency <= 0 || amount <= 0)
             return;
 
-        if (!combatantDotStats.TryGetValue(sourceName, out var stats))
-            stats = default;
+        var stats = combatantDotStats.GetValueOrDefault(sourceName);
 
         var critMulti = stats.DynamicCritMulti > 0 ? stats.DynamicCritMulti : DefaultCritMulti;
 
@@ -578,9 +565,7 @@ public sealed class SkillTracker
     };
 
     private SkillDamageType LookupStatusDamageType(uint statusId)
-    {
-        return StatusDamageTypeOverrides.GetValueOrDefault(statusId, SkillDamageType.Unknown);
-    }
+        => StatusDamageTypeOverrides.GetValueOrDefault(statusId, SkillDamageType.Unknown);
 
     /// <summary>
     /// Resolve a status effect's display name from active statuses or Lumina.
@@ -759,10 +744,7 @@ public sealed class SkillTracker
         string? targetName = null, bool isDoTTick = false, bool isHoTTick = false)
     {
         if (!skillEvents.TryGetValue(combatantName, out var events))
-        {
-            events = new List<SkillUseEvent>();
-            skillEvents[combatantName] = events;
-        }
+            skillEvents[combatantName] = events = new List<SkillUseEvent>();
 
         events.Add(new SkillUseEvent
         {
@@ -819,10 +801,7 @@ public sealed class SkillTracker
     private void RecordDamageTakenEvent(string targetName, string skillName, long amount, byte severity)
     {
         if (!damageTakenEvents.TryGetValue(targetName, out var events))
-        {
-            events = new List<SkillUseEvent>();
-            damageTakenEvents[targetName] = events;
-        }
+            damageTakenEvents[targetName] = events = new List<SkillUseEvent>();
 
         events.Add(new SkillUseEvent
         {
@@ -838,10 +817,7 @@ public sealed class SkillTracker
     private void RecordItemEvent(string combatantName, string skillName, string? targetName)
     {
         if (!itemEvents.TryGetValue(combatantName, out var events))
-        {
-            events = new List<SkillUseEvent>();
-            itemEvents[combatantName] = events;
-        }
+            itemEvents[combatantName] = events = new List<SkillUseEvent>();
 
         events.Add(new SkillUseEvent
         {
@@ -1206,10 +1182,7 @@ public sealed class SkillTracker
                     foreach (var (skillName, statusId2) in groundEffects)
                     {
                         if (!sourceSkills.TryGetValue(sourceName, out var skills))
-                        {
-                            skills = new List<(string, uint, byte, byte, bool)>();
-                            sourceSkills[sourceName] = skills;
-                        }
+                            sourceSkills[sourceName] = skills = new List<(string, uint, byte, byte, bool)>();
                         if (!skills.Any(e => e.Name == skillName))
                             skills.Add((skillName, statusId2, 0, 0, false));
                     }
@@ -1231,10 +1204,7 @@ public sealed class SkillTracker
                     {
                         var name = s.ApplyingActionName ?? s.StatusName;
                         if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
-                        {
-                            skills = new List<(string, uint, byte, byte, bool)>();
-                            sourceSkills[s.SourceName] = skills;
-                        }
+                            sourceSkills[s.SourceName] = skills = new List<(string, uint, byte, byte, bool)>();
                         skills.Add((name, s.StatusId, s.DamageLowByte, s.CritLowByte, s.HasLowByteData));
                     }
                 }
@@ -1251,10 +1221,7 @@ public sealed class SkillTracker
                             continue;
 
                         if (!sourceSkills.TryGetValue(s.SourceName, out var skills))
-                        {
-                            skills = new List<(string, uint, byte, byte, bool)>();
-                            sourceSkills[s.SourceName] = skills;
-                        }
+                            sourceSkills[s.SourceName] = skills = new List<(string, uint, byte, byte, bool)>();
                         skills.Add((name, s.StatusId, s.DamageLowByte, s.CritLowByte, s.HasLowByteData));
                     }
                 }

@@ -13,17 +13,13 @@ public sealed class MainWindow : Window, IDisposable
         try
         {
             var ver = typeof(DamageTerrorPlugin).Assembly.GetName().Version?.ToString() ?? string.Empty;
+            var version = string.IsNullOrEmpty(ver) ? "" : $"  -  v{ver}";
 
 #if DEBUG
-            var title = string.IsNullOrEmpty(ver)
-                ? "Damage Terror [TESTING]###DamageTerrorMain"
-                : $"Damage Terror  -  v{ver} [TESTING]###DamageTerrorMain";
+            return $"Damage Terror{version} [TESTING]###DamageTerrorMain";
 #else
-            var title = string.IsNullOrEmpty(ver)
-                ? "Damage Terror###DamageTerrorMain"
-                : $"Damage Terror  -  v{ver}###DamageTerrorMain";
+            return $"Damage Terror{version}###DamageTerrorMain";
 #endif
-            return title;
         }
         catch
         {
@@ -492,15 +488,9 @@ public sealed class MainWindow : Window, IDisposable
         var buttonHeight = config.TabButtonHeight;
         var rounding = config.TabButtonRounding;
 
-        float buttonWidth;
-        if (config.TabButtonStretchToFit)
-        {
-            buttonWidth = (regionWidth - spacing * (visibleCount - 1)) / visibleCount;
-        }
-        else
-        {
-            buttonWidth = config.TabButtonWidth;
-        }
+        var buttonWidth = config.TabButtonStretchToFit
+            ? (regionWidth - spacing * (visibleCount - 1)) / visibleCount
+            : config.TabButtonWidth;
 
         var drawList = ImGui.GetWindowDrawList();
         var cursor = ImGui.GetCursorScreenPos();

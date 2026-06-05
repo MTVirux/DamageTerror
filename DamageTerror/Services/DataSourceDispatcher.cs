@@ -30,8 +30,7 @@ internal static class DataSourceDispatcher
                 break;
 
             case "LogLine":
-                var lineArray = data["line"] as JArray;
-                if (lineArray != null)
+                if (data["line"] is JArray lineArray)
                 {
                     var fields = lineArray.Select(t => t.ToString()).ToArray();
                     onLogLine?.Invoke(fields);

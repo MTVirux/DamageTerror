@@ -14,38 +14,15 @@ internal static class BarsSection
         {
             ImGui.Spacing();
 
-            var showJob = config.ShowJobAbbrevOnBar;
-            if (ImGui.Checkbox("Job abbreviation text", ref showJob))
-            {
-                config.ShowJobAbbrevOnBar = showJob;
-                changed = true;
-            }
-
-            var showRank = config.ShowRankNumber;
-            if (ImGui.Checkbox("Rank number", ref showRank))
-            {
-                config.ShowRankNumber = showRank;
-                changed = true;
-            }
-
-            var showJobIcons = config.ShowJobIcons;
-            if (ImGui.Checkbox("Job icons", ref showJobIcons))
-            {
-                config.ShowJobIcons = showJobIcons;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Job abbreviation text", config.ShowJobAbbrevOnBar, v => config.ShowJobAbbrevOnBar = v);
+            changed |= ConfigHelpers.CheckboxProp("Rank number", config.ShowRankNumber, v => config.ShowRankNumber = v);
+            changed |= ConfigHelpers.CheckboxProp("Job icons", config.ShowJobIcons, v => config.ShowJobIcons = v);
 
             if (config.ShowJobIcons)
             {
                 ImGui.SameLine();
-                var styleIdx = (int)config.JobIconStyle;
                 var styleLabels = new[] { "Framed", "Plain", "Custom" };
-                ImGui.SetNextItemWidth(120);
-                if (ImGui.Combo("Icon style", ref styleIdx, styleLabels, styleLabels.Length))
-                {
-                    config.JobIconStyle = (JobIconStyle)styleIdx;
-                    changed = true;
-                }
+                changed |= ConfigHelpers.ComboProp("Icon style", (int)config.JobIconStyle, styleLabels, v => config.JobIconStyle = (JobIconStyle)v, 120);
 
                 if (config.JobIconStyle == JobIconStyle.Custom)
                 {
@@ -86,102 +63,29 @@ internal static class BarsSection
 
         if (ImGui.CollapsingHeader("Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        var barHeight = config.BarHeight;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar height", ref barHeight, 14.0f, 40.0f, "%.0f px"))
-        {
-            config.BarHeight = barHeight;
-            changed = true;
-        }
-
-        var barSpacing = config.BarSpacing;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar spacing", ref barSpacing, 0.0f, 8.0f, "%.0f px"))
-        {
-            config.BarSpacing = barSpacing;
-            changed = true;
-        }
-
-        var barRounding = config.BarRounding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar rounding", ref barRounding, 0.0f, 12.0f, "%.1f"))
-        {
-            config.BarRounding = barRounding;
-            changed = true;
-        }
-
-        var iconSize = config.IconSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Icon size", ref iconSize, 10.0f, 32.0f, "%.0f px"))
-        {
-            config.IconSize = iconSize;
-            changed = true;
-        }
-
-        var barAlpha = config.BarAlpha;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar opacity", ref barAlpha, 0.1f, 1.0f, "%.2f"))
-        {
-            config.BarAlpha = barAlpha;
-            changed = true;
-        }
-
-        var barFontSize = config.BarFontSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar font size", ref barFontSize, 6f, 40f, "%.1fpt"))
-        {
-            config.BarFontSize = barFontSize;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderFloatProp("Bar height", config.BarHeight, 14.0f, 40.0f, "%.0f px", v => config.BarHeight = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Bar spacing", config.BarSpacing, 0.0f, 8.0f, "%.0f px", v => config.BarSpacing = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Bar rounding", config.BarRounding, 0.0f, 12.0f, "%.1f", v => config.BarRounding = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Icon size", config.IconSize, 10.0f, 32.0f, "%.0f px", v => config.IconSize = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Bar opacity", config.BarAlpha, 0.1f, 1.0f, "%.2f", v => config.BarAlpha = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Bar font size", config.BarFontSize, 6f, 40f, "%.1fpt", v => config.BarFontSize = v, 200);
         }
 
         ImGui.Spacing();
 
         if (ImGui.CollapsingHeader("Padding", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        var barLeftPad = config.BarLeftPadding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Left padding", ref barLeftPad, 0.0f, 20.0f, "%.0f px"))
-        {
-            config.BarLeftPadding = barLeftPad;
-            changed = true;
-        }
-
-        var barRightPad = config.BarRightPadding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Right padding", ref barRightPad, 0.0f, 20.0f, "%.0f px"))
-        {
-            config.BarRightPadding = barRightPad;
-            changed = true;
-        }
-
-        var barColSpacing = config.BarColumnSpacing;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Column spacing", ref barColSpacing, 0.0f, 16.0f, "%.0f px"))
-        {
-            config.BarColumnSpacing = barColSpacing;
-            changed = true;
-        }
-
-        var iconTextPad = config.IconTextPadding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Icon-text padding", ref iconTextPad, 0.0f, 12.0f, "%.0f px"))
-        {
-            config.IconTextPadding = iconTextPad;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderFloatProp("Left padding", config.BarLeftPadding, 0.0f, 20.0f, "%.0f px", v => config.BarLeftPadding = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Right padding", config.BarRightPadding, 0.0f, 20.0f, "%.0f px", v => config.BarRightPadding = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Column spacing", config.BarColumnSpacing, 0.0f, 16.0f, "%.0f px", v => config.BarColumnSpacing = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Icon-text padding", config.IconTextPadding, 0.0f, 12.0f, "%.0f px", v => config.IconTextPadding = v, 200);
         }
 
         ImGui.Spacing();
 
         if (ImGui.CollapsingHeader("Self Highlighting", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        var selfHighlight = config.SelfBarHighlight;
-        if (ImGui.Checkbox("Highlight local player bar", ref selfHighlight))
-        {
-            config.SelfBarHighlight = selfHighlight;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Highlight local player bar", config.SelfBarHighlight, v => config.SelfBarHighlight = v);
 
         if (config.SelfBarHighlight)
         {
@@ -204,38 +108,15 @@ internal static class BarsSection
 
         if (ImGui.CollapsingHeader("Header Row", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        var showHeader = config.ShowMeterHeader;
-        if (ImGui.Checkbox("Show header row", ref showHeader))
-        {
-            config.ShowMeterHeader = showHeader;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Show header row", config.ShowMeterHeader, v => config.ShowMeterHeader = v);
 
         changed |= ConfigHelpers.ColorEditProp("Header text color", config.HeaderTextColor, v => config.HeaderTextColor = v);
         changed |= ConfigHelpers.ColorEditProp("Header background", config.HeaderBackgroundColor, v => config.HeaderBackgroundColor = v);
 
-        var headerHeight = config.HeaderHeight;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Header height", ref headerHeight, 14.0f, 40.0f, "%.0f px"))
-        {
-            config.HeaderHeight = headerHeight;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderFloatProp("Header height", config.HeaderHeight, 14.0f, 40.0f, "%.0f px", v => config.HeaderHeight = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Header font size", config.HeaderFontSize, 6f, 40f, "%.1fpt", v => config.HeaderFontSize = v, 200);
 
-        var headerFontSize = config.HeaderFontSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Header font size", ref headerFontSize, 6f, 40f, "%.1fpt"))
-        {
-            config.HeaderFontSize = headerFontSize;
-            changed = true;
-        }
-
-        var headerSep = config.HeaderSeparator;
-        if (ImGui.Checkbox("Show separator line##header", ref headerSep))
-        {
-            config.HeaderSeparator = headerSep;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Show separator line##header", config.HeaderSeparator, v => config.HeaderSeparator = v);
 
         if (config.HeaderSeparator)
         {

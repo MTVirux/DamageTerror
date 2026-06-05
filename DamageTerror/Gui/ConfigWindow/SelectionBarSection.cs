@@ -14,20 +14,9 @@ internal static class SelectionBarSection
         changed |= ConfigHelpers.ColorEditProp("Text color", config.SelectionBarTextColor, v => config.SelectionBarTextColor = v);
         changed |= ConfigHelpers.ColorEditProp("Background color", config.SelectionBarBackgroundColor, v => config.SelectionBarBackgroundColor = v);
 
-        var selBarHeight = config.SelectionBarHeight;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Extra padding", ref selBarHeight, 0.0f, 16.0f, "%.0f px"))
-        {
-            config.SelectionBarHeight = selBarHeight;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderFloatProp("Extra padding", config.SelectionBarHeight, 0.0f, 16.0f, "%.0f px", v => config.SelectionBarHeight = v, 200);
 
-        var showSelSep = config.ShowSelectionBarSeparator;
-        if (ImGui.Checkbox("Show separator line", ref showSelSep))
-        {
-            config.ShowSelectionBarSeparator = showSelSep;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Show separator line", config.ShowSelectionBarSeparator, v => config.ShowSelectionBarSeparator = v);
 
         if (config.ShowSelectionBarSeparator)
         {

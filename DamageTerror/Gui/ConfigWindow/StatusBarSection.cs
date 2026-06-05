@@ -11,36 +11,10 @@ internal static class StatusBarSection
 
         if (ImGui.CollapsingHeader("Options##statusbar", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var showSep = config.ShowStatusBarSeparator;
-            if (ImGui.Checkbox("Show separator line", ref showSep))
-            {
-                config.ShowStatusBarSeparator = showSep;
-                changed = true;
-            }
-
-            var barHeight = config.StatusBarHeight;
-            ImGui.SetNextItemWidth(150);
-            if (ImGui.SliderFloat("Height##statusbar", ref barHeight, 14f, 40f, "%.0f"))
-            {
-                config.StatusBarHeight = barHeight;
-                changed = true;
-            }
-
-            var fontSizeSb = config.StatusBarFontSize;
-            ImGui.SetNextItemWidth(150);
-            if (ImGui.SliderFloat("Font size##statusbar", ref fontSizeSb, 6f, 40f, "%.1fpt"))
-            {
-                config.StatusBarFontSize = fontSizeSb;
-                changed = true;
-            }
-
-            var statusPad = config.StatusBarPadding;
-            ImGui.SetNextItemWidth(150);
-            if (ImGui.SliderFloat("Padding##statusbar", ref statusPad, 0f, 20f, "%.0f px"))
-            {
-                config.StatusBarPadding = statusPad;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Show separator line", config.ShowStatusBarSeparator, v => config.ShowStatusBarSeparator = v);
+            changed |= ConfigHelpers.SliderFloatProp("Height##statusbar", config.StatusBarHeight, 14f, 40f, "%.0f", v => config.StatusBarHeight = v, 150);
+            changed |= ConfigHelpers.SliderFloatProp("Font size##statusbar", config.StatusBarFontSize, 6f, 40f, "%.1fpt", v => config.StatusBarFontSize = v, 150);
+            changed |= ConfigHelpers.SliderFloatProp("Padding##statusbar", config.StatusBarPadding, 0f, 20f, "%.0f px", v => config.StatusBarPadding = v, 150);
         }
 
         ImGui.Spacing();

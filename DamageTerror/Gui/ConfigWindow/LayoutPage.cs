@@ -89,12 +89,7 @@ public static class LayoutPage
         ImGui.Separator();
         ImGui.Spacing();
 
-        var hideHeader = config.HideWindowHeader;
-        if (ImGui.Checkbox("Hide window header##layout", ref hideHeader))
-        {
-            config.HideWindowHeader = hideHeader;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Hide window header##layout", config.HideWindowHeader, v => config.HideWindowHeader = v);
 
         ImGui.Spacing();
 

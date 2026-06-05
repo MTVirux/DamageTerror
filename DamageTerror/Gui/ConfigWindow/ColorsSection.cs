@@ -11,12 +11,7 @@ internal static class ColorsSection
 
         if (ImGui.CollapsingHeader("Job / Role Colors", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        var usePerJob = config.UsePerJobColors;
-        if (ImGui.Checkbox("Use per-job colors", ref usePerJob))
-        {
-            config.UsePerJobColors = usePerJob;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Use per-job colors", config.UsePerJobColors, v => config.UsePerJobColors = v);
 
         ImGui.Spacing();
 

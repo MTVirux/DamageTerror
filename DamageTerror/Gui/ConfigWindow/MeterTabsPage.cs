@@ -13,12 +13,7 @@ public static class MeterTabsPage
     {
         var changed = false;
 
-        var showTabBar = config.ShowTabBar;
-        if (ImGui.Checkbox("Enable meter tabs", ref showTabBar))
-        {
-            config.ShowTabBar = showTabBar;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Enable meter tabs", config.ShowTabBar, v => config.ShowTabBar = v);
 
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("When enabled, adds a tab bar to the main meter window.\nEach tab can filter and sort combatants independently.");
@@ -174,96 +169,29 @@ public static class MeterTabsPage
 
         if (ImGui.CollapsingHeader("Colors", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        var btnColor = config.TabButtonColor;
-        if (ImGui.ColorEdit4("Button Color", ref btnColor, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
-        {
-            config.TabButtonColor = btnColor;
-            changed = true;
-        }
-
-        var btnHovered = config.TabButtonHoveredColor;
-        if (ImGui.ColorEdit4("Hovered Color", ref btnHovered, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
-        {
-            config.TabButtonHoveredColor = btnHovered;
-            changed = true;
-        }
-
-        var btnActive = config.TabButtonActiveColor;
-        if (ImGui.ColorEdit4("Active Color", ref btnActive, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
-        {
-            config.TabButtonActiveColor = btnActive;
-            changed = true;
-        }
-
-        var btnText = config.TabButtonTextColor;
-        if (ImGui.ColorEdit4("Text Color", ref btnText, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
-        {
-            config.TabButtonTextColor = btnText;
-            changed = true;
-        }
-
-        var btnActiveText = config.TabButtonActiveTextColor;
-        if (ImGui.ColorEdit4("Active Text Color", ref btnActiveText, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
-        {
-            config.TabButtonActiveTextColor = btnActiveText;
-            changed = true;
-        }
+        changed |= ConfigHelpers.ColorEditProp("Button Color", config.TabButtonColor, v => config.TabButtonColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Hovered Color", config.TabButtonHoveredColor, v => config.TabButtonHoveredColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Active Color", config.TabButtonActiveColor, v => config.TabButtonActiveColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Text Color", config.TabButtonTextColor, v => config.TabButtonTextColor = v);
+        changed |= ConfigHelpers.ColorEditProp("Active Text Color", config.TabButtonActiveTextColor, v => config.TabButtonActiveTextColor = v);
         }
 
         ImGui.Spacing();
 
         if (ImGui.CollapsingHeader("Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        var btnHeight = config.TabButtonHeight;
-        ImGui.SetNextItemWidth(150);
-        if (ImGui.SliderFloat("Button Height", ref btnHeight, 14f, 48f, "%.0f"))
-        {
-            config.TabButtonHeight = btnHeight;
-            changed = true;
-        }
-
-        var btnSpacing = config.TabButtonSpacing;
-        ImGui.SetNextItemWidth(150);
-        if (ImGui.SliderFloat("Button Spacing", ref btnSpacing, 0f, 16f, "%.0f"))
-        {
-            config.TabButtonSpacing = btnSpacing;
-            changed = true;
-        }
-
-        var btnRounding = config.TabButtonRounding;
-        ImGui.SetNextItemWidth(150);
-        if (ImGui.SliderFloat("Button Rounding", ref btnRounding, 0f, 16f, "%.1f"))
-        {
-            config.TabButtonRounding = btnRounding;
-            changed = true;
-        }
-
-        var btnFontSize = config.TabButtonFontSize;
-        ImGui.SetNextItemWidth(150);
-        if (ImGui.SliderFloat("Font Size", ref btnFontSize, 6f, 40f, "%.1fpt"))
-        {
-            config.TabButtonFontSize = btnFontSize;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderFloatProp("Button Height", config.TabButtonHeight, 14f, 48f, "%.0f", v => config.TabButtonHeight = v, 150);
+        changed |= ConfigHelpers.SliderFloatProp("Button Spacing", config.TabButtonSpacing, 0f, 16f, "%.0f", v => config.TabButtonSpacing = v, 150);
+        changed |= ConfigHelpers.SliderFloatProp("Button Rounding", config.TabButtonRounding, 0f, 16f, "%.1f", v => config.TabButtonRounding = v, 150);
+        changed |= ConfigHelpers.SliderFloatProp("Font Size", config.TabButtonFontSize, 6f, 40f, "%.1fpt", v => config.TabButtonFontSize = v, 150);
 
         ImGui.Spacing();
 
-        var btnStretch = config.TabButtonStretchToFit;
-        if (ImGui.Checkbox("Stretch buttons to fill width", ref btnStretch))
-        {
-            config.TabButtonStretchToFit = btnStretch;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Stretch buttons to fill width", config.TabButtonStretchToFit, v => config.TabButtonStretchToFit = v);
 
         if (!config.TabButtonStretchToFit)
         {
-            var btnWidth = config.TabButtonWidth;
-            ImGui.SetNextItemWidth(150);
-            if (ImGui.SliderFloat("Button Width", ref btnWidth, 20f, 300f, "%.0f"))
-            {
-                config.TabButtonWidth = btnWidth;
-                changed = true;
-            }
+            changed |= ConfigHelpers.SliderFloatProp("Button Width", config.TabButtonWidth, 20f, 300f, "%.0f", v => config.TabButtonWidth = v, 150);
 
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Fixed width for each tab button.\nSet to 0 to auto-size based on text.");

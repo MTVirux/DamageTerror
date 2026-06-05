@@ -75,69 +75,14 @@ internal static class FontSection
         {
         ImGui.TextWrapped("Set the font size for each component independently.");
 
-        var barFont = config.BarFontSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar text", ref barFont, 6f, 40f, "%.1fpt"))
-        {
-            config.BarFontSize = barFont;
-            changed = true;
-        }
-
-        var headerFont = config.HeaderFontSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Header text", ref headerFont, 6f, 40f, "%.1fpt"))
-        {
-            config.HeaderFontSize = headerFont;
-            changed = true;
-        }
-
-        var statusFont = config.StatusBarFontSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Status bar text", ref statusFont, 6f, 40f, "%.1fpt"))
-        {
-            config.StatusBarFontSize = statusFont;
-            changed = true;
-        }
-
-        var detailFont = config.DetailFontSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Detail panel text", ref detailFont, 6f, 40f, "%.1fpt"))
-        {
-            config.DetailFontSize = detailFont;
-            changed = true;
-        }
-
-        var skillFont = config.SkillFontSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Skill breakdown text", ref skillFont, 6f, 40f, "%.1fpt"))
-        {
-            config.SkillFontSize = skillFont;
-            changed = true;
-        }
-
-        var buffFont = config.BuffFontSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Buff/debuff text", ref buffFont, 6f, 40f, "%.1fpt"))
-        {
-            config.BuffFontSize = buffFont;
-            changed = true;
-        }
-
-        var graphFont = config.GraphFontSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Graph labels (detail)", ref graphFont, 6f, 40f, "%.1fpt"))
-        {
-            config.GraphFontSize = graphFont;
-            changed = true;
-        }
-
-        var graphViewFont = config.GraphViewFontSize;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Graph labels (overview)", ref graphViewFont, 6f, 40f, "%.1fpt"))
-        {
-            config.GraphViewFontSize = graphViewFont;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderFloatProp("Bar text", config.BarFontSize, 6f, 40f, "%.1fpt", v => config.BarFontSize = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Header text", config.HeaderFontSize, 6f, 40f, "%.1fpt", v => config.HeaderFontSize = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Status bar text", config.StatusBarFontSize, 6f, 40f, "%.1fpt", v => config.StatusBarFontSize = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Detail panel text", config.DetailFontSize, 6f, 40f, "%.1fpt", v => config.DetailFontSize = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Skill breakdown text", config.SkillFontSize, 6f, 40f, "%.1fpt", v => config.SkillFontSize = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Buff/debuff text", config.BuffFontSize, 6f, 40f, "%.1fpt", v => config.BuffFontSize = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Graph labels (detail)", config.GraphFontSize, 6f, 40f, "%.1fpt", v => config.GraphFontSize = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Graph labels (overview)", config.GraphViewFontSize, 6f, 40f, "%.1fpt", v => config.GraphViewFontSize = v, 200);
 
         ImGui.Spacing();
 

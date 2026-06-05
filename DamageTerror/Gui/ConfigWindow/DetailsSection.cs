@@ -11,13 +11,7 @@ internal static class DetailsSection
 
         if (ImGui.CollapsingHeader("Layout", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        var detailIndent = config.DetailIndent;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Indent", ref detailIndent, 0.0f, 24.0f, "%.0f px"))
-        {
-            config.DetailIndent = detailIndent;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderFloatProp("Indent", config.DetailIndent, 0.0f, 24.0f, "%.0f px", v => config.DetailIndent = v, 200);
         }
 
         ImGui.Spacing();
@@ -43,29 +37,9 @@ internal static class DetailsSection
 
         if (ImGui.CollapsingHeader("Skill Breakdown — Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
         {
-        var skillRowHeight = config.SkillRowHeight;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Row height", ref skillRowHeight, 10.0f, 30.0f, "%.0f px"))
-        {
-            config.SkillRowHeight = skillRowHeight;
-            changed = true;
-        }
-
-        var skillColPad = config.SkillColumnPadding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Column padding", ref skillColPad, 0.0f, 16.0f, "%.0f px"))
-        {
-            config.SkillColumnPadding = skillColPad;
-            changed = true;
-        }
-
-        var skillRounding = config.SkillBarRounding;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Bar rounding##skills", ref skillRounding, 0.0f, 12.0f, "%.1f"))
-        {
-            config.SkillBarRounding = skillRounding;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderFloatProp("Row height", config.SkillRowHeight, 10.0f, 30.0f, "%.0f px", v => config.SkillRowHeight = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Column padding", config.SkillColumnPadding, 0.0f, 16.0f, "%.0f px", v => config.SkillColumnPadding = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Bar rounding##skills", config.SkillBarRounding, 0.0f, 12.0f, "%.1f", v => config.SkillBarRounding = v, 200);
         }
 
         ImGui.Spacing();
@@ -104,26 +78,9 @@ internal static class DetailsSection
             ImGui.Spacing();
             ImGui.TextDisabled("Series visibility");
 
-            var showDps = config.GraphShowDps;
-            if (ImGui.Checkbox("Show iDPS##graph", ref showDps))
-            {
-                config.GraphShowDps = showDps;
-                changed = true;
-            }
-
-            var showHps = config.GraphShowHps;
-            if (ImGui.Checkbox("Show iHPS##graph", ref showHps))
-            {
-                config.GraphShowHps = showHps;
-                changed = true;
-            }
-
-            var showDtps = config.GraphShowDtps;
-            if (ImGui.Checkbox("Show iDTPS##graph", ref showDtps))
-            {
-                config.GraphShowDtps = showDtps;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Show iDPS##graph", config.GraphShowDps, v => config.GraphShowDps = v);
+            changed |= ConfigHelpers.CheckboxProp("Show iHPS##graph", config.GraphShowHps, v => config.GraphShowHps = v);
+            changed |= ConfigHelpers.CheckboxProp("Show iDTPS##graph", config.GraphShowDtps, v => config.GraphShowDtps = v);
 
             ImGui.Spacing();
             ImGui.TextDisabled("Series Colors");
@@ -182,29 +139,9 @@ internal static class DetailsSection
 
         if (ImGui.CollapsingHeader("Buffs / Debuffs — Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var buffRowHeight = config.BuffRowHeight;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Row height##buffs", ref buffRowHeight, 10.0f, 30.0f, "%.0f px"))
-            {
-                config.BuffRowHeight = buffRowHeight;
-                changed = true;
-            }
-
-            var buffColPad = config.BuffColumnPadding;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Column padding##buffs", ref buffColPad, 0.0f, 16.0f, "%.0f px"))
-            {
-                config.BuffColumnPadding = buffColPad;
-                changed = true;
-            }
-
-            var buffRounding = config.BuffBarRounding;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Bar rounding##buffs", ref buffRounding, 0.0f, 12.0f, "%.1f"))
-            {
-                config.BuffBarRounding = buffRounding;
-                changed = true;
-            }
+            changed |= ConfigHelpers.SliderFloatProp("Row height##buffs", config.BuffRowHeight, 10.0f, 30.0f, "%.0f px", v => config.BuffRowHeight = v, 200);
+            changed |= ConfigHelpers.SliderFloatProp("Column padding##buffs", config.BuffColumnPadding, 0.0f, 16.0f, "%.0f px", v => config.BuffColumnPadding = v, 200);
+            changed |= ConfigHelpers.SliderFloatProp("Bar rounding##buffs", config.BuffBarRounding, 0.0f, 12.0f, "%.1f", v => config.BuffBarRounding = v, 200);
         }
 
         ImGui.Spacing();

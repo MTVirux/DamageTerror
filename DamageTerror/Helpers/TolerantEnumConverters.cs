@@ -85,23 +85,9 @@ public sealed class TolerantEnumCollectionConverter : JsonConverter
         var elemType = objectType.GetGenericArguments()[0];
         var collection = Activator.CreateInstance(objectType)!;
         var addMethod = objectType.GetMethod("Add")!;
-        var arr = JArray.Load(reader);
 
-        foreach (var token in arr)
-        {
-            if (token.Type == JTokenType.String)
-            {
-                var str = token.Value<string>();
-                if (str != null && Enum.TryParse(elemType, str, out var val) && val != null)
-                    addMethod.Invoke(collection, new[] { val });
-            }
-            else if (token.Type == JTokenType.Integer)
-            {
-                var intVal = token.Value<int>();
-                if (Enum.IsDefined(elemType, intVal))
-                    addMethod.Invoke(collection, new[] { Enum.ToObject(elemType, intVal) });
-            }
-        }
+        TolerantEnumParsing.ParseEnumArray(JArray.Load(reader), elemType,
+            val => addMethod.Invoke(collection, new[] { val }));
 
         return collection;
     }
@@ -152,23 +138,7 @@ public sealed class TolerantEnumListMapConverter : JsonConverter
             var list = (System.Collections.IList)Activator.CreateInstance(valueListType)!;
 
             if (prop.Value is JArray arr)
-            {
-                foreach (var token in arr)
-                {
-                    if (token.Type == JTokenType.String)
-                    {
-                        var str = token.Value<string>();
-                        if (str != null && Enum.TryParse(elemType, str, out var val) && val != null)
-                            list.Add(val);
-                    }
-                    else if (token.Type == JTokenType.Integer)
-                    {
-                        var intVal = token.Value<int>();
-                        if (Enum.IsDefined(elemType, intVal))
-                            list.Add(Enum.ToObject(elemType, intVal));
-                    }
-                }
-            }
+                TolerantEnumParsing.ParseEnumArray(arr, elemType, val => list.Add(val));
 
             dict[prop.Name] = list;
         }
@@ -194,5 +164,27 @@ public sealed class TolerantEnumListMapConverter : JsonConverter
             writer.WriteEndArray();
         }
         writer.WriteEndObject();
+    }
+}
+
+file static class TolerantEnumParsing
+{
+    public static void ParseEnumArray(JArray arr, Type elemType, Action<object> add)
+    {
+        foreach (var token in arr)
+        {
+            if (token.Type == JTokenType.String)
+            {
+                var str = token.Value<string>();
+                if (str != null && Enum.TryParse(elemType, str, out var val) && val != null)
+                    add(val);
+            }
+            else if (token.Type == JTokenType.Integer)
+            {
+                var intVal = token.Value<int>();
+                if (Enum.IsDefined(elemType, intVal))
+                    add(Enum.ToObject(elemType, intVal));
+            }
+        }
     }
 }

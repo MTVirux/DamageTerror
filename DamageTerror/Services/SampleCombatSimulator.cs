@@ -133,10 +133,7 @@ internal sealed class SampleCombatSimulator
             {
                 var c = snapshot.Combatants[i];
                 if (!snapshot.GraphData.TryGetValue(c.Name, out var samples))
-                {
-                    samples = new List<GraphSample>();
-                    snapshot.GraphData[c.Name] = samples;
-                }
+                    snapshot.GraphData[c.Name] = samples = new List<GraphSample>();
 
                 samples.Add(new GraphSample
                 {
@@ -190,10 +187,7 @@ internal sealed class SampleCombatSimulator
             };
 
             if (!snapshot.SkillEvents.TryGetValue(c.Name, out var events))
-            {
-                events = new List<SkillUseEvent>();
-                snapshot.SkillEvents[c.Name] = events;
-            }
+                snapshot.SkillEvents[c.Name] = events = new List<SkillUseEvent>();
             events.Add(evt);
 
             skill.TotalDamage += amount;
@@ -211,10 +205,7 @@ internal sealed class SampleCombatSimulator
                 };
 
                 if (!snapshot.DamageTakenEvents.TryGetValue(c.Name, out var dtEvents))
-                {
-                    dtEvents = new List<SkillUseEvent>();
-                    snapshot.DamageTakenEvents[c.Name] = dtEvents;
-                }
+                    snapshot.DamageTakenEvents[c.Name] = dtEvents = new List<SkillUseEvent>();
                 dtEvents.Add(dtEvt);
             }
         }
@@ -227,10 +218,7 @@ internal sealed class SampleCombatSimulator
             var c = snapshot.Combatants[i];
 
             if (!activeBuffs.TryGetValue(c.Name, out var buffs))
-            {
-                buffs = new List<ActiveBuff>();
-                activeBuffs[c.Name] = buffs;
-            }
+                activeBuffs[c.Name] = buffs = new List<ActiveBuff>();
 
             for (var j = buffs.Count - 1; j >= 0; j--)
             {
@@ -298,17 +286,11 @@ internal sealed class SampleCombatSimulator
     private void AddStatusToSnapshot(StatusApplication app)
     {
         if (!snapshot.StatusHistory.TryGetValue(app.SourceName, out var history))
-        {
-            history = new List<StatusApplication>();
-            snapshot.StatusHistory[app.SourceName] = history;
-        }
+            snapshot.StatusHistory[app.SourceName] = history = new List<StatusApplication>();
         history.Add(app);
 
         if (!snapshot.StatusesReceived.TryGetValue(app.TargetName, out var received))
-        {
-            received = new List<StatusApplication>();
-            snapshot.StatusesReceived[app.TargetName] = received;
-        }
+            snapshot.StatusesReceived[app.TargetName] = received = new List<StatusApplication>();
         received.Add(app);
     }
 

@@ -590,10 +590,7 @@ public sealed class DataService : IDisposable
         log.Debug($"Player changed to: {newName} (ID: {newId})");
     }
 
-    private void OnPrimaryPlayerChanged(string name, uint id)
-    {
-        OnPlayerChanged(name, id);
-    }
+    private void OnPrimaryPlayerChanged(string name, uint id) => OnPlayerChanged(name, id);
 
 #if DEBUG
     private void OnRawCombatData(JObject data)

@@ -9,10 +9,10 @@ public static class CombatDataParser
         if (data["type"]?.ToString() != "CombatData")
             return null;
 
-        var encounterObj = data["Encounter"] as JObject;
-        var combatantObj = data["Combatant"] as JObject;
-        if (encounterObj == null)
+        if (data["Encounter"] is not JObject encounterObj)
             return null;
+
+        var combatantObj = data["Combatant"] as JObject;
 
         var snapshot = new EncounterSnapshot
         {
@@ -89,8 +89,7 @@ public static class CombatDataParser
 
         foreach (var prop in combatants.Properties())
         {
-            var c = prop.Value as JObject;
-            if (c == null)
+            if (prop.Value is not JObject c)
                 continue;
 
             list.Add(new CombatantEntry
@@ -147,10 +146,7 @@ public static class CombatDataParser
     private const string InfinityPlaceholder = "∞";
 
     private static string GetString(JObject obj, string key, string defaultValue = "")
-    {
-        var token = obj[key];
-        return token?.ToString() ?? defaultValue;
-    }
+        => obj[key]?.ToString() ?? defaultValue;
 
     private static string? SanitizeNumericToken(JObject obj, string key)
     {
@@ -166,24 +162,14 @@ public static class CombatDataParser
     }
 
     private static double GetDouble(JObject obj, string key)
-    {
-        var str = SanitizeNumericToken(obj, key);
-        if (str == null) return 0;
-        return double.TryParse(str, System.Globalization.NumberStyles.Float,
-            System.Globalization.CultureInfo.InvariantCulture, out var val) ? val : 0;
-    }
+        => SanitizeNumericToken(obj, key) is { } str
+            && double.TryParse(str, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var val)
+            ? val : 0;
 
     private static long GetLong(JObject obj, string key)
-    {
-        var str = SanitizeNumericToken(obj, key);
-        if (str == null) return 0;
-        return long.TryParse(str, out var val) ? val : 0;
-    }
+        => SanitizeNumericToken(obj, key) is { } str && long.TryParse(str, out var val) ? val : 0;
 
     private static int GetInt(JObject obj, string key)
-    {
-        var str = SanitizeNumericToken(obj, key);
-        if (str == null) return 0;
-        return int.TryParse(str, out var val) ? val : 0;
-    }
+        => SanitizeNumericToken(obj, key) is { } str && int.TryParse(str, out var val) ? val : 0;
 }

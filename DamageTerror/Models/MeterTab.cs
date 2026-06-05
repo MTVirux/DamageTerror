@@ -139,18 +139,10 @@ public sealed class MeterTab
     public Dictionary<BarColumn, float> ColumnWidthOverrides { get; set; } = new();
 
     public Vector4? GetColumnValueColor(BarColumn col)
-    {
-        if (ColumnValueColors.TryGetValue(col, out var color))
-            return color;
-        return null;
-    }
+        => ColumnValueColors.TryGetValue(col, out var color) ? color : null;
 
     public float? GetColumnWidth(BarColumn col)
-    {
-        if (ColumnWidthOverrides.TryGetValue(col, out var width))
-            return width;
-        return null;
-    }
+        => ColumnWidthOverrides.TryGetValue(col, out var width) ? width : null;
 
     public string GetHeaderLabel(BarColumn col)
     {

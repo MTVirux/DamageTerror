@@ -35,7 +35,7 @@ public static class JobRegistry
     private static readonly HashSet<uint> AggregatedKnownDotStatusIds = BuildAggregatedSet(j => j.KnownDotStatusIds);
     private static readonly HashSet<uint> AggregatedKnownHotStatusIds = BuildAggregatedSet(j => j.KnownHotStatusIds);
     private static readonly HashSet<uint> AggregatedKnownReflectStatusIds = BuildAggregatedSet(j => j.KnownReflectStatusIds);
-    private static readonly Dictionary<uint, string> AggregatedGroundEffectDots = BuildGroundEffectDots();
+    private static readonly Dictionary<uint, string> AggregatedGroundEffectDots = BuildAggregatedDict(j => j.GroundEffectDots);
 
     // ── Role-grouped arrays ──
     public static readonly string[] TankJobs = GetAbbreviations(JobRole.Tank, baseClasses: false);
@@ -144,9 +144,9 @@ public static class JobRegistry
     private static string[] GetAbbreviations(JobRole role, bool baseClasses) =>
         AllDefinitions.Where(d => d.Role == role && d.IsBaseClass == baseClasses).Select(d => d.Abbreviation).ToArray();
 
-    private static Dictionary<uint, int> BuildAggregatedDict(Func<JobDefinitionBase, IReadOnlyDictionary<uint, int>> selector)
+    private static Dictionary<uint, TValue> BuildAggregatedDict<TValue>(Func<JobDefinitionBase, IReadOnlyDictionary<uint, TValue>> selector)
     {
-        var result = new Dictionary<uint, int>();
+        var result = new Dictionary<uint, TValue>();
         foreach (var def in AllDefinitions)
         {
             foreach (var (key, value) in selector(def))
@@ -162,17 +162,6 @@ public static class JobRegistry
         {
             foreach (var id in selector(def))
                 result.Add(id);
-        }
-        return result;
-    }
-
-    private static Dictionary<uint, string> BuildGroundEffectDots()
-    {
-        var result = new Dictionary<uint, string>();
-        foreach (var def in AllDefinitions)
-        {
-            foreach (var (key, value) in def.GroundEffectDots)
-                result[key] = value;
         }
         return result;
     }

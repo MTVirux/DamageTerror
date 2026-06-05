@@ -52,24 +52,13 @@ internal static class MeterTabBasicsSection
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Assign this tab to a group.\nTabs with the same group string are grouped together.");
 
-        var isHidden = tab.IsHidden;
-        if (ImGui.Checkbox("Hidden", ref isHidden))
-        {
-            tab.IsHidden = isHidden;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Hidden", tab.IsHidden, v => tab.IsHidden = v);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Hide this tab from the tab bar.\nThe tab still exists and can be used for popout windows.");
 
         ImGui.Spacing();
 
-        var filterIdx = (int)tab.FilterMode;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.Combo("Role Filter", ref filterIdx, FilterModeLabels, FilterModeLabels.Length))
-        {
-            tab.FilterMode = (TabFilterMode)filterIdx;
-            changed = true;
-        }
+        changed |= ConfigHelpers.ComboProp("Role Filter", (int)tab.FilterMode, FilterModeLabels, v => tab.FilterMode = (TabFilterMode)v, 200);
 
         if (tab.FilterMode == TabFilterMode.Custom)
         {
@@ -77,13 +66,7 @@ internal static class MeterTabBasicsSection
             changed |= DrawCustomJobFilter(tab);
         }
 
-        var groupFilterIdx = (int)tab.GroupFilter;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.Combo("Group Filter", ref groupFilterIdx, GroupFilterLabels, GroupFilterLabels.Length))
-        {
-            tab.GroupFilter = (GroupFilter)groupFilterIdx;
-            changed = true;
-        }
+        changed |= ConfigHelpers.ComboProp("Group Filter", (int)tab.GroupFilter, GroupFilterLabels, v => tab.GroupFilter = (GroupFilter)v, 200);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Filter by party membership.\nSolo = only you.\nParty Only = your party members.\nAlliance = all alliance members.\nCombines with Role Filter above.");
 

@@ -14,44 +14,19 @@ internal static class MeterTabDetailsSection
 
         ImGui.TextDisabled("Tabs");
 
-        var showDetails = tab.DetailShowDetailsTab;
-        if (ImGui.Checkbox("Details##detailTab", ref showDetails))
-        {
-            tab.DetailShowDetailsTab = showDetails;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Details##detailTab", tab.DetailShowDetailsTab, v => tab.DetailShowDetailsTab = v);
 
         ImGui.SameLine();
-        var showSkillsTab = tab.DetailShowSkillsTab;
-        if (ImGui.Checkbox("Skills##detailTab", ref showSkillsTab))
-        {
-            tab.DetailShowSkillsTab = showSkillsTab;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Skills##detailTab", tab.DetailShowSkillsTab, v => tab.DetailShowSkillsTab = v);
 
         ImGui.SameLine();
-        var showGraphTab = tab.DetailShowGraphTab;
-        if (ImGui.Checkbox("Graph##detailTab", ref showGraphTab))
-        {
-            tab.DetailShowGraphTab = showGraphTab;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Graph##detailTab", tab.DetailShowGraphTab, v => tab.DetailShowGraphTab = v);
 
         ImGui.SameLine();
-        var showBuffsTab = tab.DetailShowBuffsTab;
-        if (ImGui.Checkbox("Buffs##detailTab", ref showBuffsTab))
-        {
-            tab.DetailShowBuffsTab = showBuffsTab;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Buffs##detailTab", tab.DetailShowBuffsTab, v => tab.DetailShowBuffsTab = v);
 
         ImGui.SameLine();
-        var showItemTab = tab.DetailShowItemTab;
-        if (ImGui.Checkbox("Items##detailTab", ref showItemTab))
-        {
-            tab.DetailShowItemTab = showItemTab;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Items##detailTab", tab.DetailShowItemTab, v => tab.DetailShowItemTab = v);
 
         ImGui.Spacing();
 
@@ -136,22 +111,11 @@ internal static class MeterTabDetailsSection
 
         ImGui.TextDisabled("Skill breakdown");
 
-        var showSkills = tab.DetailShowSkillBreakdown;
-        if (ImGui.Checkbox("Show skill breakdown##detailVis", ref showSkills))
-        {
-            tab.DetailShowSkillBreakdown = showSkills;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Show skill breakdown##detailVis", tab.DetailShowSkillBreakdown, v => tab.DetailShowSkillBreakdown = v);
 
         if (tab.DetailShowSkillBreakdown)
         {
-            var maxSkills = tab.MaxSkillBreakdownCount;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderInt("Max skills shown (0 = all)##detailVis", ref maxSkills, 0, 30))
-            {
-                tab.MaxSkillBreakdownCount = maxSkills;
-                changed = true;
-            }
+            changed |= ConfigHelpers.SliderIntProp("Max skills shown (0 = all)##detailVis", tab.MaxSkillBreakdownCount, 0, 30, v => tab.MaxSkillBreakdownCount = v, 200);
         }
 
         return changed;

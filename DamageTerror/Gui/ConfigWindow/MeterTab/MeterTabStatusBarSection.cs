@@ -12,19 +12,9 @@ internal static class MeterTabStatusBarSection
         if (!ImGui.CollapsingHeader("Status Bar Content", ImGuiTreeNodeFlags.None))
             return changed;
 
-        var sbTimer = tab.ShowStatusBarTimer;
-        if (ImGui.Checkbox("Show combat timer##sbtab", ref sbTimer))
-        {
-            tab.ShowStatusBarTimer = sbTimer;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Show combat timer##sbtab", tab.ShowStatusBarTimer, v => tab.ShowStatusBarTimer = v);
 
-        var colorOverride = tab.StatusBarColorOverridesActive;
-        if (ImGui.Checkbox("Custom colors override active color##sbColorOverride", ref colorOverride))
-        {
-            tab.StatusBarColorOverridesActive = colorOverride;
-            changed = true;
-        }
+        changed |= ConfigHelpers.CheckboxProp("Custom colors override active color##sbColorOverride", tab.StatusBarColorOverridesActive, v => tab.StatusBarColorOverridesActive = v);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("When enabled, per-metric custom colors are used even during active encounters.\nWhen disabled, active encounters always use the active encounter color.");
 

@@ -14,34 +14,18 @@ internal static class GraphViewSection
 
         if (ImGui.CollapsingHeader("Graph view configuration", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var autoViewHeight = config.GraphViewAutoHeight;
-            if (ImGui.Checkbox("Auto-fit height##graphview", ref autoViewHeight))
-            {
-                config.GraphViewAutoHeight = autoViewHeight;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Auto-fit height##graphview", config.GraphViewAutoHeight, v => config.GraphViewAutoHeight = v);
 
             changed |= GraphConfigBlock.Draw(config, isGraphView: true);
 
             ImGui.Spacing();
             ImGui.TextDisabled("Self Highlight");
 
-            var highlightSelf = config.GraphViewHighlightSelf;
-            if (ImGui.Checkbox("Highlight self (thicker line)", ref highlightSelf))
-            {
-                config.GraphViewHighlightSelf = highlightSelf;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Highlight self (thicker line)", config.GraphViewHighlightSelf, v => config.GraphViewHighlightSelf = v);
 
             if (config.GraphViewHighlightSelf)
             {
-                var selfThickness = config.GraphViewSelfLineThickness;
-                ImGui.SetNextItemWidth(200);
-                if (ImGui.SliderFloat("Self line thickness", ref selfThickness, 1f, 8f, "%.1f"))
-                {
-                    config.GraphViewSelfLineThickness = selfThickness;
-                    changed = true;
-                }
+                changed |= ConfigHelpers.SliderFloatProp("Self line thickness", config.GraphViewSelfLineThickness, 1f, 8f, "%.1f", v => config.GraphViewSelfLineThickness = v, 200);
             }
         }
 

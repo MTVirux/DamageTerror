@@ -58,15 +58,9 @@ public sealed class StatusTracker
         this.log = log;
     }
 
-    public void SetTimer(EncounterTimer encounterTimer)
-    {
-        timer = encounterTimer;
-    }
+    public void SetTimer(EncounterTimer encounterTimer) => timer = encounterTimer;
 
-    public void SetSkillTracker(SkillTracker tracker)
-    {
-        skillTracker = tracker;
-    }
+    public void SetSkillTracker(SkillTracker tracker) => skillTracker = tracker;
 
     public float ElapsedSeconds => timer?.ElapsedSeconds ?? 0f;
 
@@ -134,10 +128,7 @@ public sealed class StatusTracker
             activeStatuses[key] = status;
 
             if (!statusHistory.TryGetValue(sourceName, out var history))
-            {
-                history = new List<StatusApplication>();
-                statusHistory[sourceName] = history;
-            }
+                statusHistory[sourceName] = history = new List<StatusApplication>();
 
             var application = new StatusApplication
             {
@@ -156,10 +147,7 @@ public sealed class StatusTracker
             history.Add(application);
 
             if (!receivedHistory.TryGetValue(targetName, out var received))
-            {
-                received = new List<StatusApplication>();
-                receivedHistory[targetName] = received;
-            }
+                receivedHistory[targetName] = received = new List<StatusApplication>();
 
             received.Add(application);
         }
@@ -265,21 +253,17 @@ public sealed class StatusTracker
     public List<StatusApplication> GetStatusHistory(string sourceName)
     {
         lock (syncLock)
-        {
-            if (statusHistory.TryGetValue(sourceName, out var history))
-                return new List<StatusApplication>(history);
-            return new List<StatusApplication>();
-        }
+            return statusHistory.TryGetValue(sourceName, out var history)
+                ? new List<StatusApplication>(history)
+                : new List<StatusApplication>();
     }
 
     public List<StatusApplication> GetStatusesReceived(string targetName)
     {
         lock (syncLock)
-        {
-            if (receivedHistory.TryGetValue(targetName, out var history))
-                return new List<StatusApplication>(history);
-            return new List<StatusApplication>();
-        }
+            return receivedHistory.TryGetValue(targetName, out var history)
+                ? new List<StatusApplication>(history)
+                : new List<StatusApplication>();
     }
 
     public double CalculateUptime(string sourceName, uint statusId, float encounterDuration)

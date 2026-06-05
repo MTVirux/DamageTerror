@@ -27,12 +27,7 @@ public sealed class GeneralTab
 
         if (ImGui.CollapsingHeader("Connection", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var preferIpc = config.PreferIpc;
-            if (ImGui.Checkbox("Prefer IPC (in-process, lowest latency)", ref preferIpc))
-            {
-                config.PreferIpc = preferIpc;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Prefer IPC (in-process, lowest latency)", config.PreferIpc, v => config.PreferIpc = v);
 
             ImGui.SetNextItemWidth(280);
             if (ImGui.InputText("WebSocket URL", ref wsUrlBuffer, 256))
@@ -53,39 +48,18 @@ public sealed class GeneralTab
 
         if (ImGui.CollapsingHeader("Behavior", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var showOnStart = config.ShowOnStart;
-            if (ImGui.Checkbox("Open meter on plugin start", ref showOnStart))
-            {
-                config.ShowOnStart = showOnStart;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Open meter on plugin start", config.ShowOnStart, v => config.ShowOnStart = v);
 
-            var hideOoc = config.HideOutOfCombat;
-            if (ImGui.Checkbox("Hide when out of combat", ref hideOoc))
-            {
-                config.HideOutOfCombat = hideOoc;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Hide when out of combat", config.HideOutOfCombat, v => config.HideOutOfCombat = v);
 
             if (config.HideOutOfCombat)
             {
                 ImGui.Indent();
-                var delay = config.HideOutOfCombatDelay;
-                ImGui.SetNextItemWidth(150);
-                if (ImGui.SliderFloat("Hide delay (seconds)", ref delay, 0f, 30f, "%.1f"))
-                {
-                    config.HideOutOfCombatDelay = delay;
-                    changed = true;
-                }
+                changed |= ConfigHelpers.SliderFloatProp("Hide delay (seconds)", config.HideOutOfCombatDelay, 0f, 30f, "%.1f", v => config.HideOutOfCombatDelay = v, 150);
                 ImGui.Unindent();
             }
 
-            var skipZeroEdps = config.SkipZeroEdpsEncounters;
-            if (ImGui.Checkbox("Don't store 0 eDPS encounters", ref skipZeroEdps))
-            {
-                config.SkipZeroEdpsEncounters = skipZeroEdps;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Don't store 0 eDPS encounters", config.SkipZeroEdpsEncounters, v => config.SkipZeroEdpsEncounters = v);
 
             if (config.SkipZeroEdpsEncounters)
             {
@@ -104,35 +78,18 @@ public sealed class GeneralTab
                 }
             }
 
-            var ignoreEsc = config.IgnoreEscClose;
-            if (ImGui.Checkbox("Ignore ESC key closing the meter", ref ignoreEsc))
-            {
-                config.IgnoreEscClose = ignoreEsc;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Ignore ESC key closing the meter", config.IgnoreEscClose, v => config.IgnoreEscClose = v);
 
             ImGui.Spacing();
 
             var dotCalcLabels = new[] { "DamageTerror (recommended)", "IINACT / ACT (no DoT Breakdown)" };
-            var dotCalcIndex = (int)config.DotCalcMode;
-            ImGui.SetNextItemWidth(280);
-            if (ImGui.Combo("DoT calculation", ref dotCalcIndex, dotCalcLabels, dotCalcLabels.Length))
-            {
-                config.DotCalcMode = (DotCalcMode)dotCalcIndex;
-                changed = true;
-            }
+            changed |= ConfigHelpers.ComboProp("DoT calculation", (int)config.DotCalcMode, dotCalcLabels, v => config.DotCalcMode = (DotCalcMode)v, 280);
             ConfigHelpers.HelpMarker(
                 "DamageTerror: distributes aggregated DoT ticks across active statuses using potency weights. (needed for dot skill breakdown)\n" +
                 "IINACT / ACT: trusts the parser's own DoT simulation and attributes each tick to the named source as-is. (no DoT skill breakdown)");
 
             var endEncLabels = new[] { "/echo end (ACT + IINACT)", "/endenc (IINACT only) (Silent)" };
-            var endEncIndex = (int)config.EndEncounterMode;
-            ImGui.SetNextItemWidth(280);
-            if (ImGui.Combo("Encounter cut command", ref endEncIndex, endEncLabels, endEncLabels.Length))
-            {
-                config.EndEncounterMode = (EndEncounterMode)endEncIndex;
-                changed = true;
-            }
+            changed |= ConfigHelpers.ComboProp("Encounter cut command", (int)config.EndEncounterMode, endEncLabels, v => config.EndEncounterMode = (EndEncounterMode)v, 280);
             ConfigHelpers.HelpMarker(
                 "/echo end: sends a visible echo message that both ACT and IINACT recognize as an encounter split trigger.\n" +
                 "/endenc: IINACT's built-in Dalamud command. Silent, but only works with IINACT.");
@@ -142,23 +99,11 @@ public sealed class GeneralTab
             ImGui.Spacing();
 
             var comboNames = new[] { "Ctrl + Shift", "Ctrl + Alt", "Shift + Alt", "Ctrl", "Shift", "Alt" };
-            var comboIndex = (int)config.ModifierKeyCombo;
-            ImGui.SetNextItemWidth(150);
-            if (ImGui.Combo("Modifier keys", ref comboIndex, comboNames, comboNames.Length))
-            {
-                config.ModifierKeyCombo = (ModifierCombo)comboIndex;
-                changed = true;
-            }
+            changed |= ConfigHelpers.ComboProp("Modifier keys", (int)config.ModifierKeyCombo, comboNames, v => config.ModifierKeyCombo = (ModifierCombo)v, 150);
             ConfigHelpers.HelpMarker("Modifier key used by hidden layout elements and header reveal.");
 
             var modeNames = new[] { "Hold", "Toggle" };
-            var modeIndex = (int)config.ModifierKeyMode;
-            ImGui.SetNextItemWidth(150);
-            if (ImGui.Combo("Modifier mode", ref modeIndex, modeNames, modeNames.Length))
-            {
-                config.ModifierKeyMode = (ModifierMode)modeIndex;
-                changed = true;
-            }
+            changed |= ConfigHelpers.ComboProp("Modifier mode", (int)config.ModifierKeyMode, modeNames, v => config.ModifierKeyMode = (ModifierMode)v, 150);
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Hold: active only while keys are pressed.\nToggle: press once to activate, press again to deactivate.");
 
@@ -224,20 +169,8 @@ public sealed class GeneralTab
             ImGui.Separator();
             ImGui.Spacing();
 
-            var width = config.MainWindowSize.X;
-            var height = config.MainWindowSize.Y;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Width", ref width, 250f, workSize.X, "%.0f"))
-            {
-                config.MainWindowSize = new Vector2(width, config.MainWindowSize.Y);
-                changed = true;
-            }
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.SliderFloat("Height", ref height, 150f, workSize.Y, "%.0f"))
-            {
-                config.MainWindowSize = new Vector2(config.MainWindowSize.X, height);
-                changed = true;
-            }
+            changed |= ConfigHelpers.SliderFloatProp("Width", config.MainWindowSize.X, 250f, workSize.X, "%.0f", v => config.MainWindowSize = new Vector2(v, config.MainWindowSize.Y), 200);
+            changed |= ConfigHelpers.SliderFloatProp("Height", config.MainWindowSize.Y, 150f, workSize.Y, "%.0f", v => config.MainWindowSize = new Vector2(config.MainWindowSize.X, v), 200);
         }
 
         ImGui.Spacing();

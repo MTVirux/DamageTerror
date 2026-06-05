@@ -11,37 +11,10 @@ internal static class AppearanceGeneralSection
 
         changed |= ConfigHelpers.ColorEditProp("Window background", config.WindowBackgroundColor, v => config.WindowBackgroundColor = v);
 
-        var padLeft = config.WindowPaddingLeft;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Padding left", ref padLeft, 0.0f, 32.0f, "%.0f"))
-        {
-            config.WindowPaddingLeft = padLeft;
-            changed = true;
-        }
-
-        var padRight = config.WindowPaddingRight;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Padding right", ref padRight, 0.0f, 32.0f, "%.0f"))
-        {
-            config.WindowPaddingRight = padRight;
-            changed = true;
-        }
-
-        var padTop = config.WindowPaddingTop;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Padding top", ref padTop, 0.0f, 32.0f, "%.0f"))
-        {
-            config.WindowPaddingTop = padTop;
-            changed = true;
-        }
-
-        var padBottom = config.WindowPaddingBottom;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderFloat("Padding bottom", ref padBottom, 0.0f, 32.0f, "%.0f"))
-        {
-            config.WindowPaddingBottom = padBottom;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderFloatProp("Padding left", config.WindowPaddingLeft, 0.0f, 32.0f, "%.0f", v => config.WindowPaddingLeft = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Padding right", config.WindowPaddingRight, 0.0f, 32.0f, "%.0f", v => config.WindowPaddingRight = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Padding top", config.WindowPaddingTop, 0.0f, 32.0f, "%.0f", v => config.WindowPaddingTop = v, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Padding bottom", config.WindowPaddingBottom, 0.0f, 32.0f, "%.0f", v => config.WindowPaddingBottom = v, 200);
 
         ImGui.Spacing();
         ImGui.Separator();
@@ -79,24 +52,12 @@ internal static class AppearanceGeneralSection
                     changed = true;
                 }
 
-                var opacity = config.BackgroundImageOpacity;
-                ImGui.SetNextItemWidth(200);
-                if (ImGui.SliderFloat("Opacity", ref opacity, 0.0f, 1.0f, "%.2f"))
-                {
-                    config.BackgroundImageOpacity = opacity;
-                    changed = true;
-                }
+                changed |= ConfigHelpers.SliderFloatProp("Opacity", config.BackgroundImageOpacity, 0.0f, 1.0f, "%.2f", v => config.BackgroundImageOpacity = v, 200);
 
                 changed |= ConfigHelpers.ColorEditProp("Tint", config.BackgroundImageTint, v => config.BackgroundImageTint = v);
 
-                var scaleIdx = (int)config.BackgroundImageScale;
                 var scaleLabels = new[] { "Stretch", "Fit", "Fill", "Tile" };
-                ImGui.SetNextItemWidth(200);
-                if (ImGui.Combo("Scale mode", ref scaleIdx, scaleLabels, scaleLabels.Length))
-                {
-                    config.BackgroundImageScale = (BackgroundImageScaleMode)scaleIdx;
-                    changed = true;
-                }
+                changed |= ConfigHelpers.ComboProp("Scale mode", (int)config.BackgroundImageScale, scaleLabels, v => config.BackgroundImageScale = (BackgroundImageScaleMode)v, 200);
 
                 if (System.IO.File.Exists(config.BackgroundImagePath))
                 {

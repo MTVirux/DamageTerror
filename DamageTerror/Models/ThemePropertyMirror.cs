@@ -179,7 +179,7 @@ internal static class ThemePropertyMirror
         {
             var setter = prop.GetSetMethod(nonPublic: false)
                 ?? throw new InvalidOperationException($"Property '{prop.Name}' has no public setter");
-            return (owner, value) => setter.Invoke(owner, new[] { value });
+            return (owner, value) => setter.Invoke(owner, [value]);
         }
     }
 

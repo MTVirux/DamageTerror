@@ -45,15 +45,7 @@ public sealed class EncounterHeaderComponent
     }
 
     public EncounterSnapshot? SelectedEncounter
-    {
-        get
-        {
-            if (selectedIndex == -1)
-                return dataService.Store.ActiveEncounter;
-
-            return dataService.Store.GetByIndex(selectedIndex);
-        }
-    }
+        => selectedIndex == -1 ? dataService.Store.ActiveEncounter : dataService.Store.GetByIndex(selectedIndex);
 
     public bool IsViewingLive => selectedIndex == -1;
 
@@ -78,19 +70,11 @@ public sealed class EncounterHeaderComponent
         if (!config.ShowEncounterPicker)
             return;
 
-        var totalCount = dataService.Store.TotalCount;
         var encounter = SelectedEncounter;
 
-        string previewLabel;
-        if (encounter != null)
-        {
-            var enc = encounter.Encounter;
-            previewLabel = FormatEncounterLabel(enc, encounter.PlayerName, timestamp: encounter.Timestamp);
-        }
-        else
-        {
-            previewLabel = dataService.ConnectionStatus;
-        }
+        var previewLabel = encounter != null
+            ? FormatEncounterLabel(encounter.Encounter, encounter.PlayerName, timestamp: encounter.Timestamp)
+            : dataService.ConnectionStatus;
 
         var selBarBg = config.SelectionBarBackgroundColor;
         var selBarPad = config.SelectionBarHeight;
@@ -280,8 +264,5 @@ public sealed class EncounterHeaderComponent
         }
     }
 
-    public void ResetSelection()
-    {
-        selectedIndex = -1;
-    }
+    public void ResetSelection() => selectedIndex = -1;
 }

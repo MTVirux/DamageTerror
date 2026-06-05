@@ -12,13 +12,7 @@ internal static class MeterTabTooltipSection
         if (!ImGui.CollapsingHeader("Tooltip Content", ImGuiTreeNodeFlags.None))
             return changed;
 
-        var skillCount = tab.TooltipTopSkillCount;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.SliderInt("Top skills to show", ref skillCount, 1, 10))
-        {
-            tab.TooltipTopSkillCount = skillCount;
-            changed = true;
-        }
+        changed |= ConfigHelpers.SliderIntProp("Top skills to show", tab.TooltipTopSkillCount, 1, 10, v => tab.TooltipTopSkillCount = v, 200);
         ImGui.Spacing();
 
         Func<TooltipField, bool> tooltipExtras = field =>

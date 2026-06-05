@@ -14,13 +14,7 @@ internal static class MeterTabContentSection
             return changed;
 
         var viewModeLabels = new[] { "Bars", "Line Graph" };
-        var viewModeIdx = (int)tab.ViewMode;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.Combo("View Mode", ref viewModeIdx, viewModeLabels, viewModeLabels.Length))
-        {
-            tab.ViewMode = (ViewMode)viewModeIdx;
-            changed = true;
-        }
+        changed |= ConfigHelpers.ComboProp("View Mode", (int)tab.ViewMode, viewModeLabels, v => tab.ViewMode = (ViewMode)v, 200);
 
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Switch between traditional bars and a line graph overlay.\nGraph mode plots metrics over time for all combatants.\nYou can toggle the view mode from the titlebar or context menu.");
@@ -30,26 +24,9 @@ internal static class MeterTabContentSection
             ImGui.Spacing();
             ImGui.TextDisabled("Graph Lines");
 
-            var showDps = tab.GraphShowDpsLine;
-            if (ImGui.Checkbox("Show DPS Line", ref showDps))
-            {
-                tab.GraphShowDpsLine = showDps;
-                changed = true;
-            }
-
-            var showHps = tab.GraphShowHpsLine;
-            if (ImGui.Checkbox("Show HPS Line", ref showHps))
-            {
-                tab.GraphShowHpsLine = showHps;
-                changed = true;
-            }
-
-            var showDtps = tab.GraphShowDtpsLine;
-            if (ImGui.Checkbox("Show DTPS Line", ref showDtps))
-            {
-                tab.GraphShowDtpsLine = showDtps;
-                changed = true;
-            }
+            changed |= ConfigHelpers.CheckboxProp("Show DPS Line", tab.GraphShowDpsLine, v => tab.GraphShowDpsLine = v);
+            changed |= ConfigHelpers.CheckboxProp("Show HPS Line", tab.GraphShowHpsLine, v => tab.GraphShowHpsLine = v);
+            changed |= ConfigHelpers.CheckboxProp("Show DTPS Line", tab.GraphShowDtpsLine, v => tab.GraphShowDtpsLine = v);
         }
 
         if (tab.ViewMode != ViewMode.LineGraph)
