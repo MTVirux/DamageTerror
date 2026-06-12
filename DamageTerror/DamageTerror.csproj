@@ -23,16 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\ECommons\ECommons\ECommons.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\NightmareUI\NightmareUI\NightmareUI.csproj" />
-    <ProjectReference Include="..\NightmareUI.OtterGuiWrapper\NightmareUI.OtterGuiWrapper\NightmareUI.OtterGuiWrapper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
