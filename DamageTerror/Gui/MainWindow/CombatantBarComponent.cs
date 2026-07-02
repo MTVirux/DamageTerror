@@ -3,7 +3,6 @@ using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
-using DamageTerror.Gui;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
@@ -204,11 +203,6 @@ public sealed class CombatantBarComponent
     };
 
     public static bool IsGroupColumn(BarColumn col) => GroupColumns.Contains(col);
-
-    public bool Render(RenderContext ctx, CombatantEntry combatant, int index)
-    {
-        return Render(combatant, ctx.MaxValue, index, ctx.SortBy, ctx.ActiveTab, ctx.CurrentPlayerName, ctx.GroupAggregates);
-    }
 
     public bool Render(CombatantEntry combatant, double maxValue, int index, SortField sortBy, MeterTab? activeTab, string currentPlayerName = "", GroupAggregates? groupAggregates = null)
     {

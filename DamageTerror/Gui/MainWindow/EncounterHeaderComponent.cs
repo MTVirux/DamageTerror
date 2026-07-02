@@ -1,6 +1,5 @@
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
-using DamageTerror.Gui;
 using ECommons.Automation;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 using Dalamud.Bindings.ImGui;
@@ -62,8 +61,6 @@ public sealed class EncounterHeaderComponent
         var sepH = config.ShowSelectionBarSeparator ? ImGui.GetStyle().ItemSpacing.Y + 1f : 0f;
         return frameH + sepH;
     }
-
-    public void Render(RenderContext ctx) => Render();
 
     public void Render()
     {

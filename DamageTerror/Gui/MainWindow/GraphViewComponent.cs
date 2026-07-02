@@ -1,6 +1,5 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Bindings.ImPlot;
-using DamageTerror.Gui;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 using ImPlot = Dalamud.Bindings.ImPlot.ImPlot;
 
@@ -21,11 +20,6 @@ public sealed class GraphViewComponent
         this.config = config;
         this.graphTracker = graphTracker;
         this.skillTracker = skillTracker;
-    }
-
-    public void Render(RenderContext ctx)
-    {
-        Render(ctx.Combatants ?? new List<CombatantEntry>(), ctx.Encounter, ctx.IsLive, ctx.ActiveTab, ctx.CurrentPlayerName);
     }
 
     public void Render(List<CombatantEntry> combatants, EncounterSnapshot? snapshot,

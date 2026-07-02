@@ -29,9 +29,6 @@ public sealed class CombatantDetailPanel
     public bool IsExpanded(string name) => state.ExpandedName == name;
     public void CollapseAll() => state.CollapseAll();
 
-    public void Render(RenderContext ctx, CombatantEntry combatant)
-        => Render(combatant, ctx.Encounter, ctx.IsLive, ctx.ActiveTab);
-
     public void Render(CombatantEntry combatant, EncounterSnapshot? snapshot, bool isLive, MeterTab? activeTab = null)
     {
         if (state.ExpandedName != combatant.Name)

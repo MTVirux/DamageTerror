@@ -1,4 +1,3 @@
-using DamageTerror.Gui;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 using Dalamud.Bindings.ImGui;
 
@@ -18,11 +17,6 @@ public sealed class StatusBarComponent
         if (!config.ShowStatusBar)
             return 0f;
         return config.StatusBarHeight + (config.ShowStatusBarSeparator ? 1f : 0f);
-    }
-
-    public void Render(RenderContext ctx)
-    {
-        Render(ctx.Encounter, ctx.CurrentPlayerName, ctx.ActiveTab, ctx.GroupAggregates);
     }
 
     public void Render(EncounterSnapshot? encounter, string currentPlayerName = "", MeterTab? tab = null, GroupAggregates? groupAggregates = null)
