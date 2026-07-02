@@ -1,7 +1,5 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
-using Dalamud.Bindings.ImGui;
-using Dalamud.Plugin.Services;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;

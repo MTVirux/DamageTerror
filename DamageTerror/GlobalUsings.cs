@@ -5,9 +5,18 @@ global using System.Numerics;
 global using System.Threading;
 global using System.Threading.Tasks;
 
+global using Dalamud.Bindings.ImGui;
+global using Dalamud.Plugin.Services;
+
+global using Newtonsoft.Json;
+
 global using DamageTerror;
 global using DamageTerror.Core;
 global using DamageTerror.Enums;
+global using DamageTerror.Gui;
+global using DamageTerror.Gui.ConfigWindow;
+global using DamageTerror.Gui.MainWindow;
+global using DamageTerror.Gui.MainWindow.Detail;
 global using DamageTerror.Helpers;
 global using DamageTerror.Jobs;
 global using DamageTerror.Models;

@@ -1,7 +1,6 @@
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Game.Command;
-using Dalamud.Plugin.Services;
 using ECommons;
 
 namespace DamageTerror.Core;

@@ -1,6 +1,5 @@
 namespace DamageTerror.Services;
 
-using DamageTerror.Gui.ConfigWindow;
 
 /// <summary>
 /// Mutates a sample EncounterSnapshot in-place each tick to simulate active combat.

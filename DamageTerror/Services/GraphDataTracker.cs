@@ -1,6 +1,5 @@
 namespace DamageTerror.Services;
 
-using Dalamud.Plugin.Services;
 
 public readonly struct GraphSample
 {

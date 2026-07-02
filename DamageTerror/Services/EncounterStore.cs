@@ -1,5 +1,3 @@
-using Dalamud.Plugin.Services;
-using Newtonsoft.Json;
 
 namespace DamageTerror.Services;
 

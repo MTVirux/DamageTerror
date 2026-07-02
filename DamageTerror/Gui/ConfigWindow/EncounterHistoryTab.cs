@@ -1,5 +1,3 @@
-using Dalamud.Bindings.ImGui;
-using Newtonsoft.Json;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;

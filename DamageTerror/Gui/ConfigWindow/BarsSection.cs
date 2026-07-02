@@ -1,4 +1,3 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Textures;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 

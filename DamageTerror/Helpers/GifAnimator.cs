@@ -2,9 +2,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Textures;
-using Dalamud.Plugin.Services;
 
 namespace DamageTerror.Helpers;
 

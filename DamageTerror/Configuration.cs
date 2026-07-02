@@ -1,5 +1,4 @@
 using Dalamud.Configuration;
-using Newtonsoft.Json;
 
 namespace DamageTerror;
 

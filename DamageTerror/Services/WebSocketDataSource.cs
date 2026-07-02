@@ -1,7 +1,5 @@
 using System.Net.WebSockets;
 using System.Text;
-using Dalamud.Plugin.Services;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace DamageTerror.Services;

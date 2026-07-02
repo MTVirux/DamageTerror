@@ -1,8 +1,6 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
-using Dalamud.Plugin.Services;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
