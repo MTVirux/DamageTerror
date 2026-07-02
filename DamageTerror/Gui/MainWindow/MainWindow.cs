@@ -6,7 +6,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-public sealed class MainWindow : Window, IDisposable
+public sealed class MainWindow : MeterWindowBase, IDisposable
 {
     private static string GetTitleWithVersion()
     {
@@ -27,19 +27,10 @@ public sealed class MainWindow : Window, IDisposable
         }
     }
 
-    private readonly DamageTerrorPlugin plugin;
     private readonly ITextureProvider textureProvider;
-    private readonly EncounterHeaderComponent headerComponent;
-    private readonly CombatantBarComponent barComponent;
-    private readonly GraphViewComponent graphViewComponent;
-    private readonly CombatantDetailPanel detailPanel;
-    private readonly StatusBarComponent statusBarComponent;
-    private TitleBarButton? lockButton;
     private TitleBarButton? viewModeButton;
     private MeterTab? currentActiveTab;
-    private MeterVisibilityState visibilityState;
     private int selectedMeterTab;
-    private bool wasDrawnLastFrame = true;
     private GifAnimator? gifAnimator;
     private string? gifAnimatorPath;
 
@@ -58,22 +49,10 @@ public sealed class MainWindow : Window, IDisposable
     }
 
     public MainWindow(DamageTerrorPlugin plugin, ITextureProvider textureProvider)
-        : base(GetTitleWithVersion())
+        : base(plugin, textureProvider, GetTitleWithVersion())
     {
-        this.plugin = plugin;
         this.textureProvider = textureProvider;
-        this.SizeConstraints = new WindowSizeConstraints()
-        {
-            MinimumSize = new Vector2(250, 150),
-            MaximumSize = new Vector2(2000, 2000),
-        };
-
         this.selectedMeterTab = plugin.Config.SelectedMeterTab;
-        this.headerComponent = new EncounterHeaderComponent(plugin.DataService, plugin.Config);
-        this.barComponent = new CombatantBarComponent(plugin.Config, textureProvider);
-        this.graphViewComponent = new GraphViewComponent(plugin.Config, plugin.DataService.GraphTracker, plugin.DataService.SkillTracker);
-        this.detailPanel = new CombatantDetailPanel(plugin.Config, plugin.DataService.GraphTracker, plugin.DataService.SkillTracker, plugin.DataService.StatusTracker);
-        this.statusBarComponent = new StatusBarComponent(plugin.Config);
 
         TitleBarButtons.Add(new TitleBarButton
         {
@@ -151,22 +130,6 @@ public sealed class MainWindow : Window, IDisposable
         gifAnimator = null;
     }
 
-    public override bool DrawConditions()
-    {
-        var ok = MeterWindowHelper.ShouldDraw(plugin.Config, ref visibilityState);
-        if (!ok)
-            wasDrawnLastFrame = false;
-        return ok;
-    }
-
-    public bool WasDrawnLastFrame => wasDrawnLastFrame;
-
-    public void RequestVisibilityOverride()
-    {
-        visibilityState.UserOverride = true;
-        visibilityState.ObservedCombatSinceOverride = false;
-    }
-
     public override void PreDraw()
     {
         RespectCloseHotkey = !this.plugin.Config.IgnoreEscClose;
@@ -210,12 +173,6 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
     }
 
-    public override void PostDraw()
-    {
-        ImGui.PopStyleVar();
-        ImGui.PopStyleColor();
-    }
-
     public override void Draw()
     {
         wasDrawnLastFrame = true;
@@ -228,11 +185,6 @@ public sealed class MainWindow : Window, IDisposable
 
         DrawBackgroundImage();
 
-        var padLeft = plugin.Config.WindowPaddingLeft;
-        var padRight = plugin.Config.WindowPaddingRight;
-        var padTop = plugin.Config.WindowPaddingTop;
-        var padBottom = plugin.Config.WindowPaddingBottom;
-
         var modifierActive = MeterWindowHelper.IsModifierActive(plugin.Config);
         LayoutElement? lastVisibleEl = null;
         foreach (var el in plugin.Config.Layout)
@@ -242,11 +194,8 @@ public sealed class MainWindow : Window, IDisposable
                 continue;
             lastVisibleEl = el;
         }
-        var effectivePadBottom = lastVisibleEl == LayoutElement.StatusBar ? 0f : padBottom;
 
-        ImGui.SetCursorPos(new Vector2(padLeft, ImGui.GetCursorPosY() + padTop));
-        var avail = ImGui.GetContentRegionAvail();
-        if (!ImGui.BeginChild("##paddedContent", new Vector2(avail.X - padRight, avail.Y - effectivePadBottom), false))
+        if (!BeginPaddedContent(lastVisibleEl))
         {
             ImGui.EndChild();
             return;
@@ -310,12 +259,8 @@ public sealed class MainWindow : Window, IDisposable
             config, statusBarComponent.GetHeight, headerComponent.GetHeight,
             encounter != null, useTabBar, plugin.DataService.Store.IsReplayActive);
 
-        if (!plugin.DataService.IsConnected && encounter == null)
+        if (DrawDisconnectNoticeIfNeeded(encounter, "disconnect-notice", SpawnReconnect))
         {
-            if (!plugin.DataService.DisconnectNoticeDismissed)
-            {
-                MeterWindowHelper.DrawDisconnectNotice("disconnect-notice", SpawnReconnect, plugin.DataService.DismissDisconnectNotice);
-            }
             ImGui.EndChild();
             return;
         }

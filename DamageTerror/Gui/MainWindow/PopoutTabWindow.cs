@@ -6,39 +6,17 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 
-public sealed class PopoutTabWindow : Window, IDisposable
+public sealed class PopoutTabWindow : MeterWindowBase, IDisposable
 {
-    private readonly DamageTerrorPlugin plugin;
     private readonly Guid tabId;
-    private readonly EncounterHeaderComponent headerComponent;
-    private readonly CombatantBarComponent barComponent;
-    private readonly GraphViewComponent graphViewComponent;
-    private readonly CombatantDetailPanel detailPanel;
-    private readonly StatusBarComponent statusBarComponent;
-    private TitleBarButton? lockButton;
-    private MeterVisibilityState visibilityState;
-    private bool wasDrawnLastFrame = true;
     private bool suppressClose;
 
     public Guid TabId => tabId;
 
     public PopoutTabWindow(DamageTerrorPlugin plugin, ITextureProvider textureProvider, MeterTab tab)
-        : base($"DT \u2014 {tab.Name}##dtPopout_{tab.Id}")
+        : base(plugin, textureProvider, $"DT \u2014 {tab.Name}##dtPopout_{tab.Id}")
     {
-        this.plugin = plugin;
         this.tabId = tab.Id;
-
-        this.SizeConstraints = new WindowSizeConstraints()
-        {
-            MinimumSize = new Vector2(250, 150),
-            MaximumSize = new Vector2(2000, 2000),
-        };
-
-        this.headerComponent = new EncounterHeaderComponent(plugin.DataService, plugin.Config);
-        this.barComponent = new CombatantBarComponent(plugin.Config, textureProvider);
-        this.graphViewComponent = new GraphViewComponent(plugin.Config, plugin.DataService.GraphTracker, plugin.DataService.SkillTracker);
-        this.detailPanel = new CombatantDetailPanel(plugin.Config, plugin.DataService.GraphTracker, plugin.DataService.SkillTracker, plugin.DataService.StatusTracker);
-        this.statusBarComponent = new StatusBarComponent(plugin.Config);
 
         var pinned = GetPin()?.Pinned ?? false;
         lockButton = new TitleBarButton
@@ -71,22 +49,6 @@ public sealed class PopoutTabWindow : Window, IDisposable
     }
 
     private MeterTab? FindTab() => plugin.Config.MeterTabs.FirstOrDefault(t => t.Id == tabId);
-
-    public override bool DrawConditions()
-    {
-        var ok = MeterWindowHelper.ShouldDraw(plugin.Config, ref visibilityState);
-        if (!ok)
-            wasDrawnLastFrame = false;
-        return ok;
-    }
-
-    public bool WasDrawnLastFrame => wasDrawnLastFrame;
-
-    public void RequestVisibilityOverride()
-    {
-        visibilityState.UserOverride = true;
-        visibilityState.ObservedCombatSinceOverride = false;
-    }
 
     private PopoutWindowPin? GetPin()
     {
@@ -142,20 +104,9 @@ public sealed class PopoutTabWindow : Window, IDisposable
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
     }
 
-    public override void PostDraw()
-    {
-        ImGui.PopStyleVar();
-        ImGui.PopStyleColor();
-    }
-
     public override void Draw()
     {
         wasDrawnLastFrame = true;
-
-        var padLeft = plugin.Config.WindowPaddingLeft;
-        var padRight = plugin.Config.WindowPaddingRight;
-        var padTop = plugin.Config.WindowPaddingTop;
-        var padBottom = plugin.Config.WindowPaddingBottom;
 
         var modifierActiveEarly = MeterWindowHelper.IsModifierActive(plugin.Config);
         LayoutElement? lastVisibleEl = null;
@@ -166,11 +117,8 @@ public sealed class PopoutTabWindow : Window, IDisposable
                 continue;
             lastVisibleEl = el;
         }
-        var effectivePadBottom = lastVisibleEl == LayoutElement.StatusBar ? 0f : padBottom;
 
-        ImGui.SetCursorPos(new Vector2(padLeft, ImGui.GetCursorPosY() + padTop));
-        var avail = ImGui.GetContentRegionAvail();
-        if (!ImGui.BeginChild("##paddedContent", new Vector2(avail.X - padRight, avail.Y - effectivePadBottom), false))
+        if (!BeginPaddedContent(lastVisibleEl))
         {
             ImGui.EndChild();
             return;
@@ -218,14 +166,9 @@ public sealed class PopoutTabWindow : Window, IDisposable
             config, statusBarComponent.GetHeight, headerComponent.GetHeight,
             encounter != null, false, skipElements: skipElements);
 
-        if (!plugin.DataService.IsConnected && encounter == null)
+        if (DrawDisconnectNoticeIfNeeded(encounter, "disconnect-notice-popout",
+                () => Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false))))
         {
-            if (!plugin.DataService.DisconnectNoticeDismissed)
-            {
-                MeterWindowHelper.DrawDisconnectNotice("disconnect-notice-popout",
-                    () => Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false)),
-                    plugin.DataService.DismissDisconnectNotice);
-            }
             ImGui.EndChild();
             return;
         }
