@@ -25,8 +25,6 @@ public sealed class TimelineSidecarStore
     public string PathFor(long encounterId)
         => System.IO.Path.Combine(baseDirectory, $"{encounterId}.json");
 
-    public bool Exists(long encounterId) => System.IO.File.Exists(PathFor(encounterId));
-
     public TimelineBundle? Load(long encounterId)
     {
         var path = PathFor(encounterId);

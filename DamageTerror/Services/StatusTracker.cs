@@ -12,7 +12,7 @@ namespace DamageTerror.Services;
 /// </summary>
 public sealed class StatusTracker
 {
-    public const float PermanentDurationThreshold = 9999f;
+    private const float PermanentDurationThreshold = 9999f;
 
     private readonly object syncLock = new();
     private readonly IDataManager dataManager;
@@ -196,28 +196,6 @@ public sealed class StatusTracker
         }
     }
 
-    /// <summary>
-    /// Look up who applied a given status to a target. Used by DoT tick
-    /// attribution when type 24 lines lack explicit source info.
-    /// </summary>
-    public string? GetSourceForStatus(string targetName, uint statusId)
-    {
-        lock (syncLock)
-        {
-            ActiveStatus? best = null;
-            foreach (var kv in activeStatuses)
-            {
-                if (kv.Key.Target == targetName && kv.Key.StatusId == statusId)
-                {
-                    if (best == null || kv.Value.AppliedAtSec > best.Value.AppliedAtSec)
-                        best = kv.Value;
-                }
-            }
-
-            return best?.SourceName;
-        }
-    }
-
     public List<ActiveStatus> GetActiveStatuses(string targetName)
     {
         lock (syncLock)
@@ -264,32 +242,6 @@ public sealed class StatusTracker
             return receivedHistory.TryGetValue(targetName, out var history)
                 ? new List<StatusApplication>(history)
                 : new List<StatusApplication>();
-    }
-
-    public double CalculateUptime(string sourceName, uint statusId, float encounterDuration)
-    {
-        if (encounterDuration <= 0f)
-            return 0.0;
-
-        lock (syncLock)
-        {
-            if (!statusHistory.TryGetValue(sourceName, out var history))
-                return 0.0;
-
-            float totalActiveTime = 0f;
-            foreach (var app in history)
-            {
-                if (app.StatusId != statusId)
-                    continue;
-
-                var fallbackEnd = app.IsPermanent ? encounterDuration : Math.Min(encounterDuration, app.AppliedAtSec + app.Duration);
-                var endTime = app.RemovedAtSec ?? fallbackEnd;
-                var activeTime = Math.Max(0f, endTime - app.AppliedAtSec);
-                totalActiveTime += activeTime;
-            }
-
-            return Math.Min(100.0, totalActiveTime / encounterDuration * 100.0);
-        }
     }
 
     public bool IsDoT(uint statusId) => ClassifyStatus(statusId).IsDoT;

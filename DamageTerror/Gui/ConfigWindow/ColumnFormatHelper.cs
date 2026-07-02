@@ -3,73 +3,14 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
-public sealed class DisplayTab
+public static class ColumnFormatHelper
 {
-    public bool Draw(Configuration config)
-    {
-        var changed = false;
-
-        if (ImGui.CollapsingHeader("Content", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            ImGui.Spacing();
-
-            changed |= ConfigHelpers.CheckboxProp("Job abbreviation text", config.ShowJobAbbrevOnBar, v => config.ShowJobAbbrevOnBar = v);
-            changed |= ConfigHelpers.CheckboxProp("Rank number", config.ShowRankNumber, v => config.ShowRankNumber = v);
-            changed |= ConfigHelpers.CheckboxProp("Job icons", config.ShowJobIcons, v => config.ShowJobIcons = v);
-
-            if (config.ShowJobIcons)
-            {
-                ImGui.SameLine();
-                var styleLabels = new[] { "Framed", "Plain", "Custom" };
-                changed |= ConfigHelpers.ComboProp("Icon style", (int)config.JobIconStyle, styleLabels, v => config.JobIconStyle = (JobIconStyle)v, 120);
-
-                if (config.JobIconStyle == JobIconStyle.Custom)
-                {
-                    ImGui.Indent();
-                    ImGui.TextUnformatted("Custom Icons");
-                    ConfigHelpers.HelpMarker("Set a game icon ID per job (0 = default framed).");
-                    ImGui.Spacing();
-
-                    foreach (var abbr in JobIconHelper.AllJobAbbreviations.OrderBy(a => a))
-                    {
-                        config.CustomJobIcons.TryGetValue(abbr, out var curId);
-                        var idInt = (int)curId;
-                        ImGui.SetNextItemWidth(100);
-                        if (ImGui.InputInt($"{abbr.ToUpperInvariant()}##custicon_{abbr}", ref idInt, 0))
-                        {
-                            if (idInt < 0) idInt = 0;
-                            config.CustomJobIcons[abbr] = (uint)idInt;
-                            changed = true;
-                        }
-
-                        if (idInt > 0)
-                        {
-                            ImGui.SameLine();
-                            var preview = ServiceManager.TextureProvider.GetFromGameIcon(new Dalamud.Interface.Textures.GameIconLookup((uint)idInt));
-                            if (preview.TryGetWrap(out var wrap, out _))
-                            {
-                                ImGui.Image(wrap.Handle, new Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight()));
-                            }
-                        }
-                    }
-
-                    ImGui.Unindent();
-                }
-            }
-
-        }
-
-        return changed;
-    }
-
-    internal static Dictionary<BarColumn, string> ColumnLabels => MetricPicker.BarColumnLabels;
-
     private static readonly string[] FormatLabels = { "Abbreviated (12.3K)", "Commas (12,345)", "Raw (12345.6)" };
 
     internal static bool DrawColumnFormatPopup(BarColumn col, Dictionary<BarColumn, ColumnFormatOverride> overrides)
     {
         var changed = false;
-        var label = ColumnLabels.GetValueOrDefault(col, col.ToString());
+        var label = MetricPicker.BarColumnLabels.GetValueOrDefault(col, col.ToString());
         ImGui.TextDisabled($"{label} — Format Override");
         ImGui.Spacing();
 

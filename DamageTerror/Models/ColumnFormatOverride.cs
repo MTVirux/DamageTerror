@@ -9,16 +9,6 @@ public sealed class ColumnFormatOverride
     public double AbbreviatedKThreshold { get; set; } = 10_000;
     public double AbbreviatedMThreshold { get; set; } = 1_000_000;
 
-    public ColumnFormatOverride Clone() => new()
-    {
-        ValueDisplayFormat = ValueDisplayFormat,
-        AbbreviatedDecimalPlaces = AbbreviatedDecimalPlaces,
-        RawDecimalPlaces = RawDecimalPlaces,
-        PercentDecimalPlaces = PercentDecimalPlaces,
-        AbbreviatedKThreshold = AbbreviatedKThreshold,
-        AbbreviatedMThreshold = AbbreviatedMThreshold,
-    };
-
     /// <summary>Columns whose values go through ValueFormatter.Format (numeric values).</summary>
     public static readonly HashSet<BarColumn> ValueColumns = new()
     {

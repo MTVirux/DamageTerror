@@ -17,8 +17,6 @@ public sealed class FontService : IDisposable
     private SingleFontChooserDialog? fontChooserDialog;
     private bool disposed;
 
-    private SingleFontSpec? activeSpec;
-
     // Deferred rebuild: flag set when config changes, applied next frame before push.
     // Volatile because config changes (ApplyFontSpec/ClearCustomFont) could theoretically
     // race with the UI-thread read in PushFont().
@@ -59,7 +57,6 @@ public sealed class FontService : IDisposable
 
         customFontHandle?.Dispose();
         customFontHandle = null;
-        activeSpec = null;
 
         var specJson = config.CustomFontSpecJson;
         if (string.IsNullOrEmpty(specJson))
@@ -85,7 +82,6 @@ public sealed class FontService : IDisposable
         try
         {
             customFontHandle = spec.CreateFontHandle(atlas);
-            activeSpec = spec;
         }
         catch (Exception ex)
         {

@@ -11,7 +11,6 @@ public sealed class EncounterTimer
 
     public bool IsRunning => stopwatch.IsRunning;
 
-    public void Start() => stopwatch.Start();
     public void Restart() { overrideSeconds = -1f; stopwatch.Restart(); }
     public void Stop() => stopwatch.Stop();
     public void Reset() { overrideSeconds = -1f; stopwatch.Reset(); }

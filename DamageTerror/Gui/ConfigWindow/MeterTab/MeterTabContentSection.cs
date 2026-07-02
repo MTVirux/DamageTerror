@@ -74,7 +74,7 @@ internal static class MeterTabContentSection
 
                     if (ImGui.BeginPopup($"##fmtPopup_{col}"))
                     {
-                        extChanged |= DisplayTab.DrawColumnFormatPopup(col, tab.ColumnFormatOverrides);
+                        extChanged |= ColumnFormatHelper.DrawColumnFormatPopup(col, tab.ColumnFormatOverrides);
                         ImGui.EndPopup();
                     }
                 }

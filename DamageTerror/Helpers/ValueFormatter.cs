@@ -2,9 +2,6 @@ namespace DamageTerror.Helpers;
 
 public static class ValueFormatter
 {
-    public static string Format(double value, ValueDisplayFormat format)
-        => Format(value, format, 1, 10_000, 1_000_000);
-
     public static string Format(double value, ValueDisplayFormat format, int decimals)
         => Format(value, format, decimals, 10_000, 1_000_000);
 

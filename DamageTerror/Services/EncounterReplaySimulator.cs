@@ -42,7 +42,6 @@ public sealed class EncounterReplaySimulator
     }
 
     public bool IsRunning => !paused && !finished;
-    public bool IsPaused => paused && !finished;
     public bool IsFinished => finished;
     public float ElapsedSeconds => simulatedTime;
     public float DurationSeconds => duration;
