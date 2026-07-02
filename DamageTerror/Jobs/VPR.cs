@@ -18,11 +18,6 @@ public sealed class VPR : JobDefinitionBase
         { 3667, 200 }, // Noxious Gnash
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        3667, // Noxious Gnash
-    };
-
     public override IReadOnlyList<PositionalFallbackEntry> FallbackPositionals { get; } =
     [
         new(34610, "Flanksting Strike", "Flank", [(0, false), (15, true), (12, true)]),

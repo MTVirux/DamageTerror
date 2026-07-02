@@ -13,11 +13,6 @@ public sealed class RPR : JobDefinitionBase
         { 2862, 100 }, // Crest of Time Returned (PvP)
     };
 
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        2862, // Crest of Time Returned (PvP)
-    };
-
     public override IReadOnlyList<PositionalFallbackEntry> FallbackPositionals { get; } =
     [
         new(24382, "Gibbet", "Flank", [(0, false), (10, false), (11, true), (19, true)]),

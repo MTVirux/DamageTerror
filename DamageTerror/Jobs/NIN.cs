@@ -20,16 +20,6 @@ public sealed class NIN : JobDefinitionBase
         { 3189, 65 },  // Meisui (PvP)
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        3184, // Goka Mekkyaku (PvP)
-    };
-
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        3189, // Meisui (PvP)
-    };
-
     public override IReadOnlyDictionary<uint, string> GroundEffectDots { get; } = new Dictionary<uint, string>
     {
         { 501, "Doton" },   // PvE

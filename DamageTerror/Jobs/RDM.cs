@@ -13,11 +13,6 @@ public sealed class RDM : JobDefinitionBase
         { 4319, 65 },  // Scorch (PvP)
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        4319, // Scorch (PvP)
-    };
-
     public override string MaxHitSkill => "Scorch";
 
     public override string[] DamageSkillNames =>

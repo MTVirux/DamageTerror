@@ -14,12 +14,6 @@ public sealed class WAR : JobDefinitionBase
         { 2108, 100 }, // Shake It Off (Over Time)
     };
 
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        2681, // Equilibrium
-        2108, // Shake It Off (Over Time)
-    };
-
     public override IReadOnlySet<uint> KnownReflectStatusIds { get; } = new HashSet<uint>
     {
         89,   // Vengeance

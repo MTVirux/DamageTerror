@@ -18,11 +18,6 @@ public sealed class DNC : JobDefinitionBase
         { 2695, 100 }, // Improvisation
     };
 
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        2695, // Improvisation
-    };
-
     public override IReadOnlyDictionary<uint, string> GroundEffectDots { get; } = new Dictionary<uint, string>
     {
         { 3162, "Honing Dance" }, // PvP

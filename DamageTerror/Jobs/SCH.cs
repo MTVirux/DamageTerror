@@ -29,22 +29,6 @@ public sealed class SCH : JobDefinitionBase
         { 3885, 100 }, // Seraphism
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        1895, // Biolysis
-        189,  // Bio II
-        3883, // Baneful Impaction
-        2039, // Biolysis (PvP)
-    };
-
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        315,  // Whispering Dawn
-        1874, // Angel's Whisper (Seraph)
-        1944, // Sacred Soil
-        3885, // Seraphism HoT
-    };
-
     public override string MaxHitSkill => "Broil IV";
 
     public override string[] DamageSkillNames =>

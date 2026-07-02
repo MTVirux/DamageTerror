@@ -25,23 +25,6 @@ public sealed class SGE : JobDefinitionBase
         { 3898, 170 }, // Philosophia
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        2614, // Eukrasian Dosis
-        2615, // Eukrasian Dosis II
-        2616, // Eukrasian Dosis III
-        3897, // Eukrasian Dyskrasia
-        3976, // Eukrasian Dosis III (PvP)
-    };
-
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        2617, // Physis
-        2620, // Physis II
-        2938, // Kerakeia
-        3898, // Philosophia
-    };
-
     public override string MaxHitSkill => "Pneuma";
 
     public override string[] DamageSkillNames =>

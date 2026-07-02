@@ -29,22 +29,6 @@ public sealed class WHM : JobDefinitionBase
         { 1911, 100 }, // Asylum
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        1871, // Dia
-        143,  // Aero
-        144,  // Aero II
-        798,  // Aero III
-    };
-
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        158,  // Regen
-        150,  // Medica II
-        3880, // Medica III
-        1911, // Asylum
-    };
-
     public override string MaxHitSkill => "Glare III";
 
     public override string[] DamageSkillNames =>

@@ -23,21 +23,6 @@ public sealed class BLU : JobDefinitionBase
         { 2495, 100 }, // Angel's Snack
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        1714, // Bleeding (Song of Torment, Nightbloom, Aetherial Spark)
-        1736, // Dropsy (Aqua Breath)
-        18,   // Poison (Bad Breath)
-        1723, // Windburn (Feather Rain)
-        3712, // Breath of Magic
-        3643, // Mortal Flame
-    };
-
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        2495, // Angel's Snack
-    };
-
     public override IReadOnlySet<uint> KnownReflectStatusIds { get; } = new HashSet<uint>
     {
         1720, // Ice Spikes

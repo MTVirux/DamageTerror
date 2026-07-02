@@ -18,11 +18,6 @@ public sealed class SAM : JobDefinitionBase
         { 1228, 200 }, // Higanbana
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        1228, // Higanbana
-    };
-
     public override IReadOnlyList<PositionalFallbackEntry> FallbackPositionals { get; } =
     [
         new(7481, "Gekko", "Rear", [(0, false), (53, false), (10, true), (22, true), (11, true), (58, true)]),

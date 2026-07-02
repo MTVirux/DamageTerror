@@ -19,12 +19,6 @@ public abstract class JobDefinitionBase
     // ── HoT Potencies (statusId → tick potency) ──
     public virtual IReadOnlyDictionary<uint, int> HotTickPotencies { get; } = new Dictionary<uint, int>();
 
-    // ── Known DoT status IDs for classification ──
-    public virtual IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>();
-
-    // ── Known HoT status IDs for classification ──
-    public virtual IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>();
-
     // ── Status IDs whose presence on a target reflects incoming damage back to the attacker ──
     public virtual IReadOnlySet<uint> KnownReflectStatusIds { get; } = new HashSet<uint>();
 

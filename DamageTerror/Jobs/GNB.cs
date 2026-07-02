@@ -25,17 +25,6 @@ public sealed class GNB : JobDefinitionBase
         { 1835, 200 }, // Aurora
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        1837, // Sonic Break
-        1838, // Bow Shock
-    };
-
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        1835, // Aurora
-    };
-
     public override string MaxHitSkill => "Blasting Zone";
 
     public override string[] DamageSkillNames =>

@@ -22,14 +22,6 @@ public sealed class BRD : JobDefinitionBase
         { 1201, 100 }, // Stormbite
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        124,  // Venomous Bite
-        129,  // Windbite
-        1200, // Caustic Bite
-        1201, // Stormbite
-    };
-
     public override string MaxHitSkill => "Radiant Finale";
 
     public override string[] DamageSkillNames =>

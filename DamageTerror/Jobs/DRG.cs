@@ -20,12 +20,6 @@ public sealed class DRG : JobDefinitionBase
         { 2719, 300 }, // Chaotic Spring
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        118,  // Chaos Thrust
-        2719, // Chaotic Spring
-    };
-
     public override IReadOnlyList<PositionalFallbackEntry> FallbackPositionals { get; } =
     [
         new(3554, "Fang and Claw", "Flank", [(0, false), (53, false), (10, true), (11, true), (58, true), (59, true)]),

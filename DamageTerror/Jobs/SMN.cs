@@ -14,11 +14,6 @@ public sealed class SMN : JobDefinitionBase
         { 3231, 65 },  // Scarlet Flame (PvP)
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        3231, // Scarlet Flame (PvP)
-    };
-
     public override IReadOnlyDictionary<uint, string> GroundEffectDots { get; } = new Dictionary<uint, string>
     {
         { 2706, "Slipstream" },

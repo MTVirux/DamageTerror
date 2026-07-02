@@ -23,16 +23,6 @@ public sealed class PLD : JobDefinitionBase
         { 2676, 250 }, // Knight's Benediction
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        248,  // Circle of Scorn
-    };
-
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        2676, // Knight's Benediction
-    };
-
     public override string MaxHitSkill => "Confiteor";
 
     public override string[] DamageSkillNames =>

@@ -24,14 +24,6 @@ public sealed class BLM : JobDefinitionBase
         { 3872, 100 },  // High Thunder II
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        163,  // Thunder III
-        1210, // Thunder IV
-        3871, // High Thunder
-        3872, // High Thunder II
-    };
-
     public override string MaxHitSkill => "Flare Star";
 
     public override string[] DamageSkillNames =>

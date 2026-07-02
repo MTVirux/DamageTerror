@@ -19,11 +19,6 @@ public sealed class DRK : JobDefinitionBase
         { 3037, 80 },  // Salted Earth (PvP, self-HoT)
     };
 
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        3037, // Salted Earth (PvP, self-HoT)
-    };
-
     public override IReadOnlyDictionary<uint, string> GroundEffectDots { get; } = new Dictionary<uint, string>
     {
         { 749, "Salted Earth" },   // PvE

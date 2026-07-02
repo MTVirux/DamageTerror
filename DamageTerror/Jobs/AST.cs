@@ -24,22 +24,6 @@ public sealed class AST : JobDefinitionBase
         { 956, 100 },  // Wheel of Fortune
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        838,  // Combust
-        843,  // Combust II
-        1881, // Combust III
-    };
-
-    public override IReadOnlySet<uint> KnownHotStatusIds { get; } = new HashSet<uint>
-    {
-        835,  // Aspected Benefic
-        836,  // Aspected Helios
-        3894, // Helios Conjunction
-        848,  // Collective Unconscious
-        956,  // Wheel of Fortune
-    };
-
     public override IReadOnlyDictionary<uint, string> GroundEffectDots { get; } = new Dictionary<uint, string>
     {
         { 1122, "Earthly Star" },

@@ -19,12 +19,6 @@ public sealed class MCH : JobDefinitionBase
         { 1866, 50 },  // Bioblaster
     };
 
-    public override IReadOnlySet<uint> KnownDotStatusIds { get; } = new HashSet<uint>
-    {
-        1866, // Bioblaster
-        2019, // Bioblaster (PvP)
-    };
-
     public override string MaxHitSkill => "Wildfire";
 
     public override string[] DamageSkillNames =>

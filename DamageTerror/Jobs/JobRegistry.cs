@@ -32,10 +32,15 @@ public static class JobRegistry
     private static readonly Dictionary<uint, int> AggregatedDotTickPotencies = BuildAggregatedDict(j => j.DotTickPotencies);
     private static readonly Dictionary<uint, int> AggregatedHotTickPotencies = BuildAggregatedDict(j => j.HotTickPotencies);
     private static readonly Dictionary<uint, int> AggregatedDotInitialHitPotencies = BuildAggregatedDict(j => j.DotInitialHitPotencies);
-    private static readonly HashSet<uint> AggregatedKnownDotStatusIds = BuildAggregatedSet(j => j.KnownDotStatusIds);
-    private static readonly HashSet<uint> AggregatedKnownHotStatusIds = BuildAggregatedSet(j => j.KnownHotStatusIds);
     private static readonly HashSet<uint> AggregatedKnownReflectStatusIds = BuildAggregatedSet(j => j.KnownReflectStatusIds);
     private static readonly Dictionary<uint, string> AggregatedGroundEffectDots = BuildAggregatedDict(j => j.GroundEffectDots);
+
+    // ── Derived status classification sets (must init after the maps above) ──
+    // Known HoTs are exactly the HoT-potency keys; known DoTs are the DoT-potency
+    // keys minus ground-effect DoTs (whose self-buff status isn't a target debuff).
+    private static readonly HashSet<uint> AggregatedKnownHotStatusIds = AggregatedHotTickPotencies.Keys.ToHashSet();
+    private static readonly HashSet<uint> AggregatedKnownDotStatusIds =
+        AggregatedDotTickPotencies.Keys.Where(id => !AggregatedGroundEffectDots.ContainsKey(id)).ToHashSet();
 
     // ── Role-grouped arrays ──
     public static readonly string[] TankJobs = GetAbbreviations(JobRole.Tank, baseClasses: false);
