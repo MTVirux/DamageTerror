@@ -281,6 +281,36 @@ internal static class MeterWindowHelper
         return height;
     }
 
+    public static (List<CombatantEntry> Combatants, double MaxVal, GroupAggregates? Aggregates) BuildCombatantData(
+        EncounterSnapshot encounter,
+        SortField sortBy,
+        bool sortDesc,
+        MeterTab? activeTab,
+        HashSet<string>? partyNames,
+        HashSet<string>? allianceNames,
+        bool stampRanks,
+        bool computeAggregates)
+    {
+        var combatants = MainWindow.GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
+        if (stampRanks)
+            MainWindow.StampRanks(combatants);
+        var aggregates = computeAggregates ? GroupAggregates.Compute(combatants) : null;
+        var maxVal = combatants.Count > 0
+            ? combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy))
+            : 0d;
+        return (combatants, maxVal, aggregates);
+    }
+
+    public static void DrawDisconnectNotice(string idSuffix, Action spawnReconnect, Action dismissDisconnectNotice)
+    {
+        ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
+        if (ImGui.Button($"Reconnect##{idSuffix}"))
+            spawnReconnect();
+        ImGui.SameLine();
+        if (ImGui.Button($"Dismiss##{idSuffix}"))
+            dismissDisconnectNotice();
+    }
+
     public static void RenderCombatantBars(in MeterWindowContext ctx)
     {
         var availY = ImGui.GetContentRegionAvail().Y;
@@ -336,12 +366,7 @@ internal static class MeterWindowHelper
                         }
                         else if (!ctx.DisconnectNoticeDismissed)
                         {
-                            ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-                            if (ImGui.Button($"Reconnect##disconnect-notice-encsel{ctx.ReconnectButtonIdSuffix}"))
-                                ctx.SpawnReconnect();
-                            ImGui.SameLine();
-                            if (ImGui.Button($"Dismiss##disconnect-notice-encsel{ctx.ReconnectButtonIdSuffix}"))
-                                ctx.DismissDisconnectNotice();
+                            DrawDisconnectNotice($"disconnect-notice-encsel{ctx.ReconnectButtonIdSuffix}", ctx.SpawnReconnect, ctx.DismissDisconnectNotice);
                         }
                         earlyReturn = true;
                         return;

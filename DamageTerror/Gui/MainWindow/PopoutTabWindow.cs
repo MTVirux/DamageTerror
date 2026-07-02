@@ -208,9 +208,9 @@ public sealed class PopoutTabWindow : Window, IDisposable
 
         if (encounter != null)
         {
-            combatants = MainWindow.GetSortedCombatants(encounter, sortBy, sortDesc, tab, partyNames, allianceNames);
-            if (combatants.Count > 0)
-                maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
+            (combatants, maxVal, _) = MeterWindowHelper.BuildCombatantData(
+                encounter, sortBy, sortDesc, tab, partyNames, allianceNames,
+                stampRanks: false, computeAggregates: false);
         }
 
         var skipElements = new HashSet<LayoutElement> { LayoutElement.MeterTabs };
@@ -222,12 +222,9 @@ public sealed class PopoutTabWindow : Window, IDisposable
         {
             if (!plugin.DataService.DisconnectNoticeDismissed)
             {
-                ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-                if (ImGui.Button("Reconnect##disconnect-notice-popout"))
-                    Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
-                ImGui.SameLine();
-                if (ImGui.Button("Dismiss##disconnect-notice-popout"))
-                    plugin.DataService.DismissDisconnectNotice();
+                MeterWindowHelper.DrawDisconnectNotice("disconnect-notice-popout",
+                    () => Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false)),
+                    plugin.DataService.DismissDisconnectNotice);
             }
             ImGui.EndChild();
             return;

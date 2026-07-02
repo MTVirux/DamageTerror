@@ -301,11 +301,9 @@ public sealed class MainWindow : Window, IDisposable
 
         if (encounter != null)
         {
-            combatants = GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
-            StampRanks(combatants);
-            groupAggregates = GroupAggregates.Compute(combatants);
-            if (combatants.Count > 0)
-                maxVal = combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy));
+            (combatants, maxVal, groupAggregates) = MeterWindowHelper.BuildCombatantData(
+                encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames,
+                stampRanks: true, computeAggregates: true);
         }
 
         var afterBarsHeight = MeterWindowHelper.CalculateAfterBarsHeight(
@@ -316,12 +314,7 @@ public sealed class MainWindow : Window, IDisposable
         {
             if (!plugin.DataService.DisconnectNoticeDismissed)
             {
-                ImGui.TextDisabled("No encounter data. Make sure IINACT is running.");
-                if (ImGui.Button("Reconnect##disconnect-notice"))
-                    SpawnReconnect();
-                ImGui.SameLine();
-                if (ImGui.Button("Dismiss##disconnect-notice"))
-                    plugin.DataService.DismissDisconnectNotice();
+                MeterWindowHelper.DrawDisconnectNotice("disconnect-notice", SpawnReconnect, plugin.DataService.DismissDisconnectNotice);
             }
             ImGui.EndChild();
             return;
@@ -373,12 +366,9 @@ public sealed class MainWindow : Window, IDisposable
                     allianceNames ??= plugin.PartyService.GetAllianceMemberNames();
                 }
 
-                var newCombatants = GetSortedCombatants(encounter!, ctx.SortBy, ctx.SortDescending, newTab, partyNames, allianceNames);
-                StampRanks(newCombatants);
-                var newGroupAgg = GroupAggregates.Compute(newCombatants);
-                var newMaxVal = newCombatants.Count > 0
-                    ? newCombatants.Sum(c => CombatantBarComponent.GetSortValue(c, ctx.SortBy))
-                    : 0;
+                var (newCombatants, newMaxVal, newGroupAgg) = MeterWindowHelper.BuildCombatantData(
+                    encounter!, ctx.SortBy, ctx.SortDescending, newTab, partyNames, allianceNames,
+                    stampRanks: true, computeAggregates: true);
 
                 ctx.Combatants = newCombatants;
                 ctx.GroupAggregates = newGroupAgg;
@@ -713,7 +703,7 @@ public sealed class MainWindow : Window, IDisposable
             if (pinClicked)
             {
                 plugin.Config.ReplayBarPinned = !pinned;
-                plugin.Config.Save?.Invoke();
+                plugin.SaveConfig();
             }
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip(pinned
