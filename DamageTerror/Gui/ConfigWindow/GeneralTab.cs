@@ -177,28 +177,17 @@ public sealed class GeneralTab
 
         if (ImGui.CollapsingHeader("Duty Filters", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var v = config.EnableInOverworld;
-            if (ImGui.Checkbox("Overworld / Open World", ref v)) { config.EnableInOverworld = v; changed = true; }
-            v = config.EnableInDungeons;
-            if (ImGui.Checkbox("Dungeons", ref v)) { config.EnableInDungeons = v; changed = true; }
-            v = config.EnableInTrials;
-            if (ImGui.Checkbox("Trials", ref v)) { config.EnableInTrials = v; changed = true; }
-            v = config.EnableInRaids;
-            if (ImGui.Checkbox("Raids (Savage / Ultimate)", ref v)) { config.EnableInRaids = v; changed = true; }
-            v = config.EnableInAllianceRaids;
-            if (ImGui.Checkbox("Alliance Raids", ref v)) { config.EnableInAllianceRaids = v; changed = true; }
-            v = config.EnableInDeepDungeons;
-            if (ImGui.Checkbox("Deep Dungeons (PotD / HoH / EO)", ref v)) { config.EnableInDeepDungeons = v; changed = true; }
-            v = config.EnableInFieldOperations;
-            if (ImGui.Checkbox("Field Operations (Eureka / Bozja)", ref v)) { config.EnableInFieldOperations = v; changed = true; }
-            v = config.EnableInFieldRaids;
-            if (ImGui.Checkbox("Field Raids (Delubrum / Dalriada)", ref v)) { config.EnableInFieldRaids = v; changed = true; }
-            v = config.EnableInCriterion;
-            if (ImGui.Checkbox("Criterion Dungeons", ref v)) { config.EnableInCriterion = v; changed = true; }
-            v = config.EnableInVariant;
-            if (ImGui.Checkbox("Variant Dungeons", ref v)) { config.EnableInVariant = v; changed = true; }
-            v = config.EnableInPvP;
-            if (ImGui.Checkbox("PvP", ref v)) { config.EnableInPvP = v; changed = true; }
+            changed |= ConfigHelpers.CheckboxProp("Overworld / Open World", config.EnableInOverworld, v => config.EnableInOverworld = v);
+            changed |= ConfigHelpers.CheckboxProp("Dungeons", config.EnableInDungeons, v => config.EnableInDungeons = v);
+            changed |= ConfigHelpers.CheckboxProp("Trials", config.EnableInTrials, v => config.EnableInTrials = v);
+            changed |= ConfigHelpers.CheckboxProp("Raids (Savage / Ultimate)", config.EnableInRaids, v => config.EnableInRaids = v);
+            changed |= ConfigHelpers.CheckboxProp("Alliance Raids", config.EnableInAllianceRaids, v => config.EnableInAllianceRaids = v);
+            changed |= ConfigHelpers.CheckboxProp("Deep Dungeons (PotD / HoH / EO)", config.EnableInDeepDungeons, v => config.EnableInDeepDungeons = v);
+            changed |= ConfigHelpers.CheckboxProp("Field Operations (Eureka / Bozja)", config.EnableInFieldOperations, v => config.EnableInFieldOperations = v);
+            changed |= ConfigHelpers.CheckboxProp("Field Raids (Delubrum / Dalriada)", config.EnableInFieldRaids, v => config.EnableInFieldRaids = v);
+            changed |= ConfigHelpers.CheckboxProp("Criterion Dungeons", config.EnableInCriterion, v => config.EnableInCriterion = v);
+            changed |= ConfigHelpers.CheckboxProp("Variant Dungeons", config.EnableInVariant, v => config.EnableInVariant = v);
+            changed |= ConfigHelpers.CheckboxProp("PvP", config.EnableInPvP, v => config.EnableInPvP = v);
         }
 
         ImGui.Spacing();
