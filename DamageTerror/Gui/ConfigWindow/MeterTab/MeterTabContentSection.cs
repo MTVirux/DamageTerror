@@ -44,7 +44,7 @@ internal static class MeterTabContentSection
                 var extChanged = false;
 
                 extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "hdr_",
-                    Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
+                    ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
                     tab.ColumnHeaderLabels, MetricPicker.GetBarColumnLabel(col));
 
                 if (tab.ColumnFormatOverrides != null && ColumnFormatOverride.SupportsFormatting(col))

@@ -91,7 +91,7 @@ public sealed class StatusBarComponent
                 x += ImGui.CalcTextSize(valueText).X;
 
                 var label = " " + (tab != null ? tab.GetStatusBarLabel(col)
-                    : Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()));
+                    : ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()));
                 drawList.AddText(new Vector2(x, textY), labelColor, label);
                 x += ImGui.CalcTextSize(label).X;
                 hasLeftContent = true;

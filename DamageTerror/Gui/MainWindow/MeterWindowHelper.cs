@@ -204,7 +204,7 @@ internal static class MeterWindowHelper
             var col = columnOrder[ci];
             if (activeTab == null || !activeTab.IsColumnVisible(col)) continue;
 
-            var headerLabel = activeTab?.GetHeaderLabel(col) ?? Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+            var headerLabel = activeTab?.GetHeaderLabel(col) ?? ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
             var colW = colWidths[col];
             var lw = ImGui.CalcTextSize(headerLabel).X;
             rightX -= colW;
@@ -216,7 +216,7 @@ internal static class MeterWindowHelper
             if (ImGui.IsMouseHoveringRect(hitMin, hitMax))
             {
                 ImGui.BeginTooltip();
-                ImGui.TextUnformatted(Configuration.FullColumnNames.GetValueOrDefault(col, col.ToString()));
+                ImGui.TextUnformatted(ColumnLabels.FullColumnNames.GetValueOrDefault(col, col.ToString()));
                 ImGui.EndTooltip();
             }
 

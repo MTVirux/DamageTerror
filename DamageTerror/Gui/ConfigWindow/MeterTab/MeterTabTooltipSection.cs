@@ -19,7 +19,7 @@ internal static class MeterTabTooltipSection
         {
             var extChanged = false;
             extChanged |= MeterTabSectionHelpers.DrawLabelOverride(field, "ttLbl_",
-                Configuration.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString()),
+                ColumnLabels.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString()),
                 tab.TooltipFieldLabels, MetricPicker.GetTooltipFieldLabel(field));
             return extChanged;
         };

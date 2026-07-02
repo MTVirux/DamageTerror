@@ -148,28 +148,28 @@ public sealed class MeterTab
     {
         if (ColumnHeaderLabels.TryGetValue(col, out var custom) && !string.IsNullOrEmpty(custom))
             return custom;
-        return Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+        return ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
     }
 
     public string GetStatusBarLabel(BarColumn col)
     {
         if (StatusBarMetricLabels.TryGetValue(col, out var custom) && !string.IsNullOrEmpty(custom))
             return custom;
-        return Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+        return ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
     }
 
     public string GetTooltipFieldLabel(TooltipField field)
     {
         if (TooltipFieldLabels.TryGetValue(field, out var custom) && !string.IsNullOrEmpty(custom))
             return custom;
-        return Configuration.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+        return ColumnLabels.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString());
     }
 
     public string GetDetailColumnLabel(BarColumn col)
     {
         if (DetailColumnLabels.TryGetValue(col, out var custom) && !string.IsNullOrEmpty(custom))
             return custom;
-        return Configuration.DefaultDetailColumnLabels.GetValueOrDefault(col, col.ToString());
+        return ColumnLabels.DefaultDetailColumnLabels.GetValueOrDefault(col, col.ToString());
     }
 
     public bool IsColumnVisible(BarColumn col) => VisibleColumns.Contains(col);

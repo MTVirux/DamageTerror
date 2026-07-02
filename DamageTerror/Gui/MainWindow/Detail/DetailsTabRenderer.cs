@@ -107,7 +107,7 @@ internal sealed class DetailsTabRenderer : IDetailTabRenderer
             return null;
 
         string Label(BarColumn bc) => activeTab != null ? activeTab.GetDetailColumnLabel(bc)
-            : Configuration.DefaultDetailColumnLabels.GetValueOrDefault(bc, bc.ToString());
+            : ColumnLabels.DefaultDetailColumnLabels.GetValueOrDefault(bc, bc.ToString());
 
         string Fmt(double v) => DetailRenderHelpers.Fmt(config, v);
         string FmtPct(double v) => DetailRenderHelpers.FmtPct(config, v);

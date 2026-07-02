@@ -399,7 +399,7 @@ public sealed class CombatantBarComponent
     private (string Label, string Value) GetTooltipFieldValue(CombatantEntry combatant, TooltipField field, MeterTab? activeTab)
     {
         var label = activeTab != null ? activeTab.GetTooltipFieldLabel(field)
-            : Configuration.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+            : ColumnLabels.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString());
         var value = field switch
         {
             TooltipField.Name => NameFormatHelper.GetDisplayName(combatant.Name, combatant.Job, combatant.IsLocalPlayer, config),
@@ -456,7 +456,7 @@ public sealed class CombatantBarComponent
         var skills = isHealing ? combatant.HealingSkills : combatant.Skills;
         var count = activeTab?.TooltipTopSkillCount ?? config.TooltipTopSkillCount;
         var header = activeTab != null ? activeTab.GetTooltipFieldLabel(field)
-            : Configuration.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+            : ColumnLabels.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString());
 
         if (skills == null || skills.Count == 0)
             return;

@@ -25,7 +25,7 @@ internal static class MeterTabStatusBarSection
         {
             var extChanged = false;
             extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "sbLbl_",
-                Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
+                ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
                 tab.StatusBarMetricLabels, MetricPicker.GetBarColumnLabel(col));
             extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "sbClr", tab.ColumnValueColors);
             return extChanged;

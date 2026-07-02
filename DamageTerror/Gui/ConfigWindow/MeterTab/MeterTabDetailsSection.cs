@@ -50,7 +50,7 @@ internal static class MeterTabDetailsSection
         {
             var extChanged = false;
             extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "dtLbl_",
-                Configuration.DefaultDetailColumnLabels.GetValueOrDefault(col, col.ToString()),
+                ColumnLabels.DefaultDetailColumnLabels.GetValueOrDefault(col, col.ToString()),
                 tab.DetailColumnLabels, MetricPicker.GetBarColumnLabel(col));
 
             extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "dtClr", tab.ColumnValueColors);
