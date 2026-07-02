@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 namespace DamageTerror.Models;
 
 /// <summary>Per-line skill marker appearance settings.</summary>
-public sealed class SkillMarkerConfig
+public sealed record class SkillMarkerConfig
 {
     public bool ShowMarkers { get; set; } = true;
     public Vector4 MarkerColor { get; set; } = new(1f, 0.85f, 0.3f, 0.9f);
@@ -22,23 +22,6 @@ public sealed class SkillMarkerConfig
     public bool ShowDoTApplicationMarkers { get; set; } = true;
     public Vector4 DoTApplicationColor { get; set; } = new(0.9f, 0.3f, 0.9f, 0.95f);
     public float DoTApplicationMarkerSize { get; set; } = 5f;
-
-    public SkillMarkerConfig Clone() => new()
-    {
-        ShowMarkers = ShowMarkers,
-        MarkerColor = MarkerColor,
-        MarkerSize = MarkerSize,
-        ShowCritMarkers = ShowCritMarkers,
-        CritMarkerColor = CritMarkerColor,
-        DirectHitMarkerColor = DirectHitMarkerColor,
-        CritDirectHitMarkerColor = CritDirectHitMarkerColor,
-        ShowDoTTickMarkers = ShowDoTTickMarkers,
-        DoTTickColor = DoTTickColor,
-        DoTTickMarkerSize = DoTTickMarkerSize,
-        ShowDoTApplicationMarkers = ShowDoTApplicationMarkers,
-        DoTApplicationColor = DoTApplicationColor,
-        DoTApplicationMarkerSize = DoTApplicationMarkerSize,
-    };
 }
 
 public sealed class MeterTab
@@ -374,7 +357,7 @@ public sealed class MeterTab
             return CustomJobFilter.Any(j => string.Equals(j, combatant.Job, StringComparison.OrdinalIgnoreCase));
         }
 
-        var role = JobDataTable.GetRole(combatant.Job);
+        var role = JobRegistry.GetRole(combatant.Job);
         return FilterMode switch
         {
             TabFilterMode.Tanks => role == JobRole.Tank,

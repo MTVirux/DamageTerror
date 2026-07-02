@@ -84,7 +84,8 @@ public sealed class ThemePreset
     public bool ShowStatusBar { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
     public float StatusBarHeight { get; set; } = 20f;
-    public float StatusBarFontSize { get; set; } = 14f;
+    // Must match Configuration.StatusBarFontSize (single source of defaults; drift-asserted in DEBUG).
+    public float StatusBarFontSize { get; set; } = 14.1f;
     public float StatusBarPadding { get; set; } = 4f;
     public bool ShowStatusBarSeparator { get; set; } = true;
     public Vector4 StatusBarBackgroundColor { get; set; } = new(0.08f, 0.08f, 0.08f, 0.9f);

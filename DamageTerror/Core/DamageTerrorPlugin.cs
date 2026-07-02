@@ -143,6 +143,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
 #if DEBUG
         ThemePropertyMirror.SelfCheckOrThrow(BuiltInPresets.Default(), pluginLog);
+        ThemePropertyMirror.CheckDefaultsMatchConfigOrThrow(pluginLog);
 #endif
 
         this.mainWindow = new Gui.MainWindow.MainWindow(this, textureProvider);

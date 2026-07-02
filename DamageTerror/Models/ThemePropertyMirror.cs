@@ -60,6 +60,31 @@ internal static class ThemePropertyMirror
         log.Debug($"ThemePropertyMirror: {mirrored.Value.Length} properties mirrored OK");
     }
 
+    /// <summary>
+    /// DEBUG-only default-drift check: a preset captured from a fresh <see cref="Configuration"/> must equal
+    /// a fresh <see cref="ThemePreset"/> property-for-property. Catches ThemePreset and Configuration default
+    /// initializers silently diverging (the factory-reset drift hazard). Throws listing every offending property.
+    /// </summary>
+    [Conditional("DEBUG")]
+    public static void CheckDefaultsMatchConfigOrThrow(IPluginLog log)
+    {
+        var fromConfig = new ThemePreset();
+        CaptureFrom(fromConfig, new Configuration());
+        var fresh = new ThemePreset();
+
+        var drifted = new List<string>();
+        foreach (var p in mirrored.Value)
+        {
+            if (!ValuesEqual(p.GetPresetValue(fromConfig), p.GetPresetValue(fresh)))
+                drifted.Add(p.Name);
+        }
+
+        if (drifted.Count > 0)
+            throw new InvalidOperationException(
+                "ThemePreset/Configuration default drift for: " + string.Join(", ", drifted));
+        log.Debug($"ThemePropertyMirror: {mirrored.Value.Length} defaults match Configuration");
+    }
+
     private static MirroredProperty[] BuildMirroredProperties()
     {
         var presetType = typeof(ThemePreset);
@@ -95,6 +120,7 @@ internal static class ThemePropertyMirror
             return true;
         }
         // Dictionary<MetricType, SkillMarkerConfig> deep equality (DetailMarkers, GraphViewMarkers).
+        // SkillMarkerConfig is a record: its generated Equals is value equality over all members.
         if (a is Dictionary<MetricType, SkillMarkerConfig> mda &&
             b is Dictionary<MetricType, SkillMarkerConfig> mdb)
         {
@@ -102,28 +128,11 @@ internal static class ThemePropertyMirror
             foreach (var kv in mda)
             {
                 if (!mdb.TryGetValue(kv.Key, out var other)) return false;
-                if (!ValuesEqual(kv.Value, other)) return false;  // recurses into SkillMarkerConfig branch
+                if (!kv.Value.Equals(other)) return false;
             }
             return true;
         }
 
-        // SkillMarkerConfig: two distinct instances with equal field values count as equal.
-        if (a is SkillMarkerConfig sa && b is SkillMarkerConfig sb)
-        {
-            return sa.ShowMarkers == sb.ShowMarkers
-                && sa.MarkerColor.Equals(sb.MarkerColor)
-                && sa.MarkerSize == sb.MarkerSize
-                && sa.ShowCritMarkers == sb.ShowCritMarkers
-                && sa.CritMarkerColor.Equals(sb.CritMarkerColor)
-                && sa.DirectHitMarkerColor.Equals(sb.DirectHitMarkerColor)
-                && sa.CritDirectHitMarkerColor.Equals(sb.CritDirectHitMarkerColor)
-                && sa.ShowDoTTickMarkers == sb.ShowDoTTickMarkers
-                && sa.DoTTickColor.Equals(sb.DoTTickColor)
-                && sa.DoTTickMarkerSize == sb.DoTTickMarkerSize
-                && sa.ShowDoTApplicationMarkers == sb.ShowDoTApplicationMarkers
-                && sa.DoTApplicationColor.Equals(sb.DoTApplicationColor)
-                && sa.DoTApplicationMarkerSize == sb.DoTApplicationMarkerSize;
-        }
         return a.Equals(b);
     }
 
@@ -237,7 +246,7 @@ internal static class ThemePropertyMirror
             var src = value as Dictionary<MetricType, SkillMarkerConfig> ?? new();
             var dst = new Dictionary<MetricType, SkillMarkerConfig>(src.Count);
             foreach (var kv in src)
-                dst[kv.Key] = kv.Value.Clone();
+                dst[kv.Key] = kv.Value with { };
             return dst;
         }
     }

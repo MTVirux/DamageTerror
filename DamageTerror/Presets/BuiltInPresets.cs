@@ -4,12 +4,17 @@ public static class BuiltInPresets
 {
     public static ThemePreset[] All { get; } = { Default(), Kagerou(), Ember(), Horizoverlay(), MopiMopi(), Ikegami(), NextUI() };
 
-    public static ThemePreset Default() => new()
+    public static ThemePreset Default()
     {
-        Name = "Default",
-        Description = "Stock DamageTerror appearance. Use this to reset to factory settings.",
-        IsBuiltIn = true,
-    };
+        // Capture from a fresh Configuration so the factory-reset preset always tracks the
+        // real default state instead of a hand-copied duplicate that can silently drift.
+        var preset = ThemePreset.CreateFromConfig(
+            new Configuration(),
+            "Default",
+            "Stock DamageTerror appearance. Use this to reset to factory settings.");
+        preset.IsBuiltIn = true;
+        return preset;
+    }
 
 
     public static ThemePreset Kagerou()
