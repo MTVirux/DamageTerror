@@ -12,14 +12,4 @@ public sealed class RDM : JobDefinitionBase
     {
         { 4319, 65 },  // Scorch (PvP)
     };
-
-    public override string MaxHitSkill => "Scorch";
-
-    public override string[] DamageSkillNames =>
-        ["Scorch", "Resolution", "Verholy", "Verflare", "Fleche", "Contre Sixte"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1420u, "Embolden", 20f, false), (1421u, "Manafication", 10f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs => [];
 }

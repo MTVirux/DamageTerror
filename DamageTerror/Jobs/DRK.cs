@@ -24,15 +24,4 @@ public sealed class DRK : JobDefinitionBase
         { 749, "Salted Earth" },   // PvE
         { 3036, "Salted Earth" },  // PvP
     };
-
-    public override string MaxHitSkill => "Living Shadow";
-
-    public override string[] DamageSkillNames =>
-        ["Living Shadow", "Shadowbringer", "Edge of Shadow", "Bloodspiller", "Carve and Spit", "Souleater"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1020u, "Shadow Wall", 15f, false), (1021u, "Dark Mind", 10f, false), (1022u, "The Blackest Night", 7f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2020u, "Salted Earth", 15f, true)];
 }

@@ -30,7 +30,7 @@ public static class JobIconHelper
             || job.Equals("Limit Break", StringComparison.OrdinalIgnoreCase))
             return LimitBreakIconId;
 
-        uint? classJobId = JobDataTable.GetClassJobId(job);
+        uint? classJobId = JobRegistry.GetClassJobId(job);
         if (classJobId == null)
             return null;
 
@@ -39,5 +39,5 @@ public static class JobIconHelper
     }
 
     /// <summary>All distinct job abbreviations (combat + DoH/DoL).</summary>
-    public static IEnumerable<string> AllJobAbbreviations => JobDataTable.AllAbbreviations;
+    public static IEnumerable<string> AllJobAbbreviations => JobRegistry.AllAbbreviations;
 }

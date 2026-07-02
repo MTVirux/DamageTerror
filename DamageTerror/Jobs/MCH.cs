@@ -18,15 +18,4 @@ public sealed class MCH : JobDefinitionBase
     {
         { 1866, 50 },  // Bioblaster
     };
-
-    public override string MaxHitSkill => "Wildfire";
-
-    public override string[] DamageSkillNames =>
-        ["Wildfire", "Chain Saw", "Excavator", "Air Anchor", "Drill", "Heat Blast"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1310u, "Reassemble", 5f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2310u, "Wildfire", 10f, false)];
 }

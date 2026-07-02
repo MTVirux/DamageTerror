@@ -32,15 +32,4 @@ public sealed class NIN : JobDefinitionBase
         new(2258, "Trick Attack", "Rear", [(0, false), (25, true)]),
         new(3563, "Armor Crush", "Flank", [(0, false), (47, false), (21, true), (27, true), (53, true), (58, true)]),
     ];
-
-    public override string MaxHitSkill => "Hyosho Ranryu";
-
-    public override string[] DamageSkillNames =>
-        ["Hyosho Ranryu", "Forked Raijin", "Fleeting Raijin", "Bhavacakra", "Aeolian Edge", "Armor Crush"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1220u, "Trick Attack", 15f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2220u, "Mug", 20f, false)];
 }

@@ -18,14 +18,4 @@ public sealed class SMN : JobDefinitionBase
     {
         { 2706, "Slipstream" },
     };
-
-    public override string MaxHitSkill => "Akh Morn";
-
-    public override string[] DamageSkillNames =>
-        ["Akh Morn", "Enkindle Bahamut", "Astral Impulse", "Ruby Rite", "Topaz Rite", "Emerald Rite"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1410u, "Searing Light", 30f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs => [];
 }

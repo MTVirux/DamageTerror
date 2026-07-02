@@ -28,13 +28,13 @@ internal static class ColorsSection
         }
         else
         {
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Tanks", JobDataTable.TankJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Healers", JobDataTable.HealerJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Melee DPS", JobDataTable.MeleeDpsJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Phys Ranged DPS", JobDataTable.RangedDpsJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Caster DPS", JobDataTable.CasterDpsJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("DoH/DoL", JobDataTable.DoHLJobs, config);
-            changed |= ConfigHelpers.DrawPerJobColorGroup("Base Classes", JobDataTable.BaseClassJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Tanks", JobRegistry.TankJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Healers", JobRegistry.HealerJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Melee DPS", JobRegistry.MeleeDpsJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Phys Ranged DPS", JobRegistry.RangedDpsJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Caster DPS", JobRegistry.CasterDpsJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("DoH/DoL", JobRegistry.DoHLJobs, config);
+            changed |= ConfigHelpers.DrawPerJobColorGroup("Base Classes", JobRegistry.BaseClassJobs, config);
             changed |= ConfigHelpers.ColorEditProp("Limit Break", config.LimitBreakColor, v => config.LimitBreakColor = v);
             changed |= ConfigHelpers.ColorEditProp("Unknown/Other", config.DefaultJobColor, v => config.DefaultJobColor = v);
 

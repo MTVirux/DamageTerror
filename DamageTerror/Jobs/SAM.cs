@@ -23,15 +23,4 @@ public sealed class SAM : JobDefinitionBase
         new(7481, "Gekko", "Rear", [(0, false), (53, false), (10, true), (22, true), (11, true), (58, true)]),
         new(7482, "Kasha", "Flank", [(0, false), (53, false), (10, true), (22, true), (11, true), (58, true)]),
     ];
-
-    public override string MaxHitSkill => "Midare Setsugekka";
-
-    public override string[] DamageSkillNames =>
-        ["Midare Setsugekka", "Ogi Namikiri", "Kaeshi: Namikiri", "Higanbana", "Shinten", "Shoha"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1230u, "Meikyo Shisui", 15f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2230u, "Higanbana", 60f, true)];
 }

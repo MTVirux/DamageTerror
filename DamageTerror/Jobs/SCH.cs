@@ -28,18 +28,4 @@ public sealed class SCH : JobDefinitionBase
         { 1944, 100 }, // Sacred Soil
         { 3885, 100 }, // Seraphism
     };
-
-    public override string MaxHitSkill => "Broil IV";
-
-    public override string[] DamageSkillNames =>
-        ["Broil IV", "Biolysis", "Energy Drain", "Chain Stratagem", "Art of War II"];
-
-    public override string[] HealSkillNames =>
-        ["Adloquium", "Succor", "Lustrate", "Excogitation", "Sacred Soil", "Seraphic Veil"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1110u, "Galvanize", 30f, false), (1111u, "Sacred Soil", 15f, true), (1112u, "Expedient", 20f, false), (1113u, "Seraphic Veil", 30f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2110u, "Biolysis", 30f, true), (2111u, "Chain Stratagem", 15f, false)];
 }

@@ -23,15 +23,4 @@ public sealed class BLM : JobDefinitionBase
         { 3871, 150 }, // High Thunder
         { 3872, 100 },  // High Thunder II
     };
-
-    public override string MaxHitSkill => "Flare Star";
-
-    public override string[] DamageSkillNames =>
-        ["Flare Star", "Despair", "Xenoglossy", "Fire IV", "Paradox", "Thunder III"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1400u, "Ley Lines", 30f, false), (1401u, "Triplecast", 15f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2400u, "Thunder III", 30f, true)];
 }

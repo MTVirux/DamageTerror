@@ -26,15 +26,4 @@ public sealed class DRG : JobDefinitionBase
         new(3556, "Wheeling Thrust", "Rear", [(0, false), (53, false), (10, true), (11, true), (58, true), (59, true)]),
         new(25772, "Chaotic Spring", "Rear", [(0, false), (53, false), (10, true), (11, true), (58, true), (59, true)]),
     ];
-
-    public override string MaxHitSkill => "Stardiver";
-
-    public override string[] DamageSkillNames =>
-        ["Stardiver", "Nastrond", "Heaven's Thrust", "Chaotic Spring", "Wyrmwind Thrust", "Dragonfire Dive"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1210u, "Battle Litany", 20f, false), (1211u, "Dragon Sight", 20f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2210u, "Chaotic Spring", 24f, true)];
 }

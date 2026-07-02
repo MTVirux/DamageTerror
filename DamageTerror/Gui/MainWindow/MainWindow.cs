@@ -713,7 +713,7 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
     {
         var combatants = new List<CombatantEntry>(encounter.Combatants);
 
-        combatants.RemoveAll(c => JobDataTable.GetRole(c.Job) == JobRole.Default);
+        combatants.RemoveAll(c => JobRegistry.GetRole(c.Job) == JobRole.Default);
 
         if (activeTab != null)
             combatants.RemoveAll(c => !activeTab.PassesFilter(c, partyNames, allianceNames));

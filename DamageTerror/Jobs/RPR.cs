@@ -20,15 +20,4 @@ public sealed class RPR : JobDefinitionBase
         new(36970, "Executioner's Gibbet", "Flank", [(0, false), (7, true)]),
         new(36971, "Executioner's Gallows", "Rear", [(0, false), (7, true)]),
     ];
-
-    public override string MaxHitSkill => "Communio";
-
-    public override string[] DamageSkillNames =>
-        ["Communio", "Plentiful Harvest", "Gibbet", "Gallows", "Void Reaping", "Cross Reaping"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1240u, "Arcane Circle", 20f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2240u, "Death's Design", 30f, false)];
 }

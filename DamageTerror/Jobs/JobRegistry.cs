@@ -14,15 +14,34 @@ public static class JobRegistry
         // Ranged DPS
         new BRD(), new MCH(), new DNC(),
         // Caster DPS
-        new BLM(), new SMN(), new RDM(), new PCT(), new BLU(),
+        new BLM(), new SMN(), new RDM(),
+        new IdentityJob("Pct", "Pictomancer", JobRole.CasterDps, 42, new(0.9882353f, 0.57254905f, 0.88235295f, 1.0f)),
+        new BLU(),
         // Base Classes
-        new GLA(), new MRD(), new CNJ(), new PGL(), new LNC(), new ARC(), new ROG(), new THM(), new ACN(),
+        new IdentityJob("Gla", "Gladiator", JobRole.Tank, 1, new(0.65882355f, 0.8235294f, 0.9019608f, 1.0f), true),
+        new IdentityJob("Mrd", "Marauder", JobRole.Tank, 3, new(0.8117647f, 0.14901961f, 0.12941177f, 1.0f), true),
+        new IdentityJob("Cnj", "Conjurer", JobRole.Healer, 6, new(1.0f, 0.9411765f, 0.8627451f, 1.0f), true),
+        new IdentityJob("Pgl", "Pugilist", JobRole.MeleeDps, 2, new(0.8392157f, 0.6117647f, 0.0f, 1.0f), true),
+        new IdentityJob("Lnc", "Lancer", JobRole.MeleeDps, 4, new(0.25490198f, 0.39215687f, 0.8039216f, 1.0f), true),
+        new IdentityJob("Arc", "Archer", JobRole.RangedDps, 5, new(0.5686275f, 0.7294118f, 0.36862746f, 1.0f), true),
+        new IdentityJob("Rog", "Rogue", JobRole.MeleeDps, 29, new(0.6862745f, 0.09803922f, 0.39215687f, 1.0f), true),
+        new IdentityJob("Thm", "Thaumaturge", JobRole.CasterDps, 7, new(0.64705884f, 0.4745098f, 0.8392157f, 1.0f), true),
+        new IdentityJob("Acn", "Arcanist", JobRole.CasterDps, 26, new(0.1764706f, 0.60784316f, 0.47058824f, 1.0f), true),
         // Crafters
-        new CRP(), new BSM(), new ARM(), new GSM(), new LTW(), new WVR(), new ALC(), new CUL(),
+        new IdentityJob("Crp", "Carpenter", JobRole.DoHL, 8, new(0.70f, 0.55f, 0.30f, 1.0f)),
+        new IdentityJob("Bsm", "Blacksmith", JobRole.DoHL, 9, new(0.70f, 0.55f, 0.30f, 1.0f)),
+        new IdentityJob("Arm", "Armorer", JobRole.DoHL, 10, new(0.70f, 0.55f, 0.30f, 1.0f)),
+        new IdentityJob("Gsm", "Goldsmith", JobRole.DoHL, 11, new(0.70f, 0.55f, 0.30f, 1.0f)),
+        new IdentityJob("Ltw", "Leatherworker", JobRole.DoHL, 12, new(0.70f, 0.55f, 0.30f, 1.0f)),
+        new IdentityJob("Wvr", "Weaver", JobRole.DoHL, 13, new(0.70f, 0.55f, 0.30f, 1.0f)),
+        new IdentityJob("Alc", "Alchemist", JobRole.DoHL, 14, new(0.70f, 0.55f, 0.30f, 1.0f)),
+        new IdentityJob("Cul", "Culinarian", JobRole.DoHL, 15, new(0.70f, 0.55f, 0.30f, 1.0f)),
         // Gatherers
-        new MIN(), new BTN(), new FSH(),
+        new IdentityJob("Min", "Miner", JobRole.DoHL, 16, new(0.70f, 0.55f, 0.30f, 1.0f)),
+        new IdentityJob("Btn", "Botanist", JobRole.DoHL, 17, new(0.70f, 0.55f, 0.30f, 1.0f)),
+        new IdentityJob("Fsh", "Fisher", JobRole.DoHL, 18, new(0.70f, 0.55f, 0.30f, 1.0f)),
         // Special
-        new LMB(),
+        new IdentityJob("Lmb", "Limit Break", JobRole.LimitBreak, 0, new(0.5f, 0.5f, 0.5f, 1.0f)),
     ];
 
     // ── Lookup by abbreviation or full name (case-insensitive) ──
@@ -54,11 +73,11 @@ public static class JobRegistry
 
     // ── Identity lookups ──
 
-    public static bool TryGet(string key, out JobDataTable.JobEntry entry)
+    public static bool TryGet(string key, out JobEntry entry)
     {
         if (!string.IsNullOrEmpty(key) && Lookup.TryGetValue(key, out var def))
         {
-            entry = new JobDataTable.JobEntry(def.Abbreviation, def.FullName, def.Role, def.ClassJobId, def.DefaultColor, def.IsBaseClass);
+            entry = new JobEntry(def.Abbreviation, def.FullName, def.Role, def.ClassJobId, def.DefaultColor, def.IsBaseClass);
             return true;
         }
         entry = default;
@@ -113,23 +132,6 @@ public static class JobRegistry
     public static IEnumerable<PositionalFallbackEntry> GetAllFallbackPositionals() =>
         AllDefinitions.SelectMany(d => d.FallbackPositionals);
 
-    // ── Sample data lookups ──
-
-    public static string GetMaxHitSkill(string job) =>
-        Lookup.TryGetValue(job, out var def) ? def.MaxHitSkill : "Attack";
-
-    public static string[] GetDamageSkillNames(string job) =>
-        Lookup.TryGetValue(job, out var def) ? def.DamageSkillNames : ["Attack", "Auto-Attack"];
-
-    public static string[] GetHealSkillNames(string job) =>
-        Lookup.TryGetValue(job, out var def) ? def.HealSkillNames : ["Second Wind", "Bloodbath"];
-
-    public static (uint Id, string Name, float Duration, bool IsHoT)[] GetJobBuffs(string job) =>
-        Lookup.TryGetValue(job, out var def) ? def.SampleBuffs : [];
-
-    public static (uint Id, string Name, float Duration, bool IsDot)[] GetJobDebuffs(string job) =>
-        Lookup.TryGetValue(job, out var def) ? def.SampleDebuffs : [];
-
     // ── Build helpers ──
 
     private static Dictionary<string, JobDefinitionBase> BuildLookup()
@@ -169,5 +171,29 @@ public static class JobRegistry
                 result.Add(id);
         }
         return result;
+    }
+
+    // ── Identity payload returned by lookups ──
+
+    public readonly record struct JobEntry(
+        string Abbreviation,
+        string FullName,
+        JobRole Role,
+        uint ClassJobId,
+        Vector4 DefaultColor,
+        bool IsBaseClass);
+
+    // ── Data-only job (identity properties, no combat/sample data) ──
+
+    private sealed class IdentityJob(
+        string abbreviation, string fullName, JobRole role, uint classJobId, Vector4 defaultColor, bool isBaseClass = false)
+        : JobDefinitionBase
+    {
+        public override string Abbreviation => abbreviation;
+        public override string FullName => fullName;
+        public override JobRole Role => role;
+        public override uint ClassJobId => classJobId;
+        public override Vector4 DefaultColor => defaultColor;
+        public override bool IsBaseClass => isBaseClass;
     }
 }

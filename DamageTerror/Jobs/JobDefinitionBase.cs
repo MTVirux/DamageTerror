@@ -27,13 +27,6 @@ public abstract class JobDefinitionBase
 
     // ── Positional Fallback Data ──
     public virtual IReadOnlyList<PositionalFallbackEntry> FallbackPositionals { get; } = [];
-
-    // ── Sample Data ──
-    public virtual string MaxHitSkill => "Attack";
-    public virtual string[] DamageSkillNames => ["Attack", "Auto-Attack"];
-    public virtual string[] HealSkillNames => ["Second Wind", "Bloodbath"];
-    public virtual (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs => [];
-    public virtual (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs => [];
 }
 
 public readonly record struct PositionalFallbackEntry(

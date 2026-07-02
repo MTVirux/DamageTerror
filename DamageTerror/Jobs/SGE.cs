@@ -24,18 +24,4 @@ public sealed class SGE : JobDefinitionBase
         { 2938, 100 }, // Kerakeia
         { 3898, 170 }, // Philosophia
     };
-
-    public override string MaxHitSkill => "Pneuma";
-
-    public override string[] DamageSkillNames =>
-        ["Dosis III", "Eukrasian Dosis III", "Phlegma III", "Toxikon II", "Pneuma"];
-
-    public override string[] HealSkillNames =>
-        ["Eukrasian Diagnosis", "Eukrasian Prognosis", "Druochole", "Kerachole", "Ixochole", "Pneuma"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1130u, "Eukrasian Diagnosis", 30f, false), (1131u, "Kerachole", 15f, true), (1132u, "Holos", 20f, false), (1133u, "Physis II", 15f, true)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2130u, "Eukrasian Dosis III", 30f, true)];
 }

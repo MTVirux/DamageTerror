@@ -22,15 +22,4 @@ public sealed class PLD : JobDefinitionBase
     {
         { 2676, 250 }, // Knight's Benediction
     };
-
-    public override string MaxHitSkill => "Confiteor";
-
-    public override string[] DamageSkillNames =>
-        ["Confiteor", "Blade of Honor", "Holy Spirit", "Atonement", "Goring Blade", "Royal Authority"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1010u, "Sentinel", 15f, false), (1011u, "Divine Veil", 30f, false), (1012u, "Hallowed Ground", 10f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2010u, "Goring Blade", 21f, true)];
 }

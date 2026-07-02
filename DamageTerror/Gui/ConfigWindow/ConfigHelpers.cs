@@ -72,9 +72,9 @@ public static class ConfigHelpers
             {
                 var current = config.JobColors.TryGetValue(job, out var custom)
                     ? custom
-                    : JobDataTable.GetDefaultColor(job);
+                    : JobRegistry.GetDefaultColor(job);
 
-                var fullName = JobDataTable.GetFullName(job);
+                var fullName = JobRegistry.GetFullName(job);
                 var label = $"{fullName} ({job})";
 
                 var c = current;

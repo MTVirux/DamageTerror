@@ -9,11 +9,11 @@ public static class JobColorHelper
             if (config.JobColors.TryGetValue(job, out var custom))
                 return custom;
 
-            if (JobDataTable.TryGet(job, out var entry))
+            if (JobRegistry.TryGet(job, out var entry))
                 return entry.DefaultColor;
         }
 
-        return JobDataTable.GetRole(job) switch
+        return JobRegistry.GetRole(job) switch
         {
             JobRole.Tank => config.TankColor,
             JobRole.Healer => config.HealerColor,

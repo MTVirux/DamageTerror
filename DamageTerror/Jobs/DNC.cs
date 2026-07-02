@@ -22,15 +22,4 @@ public sealed class DNC : JobDefinitionBase
     {
         { 3162, "Honing Dance" }, // PvP
     };
-
-    public override string MaxHitSkill => "Technical Finish";
-
-    public override string[] DamageSkillNames =>
-        ["Technical Finish", "Starfall Dance", "Saber Dance", "Tillana", "Standard Finish", "Fan Dance IV"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1320u, "Technical Finish", 20f, false), (1321u, "Standard Finish", 60f, false), (1322u, "Devilment", 20f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2320u, "Closed Position", 60f, false)];
 }

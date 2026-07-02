@@ -28,18 +28,4 @@ public sealed class WHM : JobDefinitionBase
         { 3880, 175 }, // Medica III
         { 1911, 100 }, // Asylum
     };
-
-    public override string MaxHitSkill => "Glare III";
-
-    public override string[] DamageSkillNames =>
-        ["Glare III", "Afflatus Misery", "Dia", "Assize", "Holy III"];
-
-    public override string[] HealSkillNames =>
-        ["Medica II", "Afflatus Rapture", "Afflatus Solace", "Cure III", "Regen", "Liturgy of the Bell"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1100u, "Regen", 18f, true), (1101u, "Medica II", 15f, true), (1102u, "Temperance", 22f, false), (1103u, "Liturgy of the Bell", 20f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2100u, "Dia", 30f, true)];
 }

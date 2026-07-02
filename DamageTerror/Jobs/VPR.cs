@@ -27,15 +27,4 @@ public sealed class VPR : JobDefinitionBase
         new(34621, "Hunter's Coil", "Rear", [(0, false), (9, true)]),
         new(34622, "Swiftskin's Coil", "Flank", [(0, false), (9, true)]),
     ];
-
-    public override string MaxHitSkill => "Ouroboros";
-
-    public override string[] DamageSkillNames =>
-        ["Ouroboros", "Reawaken", "Uncoiled Fury", "Hindsting Strike", "Flanksbane Fang", "Hunter's Sting"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1250u, "Serpent's Ire", 15f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2250u, "Noxious Gnash", 20f, true)];
 }

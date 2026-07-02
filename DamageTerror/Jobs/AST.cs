@@ -28,18 +28,4 @@ public sealed class AST : JobDefinitionBase
     {
         { 1122, "Earthly Star" },
     };
-
-    public override string MaxHitSkill => "Fall Malefic";
-
-    public override string[] DamageSkillNames =>
-        ["Fall Malefic", "Combust III", "Lord of Crowns", "Earthly Star", "Gravity II"];
-
-    public override string[] HealSkillNames =>
-        ["Aspected Benefic", "Aspected Helios", "Celestial Opposition", "Earthly Star", "Essential Dignity", "Macrocosmos"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1120u, "Aspected Benefic", 15f, true), (1121u, "Aspected Helios", 15f, true), (1122u, "Earthly Star", 20f, false), (1123u, "The Arrow", 15f, false), (1124u, "The Balance", 15f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2120u, "Combust III", 30f, true)];
 }

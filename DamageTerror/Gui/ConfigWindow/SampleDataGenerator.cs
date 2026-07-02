@@ -353,7 +353,7 @@ internal static class SampleDataGenerator
 
     private static string GenerateMaxHit(string job)
     {
-        var skills = JobRegistry.GetMaxHitSkill(job);
+        var skills = SampleJobData.GetMaxHitSkill(job);
         return $"{skills}-{Rng.Next(30000, 120000)}";
     }
 
@@ -393,9 +393,9 @@ internal static class SampleDataGenerator
         return skills;
     }
 
-    private static string[] GetDamageSkillNames(string job) => JobRegistry.GetDamageSkillNames(job);
+    private static string[] GetDamageSkillNames(string job) => SampleJobData.GetDamageSkillNames(job);
 
-    private static string[] GetHealSkillNames(string job) => JobRegistry.GetHealSkillNames(job);
+    private static string[] GetHealSkillNames(string job) => SampleJobData.GetHealSkillNames(job);
 
     private static List<GraphSample> GenerateGraphSamples(CombatantEntry c, float durationSec)
     {
@@ -492,7 +492,7 @@ internal static class SampleDataGenerator
         return result;
     }
 
-    internal static (uint, string, float, bool)[] GetJobBuffs(string job) => JobRegistry.GetJobBuffs(job);
+    internal static (uint, string, float, bool)[] GetJobBuffs(string job) => SampleJobData.GetJobBuffs(job);
 
-    internal static (uint, string, float, bool)[] GetJobDebuffs(string job) => JobRegistry.GetJobDebuffs(job);
+    internal static (uint, string, float, bool)[] GetJobDebuffs(string job) => SampleJobData.GetJobDebuffs(job);
 }

@@ -19,15 +19,4 @@ public sealed class WAR : JobDefinitionBase
         89,   // Vengeance
         3832, // Damnation
     };
-
-    public override string MaxHitSkill => "Primal Rend";
-
-    public override string[] DamageSkillNames =>
-        ["Primal Rend", "Inner Chaos", "Fell Cleave", "Upheaval", "Onslaught", "Storm's Eye"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1001u, "Vengeance", 15f, false), (1002u, "Thrill of Battle", 10f, false), (1003u, "Shake It Off", 30f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2001u, "Storm's Eye", 30f, false)];
 }

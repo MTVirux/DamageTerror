@@ -24,15 +24,4 @@ public sealed class GNB : JobDefinitionBase
     {
         { 1835, 200 }, // Aurora
     };
-
-    public override string MaxHitSkill => "Blasting Zone";
-
-    public override string[] DamageSkillNames =>
-        ["Blasting Zone", "Double Down", "Sonic Break", "Burst Strike", "Gnashing Fang", "Hypervelocity"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1030u, "Nebula", 15f, false), (1031u, "Camouflage", 20f, false), (1032u, "Heart of Corundum", 8f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2030u, "Sonic Break", 30f, true)];
 }

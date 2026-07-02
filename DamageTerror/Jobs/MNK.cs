@@ -14,15 +14,4 @@ public sealed class MNK : JobDefinitionBase
         new(66, "Demolish", "Rear", [(0, false), (15, true), (18, true)]),
         new(36947, "Pouncing Coeurl", "Flank", [(0, false), (23, false), (15, true), (18, true), (12, true), (14, true)]),
     ];
-
-    public override string MaxHitSkill => "Phantom Rush";
-
-    public override string[] DamageSkillNames =>
-        ["Phantom Rush", "Elixir Burst", "Rising Phoenix", "Bootshine", "Dragon Kick", "Demolish"];
-
-    public override (uint Id, string Name, float Duration, bool IsHoT)[] SampleBuffs =>
-        [(1200u, "Brotherhood", 20f, false), (1201u, "Mantra", 15f, false)];
-
-    public override (uint Id, string Name, float Duration, bool IsDot)[] SampleDebuffs =>
-        [(2200u, "Demolish", 18f, true)];
 }
