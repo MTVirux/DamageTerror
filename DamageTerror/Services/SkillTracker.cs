@@ -1393,18 +1393,20 @@ public sealed class SkillTracker
         if (line.Length < 10) return false;
 
         var sourceName = line[3];
-        var skillName = SkillNameOverrides.Apply(line[5]);
+        if (string.IsNullOrEmpty(sourceName))
+            return false;
 
-        if (string.IsNullOrEmpty(sourceName) || string.IsNullOrEmpty(skillName))
+        var damageType = SkillDamageType.Unknown;
+        uint actionId = 0;
+        if (uint.TryParse(line[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out actionId))
+            damageType = LookupDamageType(actionId);
+
+        var skillName = SkillNameOverrides.Apply(actionId, line[5]);
+        if (string.IsNullOrEmpty(skillName))
             return false;
 
         var sourceId = line[2] ?? string.Empty;
         var targetName = line.Length > 7 ? line[7] : null;
-
-        var damageType = SkillDamageType.Unknown;
-        uint actionId = 0;
-        if (line.Length > 4 && uint.TryParse(line[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out actionId))
-            damageType = LookupDamageType(actionId);
 
         ctx = new AbilityLineContext
         {
