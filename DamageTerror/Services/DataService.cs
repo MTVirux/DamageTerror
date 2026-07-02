@@ -1,6 +1,5 @@
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using ECommons.DalamudServices;
 using Newtonsoft.Json.Linq;
 
 namespace DamageTerror.Services;
@@ -123,12 +122,7 @@ public sealed class DataService : IDisposable
         {
             ConnectionStatus = "Connecting via IPC...";
             var ipc = new IpcDataSource(pluginInterface, log);
-            ipc.OnCombatData += OnCombatData;
-            ipc.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
-            ipc.OnLogLine += OnLogLine;
-#if DEBUG
-            ipc.OnRawCombatData += OnRawCombatData;
-#endif
+            SubscribeHandlers(ipc);
 
             void ConnectedHandler()
             {
@@ -153,12 +147,7 @@ public sealed class DataService : IDisposable
             }
 
             ipc.OnConnected -= ConnectedHandler;
-            ipc.OnCombatData -= OnCombatData;
-            ipc.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
-            ipc.OnLogLine -= OnLogLine;
-#if DEBUG
-            ipc.OnRawCombatData -= OnRawCombatData;
-#endif
+            UnsubscribeHandlers(ipc);
             ipc.Dispose();
             log.Information("IPC unavailable, falling back to WebSocket");
         }
@@ -172,12 +161,7 @@ public sealed class DataService : IDisposable
 
         ConnectionStatus = "Connecting via WebSocket...";
         var ws = new WebSocketDataSource(config.WebSocketUrl, log);
-        ws.OnCombatData += OnCombatData;
-        ws.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
-        ws.OnLogLine += OnLogLine;
-#if DEBUG
-        ws.OnRawCombatData += OnRawCombatData;
-#endif
+        SubscribeHandlers(ws);
         ws.OnConnected += () =>
         {
             ConnectionStatus = "Connected (WebSocket)";
@@ -216,6 +200,26 @@ public sealed class DataService : IDisposable
         try { Svc.Framework.Update -= OnFrameworkUpdate; }
         catch (Exception ex) { log.Debug($"Framework unsubscribe failed: {ex.Message}"); }
         frameworkSubscribed = false;
+    }
+
+    private void SubscribeHandlers(IDataSource src)
+    {
+        src.OnCombatData += OnCombatData;
+        src.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
+        src.OnLogLine += OnLogLine;
+#if DEBUG
+        src.OnRawCombatData += OnRawCombatData;
+#endif
+    }
+
+    private void UnsubscribeHandlers(IDataSource src)
+    {
+        src.OnCombatData -= OnCombatData;
+        src.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
+        src.OnLogLine -= OnLogLine;
+#if DEBUG
+        src.OnRawCombatData -= OnRawCombatData;
+#endif
     }
 
     private void OnFrameworkUpdate(IFramework framework)
@@ -259,12 +263,7 @@ public sealed class DataService : IDisposable
         if (currentWs == null) return;
 
         var ipc = new IpcDataSource(pluginInterface, log);
-        ipc.OnCombatData += OnCombatData;
-        ipc.OnPrimaryPlayerChanged += OnPrimaryPlayerChanged;
-        ipc.OnLogLine += OnLogLine;
-#if DEBUG
-        ipc.OnRawCombatData += OnRawCombatData;
-#endif
+        SubscribeHandlers(ipc);
 
         try
         {
@@ -295,12 +294,7 @@ public sealed class DataService : IDisposable
 
         if (!swap)
         {
-            ipc.OnCombatData -= OnCombatData;
-            ipc.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
-            ipc.OnLogLine -= OnLogLine;
-#if DEBUG
-            ipc.OnRawCombatData -= OnRawCombatData;
-#endif
+            UnsubscribeHandlers(ipc);
             ipc.Dispose();
             return;
         }
@@ -309,12 +303,7 @@ public sealed class DataService : IDisposable
         DisconnectNoticeDismissed = false;
         log.Information("Upgraded WebSocket → IPC after IINACT became available");
 
-        currentWs.OnCombatData -= OnCombatData;
-        currentWs.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
-        currentWs.OnLogLine -= OnLogLine;
-#if DEBUG
-        currentWs.OnRawCombatData -= OnRawCombatData;
-#endif
+        UnsubscribeHandlers(currentWs);
         currentWs.Dispose();
     }
 
@@ -350,12 +339,7 @@ public sealed class DataService : IDisposable
 
         if (source != null)
         {
-            source.OnCombatData -= OnCombatData;
-            source.OnPrimaryPlayerChanged -= OnPrimaryPlayerChanged;
-            source.OnLogLine -= OnLogLine;
-#if DEBUG
-            source.OnRawCombatData -= OnRawCombatData;
-#endif
+            UnsubscribeHandlers(source);
             source.Dispose();
         }
 
@@ -446,10 +430,7 @@ public sealed class DataService : IDisposable
 
         CaptureGraphData(outgoing);
 #if DEBUG
-        lock (rawLogLineAccumulator)
-            outgoing.RawLogLines = new List<string>(rawLogLineAccumulator);
-        lock (rawCombatDataAccumulator)
-            outgoing.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
+        CaptureRawFrames(outgoing);
 #endif
         return outgoing;
     }
@@ -597,6 +578,14 @@ public sealed class DataService : IDisposable
     {
         lock (rawCombatDataAccumulator)
             rawCombatDataAccumulator.Add(data.ToString(Newtonsoft.Json.Formatting.None));
+    }
+
+    private void CaptureRawFrames(EncounterSnapshot target)
+    {
+        lock (rawLogLineAccumulator)
+            target.RawLogLines = new List<string>(rawLogLineAccumulator);
+        lock (rawCombatDataAccumulator)
+            target.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
     }
 
     /// <summary>
@@ -946,10 +935,7 @@ public sealed class DataService : IDisposable
 
         CaptureGraphData(active);
 #if DEBUG
-        lock (rawLogLineAccumulator)
-            active.RawLogLines = new List<string>(rawLogLineAccumulator);
-        lock (rawCombatDataAccumulator)
-            active.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
+        CaptureRawFrames(active);
 #endif
         Store.Save();
     }
@@ -967,10 +953,7 @@ public sealed class DataService : IDisposable
         {
             CaptureGraphData(active);
 #if DEBUG
-            lock (rawLogLineAccumulator)
-                active.RawLogLines = new List<string>(rawLogLineAccumulator);
-            lock (rawCombatDataAccumulator)
-                active.RawCombatDataFrames = new List<string>(rawCombatDataAccumulator);
+            CaptureRawFrames(active);
 #endif
         }
 

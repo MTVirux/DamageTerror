@@ -82,7 +82,7 @@ public sealed class WebSocketDataSource : IDataSource
         var bytes = Encoding.UTF8.GetBytes(subscribeMsg);
         await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct)
             .ConfigureAwait(false);
-        log.Debug("Subscribed to CombatData and ChangePrimaryPlayer events");
+        log.Debug("Subscribed to CombatData, ChangePrimaryPlayer and LogLine events");
     }
 
     private async Task ReceiveAndReconnectLoopAsync(CancellationToken ct)
