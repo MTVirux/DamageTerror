@@ -126,12 +126,8 @@ public sealed class EncounterReplaySimulator
 
     private void ResetWorkingState()
     {
-        working.SkillEvents.Clear();
-        working.DamageTakenEvents.Clear();
-        working.ItemEvents.Clear();
-        working.GraphData.Clear();
-        working.StatusHistory.Clear();
-        working.StatusesReceived.Clear();
+        working.ResetCombatStateForReplay();
+
         skillCursor.Clear();
         damageTakenCursor.Clear();
         itemCursor.Clear();
@@ -141,44 +137,6 @@ public sealed class EncounterReplaySimulator
         dmgCounters.Clear();
         healCounters.Clear();
         pendingExpirations.Clear();
-
-        foreach (var c in working.Combatants)
-            ZeroCombatant(c);
-
-        working.Encounter.IsActive = true;
-        working.Encounter.Duration = "00:00";
-        working.Encounter.TotalDamage = 0;
-        working.Encounter.TotalHealed = 0;
-        working.Encounter.EncDps = 0;
-        working.Encounter.EncHps = 0;
-    }
-
-    private static void ZeroCombatant(CombatantEntry c)
-    {
-        c.Damage = 0;
-        c.Healed = 0;
-        c.DamageTaken = 0;
-        c.EncDps = 0;
-        c.EncHps = 0;
-        c.InstantDps = 0;
-        c.InstantHps = 0;
-        c.PeakDps = 0;
-        c.DamagePercent = "0%";
-        c.HealedPercent = "0%";
-        c.DamageTakenPercent = "0%";
-        c.MaxHit = string.Empty;
-        c.MaxHitDamage = 0;
-        c.MaxHeal = string.Empty;
-        c.MaxHealAmount = 0;
-        c.Hits = 0;
-        c.CritHitCount = 0;
-        c.DirectHitCount = 0;
-        c.CritDirectHitCount = 0;
-        c.CritPct = 0;
-        c.DirectHitPct = 0;
-        c.CritDirectHitPct = 0;
-        c.Skills = new List<SkillEntry>();
-        c.HealingSkills = new List<SkillEntry>();
     }
 
     private void AdvanceTo(float t)
@@ -453,11 +411,7 @@ public sealed class EncounterReplaySimulator
                 HitCount = rc.Hits,
             };
             if (rc.Hits > 0)
-            {
-                entry.CritPct = (double)(rc.Crits + rc.CritDirectHits) / rc.Hits * 100.0;
-                entry.DirectHitPct = (double)(rc.DirectHits + rc.CritDirectHits) / rc.Hits * 100.0;
-                entry.CritDirectHitPct = (double)rc.CritDirectHits / rc.Hits * 100.0;
-            }
+                entry.SetHitRates(rc.Crits, rc.DirectHits, rc.CritDirectHits, rc.Hits);
             if (total > 0)
                 entry.DamagePercent = (double)rc.Total / total * 100.0;
             list.Add(entry);

@@ -303,28 +303,10 @@ public sealed class SkillTracker
     private void AccumulateSkill(Dictionary<string, Dictionary<string, SkillAccum>> store,
         string sourceName, string skillName, long amount, byte severity, SkillDamageType damageType)
     {
-        bool isCrit = (severity & CritFlag) != 0;
-        bool isDirectHit = (severity & DirectHitFlag) != 0;
-        bool isCritDirectHit = isCrit && isDirectHit;
-
         if (!store.TryGetValue(sourceName, out var skills))
             store[sourceName] = skills = new Dictionary<string, SkillAccum>();
 
-        var existing = skills.GetValueOrDefault(skillName);
-
-        existing.Amount += amount;
-        existing.Hits++;
-        if (isCritDirectHit)
-            existing.CritDirectHits++;
-        else if (isCrit)
-            existing.Crits++;
-        else if (isDirectHit)
-            existing.DirectHits++;
-
-        if (existing.DamageType == SkillDamageType.Unknown && damageType != SkillDamageType.Unknown)
-            existing.DamageType = damageType;
-
-        skills[skillName] = existing;
+        ApplyHit(skills, skillName, amount, severity, damageType);
     }
 
     private void AccumulatePetSkill(Dictionary<string, Dictionary<string, Dictionary<string, SkillAccum>>> store,
@@ -336,6 +318,12 @@ public sealed class SkillTracker
         if (!pets.TryGetValue(petName, out var skills))
             pets[petName] = skills = new Dictionary<string, SkillAccum>(StringComparer.OrdinalIgnoreCase);
 
+        ApplyHit(skills, skillName, amount, severity, damageType);
+    }
+
+    private static void ApplyHit(Dictionary<string, SkillAccum> skills,
+        string skillName, long amount, byte severity, SkillDamageType damageType)
+    {
         bool isCrit = (severity & CritFlag) != 0;
         bool isDirectHit = (severity & DirectHitFlag) != 0;
         bool isCritDirectHit = isCrit && isDirectHit;
@@ -856,11 +844,7 @@ public sealed class SkillTracker
                         DamageType = a.DamageType,
                     };
                     if (a.Hits > 0)
-                    {
-                        entry.CritPct = (double)(a.Crits + a.CritDirectHits) / a.Hits * 100.0;
-                        entry.DirectHitPct = (double)(a.DirectHits + a.CritDirectHits) / a.Hits * 100.0;
-                        entry.CritDirectHitPct = (double)a.CritDirectHits / a.Hits * 100.0;
-                    }
+                        entry.SetHitRates(a.Crits, a.DirectHits, a.CritDirectHits, a.Hits);
 
                     if (ticks != null && ticks.TryGetValue(kv.Key, out var tickAccum) && tickAccum.Hits > 0)
                     {
@@ -872,11 +856,7 @@ public sealed class SkillTracker
                             DamageType = tickAccum.DamageType,
                         };
                         if (tickAccum.Hits > 0)
-                        {
-                            tickEntry.CritPct = (double)(tickAccum.Crits + tickAccum.CritDirectHits) / tickAccum.Hits * 100.0;
-                            tickEntry.DirectHitPct = (double)(tickAccum.DirectHits + tickAccum.CritDirectHits) / tickAccum.Hits * 100.0;
-                            tickEntry.CritDirectHitPct = (double)tickAccum.CritDirectHits / tickAccum.Hits * 100.0;
-                        }
+                            tickEntry.SetHitRates(tickAccum.Crits, tickAccum.DirectHits, tickAccum.CritDirectHits, tickAccum.Hits);
                         entry.SubEntries = new List<SkillEntry> { tickEntry };
                     }
 
@@ -901,8 +881,8 @@ public sealed class SkillTracker
                     {
                         petTotal += acc.Amount;
                         petHits += acc.Hits;
-                        petCrits += acc.Crits + acc.CritDirectHits;
-                        petDirectHits += acc.DirectHits + acc.CritDirectHits;
+                        petCrits += acc.Crits;
+                        petDirectHits += acc.DirectHits;
                         petCritDirectHits += acc.CritDirectHits;
 
                         var sub = new SkillEntry
@@ -913,11 +893,7 @@ public sealed class SkillTracker
                             DamageType = acc.DamageType,
                         };
                         if (acc.Hits > 0)
-                        {
-                            sub.CritPct = (double)(acc.Crits + acc.CritDirectHits) / acc.Hits * 100.0;
-                            sub.DirectHitPct = (double)(acc.DirectHits + acc.CritDirectHits) / acc.Hits * 100.0;
-                            sub.CritDirectHitPct = (double)acc.CritDirectHits / acc.Hits * 100.0;
-                        }
+                            sub.SetHitRates(acc.Crits, acc.DirectHits, acc.CritDirectHits, acc.Hits);
                         subEntries.Add(sub);
                     }
 
@@ -929,11 +905,7 @@ public sealed class SkillTracker
                         SubEntries = subEntries.OrderByDescending(s => s.TotalDamage).ToList(),
                     };
                     if (petHits > 0)
-                    {
-                        petEntry.CritPct = (double)petCrits / petHits * 100.0;
-                        petEntry.DirectHitPct = (double)petDirectHits / petHits * 100.0;
-                        petEntry.CritDirectHitPct = (double)petCritDirectHits / petHits * 100.0;
-                    }
+                        petEntry.SetHitRates(petCrits, petDirectHits, petCritDirectHits, petHits);
                     list.Add(petEntry);
                 }
             }
