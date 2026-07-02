@@ -41,27 +41,7 @@ public static class LayoutPage
 
             ImGui.PushID(i);
 
-            var canUp = i > 0;
-            if (!canUp) ImGui.BeginDisabled();
-            if (ImGui.ArrowButton("##up", ImGuiDir.Up))
-            {
-                (config.Layout[i], config.Layout[i - 1]) = (config.Layout[i - 1], config.Layout[i]);
-                changed = true;
-            }
-            if (!canUp) ImGui.EndDisabled();
-
-            ImGui.SameLine();
-
-            var canDown = i < config.Layout.Count - 1;
-            if (!canDown) ImGui.BeginDisabled();
-            if (ImGui.ArrowButton("##down", ImGuiDir.Down))
-            {
-                (config.Layout[i], config.Layout[i + 1]) = (config.Layout[i + 1], config.Layout[i]);
-                changed = true;
-            }
-            if (!canDown) ImGui.EndDisabled();
-
-            ImGui.SameLine();
+            changed |= ConfigHelpers.ReorderArrows(config.Layout, i);
 
             var ctrlShiftOnly = config.CtrlShiftOnlyElements.Contains(element);
             if (ImGui.Checkbox($"##ctrlShift{i}", ref ctrlShiftOnly))

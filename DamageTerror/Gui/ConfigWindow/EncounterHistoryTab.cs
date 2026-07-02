@@ -41,6 +41,59 @@ public sealed class EncounterHistoryTab
             : config.MaxTimelineDays;
     }
 
+    private void DrawRetentionLimit(
+        string label,
+        string modeComboId,
+        string countInputId,
+        string daysInputId,
+        string applyButtonId,
+        ref int pending,
+        HistoryLimitMode mode,
+        Action<HistoryLimitMode> onModeChanged,
+        int countMin,
+        int daysMin,
+        Action<int> applyCount,
+        Action<int> applyDays,
+        Func<string> summary)
+    {
+        var config = plugin.Config;
+        var store = plugin.DataService.Store;
+
+        var modeInt = (int)mode;
+        ImGui.TextUnformatted(label);
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(100);
+        if (ImGui.Combo(modeComboId, ref modeInt, "Count\0Days\0"))
+        {
+            mode = (HistoryLimitMode)modeInt;
+            onModeChanged(mode);
+        }
+
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(100);
+        var inputLabel = mode == HistoryLimitMode.Count ? countInputId : daysInputId;
+        if (ImGui.InputInt(inputLabel, ref pending))
+        {
+            var min = mode == HistoryLimitMode.Count ? countMin : daysMin;
+            pending = Math.Max(min, pending);
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button(applyButtonId))
+        {
+            if (mode == HistoryLimitMode.Count)
+                applyCount(Math.Max(countMin, pending));
+            else
+                applyDays(Math.Max(daysMin, pending));
+
+            config.Save?.Invoke();
+            store.PruneHistory();
+            store.Save(force: true);
+        }
+
+        ImGui.TextDisabled(summary());
+    }
+
     public void Draw()
     {
         var config = plugin.Config;
@@ -64,82 +117,39 @@ public sealed class EncounterHistoryTab
 #endif
         ImGui.Spacing();
 
-        var modeInt = (int)config.HistoryLimitMode;
-        ImGui.TextUnformatted("Limit history by:");
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(100);
-        if (ImGui.Combo("##historyLimitMode", ref modeInt, "Count\0Days\0"))
-        {
-            config.HistoryLimitMode = (HistoryLimitMode)modeInt;
-            config.Save?.Invoke();
-            SyncPendingValue();
-        }
+        DrawRetentionLimit(
+            "Limit history by:",
+            "##historyLimitMode",
+            "##historyMaxCount",
+            "##historyMaxDays",
+            "Apply##historyLimitApply",
+            ref pendingLimitValue,
+            config.HistoryLimitMode,
+            onModeChanged: m => { config.HistoryLimitMode = m; config.Save?.Invoke(); SyncPendingValue(); },
+            countMin: 1,
+            daysMin: 1,
+            applyCount: v => config.MaxEncounterHistory = v,
+            applyDays: v => config.MaxEncounterHistoryDays = v,
+            summary: () => config.HistoryLimitMode == HistoryLimitMode.Count
+                ? $"Currently keeping up to {config.MaxEncounterHistory} encounter(s)."
+                : $"Currently keeping encounters from the last {config.MaxEncounterHistoryDays} day(s).");
 
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(100);
-        var inputLabel = config.HistoryLimitMode == HistoryLimitMode.Count ? "##historyMaxCount" : "##historyMaxDays";
-        if (ImGui.InputInt(inputLabel, ref pendingLimitValue))
-        {
-            pendingLimitValue = Math.Max(1, pendingLimitValue);
-        }
-
-        ImGui.SameLine();
-        if (ImGui.Button("Apply##historyLimitApply"))
-        {
-            if (config.HistoryLimitMode == HistoryLimitMode.Count)
-                config.MaxEncounterHistory = Math.Max(1, pendingLimitValue);
-            else
-                config.MaxEncounterHistoryDays = Math.Max(1, pendingLimitValue);
-
-            config.Save?.Invoke();
-            store.PruneHistory();
-            store.Save(force: true);
-        }
-
-        if (config.HistoryLimitMode == HistoryLimitMode.Count)
-            ImGui.TextDisabled($"Currently keeping up to {config.MaxEncounterHistory} encounter(s).");
-        else
-            ImGui.TextDisabled($"Currently keeping encounters from the last {config.MaxEncounterHistoryDays} day(s).");
-
-        var timelineModeInt = (int)config.TimelineRetentionMode;
-        ImGui.TextUnformatted("Limit timelines by:");
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(100);
-        if (ImGui.Combo("##timelineRetentionMode", ref timelineModeInt, "Count\0Days\0"))
-        {
-            config.TimelineRetentionMode = (HistoryLimitMode)timelineModeInt;
-            config.Save?.Invoke();
-            SyncPendingTimelineValue();
-        }
-
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(100);
-        var timelineInputLabel = config.TimelineRetentionMode == HistoryLimitMode.Count
-            ? "##maxTimelineCount"
-            : "##maxTimelineDays";
-        if (ImGui.InputInt(timelineInputLabel, ref pendingTimelineLimitValue))
-        {
-            var min = config.TimelineRetentionMode == HistoryLimitMode.Count ? 0 : 1;
-            pendingTimelineLimitValue = Math.Max(min, pendingTimelineLimitValue);
-        }
-
-        ImGui.SameLine();
-        if (ImGui.Button("Apply##timelineLimitApply"))
-        {
-            if (config.TimelineRetentionMode == HistoryLimitMode.Count)
-                config.MaxTimelineCount = Math.Max(0, pendingTimelineLimitValue);
-            else
-                config.MaxTimelineDays = Math.Max(1, pendingTimelineLimitValue);
-
-            config.Save?.Invoke();
-            store.PruneHistory();
-            store.Save(force: true);
-        }
-
-        if (config.TimelineRetentionMode == HistoryLimitMode.Count)
-            ImGui.TextDisabled($"Currently keeping up to {config.MaxTimelineCount} timeline(s).");
-        else
-            ImGui.TextDisabled($"Currently keeping timelines from the last {config.MaxTimelineDays} day(s).");
+        DrawRetentionLimit(
+            "Limit timelines by:",
+            "##timelineRetentionMode",
+            "##maxTimelineCount",
+            "##maxTimelineDays",
+            "Apply##timelineLimitApply",
+            ref pendingTimelineLimitValue,
+            config.TimelineRetentionMode,
+            onModeChanged: m => { config.TimelineRetentionMode = m; config.Save?.Invoke(); SyncPendingTimelineValue(); },
+            countMin: 0,
+            daysMin: 1,
+            applyCount: v => config.MaxTimelineCount = v,
+            applyDays: v => config.MaxTimelineDays = v,
+            summary: () => config.TimelineRetentionMode == HistoryLimitMode.Count
+                ? $"Currently keeping up to {config.MaxTimelineCount} timeline(s)."
+                : $"Currently keeping timelines from the last {config.MaxTimelineDays} day(s).");
 
         ImGui.Spacing();
         ImGui.Separator();

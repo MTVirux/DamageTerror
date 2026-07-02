@@ -155,4 +155,37 @@ public static class ConfigHelpers
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(description);
     }
+
+    /// <summary>
+    /// Draws up/down reorder arrows for <paramref name="list"/>[<paramref name="index"/>], disabled at the edges,
+    /// followed by a trailing SameLine. Returns true if the item was moved. Ids must be scoped by an outer PushID.
+    /// </summary>
+    internal static bool ReorderArrows<T>(IList<T> list, int index)
+    {
+        var changed = false;
+
+        var canUp = index > 0;
+        if (!canUp) ImGui.BeginDisabled();
+        if (ImGui.ArrowButton("##up", ImGuiDir.Up))
+        {
+            (list[index - 1], list[index]) = (list[index], list[index - 1]);
+            changed = true;
+        }
+        if (!canUp) ImGui.EndDisabled();
+
+        ImGui.SameLine();
+
+        var canDown = index < list.Count - 1;
+        if (!canDown) ImGui.BeginDisabled();
+        if (ImGui.ArrowButton("##down", ImGuiDir.Down))
+        {
+            (list[index], list[index + 1]) = (list[index + 1], list[index]);
+            changed = true;
+        }
+        if (!canDown) ImGui.EndDisabled();
+
+        ImGui.SameLine();
+
+        return changed;
+    }
 }

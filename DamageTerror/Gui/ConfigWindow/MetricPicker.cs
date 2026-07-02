@@ -198,27 +198,7 @@ public static class MetricPicker
 
             ImGui.PushID($"{id}_e_{i}");
 
-            var canUp = i > 0;
-            if (!canUp) ImGui.BeginDisabled();
-            if (ImGui.ArrowButton("##up", ImGuiDir.Up))
-            {
-                (enabledItems[i - 1], enabledItems[i]) = (enabledItems[i], enabledItems[i - 1]);
-                changed = true;
-            }
-            if (!canUp) ImGui.EndDisabled();
-
-            ImGui.SameLine();
-
-            var canDown = i < enabledItems.Count - 1;
-            if (!canDown) ImGui.BeginDisabled();
-            if (ImGui.ArrowButton("##down", ImGuiDir.Down))
-            {
-                (enabledItems[i], enabledItems[i + 1]) = (enabledItems[i + 1], enabledItems[i]);
-                changed = true;
-            }
-            if (!canDown) ImGui.EndDisabled();
-
-            ImGui.SameLine();
+            changed |= ConfigHelpers.ReorderArrows(enabledItems, i);
 
             var enabled = true;
             if (ImGui.Checkbox(label, ref enabled))
@@ -376,27 +356,7 @@ public static class MetricPicker
 
                 if (sectionOrder != null)
                 {
-                    var canUp = i > 0;
-                    if (!canUp) ImGui.BeginDisabled();
-                    if (ImGui.ArrowButton("##up", ImGuiDir.Up))
-                    {
-                        (order[i], order[i - 1]) = (order[i - 1], order[i]);
-                        changed = true;
-                    }
-                    if (!canUp) ImGui.EndDisabled();
-
-                    ImGui.SameLine();
-
-                    var canDown = i < order.Count - 1;
-                    if (!canDown) ImGui.BeginDisabled();
-                    if (ImGui.ArrowButton("##down", ImGuiDir.Down))
-                    {
-                        (order[i], order[i + 1]) = (order[i + 1], order[i]);
-                        changed = true;
-                    }
-                    if (!canDown) ImGui.EndDisabled();
-
-                    ImGui.SameLine();
+                    changed |= ConfigHelpers.ReorderArrows(order, i);
                 }
 
                 if (ImGui.Checkbox(label, ref enabled))
