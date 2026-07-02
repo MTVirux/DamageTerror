@@ -49,37 +49,11 @@ internal static class MeterTabDetailsSection
         Func<BarColumn, bool> detailExtras = col =>
         {
             var extChanged = false;
-            ImGui.SameLine();
-            var defaultLabel = Configuration.DefaultDetailColumnLabels.GetValueOrDefault(col, col.ToString());
-            tab.DetailColumnLabels.TryGetValue(col, out var current);
-            current ??= "";
-            ImGui.SetNextItemWidth(60);
-            if (ImGui.InputTextWithHint($"##dtLbl_{col}", defaultLabel, ref current, 32))
-            {
-                if (string.IsNullOrEmpty(current))
-                    tab.DetailColumnLabels.Remove(col);
-                else
-                    tab.DetailColumnLabels[col] = current;
-                extChanged = true;
-            }
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(MetricPicker.GetBarColumnLabel(col));
+            extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "dtLbl_",
+                Configuration.DefaultDetailColumnLabels.GetValueOrDefault(col, col.ToString()),
+                tab.DetailColumnLabels, MetricPicker.GetBarColumnLabel(col));
 
-            ImGui.SameLine();
-            var hasColor = tab.ColumnValueColors.ContainsKey(col);
-            if (hasColor)
-                ImGui.PushStyleColor(ImGuiCol.Text, tab.ColumnValueColors[col]);
-            if (ImGui.SmallButton($"C##dtClr_{col}"))
-                ImGui.OpenPopup($"##dtClrPopup_{col}");
-            if (hasColor)
-                ImGui.PopStyleColor();
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(hasColor ? "Custom value color (click to edit)" : "Set custom value color");
-            if (ImGui.BeginPopup($"##dtClrPopup_{col}"))
-            {
-                extChanged |= MeterTabSectionHelpers.DrawColumnColorPopup(col, tab.ColumnValueColors);
-                ImGui.EndPopup();
-            }
+            extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "dtClr", tab.ColumnValueColors);
 
             ImGui.SameLine();
             var hasNewLine = tab.DetailNewLineColumns.Contains(col);

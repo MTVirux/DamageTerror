@@ -24,36 +24,10 @@ internal static class MeterTabStatusBarSection
         Func<BarColumn, bool> sbExtras = col =>
         {
             var extChanged = false;
-            ImGui.SameLine();
-            var defaultLabel = Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
-            tab.StatusBarMetricLabels.TryGetValue(col, out var current);
-            current ??= "";
-            ImGui.SetNextItemWidth(60);
-            if (ImGui.InputTextWithHint($"##sbLbl_{col}", defaultLabel, ref current, 32))
-            {
-                if (string.IsNullOrEmpty(current))
-                    tab.StatusBarMetricLabels.Remove(col);
-                else
-                    tab.StatusBarMetricLabels[col] = current;
-                extChanged = true;
-            }
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(MetricPicker.GetBarColumnLabel(col));
-            ImGui.SameLine();
-            var hasColor = tab.ColumnValueColors.ContainsKey(col);
-            if (hasColor)
-                ImGui.PushStyleColor(ImGuiCol.Text, tab.ColumnValueColors[col]);
-            if (ImGui.SmallButton($"C##sbClr_{col}"))
-                ImGui.OpenPopup($"##sbClrPopup_{col}");
-            if (hasColor)
-                ImGui.PopStyleColor();
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(hasColor ? "Custom value color (click to edit)" : "Set custom value color");
-            if (ImGui.BeginPopup($"##sbClrPopup_{col}"))
-            {
-                extChanged |= MeterTabSectionHelpers.DrawColumnColorPopup(col, tab.ColumnValueColors);
-                ImGui.EndPopup();
-            }
+            extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "sbLbl_",
+                Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
+                tab.StatusBarMetricLabels, MetricPicker.GetBarColumnLabel(col));
+            extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "sbClr", tab.ColumnValueColors);
             return extChanged;
         };
         changed |= MetricPicker.Draw("statusBar", tab.StatusBarMetrics,

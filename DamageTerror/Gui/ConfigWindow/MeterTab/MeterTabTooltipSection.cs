@@ -18,21 +18,9 @@ internal static class MeterTabTooltipSection
         Func<TooltipField, bool> tooltipExtras = field =>
         {
             var extChanged = false;
-            ImGui.SameLine();
-            var defaultLabel = Configuration.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString());
-            tab.TooltipFieldLabels.TryGetValue(field, out var current);
-            current ??= "";
-            ImGui.SetNextItemWidth(60);
-            if (ImGui.InputTextWithHint($"##ttLbl_{field}", defaultLabel, ref current, 32))
-            {
-                if (string.IsNullOrEmpty(current))
-                    tab.TooltipFieldLabels.Remove(field);
-                else
-                    tab.TooltipFieldLabels[field] = current;
-                extChanged = true;
-            }
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(MetricPicker.GetTooltipFieldLabel(field));
+            extChanged |= MeterTabSectionHelpers.DrawLabelOverride(field, "ttLbl_",
+                Configuration.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString()),
+                tab.TooltipFieldLabels, MetricPicker.GetTooltipFieldLabel(field));
             return extChanged;
         };
         changed |= MetricPicker.Draw("tooltip", tab.TooltipFields,

@@ -43,73 +43,24 @@ internal static class MeterTabContentSection
             {
                 var extChanged = false;
 
-                ImGui.SameLine();
-                var defaultLabel = Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
-                tab.ColumnHeaderLabels.TryGetValue(col, out var currentHeader);
-                currentHeader ??= "";
-                ImGui.SetNextItemWidth(60);
-                if (ImGui.InputTextWithHint($"##hdr_{col}", defaultLabel, ref currentHeader, 32))
-                {
-                    if (string.IsNullOrEmpty(currentHeader))
-                        tab.ColumnHeaderLabels.Remove(col);
-                    else
-                        tab.ColumnHeaderLabels[col] = currentHeader;
-                    extChanged = true;
-                }
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip(MetricPicker.GetBarColumnLabel(col));
+                extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "hdr_",
+                    Configuration.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
+                    tab.ColumnHeaderLabels, MetricPicker.GetBarColumnLabel(col));
 
                 if (tab.ColumnFormatOverrides != null && ColumnFormatOverride.SupportsFormatting(col))
                 {
-                    ImGui.SameLine();
-                    var hasOverride = tab.ColumnFormatOverrides.ContainsKey(col);
-                    if (hasOverride)
-                        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.4f, 0.8f, 1.0f, 1.0f));
-                    if (ImGui.SmallButton($"F##fmt_{col}"))
-                        ImGui.OpenPopup($"##fmtPopup_{col}");
-                    if (hasOverride)
-                        ImGui.PopStyleColor();
-                    if (ImGui.IsItemHovered())
-                        ImGui.SetTooltip(hasOverride ? "Custom format (click to edit)" : "Set custom format");
-
-                    if (ImGui.BeginPopup($"##fmtPopup_{col}"))
-                    {
-                        extChanged |= ColumnFormatHelper.DrawColumnFormatPopup(col, tab.ColumnFormatOverrides);
-                        ImGui.EndPopup();
-                    }
+                    extChanged |= MeterTabSectionHelpers.DrawColumnButtonPopup(col, "F", "fmt",
+                        tab.ColumnFormatOverrides.ContainsKey(col), new Vector4(0.4f, 0.8f, 1.0f, 1.0f),
+                        "Custom format (click to edit)", "Set custom format",
+                        () => ColumnFormatHelper.DrawColumnFormatPopup(col, tab.ColumnFormatOverrides));
                 }
 
-                ImGui.SameLine();
-                var hasColor = tab.ColumnValueColors.ContainsKey(col);
-                if (hasColor)
-                    ImGui.PushStyleColor(ImGuiCol.Text, tab.ColumnValueColors[col]);
-                if (ImGui.SmallButton($"C##clr_{col}"))
-                    ImGui.OpenPopup($"##clrPopup_{col}");
-                if (hasColor)
-                    ImGui.PopStyleColor();
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip(hasColor ? "Custom value color (click to edit)" : "Set custom value color");
-                if (ImGui.BeginPopup($"##clrPopup_{col}"))
-                {
-                    extChanged |= MeterTabSectionHelpers.DrawColumnColorPopup(col, tab.ColumnValueColors);
-                    ImGui.EndPopup();
-                }
+                extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "clr", tab.ColumnValueColors);
 
-                ImGui.SameLine();
-                var hasWidth = tab.ColumnWidthOverrides.ContainsKey(col);
-                if (hasWidth)
-                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.4f, 1.0f, 0.4f, 1.0f));
-                if (ImGui.SmallButton($"W##wid_{col}"))
-                    ImGui.OpenPopup($"##widPopup_{col}");
-                if (hasWidth)
-                    ImGui.PopStyleColor();
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip(hasWidth ? "Custom width (click to edit)" : "Set custom column width");
-                if (ImGui.BeginPopup($"##widPopup_{col}"))
-                {
-                    extChanged |= DrawColumnWidthPopup(col, tab.ColumnWidthOverrides);
-                    ImGui.EndPopup();
-                }
+                extChanged |= MeterTabSectionHelpers.DrawColumnButtonPopup(col, "W", "wid",
+                    tab.ColumnWidthOverrides.ContainsKey(col), new Vector4(0.4f, 1.0f, 0.4f, 1.0f),
+                    "Custom width (click to edit)", "Set custom column width",
+                    () => DrawColumnWidthPopup(col, tab.ColumnWidthOverrides));
 
                 return extChanged;
             };
