@@ -27,28 +27,7 @@ internal sealed class GraphTabRenderer : IDetailTabRenderer
         var isLive = ctx.IsLive;
         var currentSnapshot = ctx.Snapshot;
 
-        List<GraphSample> samples;
-        if (isLive)
-        {
-            samples = graphTracker.GetSamples(combatant.Name);
-            if (samples.Count == 0
-                && currentSnapshot?.GraphData != null
-                && currentSnapshot.GraphData.TryGetValue(combatant.Name, out var fallback)
-                && fallback.Count > 0)
-            {
-                samples = fallback;
-            }
-        }
-        else if (currentSnapshot?.GraphData != null
-            && currentSnapshot.GraphData.TryGetValue(combatant.Name, out var saved)
-            && saved.Count > 0)
-        {
-            samples = saved;
-        }
-        else
-        {
-            samples = [];
-        }
+        var samples = GraphRenderHelper.GetSamples(isLive, combatant.Name, graphTracker, currentSnapshot);
 
         if (samples.Count < 2)
         {
@@ -238,48 +217,7 @@ internal sealed class GraphTabRenderer : IDetailTabRenderer
 
             GraphRenderHelper.DrawMousePositionText(gs.MouseTextOpacity, config.GraphXAxisMinSec);
 
-            if (ImGui.BeginPopupContextItem($"##DetailGraphCtx_{index}", ImGuiPopupFlags.MouseButtonMiddle))
-            {
-                ImGui.TextDisabled("DamageTerror");
-                ImGui.Separator();
-
-                var autoScroll = config.GraphAutoScroll;
-                if (ImGui.Checkbox("Auto-scroll", ref autoScroll))
-                    config.GraphAutoScroll = autoScroll;
-
-                if (config.GraphAutoScroll)
-                {
-                    ImGui.SetNextItemWidth(150);
-                    var scrollWin = config.GraphAutoScrollWindow;
-                    if (ImGui.SliderFloat("Window##dgctx", ref scrollWin, 15f, 300f, "%.0f sec"))
-                        config.GraphAutoScrollWindow = scrollWin;
-
-                    ImGui.SetNextItemWidth(150);
-                    var scrollSmooth = config.GraphAutoScrollSmoothing;
-                    if (ImGui.SliderFloat("Smoothing##dgctx", ref scrollSmooth, 1f, 30f, "%.1f"))
-                        config.GraphAutoScrollSmoothing = scrollSmooth;
-                }
-
-                ImGui.Separator();
-
-                var showLegend = config.GraphShowLegend;
-                if (ImGui.Checkbox("Show Legend", ref showLegend))
-                    config.GraphShowLegend = showLegend;
-
-                var showGrid = config.GraphShowGrid;
-                if (ImGui.Checkbox("Show Grid", ref showGrid))
-                    config.GraphShowGrid = showGrid;
-
-                var showLabels = config.GraphShowLabels;
-                if (ImGui.Checkbox("Show Value Labels", ref showLabels))
-                    config.GraphShowLabels = showLabels;
-
-                var minSec = config.GraphXAxisMinSec;
-                if (ImGui.Checkbox("X-Axis min:sec", ref minSec))
-                    config.GraphXAxisMinSec = minSec;
-
-                ImGui.EndPopup();
-            }
+            GraphRenderHelper.DrawGraphContextMenu(config, isGraphView: false, idSuffix: $"_{index}");
 
             ImPlot.EndPlot();
         }

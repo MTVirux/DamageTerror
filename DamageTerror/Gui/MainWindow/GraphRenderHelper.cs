@@ -394,4 +394,103 @@ internal static class GraphRenderHelper
 
         return [];
     }
+
+    public static List<GraphSample> GetSamples(
+        bool isLive, string combatantName,
+        GraphDataTracker graphTracker, EncounterSnapshot? snapshot)
+    {
+        if (isLive)
+        {
+            var samples = graphTracker.GetSamples(combatantName);
+            // Fall back to stored data when live tracker is empty
+            // (e.g. encounter restored from history after plugin reload)
+            if (samples.Count == 0
+                && snapshot?.GraphData != null
+                && snapshot.GraphData.TryGetValue(combatantName, out var fallback)
+                && fallback.Count > 0)
+            {
+                return fallback;
+            }
+            return samples;
+        }
+
+        if (snapshot?.GraphData != null
+            && snapshot.GraphData.TryGetValue(combatantName, out var saved)
+            && saved.Count > 0)
+        {
+            return saved;
+        }
+
+        return [];
+    }
+
+    public static void DrawGraphContextMenu(Configuration config, bool isGraphView, string idSuffix)
+    {
+        var popupId = isGraphView ? $"##GraphViewCtx{idSuffix}" : $"##DetailGraphCtx{idSuffix}";
+        if (!ImGui.BeginPopupContextItem(popupId, ImGuiPopupFlags.MouseButtonMiddle))
+            return;
+
+        var sliderSuffix = isGraphView ? "gvctx" : "dgctx";
+
+        ImGui.TextDisabled("DamageTerror");
+        ImGui.Separator();
+
+        var autoScroll = isGraphView ? config.GraphViewAutoScroll : config.GraphAutoScroll;
+        if (ImGui.Checkbox("Auto-scroll", ref autoScroll))
+        {
+            if (isGraphView) config.GraphViewAutoScroll = autoScroll;
+            else config.GraphAutoScroll = autoScroll;
+        }
+
+        if (isGraphView ? config.GraphViewAutoScroll : config.GraphAutoScroll)
+        {
+            ImGui.SetNextItemWidth(150);
+            var scrollWin = isGraphView ? config.GraphViewAutoScrollWindow : config.GraphAutoScrollWindow;
+            if (ImGui.SliderFloat($"Window##{sliderSuffix}", ref scrollWin, 15f, 300f, "%.0f sec"))
+            {
+                if (isGraphView) config.GraphViewAutoScrollWindow = scrollWin;
+                else config.GraphAutoScrollWindow = scrollWin;
+            }
+
+            ImGui.SetNextItemWidth(150);
+            var scrollSmooth = isGraphView ? config.GraphViewAutoScrollSmoothing : config.GraphAutoScrollSmoothing;
+            if (ImGui.SliderFloat($"Smoothing##{sliderSuffix}", ref scrollSmooth, 1f, 30f, "%.1f"))
+            {
+                if (isGraphView) config.GraphViewAutoScrollSmoothing = scrollSmooth;
+                else config.GraphAutoScrollSmoothing = scrollSmooth;
+            }
+        }
+
+        ImGui.Separator();
+
+        var showLegend = isGraphView ? config.GraphViewShowLegend : config.GraphShowLegend;
+        if (ImGui.Checkbox("Show Legend", ref showLegend))
+        {
+            if (isGraphView) config.GraphViewShowLegend = showLegend;
+            else config.GraphShowLegend = showLegend;
+        }
+
+        var showGrid = isGraphView ? config.GraphViewShowGrid : config.GraphShowGrid;
+        if (ImGui.Checkbox("Show Grid", ref showGrid))
+        {
+            if (isGraphView) config.GraphViewShowGrid = showGrid;
+            else config.GraphShowGrid = showGrid;
+        }
+
+        var showLabels = isGraphView ? config.GraphViewShowLabels : config.GraphShowLabels;
+        if (ImGui.Checkbox("Show Value Labels", ref showLabels))
+        {
+            if (isGraphView) config.GraphViewShowLabels = showLabels;
+            else config.GraphShowLabels = showLabels;
+        }
+
+        var minSec = isGraphView ? config.GraphViewXAxisMinSec : config.GraphXAxisMinSec;
+        if (ImGui.Checkbox("X-Axis min:sec", ref minSec))
+        {
+            if (isGraphView) config.GraphViewXAxisMinSec = minSec;
+            else config.GraphXAxisMinSec = minSec;
+        }
+
+        ImGui.EndPopup();
+    }
 }
