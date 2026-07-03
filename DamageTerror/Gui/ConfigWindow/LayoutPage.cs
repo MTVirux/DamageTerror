@@ -1,5 +1,3 @@
-using ImGui = Dalamud.Bindings.ImGui.ImGui;
-
 namespace DamageTerror.Gui.ConfigWindow;
 
 public static class LayoutPage

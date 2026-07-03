@@ -1,5 +1,3 @@
-using ImGui = Dalamud.Bindings.ImGui.ImGui;
-
 namespace DamageTerror.Gui.ConfigWindow;
 
 internal static class AppearanceGeneralSection
@@ -58,7 +56,7 @@ internal static class AppearanceGeneralSection
                 var scaleLabels = new[] { "Stretch", "Fit", "Fill", "Tile" };
                 changed |= ConfigHelpers.ComboProp("Scale mode", (int)config.BackgroundImageScale, scaleLabels, v => config.BackgroundImageScale = (BackgroundImageScaleMode)v, 200);
 
-                if (System.IO.File.Exists(config.BackgroundImagePath))
+                if (File.Exists(config.BackgroundImagePath))
                 {
                     var preview = ServiceManager.TextureProvider.GetFromFile(config.BackgroundImagePath);
                     if (preview.TryGetWrap(out var wrap, out _))

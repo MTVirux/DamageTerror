@@ -1,5 +1,3 @@
-using ImGui = Dalamud.Bindings.ImGui.ImGui;
-
 namespace DamageTerror.Helpers;
 
 public readonly struct StyleScope : IDisposable

@@ -1,5 +1,3 @@
-using ImGui = Dalamud.Bindings.ImGui.ImGui;
-
 namespace DamageTerror.Gui.ConfigWindow;
 
 public sealed class EncounterHistoryTab
@@ -201,7 +199,7 @@ public sealed class EncounterHistoryTab
                 {
                     importError = "No file path provided.";
                 }
-                else if (!System.IO.File.Exists(importFilePath.Trim()))
+                else if (!File.Exists(importFilePath.Trim()))
                 {
                     importError = "File not found.";
                 }
@@ -209,7 +207,7 @@ public sealed class EncounterHistoryTab
                 {
                     try
                     {
-                        var fileJson = System.IO.File.ReadAllText(importFilePath.Trim());
+                        var fileJson = File.ReadAllText(importFilePath.Trim());
                         var result = store.ImportEncounter(fileJson, out var error);
                         if (result != null)
                         {
@@ -225,7 +223,7 @@ public sealed class EncounterHistoryTab
                             importError = error;
                         }
                     }
-                    catch (System.IO.IOException ex)
+                    catch (IOException ex)
                     {
                         importError = $"Failed to read file: {ex.Message}";
                     }
@@ -413,18 +411,18 @@ public sealed class EncounterHistoryTab
                     var json = store.ExportEncounter(enc);
                     var exportsDir = store.GetExportsDirectory();
                     var filename = SanitizeFilename($"{encounter.ZoneName}_{enc.Timestamp.ToLocalTime():yyyy-MM-dd_HH-mm}") + ".json";
-                    var path = System.IO.Path.Combine(exportsDir, filename);
+                    var path = Path.Combine(exportsDir, filename);
 
                     // Avoid overwriting — append a counter if needed.
                     var counter = 1;
-                    while (System.IO.File.Exists(path))
+                    while (File.Exists(path))
                     {
                         var numbered = SanitizeFilename($"{encounter.ZoneName}_{enc.Timestamp.ToLocalTime():yyyy-MM-dd_HH-mm}_{counter}") + ".json";
-                        path = System.IO.Path.Combine(exportsDir, numbered);
+                        path = Path.Combine(exportsDir, numbered);
                         counter++;
                     }
 
-                    System.IO.File.WriteAllText(path, json);
+                    File.WriteAllText(path, json);
                     SetStatus($"Saved to {path}");
                 }
 
@@ -525,7 +523,7 @@ public sealed class EncounterHistoryTab
 
     private static string SanitizeFilename(string name)
     {
-        var invalid = System.IO.Path.GetInvalidFileNameChars();
+        var invalid = Path.GetInvalidFileNameChars();
         var sanitized = new System.Text.StringBuilder(name.Length);
         foreach (var c in name)
             sanitized.Append(Array.IndexOf(invalid, c) >= 0 ? '_' : c);

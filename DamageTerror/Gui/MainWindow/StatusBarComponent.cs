@@ -1,5 +1,3 @@
-using ImGui = Dalamud.Bindings.ImGui.ImGui;
-
 namespace DamageTerror.Gui.MainWindow;
 
 public sealed class StatusBarComponent

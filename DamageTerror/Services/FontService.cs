@@ -1,4 +1,3 @@
-using Dalamud.Interface;
 using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.FontIdentifier;
 using Dalamud.Interface.ImGuiFontChooserDialog;

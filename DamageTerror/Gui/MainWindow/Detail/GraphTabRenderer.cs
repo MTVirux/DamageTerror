@@ -1,5 +1,3 @@
-using Dalamud.Bindings.ImPlot;
-using ImGui = Dalamud.Bindings.ImGui.ImGui;
 using ImPlot = Dalamud.Bindings.ImPlot.ImPlot;
 
 namespace DamageTerror.Gui.MainWindow.Detail;

@@ -1,6 +1,3 @@
-using Dalamud.Interface;
-using ImGui = Dalamud.Bindings.ImGui.ImGui;
-
 namespace DamageTerror.Gui.ConfigWindow;
 
 internal static class FontSection

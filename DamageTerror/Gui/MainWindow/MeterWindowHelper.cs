@@ -1,5 +1,4 @@
 using Dalamud.Game.ClientState.Conditions;
-using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 namespace DamageTerror.Gui.MainWindow;
 

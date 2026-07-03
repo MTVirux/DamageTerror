@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
 using Dalamud.Interface.Textures;
 
 namespace DamageTerror.Helpers;

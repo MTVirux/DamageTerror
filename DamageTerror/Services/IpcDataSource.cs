@@ -1,6 +1,5 @@
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
-using Newtonsoft.Json.Linq;
 
 namespace DamageTerror.Services;
 

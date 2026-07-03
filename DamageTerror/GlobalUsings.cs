@@ -1,14 +1,21 @@
 global using System;
 global using System.Collections.Generic;
+global using System.IO;
 global using System.Linq;
+global using System.Net.Http;
 global using System.Numerics;
 global using System.Threading;
 global using System.Threading.Tasks;
 
 global using Dalamud.Bindings.ImGui;
+global using Dalamud.Bindings.ImPlot;
+global using Dalamud.Interface;
 global using Dalamud.Plugin.Services;
+global using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
 global using Newtonsoft.Json;
+global using Newtonsoft.Json.Converters;
+global using Newtonsoft.Json.Linq;
 
 global using DamageTerror;
 global using DamageTerror.Core;
