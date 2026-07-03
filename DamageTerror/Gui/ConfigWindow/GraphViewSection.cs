@@ -41,33 +41,7 @@ internal static class GraphViewSection
 
         if (ConfigHelpers.ShiftResetButton("Reset Graph View"))
         {
-            config.GraphViewAutoHeight = true;
-            config.GraphViewHeight = 300f;
-            config.GraphViewLineThickness = 2f;
-            config.GraphViewSmoothingWindow = 5f;
-            config.GraphViewUpdateInterval = 0.25f;
-            config.GraphViewBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
-            config.GraphViewGridColor = new Vector4(0.3f, 0.3f, 0.3f, 0.3f);
-            config.GraphViewShowLegend = true;
-            config.GraphViewShowGrid = true;
-            config.GraphViewShowXAxisLabels = true;
-            config.GraphViewShowYAxisLabels = true;
-            config.GraphViewHighlightSelf = true;
-            config.GraphViewSelfLineThickness = 3.5f;
-            config.GraphViewShowLabels = true;
-            config.GraphViewLabelOffsetX = 8f;
-            config.GraphViewLabelOffsetY = 0f;
-            config.GraphViewFontSize = 14f;
-            config.GraphViewAutoScroll = false;
-            config.GraphViewAutoScrollWindow = 60f;
-            config.GraphViewAutoScrollSmoothing = 8f;
-            config.GraphViewXAxisPadding = 1.25f;
-            config.GraphViewYAxisHeadroom = 1.1f;
-            config.GraphViewYAxisTickCount = 8;
-            config.GraphViewMouseTextOpacity = 0.6f;
-            config.GraphViewMarkers[MetricType.Dps] = new SkillMarkerConfig();
-            config.GraphViewMarkers[MetricType.Hps] = new SkillMarkerConfig();
-            config.GraphViewMarkers[MetricType.Dtps] = new SkillMarkerConfig();
+            config.ResetGraphView();
             changed = true;
         }
 

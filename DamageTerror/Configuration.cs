@@ -399,4 +399,66 @@ public sealed class Configuration : IPluginConfiguration
     public float BaseFontSizePt => EnableCustomFont && CustomFontSizePt > 0 ? CustomFontSizePt : FontDefaults.BaseSizePt;
 
     public float GetFontScale(float desiredSizePt) => desiredSizePt / BaseFontSizePt;
+
+    public void ResetGraph()
+    {
+        GraphHeight = 120f;
+        GraphLineThickness = 2f;
+        GraphDpsColor = new Vector4(0.9f, 0.4f, 0.4f, 1f);
+        GraphHpsColor = new Vector4(0.4f, 0.85f, 0.4f, 1f);
+        GraphDtpsColor = new Vector4(0.4f, 0.55f, 0.9f, 1f);
+        GraphBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
+        GraphGridColor = new Vector4(0.3f, 0.3f, 0.3f, 0.3f);
+        GraphShowLegend = true;
+        GraphShowGrid = true;
+        GraphShowXAxisLabels = true;
+        GraphShowYAxisLabels = true;
+        GraphShowDps = true;
+        GraphShowHps = true;
+        GraphSmoothingWindow = 5f;
+        GraphUpdateInterval = 0.25f;
+        GraphShowDtps = true;
+        GraphShowLabels = true;
+        GraphLabelOffsetX = 8f;
+        GraphLabelOffsetY = 0f;
+        GraphAutoScroll = false;
+        GraphAutoScrollWindow = 60f;
+        GraphAutoScrollSmoothing = 8f;
+        GraphXAxisPadding = 1.25f;
+        GraphYAxisHeadroom = 1.1f;
+        GraphYAxisTickCount = 8;
+        GraphMouseTextOpacity = 0.6f;
+        GraphFontSize = 14f;
+    }
+
+    public void ResetGraphView()
+    {
+        GraphViewAutoHeight = true;
+        GraphViewHeight = 300f;
+        GraphViewLineThickness = 2f;
+        GraphViewSmoothingWindow = 5f;
+        GraphViewUpdateInterval = 0.25f;
+        GraphViewBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
+        GraphViewGridColor = new Vector4(0.3f, 0.3f, 0.3f, 0.3f);
+        GraphViewShowLegend = true;
+        GraphViewShowGrid = true;
+        GraphViewShowXAxisLabels = true;
+        GraphViewShowYAxisLabels = true;
+        GraphViewHighlightSelf = true;
+        GraphViewSelfLineThickness = 3.5f;
+        GraphViewShowLabels = true;
+        GraphViewLabelOffsetX = 8f;
+        GraphViewLabelOffsetY = 0f;
+        GraphViewFontSize = 14f;
+        GraphViewAutoScroll = false;
+        GraphViewAutoScrollWindow = 60f;
+        GraphViewAutoScrollSmoothing = 8f;
+        GraphViewXAxisPadding = 1.25f;
+        GraphViewYAxisHeadroom = 1.1f;
+        GraphViewYAxisTickCount = 8;
+        GraphViewMouseTextOpacity = 0.6f;
+        GraphViewMarkers[MetricType.Dps] = new SkillMarkerConfig();
+        GraphViewMarkers[MetricType.Hps] = new SkillMarkerConfig();
+        GraphViewMarkers[MetricType.Dtps] = new SkillMarkerConfig();
+    }
 }

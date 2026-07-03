@@ -90,33 +90,7 @@ internal static class DetailsSection
 
             if (ConfigHelpers.ShiftResetButton("Reset Graph"))
             {
-                config.GraphHeight = 120f;
-                config.GraphLineThickness = 2f;
-                config.GraphDpsColor = new Vector4(0.9f, 0.4f, 0.4f, 1f);
-                config.GraphHpsColor = new Vector4(0.4f, 0.85f, 0.4f, 1f);
-                config.GraphDtpsColor = new Vector4(0.4f, 0.55f, 0.9f, 1f);
-                config.GraphBackgroundColor = new Vector4(0.08f, 0.08f, 0.08f, 0.6f);
-                config.GraphGridColor = new Vector4(0.3f, 0.3f, 0.3f, 0.3f);
-                config.GraphShowLegend = true;
-                config.GraphShowGrid = true;
-                config.GraphShowXAxisLabels = true;
-                config.GraphShowYAxisLabels = true;
-                config.GraphShowDps = true;
-                config.GraphShowHps = true;
-                config.GraphSmoothingWindow = 5f;
-                config.GraphUpdateInterval = 0.25f;
-                config.GraphShowDtps = true;
-                config.GraphShowLabels = true;
-                config.GraphLabelOffsetX = 8f;
-                config.GraphLabelOffsetY = 0f;
-                config.GraphAutoScroll = false;
-                config.GraphAutoScrollWindow = 60f;
-                config.GraphAutoScrollSmoothing = 8f;
-                config.GraphXAxisPadding = 1.25f;
-                config.GraphYAxisHeadroom = 1.1f;
-                config.GraphYAxisTickCount = 8;
-                config.GraphMouseTextOpacity = 0.6f;
-                config.GraphFontSize = 14f;
+                config.ResetGraph();
                 changed = true;
             }
         }
