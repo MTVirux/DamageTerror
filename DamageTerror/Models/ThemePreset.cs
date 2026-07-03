@@ -160,20 +160,7 @@ public sealed class ThemePreset
 
     [OnDeserialized]
     internal void OnDeserialized(StreamingContext context)
-    {
-        if (_extensionData == null || _extensionData.Count == 0)
-            return;
-
-        foreach (var metric in new[] { MetricType.Dps, MetricType.Hps, MetricType.Dtps })
-        {
-            if (_extensionData.TryGetValue($"Detail{metric}Markers", out var detail) && detail.Type != JTokenType.Null)
-                DetailMarkers[metric] = detail.ToObject<SkillMarkerConfig>() ?? new SkillMarkerConfig();
-            if (_extensionData.TryGetValue($"GraphView{metric}Markers", out var graph) && graph.Type != JTokenType.Null)
-                GraphViewMarkers[metric] = graph.ToObject<SkillMarkerConfig>() ?? new SkillMarkerConfig();
-        }
-
-        _extensionData = null;
-    }
+        => MarkerMigration.Apply(ref _extensionData, DetailMarkers, GraphViewMarkers);
 
     public bool GraphViewAutoHeight { get; set; } = false;
     public float GraphViewHeight { get; set; } = 260f;

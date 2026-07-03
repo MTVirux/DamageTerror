@@ -234,20 +234,7 @@ public sealed class Configuration : IPluginConfiguration
 
     [OnDeserialized]
     internal void OnDeserialized(StreamingContext context)
-    {
-        if (_extensionData == null || _extensionData.Count == 0)
-            return;
-
-        foreach (var metric in new[] { MetricType.Dps, MetricType.Hps, MetricType.Dtps })
-        {
-            if (_extensionData.TryGetValue($"Detail{metric}Markers", out var detail) && detail.Type != JTokenType.Null)
-                DetailMarkers[metric] = detail.ToObject<SkillMarkerConfig>() ?? new SkillMarkerConfig();
-            if (_extensionData.TryGetValue($"GraphView{metric}Markers", out var graph) && graph.Type != JTokenType.Null)
-                GraphViewMarkers[metric] = graph.ToObject<SkillMarkerConfig>() ?? new SkillMarkerConfig();
-        }
-
-        _extensionData = null;
-    }
+        => MarkerMigration.Apply(ref _extensionData, DetailMarkers, GraphViewMarkers);
 
     public bool ShowTooltip { get; set; } = true;
     public float TooltipDelay { get; set; } = 0.3f;
