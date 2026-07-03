@@ -53,39 +53,36 @@ public static class ServiceManager
 #endif
     }
 
-    public static void LogInfo(LogChannel channel, string message)
+    private static bool ShouldLog(LogChannel channel)
     {
 #if DEBUG
-        if (!IsEnabled(channel))
-            return;
+        return IsEnabled(channel);
+#else
+        return true;
 #endif
-        PluginLog.Information(message);
+    }
+
+    public static void LogInfo(LogChannel channel, string message)
+    {
+        if (ShouldLog(channel))
+            PluginLog.Information(message);
     }
 
     public static void LogWarning(LogChannel channel, string message)
     {
-#if DEBUG
-        if (!IsEnabled(channel))
-            return;
-#endif
-        PluginLog.Warning(message);
+        if (ShouldLog(channel))
+            PluginLog.Warning(message);
     }
 
     public static void LogError(LogChannel channel, string message)
     {
-#if DEBUG
-        if (!IsEnabled(channel))
-            return;
-#endif
-        PluginLog.Error(message);
+        if (ShouldLog(channel))
+            PluginLog.Error(message);
     }
 
     public static void LogError(LogChannel channel, Exception ex, string message)
     {
-#if DEBUG
-        if (!IsEnabled(channel))
-            return;
-#endif
-        PluginLog.Error(ex, message);
+        if (ShouldLog(channel))
+            PluginLog.Error(ex, message);
     }
 }

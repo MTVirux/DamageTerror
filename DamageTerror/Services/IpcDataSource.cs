@@ -56,7 +56,7 @@ public sealed class IpcDataSource : IDataSource
             var subscribeMsg = JObject.FromObject(new
             {
                 call = "subscribe",
-                events = new[] { "CombatData", "ChangePrimaryPlayer", "LogLine" },
+                events = DataSourceDispatcher.SubscribedEvents,
             });
 
             try

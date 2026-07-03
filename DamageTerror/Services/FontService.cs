@@ -19,6 +19,11 @@ public sealed class FontService : IDisposable
     // race with the UI-thread read in PushFont().
     private volatile bool rebuildPending;
 
+    private static readonly JsonSerializerSettings FontSpecSettings = new()
+    {
+        TypeNameHandling = TypeNameHandling.Auto,
+    };
+
     public bool IsInitialized => uiBuilder != null;
     public bool HasCustomFont => customFontHandle is { Available: true };
 
@@ -62,10 +67,7 @@ public sealed class FontService : IDisposable
         SingleFontSpec? spec;
         try
         {
-            spec = JsonConvert.DeserializeObject<SingleFontSpec>(specJson, new JsonSerializerSettings
-            {
-                TypeNameHandling = TypeNameHandling.Auto,
-            });
+            spec = JsonConvert.DeserializeObject<SingleFontSpec>(specJson, FontSpecSettings);
         }
         catch (Exception ex)
         {
@@ -159,10 +161,7 @@ public sealed class FontService : IDisposable
 
         try
         {
-            config.CustomFontSpecJson = JsonConvert.SerializeObject(spec, new JsonSerializerSettings
-            {
-                TypeNameHandling = TypeNameHandling.Auto,
-            });
+            config.CustomFontSpecJson = JsonConvert.SerializeObject(spec, FontSpecSettings);
         }
         catch (Exception ex)
         {

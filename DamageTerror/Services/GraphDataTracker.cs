@@ -82,10 +82,7 @@ public sealed class GraphDataTracker
         {
             if (enc.IsActive && !previousWasActive)
             {
-                perCombatant.Clear();
-                slidingWindowBuffer.Clear();
-                logLineTotals.Clear();
-                combatDataTotals.Clear();
+                ClearBuffers();
                 // Use a negative lastEmitTime so the very first frame always emits a sample.
                 lastEmitTime = -SampleIntervalSeconds;
             }
@@ -119,53 +116,62 @@ public sealed class GraphDataTracker
                 return;
 
             lastEmitTime = timeSec;
-            var windowStart = timeSec - WindowSeconds;
+            EmitSamples(timeSec);
+        }
+    }
 
-            // Build effective totals per combatant: prefer LogLine data for damage/healed,
-            // fall back to CombatData. Always use CombatData for damageTaken.
-            foreach (var (name, cdTotals) in combatDataTotals)
+    /// <summary>
+    /// Emit one graph sample per combatant from the effective totals and sliding window.
+    /// Must be called under <see cref="syncLock"/>.
+    /// </summary>
+    private void EmitSamples(float timeSec)
+    {
+        var windowStart = timeSec - WindowSeconds;
+
+        // Build effective totals per combatant: prefer LogLine data for damage/healed,
+        // fall back to CombatData. Always use CombatData for damageTaken.
+        foreach (var (name, cdTotals) in combatDataTotals)
+        {
+            var effectiveDamage = cdTotals.damage;
+            var effectiveHealed = cdTotals.healed;
+
+            if (logLineTotals.TryGetValue(name, out var llTotals))
             {
-                var effectiveDamage = cdTotals.damage;
-                var effectiveHealed = cdTotals.healed;
-
-                if (logLineTotals.TryGetValue(name, out var llTotals))
-                {
-                    if (llTotals.damage > 0)
-                        effectiveDamage = llTotals.damage;
-                    if (llTotals.healed > 0)
-                        effectiveHealed = llTotals.healed;
-                }
-
-                var effectiveDamageTaken = cdTotals.damageTaken;
-
-                if (!perCombatant.TryGetValue(name, out var list))
-                    perCombatant[name] = list = new List<GraphSample>();
-
-                if (!slidingWindowBuffer.TryGetValue(name, out var history))
-                    slidingWindowBuffer[name] = history = new List<(float, long, long, long)>();
-                history.Add((timeSec, effectiveDamage, effectiveHealed, effectiveDamageTaken));
-
-                while (history.Count > 2 && history[0].time < windowStart && history[1].time <= windowStart)
-                    history.RemoveAt(0);
-
-                float iDps = 0f, iHps = 0f, iDtps = 0f;
-                var oldest = history[0];
-                if (timeSec > oldest.time)
-                {
-                    var dt = (double)(timeSec - oldest.time);
-                    iDps = Math.Max(0f, (float)((effectiveDamage - oldest.damage) / dt));
-                    iHps = Math.Max(0f, (float)((effectiveHealed - oldest.healed) / dt));
-                    iDtps = Math.Max(0f, (float)((effectiveDamageTaken - oldest.damageTaken) / dt));
-                }
-
-                list.Add(new GraphSample
-                {
-                    TimeSec = timeSec,
-                    Dps = iDps,
-                    Hps = iHps,
-                    Dtps = iDtps,
-                });
+                if (llTotals.damage > 0)
+                    effectiveDamage = llTotals.damage;
+                if (llTotals.healed > 0)
+                    effectiveHealed = llTotals.healed;
             }
+
+            var effectiveDamageTaken = cdTotals.damageTaken;
+
+            if (!perCombatant.TryGetValue(name, out var list))
+                perCombatant[name] = list = new List<GraphSample>();
+
+            if (!slidingWindowBuffer.TryGetValue(name, out var history))
+                slidingWindowBuffer[name] = history = new List<(float, long, long, long)>();
+            history.Add((timeSec, effectiveDamage, effectiveHealed, effectiveDamageTaken));
+
+            while (history.Count > 2 && history[0].time < windowStart && history[1].time <= windowStart)
+                history.RemoveAt(0);
+
+            float iDps = 0f, iHps = 0f, iDtps = 0f;
+            var oldest = history[0];
+            if (timeSec > oldest.time)
+            {
+                var dt = (double)(timeSec - oldest.time);
+                iDps = Math.Max(0f, (float)((effectiveDamage - oldest.damage) / dt));
+                iHps = Math.Max(0f, (float)((effectiveHealed - oldest.healed) / dt));
+                iDtps = Math.Max(0f, (float)((effectiveDamageTaken - oldest.damageTaken) / dt));
+            }
+
+            list.Add(new GraphSample
+            {
+                TimeSec = timeSec,
+                Dps = iDps,
+                Hps = iHps,
+                Dtps = iDtps,
+            });
         }
     }
 
@@ -232,15 +238,21 @@ public sealed class GraphDataTracker
     {
         lock (syncLock)
         {
-            perCombatant.Clear();
-            slidingWindowBuffer.Clear();
-            logLineTotals.Clear();
-            combatDataTotals.Clear();
+            ClearBuffers();
             seededData = null;
             lastEmitTime = 0f;
             previousWasActive = false;
             Validation = default;
         }
+    }
+
+    /// <summary>Clears the per-combatant samples and accumulator buffers. Must be called under <see cref="syncLock"/>.</summary>
+    private void ClearBuffers()
+    {
+        perCombatant.Clear();
+        slidingWindowBuffer.Clear();
+        logLineTotals.Clear();
+        combatDataTotals.Clear();
     }
 
     private void TrimToEncounterLength(float encDuration)

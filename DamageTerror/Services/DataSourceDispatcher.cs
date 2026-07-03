@@ -2,6 +2,10 @@ namespace DamageTerror.Services;
 
 internal static class DataSourceDispatcher
 {
+    /// <summary>Event names subscribed to upstream; kept in lockstep with the
+    /// <see cref="Dispatch"/> switch below.</summary>
+    public static readonly string[] SubscribedEvents = { "CombatData", "ChangePrimaryPlayer", "LogLine" };
+
     public static void Dispatch(
         JObject data,
         Action<EncounterSnapshot>? onCombatData,

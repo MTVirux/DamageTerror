@@ -122,13 +122,7 @@ public sealed class DataService : IDisposable
             var ipc = new IpcDataSource(pluginInterface, log);
             SubscribeHandlers(ipc);
 
-            void ConnectedHandler()
-            {
-                lock (sourceLock) activeSource = ipc;
-                ConnectionStatus = "Connected (IPC)";
-                DisconnectNoticeDismissed = false;
-                log.Information("Using IPC data source");
-            }
+            void ConnectedHandler() => MarkIpcConnected(ipc, "Using IPC data source");
 
             ipc.OnConnected += ConnectedHandler;
 
@@ -137,10 +131,7 @@ public sealed class DataService : IDisposable
             if (ipc.IsConnected)
             {
                 ipc.OnConnected -= ConnectedHandler;
-                lock (sourceLock) activeSource = ipc;
-                ConnectionStatus = "Connected (IPC)";
-                DisconnectNoticeDismissed = false;
-                log.Information("Using IPC data source");
+                MarkIpcConnected(ipc, "Using IPC data source");
                 return;
             }
 
@@ -218,6 +209,14 @@ public sealed class DataService : IDisposable
 #if DEBUG
         src.OnRawCombatData -= OnRawCombatData;
 #endif
+    }
+
+    private void MarkIpcConnected(IpcDataSource ipc, string logMessage)
+    {
+        lock (sourceLock) activeSource = ipc;
+        ConnectionStatus = "Connected (IPC)";
+        DisconnectNoticeDismissed = false;
+        log.Information(logMessage);
     }
 
     private void OnFrameworkUpdate(IFramework framework)

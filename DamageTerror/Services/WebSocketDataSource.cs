@@ -74,7 +74,7 @@ public sealed class WebSocketDataSource : IDataSource
         var subscribeMsg = JsonConvert.SerializeObject(new
         {
             call = "subscribe",
-            events = new[] { "CombatData", "ChangePrimaryPlayer", "LogLine" },
+            events = DataSourceDispatcher.SubscribedEvents,
         });
         var bytes = Encoding.UTF8.GetBytes(subscribeMsg);
         await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct)

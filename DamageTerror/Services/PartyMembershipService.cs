@@ -58,10 +58,7 @@ public sealed class PartyMembershipService
 
                     // Store name in both "First Last" and "First Last@World" formats
                     // so we match regardless of how IINACT reports the name.
-                    cachedAllianceNames.Add(member.Name);
-                    var nameWithWorld = member.NameWithWorld;
-                    if (!string.IsNullOrEmpty(nameWithWorld))
-                        cachedAllianceNames.Add(nameWithWorld);
+                    AddVariants(cachedAllianceNames, member.Name, member.NameWithWorld);
                 }
 
                 // In non-alliance content, all Members are the party.
@@ -74,10 +71,9 @@ public sealed class PartyMembershipService
                     // only the local player's party group, plus the local player themselves.
                     if (Player.Available && !string.IsNullOrEmpty(Player.Name))
                     {
-                        cachedPartyNames.Add(Player.Name);
                         var worldName = Player.Object?.HomeWorld.ValueNullable?.Name.ToString();
-                        if (!string.IsNullOrEmpty(worldName))
-                            cachedPartyNames.Add($"{Player.Name}@{worldName}");
+                        AddVariants(cachedPartyNames, Player.Name,
+                            string.IsNullOrEmpty(worldName) ? "" : $"{Player.Name}@{worldName}");
                     }
 
                     foreach (var pm in Svc.Party)
@@ -85,10 +81,9 @@ public sealed class PartyMembershipService
                         var name = pm.Name.ToString();
                         if (!string.IsNullOrEmpty(name))
                         {
-                            cachedPartyNames.Add(name);
                             var worldName = pm.World.ValueNullable?.Name.ToString();
-                            if (!string.IsNullOrEmpty(worldName))
-                                cachedPartyNames.Add($"{name}@{worldName}");
+                            AddVariants(cachedPartyNames, name,
+                                string.IsNullOrEmpty(worldName) ? "" : $"{name}@{worldName}");
                         }
                     }
                 }
@@ -104,6 +99,14 @@ public sealed class PartyMembershipService
                 ServiceManager.LogDebug(LogChannel.PartyMembership, $"Party query failed: {ex.Message}");
             }
         }
+    }
+
+    /// <summary>Adds the bare name and, when present, its world-qualified "Name@World" variant.</summary>
+    private static void AddVariants(HashSet<string> set, string name, string nameWithWorld)
+    {
+        set.Add(name);
+        if (!string.IsNullOrEmpty(nameWithWorld))
+            set.Add(nameWithWorld);
     }
 
     /// <summary>

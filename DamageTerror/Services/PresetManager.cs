@@ -56,9 +56,7 @@ public sealed class PresetManager
     }
 
     public string ExportPreset(ThemePreset preset)
-    {
-        return JsonConvert.SerializeObject(preset, JsonSettings);
-    }
+        => JsonConvert.SerializeObject(preset, JsonSettings);
 
     public ThemePreset? ImportPreset(string json, out string? error)
     {
@@ -119,9 +117,7 @@ public sealed class PresetManager
     }
 
     private bool IsBuiltInName(string name)
-    {
-        return BuiltInPresets_All.Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-    }
+        => BuiltInPresets_All.Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     private string GetPresetPath(string name)
     {

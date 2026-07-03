@@ -186,7 +186,7 @@ public sealed class StatusTracker
                 // attributed to the correct source.
                 // Also keep ground-effect DoTs (e.g. Salted Earth) whose self-buff
                 // status isn't classified as IsDoT but still needs tick attribution.
-                if (existing.IsDoT || existing.IsHoT || GroundEffectDotIds.ContainsKey(existing.StatusId))
+                if (IsTickStatus(existing))
                 {
                     existing.RemovedAtSec = removalTime;
                     recentlyRemovedDots.Add(existing);
@@ -230,18 +230,20 @@ public sealed class StatusTracker
     public List<StatusApplication> GetStatusHistory(string sourceName)
     {
         lock (syncLock)
-            return statusHistory.TryGetValue(sourceName, out var history)
-                ? new List<StatusApplication>(history)
-                : new List<StatusApplication>();
+            return CopyHistory(statusHistory, sourceName);
     }
 
     public List<StatusApplication> GetStatusesReceived(string targetName)
     {
         lock (syncLock)
-            return receivedHistory.TryGetValue(targetName, out var history)
-                ? new List<StatusApplication>(history)
-                : new List<StatusApplication>();
+            return CopyHistory(receivedHistory, targetName);
     }
+
+    /// <summary>Returns a defensive copy of a history list, or an empty list when absent. Must be called under <see cref="syncLock"/>.</summary>
+    private static List<StatusApplication> CopyHistory(Dictionary<string, List<StatusApplication>> dict, string key)
+        => dict.TryGetValue(key, out var history)
+            ? new List<StatusApplication>(history)
+            : new List<StatusApplication>();
 
     public bool IsDoT(uint statusId) => ClassifyStatus(statusId).IsDoT;
     public bool IsHoT(uint statusId) => ClassifyStatus(statusId).IsHoT;
@@ -294,16 +296,24 @@ public sealed class StatusTracker
         return result;
     }
 
+    /// <summary>True for statuses that need DoT/HoT tick attribution (including ground-effect self-buffs).</summary>
+    private static bool IsTickStatus(in ActiveStatus s)
+        => s.IsDoT || s.IsHoT || GroundEffectDotIds.ContainsKey(s.StatusId);
+
+    /// <summary>Clears every tracking collection. Must be called under <see cref="syncLock"/>.</summary>
+    private void ClearAllState()
+    {
+        activeStatuses.Clear();
+        recentlyRemovedDots.Clear();
+        pendingGroundEffects.Clear();
+        statusHistory.Clear();
+        receivedHistory.Clear();
+    }
+
     public void Reset()
     {
         lock (syncLock)
-        {
-            activeStatuses.Clear();
-            recentlyRemovedDots.Clear();
-            pendingGroundEffects.Clear();
-            statusHistory.Clear();
-            receivedHistory.Clear();
-        }
+            ClearAllState();
     }
 
     /// <summary>
@@ -320,15 +330,11 @@ public sealed class StatusTracker
             var carried = new List<(( string Target, uint StatusId, string Source) Key, ActiveStatus Status)>();
             foreach (var kv in activeStatuses)
             {
-                if (kv.Value.IsDoT || kv.Value.IsHoT || GroundEffectDotIds.ContainsKey(kv.Value.StatusId))
+                if (IsTickStatus(kv.Value))
                     carried.Add((kv.Key, kv.Value));
             }
 
-            activeStatuses.Clear();
-            recentlyRemovedDots.Clear();
-            pendingGroundEffects.Clear();
-            statusHistory.Clear();
-            receivedHistory.Clear();
+            ClearAllState();
 
             // Re-inject with time reset to encounter start.
             foreach (var (key, status) in carried)

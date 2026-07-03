@@ -225,29 +225,8 @@ public sealed class EncounterStore
             var newFightStarting = incomingActive && !lastIncomingActive;
             lastIncomingActive = incomingActive;
 
-            if (sampleDataActive)
-            {
-                // Replay yields to live combat when a fresh fight starts. Sample
-                // data stays sticky (its lifecycle is explicitly user-controlled).
-                if (replaySimulator != null && newFightStarting)
-                {
-                    replaySimulator.Stop();
-                    replaySimulator = null;
-                    pendingFactory = null;
-                    sampleDataActive = false;
-                    active = previewBackup;
-                    previewBackup = null;
-                    // Treat the previous active as no-longer-live so the archive
-                    // branch below closes it out before the new fight begins.
-                    prevSnapshotActive = false;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            var archived = false;
+            if (!TryYieldReplayToLive(newFightStarting))
+                return false;
 
             if (isStaleDataSuppressed)
             {
@@ -260,80 +239,118 @@ public sealed class EncounterStore
                 }
             }
 
+            var archived = false;
+
             if (snapshot.Encounter.IsActive && !prevSnapshotActive && active != null)
-            {
-                active.Encounter.IsActive = false;
-                if (!activeAlreadyInHistory && !double.IsNaN(active.Encounter.EncDps)
-                    && !(config.SkipZeroEdpsEncounters && active.Encounter.EncDps == 0))
-                {
-                    AssignIdIfMissing(active);
-                    history.Add(active);
-                    SaveTimelineSidecarLocked(active);
-                    dirty = true;
-                    archived = true;
-                    PruneHistoryLocked();
-                }
-                activeAlreadyInHistory = false;
-            }
+                archived = ArchivePreviousIfNewFight();
             else if (!snapshot.Encounter.IsActive && !prevSnapshotActive && active != null
                      && active != snapshot
                      && (active.GraphData.Count > 0 || active.SkillEvents.Count > 0))
-            {
-                // The active encounter was restored from history and has persisted
-                // graph/skill data. Carry the data forward to the incoming snapshot
-                // instead of archiving (which would create a duplicate on reload).
-                foreach (var kvp in active.GraphData)
-                {
-                    if (!snapshot.GraphData.ContainsKey(kvp.Key))
-                        snapshot.GraphData[kvp.Key] = kvp.Value;
-                }
+                CarryForwardRestoredData(snapshot);
 
-                foreach (var kvp in active.SkillEvents)
-                {
-                    if (!snapshot.SkillEvents.ContainsKey(kvp.Key))
-                        snapshot.SkillEvents[kvp.Key] = kvp.Value;
-                }
-
-                // Carry forward per-combatant Skills/HealingSkills when the
-                // incoming snapshot has less data (tracker restarted on reload).
-                foreach (var ac in active.Combatants)
-                {
-                    var sc = snapshot.Combatants.Find(c =>
-                        string.Equals(c.Name, ac.Name, StringComparison.OrdinalIgnoreCase));
-                    if (sc == null) continue;
-
-                    var scDmg = sc.Skills?.Sum(s => s.TotalDamage) ?? 0;
-                    var acDmg = ac.Skills?.Sum(s => s.TotalDamage) ?? 0;
-                    if (acDmg > scDmg && ac.Skills != null)
-                        sc.Skills = ac.Skills;
-
-                    var scHeal = sc.HealingSkills?.Sum(s => s.TotalDamage) ?? 0;
-                    var acHeal = ac.HealingSkills?.Sum(s => s.TotalDamage) ?? 0;
-                    if (acHeal > scHeal && ac.HealingSkills != null)
-                        sc.HealingSkills = ac.HealingSkills;
-                }
-
-                snapshot.Timestamp = active.Timestamp;
-            }
-
-            // IINACT trims its Combatants list to participants that recently
-            // dealt or took damage, so idle or distant alliance members blink
-            // out mid-fight.
             if (active != null && prevSnapshotActive && active != snapshot)
-            {
-                foreach (var prev in active.Combatants)
-                {
-                    var stillPresent = snapshot.Combatants.Any(c =>
-                        string.Equals(c.Name, prev.Name, StringComparison.OrdinalIgnoreCase));
-                    if (!stillPresent)
-                        snapshot.Combatants.Add(prev);
-                }
-            }
+                ReAddTrimmedCombatants(snapshot);
 
             active = snapshot;
             prevSnapshotActive = snapshot.Encounter.IsActive;
 
             return archived;
+        }
+    }
+
+    // Replay yields to live combat when a fresh fight starts. Sample data stays
+    // sticky (its lifecycle is explicitly user-controlled). Returns false when
+    // the incoming snapshot should be dropped (sample/replay still owns active).
+    private bool TryYieldReplayToLive(bool newFightStarting)
+    {
+        if (!sampleDataActive)
+            return true;
+
+        if (replaySimulator != null && newFightStarting)
+        {
+            replaySimulator.Stop();
+            replaySimulator = null;
+            pendingFactory = null;
+            sampleDataActive = false;
+            active = previewBackup;
+            previewBackup = null;
+            // Treat the previous active as no-longer-live so the archive
+            // branch closes it out before the new fight begins.
+            prevSnapshotActive = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool ArchivePreviousIfNewFight()
+    {
+        var current = active!;
+        var archived = false;
+        current.Encounter.IsActive = false;
+        if (!activeAlreadyInHistory && ShouldArchive(current))
+        {
+            AssignIdIfMissing(current);
+            history.Add(current);
+            SaveTimelineSidecarLocked(current);
+            dirty = true;
+            archived = true;
+            PruneHistoryLocked();
+        }
+        activeAlreadyInHistory = false;
+        return archived;
+    }
+
+    // The active encounter was restored from history and has persisted
+    // graph/skill data. Carry the data forward to the incoming snapshot
+    // instead of archiving (which would create a duplicate on reload).
+    private void CarryForwardRestoredData(EncounterSnapshot snapshot)
+    {
+        var current = active!;
+        foreach (var kvp in current.GraphData)
+        {
+            if (!snapshot.GraphData.ContainsKey(kvp.Key))
+                snapshot.GraphData[kvp.Key] = kvp.Value;
+        }
+
+        foreach (var kvp in current.SkillEvents)
+        {
+            if (!snapshot.SkillEvents.ContainsKey(kvp.Key))
+                snapshot.SkillEvents[kvp.Key] = kvp.Value;
+        }
+
+        // Carry forward per-combatant Skills/HealingSkills when the
+        // incoming snapshot has less data (tracker restarted on reload).
+        foreach (var ac in current.Combatants)
+        {
+            var sc = snapshot.Combatants.Find(c =>
+                string.Equals(c.Name, ac.Name, StringComparison.OrdinalIgnoreCase));
+            if (sc == null) continue;
+
+            var scDmg = sc.Skills?.Sum(s => s.TotalDamage) ?? 0;
+            var acDmg = ac.Skills?.Sum(s => s.TotalDamage) ?? 0;
+            if (acDmg > scDmg && ac.Skills != null)
+                sc.Skills = ac.Skills;
+
+            var scHeal = sc.HealingSkills?.Sum(s => s.TotalDamage) ?? 0;
+            var acHeal = ac.HealingSkills?.Sum(s => s.TotalDamage) ?? 0;
+            if (acHeal > scHeal && ac.HealingSkills != null)
+                sc.HealingSkills = ac.HealingSkills;
+        }
+
+        snapshot.Timestamp = current.Timestamp;
+    }
+
+    // IINACT trims its Combatants list to participants that recently dealt or
+    // took damage, so idle or distant alliance members blink out mid-fight.
+    private void ReAddTrimmedCombatants(EncounterSnapshot snapshot)
+    {
+        foreach (var prev in active!.Combatants)
+        {
+            var stillPresent = snapshot.Combatants.Any(c =>
+                string.Equals(c.Name, prev.Name, StringComparison.OrdinalIgnoreCase));
+            if (!stillPresent)
+                snapshot.Combatants.Add(prev);
         }
     }
 
@@ -374,8 +391,7 @@ public sealed class EncounterStore
             active.Encounter.IsActive = false;
             AssignIdIfMissing(active);
 
-            if (!double.IsNaN(active.Encounter.EncDps)
-                && !(config.SkipZeroEdpsEncounters && active.Encounter.EncDps == 0))
+            if (ShouldArchive(active))
             {
                 if (!activeAlreadyInHistory)
                 {
@@ -406,10 +422,7 @@ public sealed class EncounterStore
             active.Encounter.IsActive = false;
             AssignIdIfMissing(active);
 
-            if (double.IsNaN(active.Encounter.EncDps))
-                return false;
-
-            if (config.SkipZeroEdpsEncounters && active.Encounter.EncDps == 0)
+            if (!ShouldArchive(active))
                 return false;
 
             history.Add(active);
@@ -554,6 +567,11 @@ public sealed class EncounterStore
             snapshot.Id = snapshot.Timestamp.ToUniversalTime().Ticks;
     }
 
+    /// <summary>Whether an encounter is eligible to be written to history.</summary>
+    private bool ShouldArchive(EncounterSnapshot s)
+        => !double.IsNaN(s.Encounter.EncDps)
+           && !(config.SkipZeroEdpsEncounters && s.Encounter.EncDps == 0);
+
     /// <summary>
     /// Load the snapshot's timeline sidecar into its in-memory dictionaries if
     /// not already loaded. Safe to call repeatedly. If the sidecar is missing or
@@ -617,14 +635,7 @@ public sealed class EncounterStore
             var snap = loaded[i];
 
             var bundle = new TimelineBundle { EncounterId = 0 };
-            var any = false;
-            any |= TryPopulateDict(jobj["GraphData"], bundle.GraphData);
-            any |= TryPopulateDict(jobj["SkillEvents"], bundle.SkillEvents);
-            any |= TryPopulateDict(jobj["DamageTakenEvents"], bundle.DamageTakenEvents);
-            any |= TryPopulateDict(jobj["ItemEvents"], bundle.ItemEvents);
-            any |= TryPopulateDict(jobj["StatusHistory"], bundle.StatusHistory);
-            any |= TryPopulateDict(jobj["StatusesReceived"], bundle.StatusesReceived);
-            if (!any) continue;
+            if (!PopulateBundleFromJson(jobj, bundle)) continue;
 
             AssignIdIfMissing(snap);
             bundle.EncounterId = snap.Id;
@@ -663,6 +674,18 @@ public sealed class EncounterStore
         foreach (var kvp in converted)
             target[kvp.Key] = kvp.Value;
         return true;
+    }
+
+    private static bool PopulateBundleFromJson(Newtonsoft.Json.Linq.JObject jobj, TimelineBundle bundle)
+    {
+        var any = false;
+        any |= TryPopulateDict(jobj["GraphData"], bundle.GraphData);
+        any |= TryPopulateDict(jobj["SkillEvents"], bundle.SkillEvents);
+        any |= TryPopulateDict(jobj["DamageTakenEvents"], bundle.DamageTakenEvents);
+        any |= TryPopulateDict(jobj["ItemEvents"], bundle.ItemEvents);
+        any |= TryPopulateDict(jobj["StatusHistory"], bundle.StatusHistory);
+        any |= TryPopulateDict(jobj["StatusesReceived"], bundle.StatusesReceived);
+        return any;
     }
 
     private void SaveTimelineSidecarLocked(EncounterSnapshot snapshot)
@@ -831,14 +854,7 @@ public sealed class EncounterStore
                 if (snapshot != null)
                 {
                     var legacyBundle = new TimelineBundle();
-                    var any = false;
-                    any |= TryPopulateDict(jobj["GraphData"], legacyBundle.GraphData);
-                    any |= TryPopulateDict(jobj["SkillEvents"], legacyBundle.SkillEvents);
-                    any |= TryPopulateDict(jobj["DamageTakenEvents"], legacyBundle.DamageTakenEvents);
-                    any |= TryPopulateDict(jobj["ItemEvents"], legacyBundle.ItemEvents);
-                    any |= TryPopulateDict(jobj["StatusHistory"], legacyBundle.StatusHistory);
-                    any |= TryPopulateDict(jobj["StatusesReceived"], legacyBundle.StatusesReceived);
-                    if (any)
+                    if (PopulateBundleFromJson(jobj, legacyBundle))
                         legacyBundle.CopyInto(snapshot);
                 }
             }
