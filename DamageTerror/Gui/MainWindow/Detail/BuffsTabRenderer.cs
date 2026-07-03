@@ -158,10 +158,11 @@ internal sealed class BuffsTabRenderer : IDetailTabRenderer
         drawList.AddText(new Vector2(hdrMin.X + 3, hdrMin.Y + textYOff), headerColor, "Status");
 
         var hdrX = hdrMax.X - 3;
-        hdrX -= colAvgW; drawList.AddText(new Vector2(hdrX + (colAvgW - ImGui.CalcTextSize("Avg Dur").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "Avg Dur"); hdrX -= colPad;
-        hdrX -= colPctW; drawList.AddText(new Vector2(hdrX + (colPctW - ImGui.CalcTextSize("Uptime%").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "Uptime%"); hdrX -= colPad;
-        hdrX -= colUptimeW; drawList.AddText(new Vector2(hdrX + (colUptimeW - ImGui.CalcTextSize("Uptime").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "Uptime"); hdrX -= colPad;
-        hdrX -= colCountW; drawList.AddText(new Vector2(hdrX + (colCountW - ImGui.CalcTextSize("Count").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "Count");
+        var hdrY = hdrMin.Y + textYOff;
+        TableDrawHelper.DrawCenteredColRTL(drawList, ref hdrX, colAvgW, colPad, "Avg Dur", headerColor, hdrY);
+        TableDrawHelper.DrawCenteredColRTL(drawList, ref hdrX, colPctW, colPad, "Uptime%", headerColor, hdrY);
+        TableDrawHelper.DrawCenteredColRTL(drawList, ref hdrX, colUptimeW, colPad, "Uptime", headerColor, hdrY);
+        TableDrawHelper.DrawCenteredColRTL(drawList, ref hdrX, colCountW, colPad, "Count", headerColor, hdrY);
 
         var maxUptime = statuses.Count > 0 ? statuses[0].TotalUptime : 1f;
         if (maxUptime <= 0f) maxUptime = 1f;
@@ -192,19 +193,17 @@ internal sealed class BuffsTabRenderer : IDetailTabRenderer
             drawList.AddText(new Vector2(min.X + 3, min.Y + textYOff), textColor, nameText);
 
             var x = max.X - 3;
+            var rowY = min.Y + textYOff;
 
             var avgText = status.IsPermanent ? "∞" : $"{(status.ApplicationCount > 0 ? status.TotalUptime / status.ApplicationCount : 0f):F1}s";
-            x -= colAvgW; drawList.AddText(new Vector2(x + (colAvgW - ImGui.CalcTextSize(avgText).X) * 0.5f, min.Y + textYOff), textColor, avgText); x -= colPad;
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref x, colAvgW, colPad, avgText, textColor, rowY);
 
             var pct = encounterDuration > 0 ? Math.Min(100.0, status.TotalUptime / encounterDuration * 100.0) : 0.0;
-            var pctText = $"{pct:F1}%";
-            x -= colPctW; drawList.AddText(new Vector2(x + (colPctW - ImGui.CalcTextSize(pctText).X) * 0.5f, min.Y + textYOff), textColor, pctText); x -= colPad;
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref x, colPctW, colPad, $"{pct:F1}%", textColor, rowY);
 
-            var uptimeText = $"{status.TotalUptime:F1}s";
-            x -= colUptimeW; drawList.AddText(new Vector2(x + (colUptimeW - ImGui.CalcTextSize(uptimeText).X) * 0.5f, min.Y + textYOff), textColor, uptimeText); x -= colPad;
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref x, colUptimeW, colPad, $"{status.TotalUptime:F1}s", textColor, rowY);
 
-            var countText = $"x{status.ApplicationCount}";
-            x -= colCountW; drawList.AddText(new Vector2(x + (colCountW - ImGui.CalcTextSize(countText).X) * 0.5f, min.Y + textYOff), textColor, countText);
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref x, colCountW, colPad, $"x{status.ApplicationCount}", textColor, rowY);
 
             rowIdx++;
         }

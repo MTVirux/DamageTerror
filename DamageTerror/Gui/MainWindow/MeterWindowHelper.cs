@@ -204,10 +204,8 @@ internal static class MeterWindowHelper
 
             var headerLabel = activeTab?.GetHeaderLabel(col) ?? ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
             var colW = colWidths[col];
-            var lw = ImGui.CalcTextSize(headerLabel).X;
             rightX -= colW;
-            var textPos = new Vector2(rightX + (colW - lw) * 0.5f, textY);
-            drawList.AddText(textPos, headerColor, headerLabel);
+            TableDrawHelper.DrawCentered(drawList, rightX, colW, headerLabel, headerColor, textY);
 
             var hitMin = new Vector2(rightX, textY);
             var hitMax = new Vector2(rightX + colW, textY + ImGui.GetFontSize());

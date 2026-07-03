@@ -96,23 +96,13 @@ internal sealed class SkillsTabRenderer : IDetailTabRenderer
 
         var mousePos = ImGui.GetMousePos();
         var hdrX = hdrMax.X - 3;
-        hdrX -= colHitsW; drawList.AddText(new Vector2(hdrX + (colHitsW - ImGui.CalcTextSize("Hits").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "Hits");
-        if (mousePos.X >= hdrX && mousePos.X < hdrX + colHitsW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip("Hit Count"); }
-        hdrX -= colPad;
-        hdrX -= colCdhW; drawList.AddText(new Vector2(hdrX + (colCdhW - ImGui.CalcTextSize("!!!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!!!");
-        if (mousePos.X >= hdrX && mousePos.X < hdrX + colCdhW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip("Critical Direct Hit %"); }
-        hdrX -= colPad;
-        hdrX -= colDhW; drawList.AddText(new Vector2(hdrX + (colDhW - ImGui.CalcTextSize("!!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!!");
-        if (mousePos.X >= hdrX && mousePos.X < hdrX + colDhW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip("Direct Hit %"); }
-        hdrX -= colPad;
-        hdrX -= colCritW; drawList.AddText(new Vector2(hdrX + (colCritW - ImGui.CalcTextSize("!").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "!");
-        if (mousePos.X >= hdrX && mousePos.X < hdrX + colCritW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip("Critical Hit %"); }
-        hdrX -= colPad;
-        hdrX -= colPctW; drawList.AddText(new Vector2(hdrX + (colPctW - ImGui.CalcTextSize("%").X) * 0.5f, hdrMin.Y + textYOff), headerColor, "%");
-        if (mousePos.X >= hdrX && mousePos.X < hdrX + colPctW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip("Damage %"); }
-        hdrX -= colPad;
-        hdrX -= colValW; drawList.AddText(new Vector2(hdrX + (colValW - ImGui.CalcTextSize(valLabel).X) * 0.5f, hdrMin.Y + textYOff), headerColor, valLabel);
-        if (mousePos.X >= hdrX && mousePos.X < hdrX + colValW && mousePos.Y >= hdrMin.Y && mousePos.Y < hdrMax.Y) { ImGui.SetTooltip(valTooltip); }
+        var hdrY = hdrMin.Y + textYOff;
+        TableDrawHelper.DrawHeaderColRTL(drawList, ref hdrX, colHitsW, colPad, "Hits", headerColor, hdrY, mousePos, hdrMin.Y, hdrMax.Y, "Hit Count");
+        TableDrawHelper.DrawHeaderColRTL(drawList, ref hdrX, colCdhW, colPad, "!!!", headerColor, hdrY, mousePos, hdrMin.Y, hdrMax.Y, "Critical Direct Hit %");
+        TableDrawHelper.DrawHeaderColRTL(drawList, ref hdrX, colDhW, colPad, "!!", headerColor, hdrY, mousePos, hdrMin.Y, hdrMax.Y, "Direct Hit %");
+        TableDrawHelper.DrawHeaderColRTL(drawList, ref hdrX, colCritW, colPad, "!", headerColor, hdrY, mousePos, hdrMin.Y, hdrMax.Y, "Critical Hit %");
+        TableDrawHelper.DrawHeaderColRTL(drawList, ref hdrX, colPctW, colPad, "%", headerColor, hdrY, mousePos, hdrMin.Y, hdrMax.Y, "Damage %");
+        TableDrawHelper.DrawHeaderColRTL(drawList, ref hdrX, colValW, colPad, valLabel, headerColor, hdrY, mousePos, hdrMin.Y, hdrMax.Y, valTooltip);
 
         var skillIdx = 0;
         foreach (var skill in topSkills)
@@ -154,18 +144,13 @@ internal sealed class SkillsTabRenderer : IDetailTabRenderer
             drawList.AddText(new Vector2(nameX, min.Y + textYOff), textColor, skill.Name);
 
             var x = max.X - 3;
-            var hitsText = $"x{skill.HitCount}";
-            x -= colHitsW; drawList.AddText(new Vector2(x + (colHitsW - ImGui.CalcTextSize(hitsText).X) * 0.5f, min.Y + textYOff), textColor, hitsText); x -= colPad;
-            var cdhText = ValueFormatter.FormatPercent(skill.CritDirectHitPct, config.PercentDecimalPlaces);
-            x -= colCdhW; drawList.AddText(new Vector2(x + (colCdhW - ImGui.CalcTextSize(cdhText).X) * 0.5f, min.Y + textYOff), textColor, cdhText); x -= colPad;
-            var dhText = ValueFormatter.FormatPercent(skill.DirectHitPct, config.PercentDecimalPlaces);
-            x -= colDhW; drawList.AddText(new Vector2(x + (colDhW - ImGui.CalcTextSize(dhText).X) * 0.5f, min.Y + textYOff), textColor, dhText); x -= colPad;
-            var critText = ValueFormatter.FormatPercent(skill.CritPct, config.PercentDecimalPlaces);
-            x -= colCritW; drawList.AddText(new Vector2(x + (colCritW - ImGui.CalcTextSize(critText).X) * 0.5f, min.Y + textYOff), textColor, critText); x -= colPad;
-            var pctText = ValueFormatter.FormatPercent(skill.DamagePercent, config.PercentDecimalPlaces);
-            x -= colPctW; drawList.AddText(new Vector2(x + (colPctW - ImGui.CalcTextSize(pctText).X) * 0.5f, min.Y + textYOff), textColor, pctText); x -= colPad;
-            var valText = ValueFormatter.Format(skill.TotalDamage, config);
-            x -= colValW; drawList.AddText(new Vector2(x + (colValW - ImGui.CalcTextSize(valText).X) * 0.5f, min.Y + textYOff), textColor, valText);
+            var rowY = min.Y + textYOff;
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref x, colHitsW, colPad, $"x{skill.HitCount}", textColor, rowY);
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref x, colCdhW, colPad, ValueFormatter.FormatPercent(skill.CritDirectHitPct, config.PercentDecimalPlaces), textColor, rowY);
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref x, colDhW, colPad, ValueFormatter.FormatPercent(skill.DirectHitPct, config.PercentDecimalPlaces), textColor, rowY);
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref x, colCritW, colPad, ValueFormatter.FormatPercent(skill.CritPct, config.PercentDecimalPlaces), textColor, rowY);
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref x, colPctW, colPad, ValueFormatter.FormatPercent(skill.DamagePercent, config.PercentDecimalPlaces), textColor, rowY);
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref x, colValW, colPad, ValueFormatter.Format(skill.TotalDamage, config), textColor, rowY);
 
             if (isExpanded && skill.SubEntries != null)
             {
@@ -196,18 +181,13 @@ internal sealed class SkillsTabRenderer : IDetailTabRenderer
                     drawList.AddText(new Vector2(sMin.X + 3, sMin.Y + textYOff), textColor, sub.Name);
 
                     var sx = sMax.X - 3;
-                    var sHitsText = $"x{sub.HitCount}";
-                    sx -= colHitsW; drawList.AddText(new Vector2(sx + (colHitsW - ImGui.CalcTextSize(sHitsText).X) * 0.5f, sMin.Y + textYOff), textColor, sHitsText); sx -= colPad;
-                    var sCdhText = ValueFormatter.FormatPercent(sub.CritDirectHitPct, config.PercentDecimalPlaces);
-                    sx -= colCdhW; drawList.AddText(new Vector2(sx + (colCdhW - ImGui.CalcTextSize(sCdhText).X) * 0.5f, sMin.Y + textYOff), textColor, sCdhText); sx -= colPad;
-                    var sDhText = ValueFormatter.FormatPercent(sub.DirectHitPct, config.PercentDecimalPlaces);
-                    sx -= colDhW; drawList.AddText(new Vector2(sx + (colDhW - ImGui.CalcTextSize(sDhText).X) * 0.5f, sMin.Y + textYOff), textColor, sDhText); sx -= colPad;
-                    var sCritText = ValueFormatter.FormatPercent(sub.CritPct, config.PercentDecimalPlaces);
-                    sx -= colCritW; drawList.AddText(new Vector2(sx + (colCritW - ImGui.CalcTextSize(sCritText).X) * 0.5f, sMin.Y + textYOff), textColor, sCritText); sx -= colPad;
-                    var sPctText = ValueFormatter.FormatPercent(sub.DamagePercent, config.PercentDecimalPlaces);
-                    sx -= colPctW; drawList.AddText(new Vector2(sx + (colPctW - ImGui.CalcTextSize(sPctText).X) * 0.5f, sMin.Y + textYOff), textColor, sPctText); sx -= colPad;
-                    var sValText = ValueFormatter.Format(sub.TotalDamage, config);
-                    sx -= colValW; drawList.AddText(new Vector2(sx + (colValW - ImGui.CalcTextSize(sValText).X) * 0.5f, sMin.Y + textYOff), textColor, sValText);
+                    var sRowY = sMin.Y + textYOff;
+                    TableDrawHelper.DrawCenteredColRTL(drawList, ref sx, colHitsW, colPad, $"x{sub.HitCount}", textColor, sRowY);
+                    TableDrawHelper.DrawCenteredColRTL(drawList, ref sx, colCdhW, colPad, ValueFormatter.FormatPercent(sub.CritDirectHitPct, config.PercentDecimalPlaces), textColor, sRowY);
+                    TableDrawHelper.DrawCenteredColRTL(drawList, ref sx, colDhW, colPad, ValueFormatter.FormatPercent(sub.DirectHitPct, config.PercentDecimalPlaces), textColor, sRowY);
+                    TableDrawHelper.DrawCenteredColRTL(drawList, ref sx, colCritW, colPad, ValueFormatter.FormatPercent(sub.CritPct, config.PercentDecimalPlaces), textColor, sRowY);
+                    TableDrawHelper.DrawCenteredColRTL(drawList, ref sx, colPctW, colPad, ValueFormatter.FormatPercent(sub.DamagePercent, config.PercentDecimalPlaces), textColor, sRowY);
+                    TableDrawHelper.DrawCenteredColRTL(drawList, ref sx, colValW, colPad, ValueFormatter.Format(sub.TotalDamage, config), textColor, sRowY);
                 }
             }
 

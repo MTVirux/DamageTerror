@@ -314,11 +314,9 @@ public sealed class CombatantBarComponent
                 : GetColumnDisplayValue(combatant, col, config, activeTab);
             if (!ColumnWidthTemplates.TryGetValue(col, out var template)) continue;
             var colW = activeTab?.GetColumnWidth(col) ?? ImGui.CalcTextSize(template).X;
-            rightX -= colW;
             var colColor = activeTab?.GetColumnValueColor(col);
             var valColor = colColor.HasValue ? ImGui.ColorConvertFloat4ToU32(colColor.Value) : defaultValColor;
-            drawList.AddText(new Vector2(rightX + (colW - ImGui.CalcTextSize(text).X) * 0.5f, textY), valColor, text);
-            rightX -= colSpacing;
+            TableDrawHelper.DrawCenteredColRTL(drawList, ref rightX, colW, colSpacing, text, valColor, textY);
         }
 
         fontScope.Dispose();
