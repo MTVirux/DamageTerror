@@ -1,23 +1,71 @@
 namespace DamageTerror.Helpers;
 
 /// <summary>
-/// Deserializes <c>Dictionary&lt;TEnum, TValue&gt;</c> while silently skipping
-/// entries whose key is not a recognized member of the enum type.
+/// Tolerant JSON converter for the enum-backed collection shapes used across the
+/// configuration. Silently skips values (or dictionary keys) that are not
+/// recognized members of the enum type. Handles three shapes:
+/// <list type="bullet">
+/// <item><c>List&lt;TEnum&gt;</c> / <c>HashSet&lt;TEnum&gt;</c></item>
+/// <item><c>Dictionary&lt;TEnum, TValue&gt;</c> (enum key)</item>
+/// <item><c>Dictionary&lt;string, List&lt;TEnum&gt;&gt;</c></item>
+/// </list>
 /// </summary>
-public sealed class TolerantEnumKeyDictionaryConverter : JsonConverter
+public sealed class TolerantEnumConverter : JsonConverter
 {
-    public override bool CanConvert(Type objectType)
+    private enum Shape { None, EnumCollection, EnumKeyDictionary, StringEnumListMap }
+
+    private static Shape DetectShape(Type type)
     {
-        if (!objectType.IsGenericType) return false;
-        var def = objectType.GetGenericTypeDefinition();
-        return def == typeof(Dictionary<,>) && objectType.GetGenericArguments()[0].IsEnum;
+        if (!type.IsGenericType) return Shape.None;
+
+        var def = type.GetGenericTypeDefinition();
+        var args = type.GetGenericArguments();
+
+        if (def == typeof(List<>) || def == typeof(HashSet<>))
+            return args[0].IsEnum ? Shape.EnumCollection : Shape.None;
+
+        if (def == typeof(Dictionary<,>))
+        {
+            if (args[0].IsEnum) return Shape.EnumKeyDictionary;
+            if (args[0] == typeof(string) && args[1].IsGenericType
+                && args[1].GetGenericTypeDefinition() == typeof(List<>)
+                && args[1].GetGenericArguments()[0].IsEnum)
+                return Shape.StringEnumListMap;
+        }
+
+        return Shape.None;
     }
+
+    public override bool CanConvert(Type objectType) => DetectShape(objectType) != Shape.None;
 
     public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
     {
         if (reader.TokenType == JsonToken.Null)
             return null;
 
+        return DetectShape(objectType) switch
+        {
+            Shape.EnumCollection => ReadCollection(reader, objectType),
+            Shape.EnumKeyDictionary => ReadKeyDictionary(reader, objectType, serializer),
+            Shape.StringEnumListMap => ReadListMap(reader, objectType),
+            _ => null,
+        };
+    }
+
+    private static object ReadCollection(JsonReader reader, Type objectType)
+    {
+        var elemType = objectType.GetGenericArguments()[0];
+        var collection = Activator.CreateInstance(objectType)!;
+        var addMethod = objectType.GetMethod("Add")!;
+
+        TolerantEnumParsing.ParseEnumArray(JArray.Load(reader), elemType,
+            val => addMethod.Invoke(collection, new[] { val }));
+
+        return collection;
+    }
+
+    private static object ReadKeyDictionary(JsonReader reader, Type objectType, JsonSerializer serializer)
+    {
         var args = objectType.GetGenericArguments();
         var keyType = args[0];
         var valueType = args[1];
@@ -43,88 +91,8 @@ public sealed class TolerantEnumKeyDictionaryConverter : JsonConverter
         return dict;
     }
 
-    public override bool CanWrite => true;
-
-    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+    private static object ReadListMap(JsonReader reader, Type objectType)
     {
-        if (value == null) { writer.WriteNull(); return; }
-
-        var dict = (System.Collections.IDictionary)value;
-        writer.WriteStartObject();
-        foreach (System.Collections.DictionaryEntry entry in dict)
-        {
-            writer.WritePropertyName(entry.Key.ToString()!);
-            serializer.Serialize(writer, entry.Value);
-        }
-        writer.WriteEndObject();
-    }
-}
-
-/// <summary>
-/// Deserializes <c>List&lt;TEnum&gt;</c> or <c>HashSet&lt;TEnum&gt;</c> while
-/// silently skipping values that are not recognized members of the enum type.
-/// </summary>
-public sealed class TolerantEnumCollectionConverter : JsonConverter
-{
-    public override bool CanConvert(Type objectType)
-    {
-        if (!objectType.IsGenericType) return false;
-        var def = objectType.GetGenericTypeDefinition();
-        return (def == typeof(List<>) || def == typeof(HashSet<>))
-               && objectType.GetGenericArguments()[0].IsEnum;
-    }
-
-    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
-    {
-        if (reader.TokenType == JsonToken.Null)
-            return null;
-
-        var elemType = objectType.GetGenericArguments()[0];
-        var collection = Activator.CreateInstance(objectType)!;
-        var addMethod = objectType.GetMethod("Add")!;
-
-        TolerantEnumParsing.ParseEnumArray(JArray.Load(reader), elemType,
-            val => addMethod.Invoke(collection, new[] { val }));
-
-        return collection;
-    }
-
-    public override bool CanWrite => true;
-
-    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-    {
-        if (value == null) { writer.WriteNull(); return; }
-
-        writer.WriteStartArray();
-        foreach (var item in (System.Collections.IEnumerable)value)
-            writer.WriteValue(item.ToString());
-        writer.WriteEndArray();
-    }
-}
-
-/// <summary>
-/// Deserializes <c>Dictionary&lt;string, List&lt;TEnum&gt;&gt;</c> while silently
-/// skipping unrecognized enum values inside the inner lists.
-/// </summary>
-public sealed class TolerantEnumListMapConverter : JsonConverter
-{
-    public override bool CanConvert(Type objectType)
-    {
-        if (!objectType.IsGenericType) return false;
-        var def = objectType.GetGenericTypeDefinition();
-        if (def != typeof(Dictionary<,>)) return false;
-        var args = objectType.GetGenericArguments();
-        if (args[0] != typeof(string)) return false;
-        if (!args[1].IsGenericType) return false;
-        var innerDef = args[1].GetGenericTypeDefinition();
-        return innerDef == typeof(List<>) && args[1].GetGenericArguments()[0].IsEnum;
-    }
-
-    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
-    {
-        if (reader.TokenType == JsonToken.Null)
-            return null;
-
         var valueListType = objectType.GetGenericArguments()[1];
         var elemType = valueListType.GetGenericArguments()[0];
         var dict = (System.Collections.IDictionary)Activator.CreateInstance(objectType)!;
@@ -149,18 +117,40 @@ public sealed class TolerantEnumListMapConverter : JsonConverter
     {
         if (value == null) { writer.WriteNull(); return; }
 
-        var dict = (System.Collections.IDictionary)value;
-        writer.WriteStartObject();
-        foreach (System.Collections.DictionaryEntry entry in dict)
+        switch (DetectShape(value.GetType()))
         {
-            writer.WritePropertyName(entry.Key.ToString()!);
-            var list = (System.Collections.IEnumerable)entry.Value!;
-            writer.WriteStartArray();
-            foreach (var item in list)
-                writer.WriteValue(item.ToString());
-            writer.WriteEndArray();
+            case Shape.EnumCollection:
+                WriteEnumArray(writer, (System.Collections.IEnumerable)value);
+                break;
+
+            case Shape.EnumKeyDictionary:
+                writer.WriteStartObject();
+                foreach (System.Collections.DictionaryEntry entry in (System.Collections.IDictionary)value)
+                {
+                    writer.WritePropertyName(entry.Key.ToString()!);
+                    serializer.Serialize(writer, entry.Value);
+                }
+                writer.WriteEndObject();
+                break;
+
+            case Shape.StringEnumListMap:
+                writer.WriteStartObject();
+                foreach (System.Collections.DictionaryEntry entry in (System.Collections.IDictionary)value)
+                {
+                    writer.WritePropertyName(entry.Key.ToString()!);
+                    WriteEnumArray(writer, (System.Collections.IEnumerable)entry.Value!);
+                }
+                writer.WriteEndObject();
+                break;
         }
-        writer.WriteEndObject();
+    }
+
+    private static void WriteEnumArray(JsonWriter writer, System.Collections.IEnumerable items)
+    {
+        writer.WriteStartArray();
+        foreach (var item in items)
+            writer.WriteValue(item.ToString());
+        writer.WriteEndArray();
     }
 }
 

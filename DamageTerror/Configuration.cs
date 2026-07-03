@@ -76,7 +76,7 @@ public sealed class Configuration : IPluginConfiguration
     public bool TabButtonStretchToFit { get; set; } = true;
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public List<LayoutElement> Layout { get; set; } = new()
     {
         LayoutElement.EncounterSelect,
@@ -87,7 +87,7 @@ public sealed class Configuration : IPluginConfiguration
     };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public HashSet<LayoutElement> CtrlShiftOnlyElements { get; set; } = new();
 
     public bool ReplayBarPinned { get; set; } = false;
@@ -202,7 +202,7 @@ public sealed class Configuration : IPluginConfiguration
     public float DetailIndent { get; set; } = 8.0f;
     public float DetailFontSize { get; set; } = FontDefaults.BaseSizePt;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public HashSet<BarColumn> DetailVisibleColumns { get; set; } = new(Enum.GetValues<BarColumn>());
     public bool DetailShowDetailsTab { get; set; } = true;
     public bool DetailShowSkillsTab { get; set; } = true;
@@ -212,7 +212,7 @@ public sealed class Configuration : IPluginConfiguration
     public bool DetailShowSkillBreakdown { get; set; } = true;
     public int MaxSkillBreakdownCount { get; set; } = 0;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public HashSet<BarColumn> DetailNewLineColumns { get; set; } = new();
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public HashSet<string> DetailExpandedSections { get; set; } = new();
@@ -256,7 +256,7 @@ public sealed class Configuration : IPluginConfiguration
     public float TooltipDelay { get; set; } = 0.3f;
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public List<TooltipField> TooltipFields { get; set; } = new()
     {
         TooltipField.Name,
@@ -393,7 +393,7 @@ public sealed class Configuration : IPluginConfiguration
     public bool ShowStatusBar { get; set; } = true;
     public bool ShowStatusBarTimer { get; set; } = true;
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.EncDps };
     public float StatusBarFontSize { get; set; } = 14.1f;
     public float StatusBarHeight { get; set; } = 20f;
@@ -418,7 +418,7 @@ public sealed class Configuration : IPluginConfiguration
     public Vector2 ConfigWindowSize { get; set; } = new Vector2(400, 350);
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public HashSet<LogChannel> DisabledLogChannels { get; set; } = new();
 
     [JsonIgnore]

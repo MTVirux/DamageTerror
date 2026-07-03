@@ -55,7 +55,7 @@ public sealed class MeterTab
     public bool StatusBarColorOverridesActive { get; set; } = true;
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public List<BarColumn> StatusBarMetrics { get; set; } = new() { BarColumn.Dps, BarColumn.EncDps };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
@@ -80,7 +80,7 @@ public sealed class MeterTab
 
     /// <summary>Set of visible bar columns for this tab.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public HashSet<BarColumn> VisibleColumns { get; set; } = new()
     {
         BarColumn.Dps, BarColumn.Damage, BarColumn.DamagePercent,
@@ -89,7 +89,7 @@ public sealed class MeterTab
     };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public List<BarColumn> ColumnOrder { get; set; } = new()
     {
         BarColumn.Dps,
@@ -104,19 +104,19 @@ public sealed class MeterTab
     };
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumKeyDictionaryConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public Dictionary<BarColumn, string> ColumnHeaderLabels { get; set; } = new();
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumKeyDictionaryConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public Dictionary<BarColumn, ColumnFormatOverride> ColumnFormatOverrides { get; set; } = new();
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumKeyDictionaryConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public Dictionary<BarColumn, Vector4> ColumnValueColors { get; set; } = new();
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumKeyDictionaryConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public Dictionary<BarColumn, float> ColumnWidthOverrides { get; set; } = new();
 
     public Vector4? GetColumnValueColor(BarColumn col)
@@ -162,7 +162,7 @@ public sealed class MeterTab
     #region Tooltip Settings
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public List<TooltipField> TooltipFields { get; set; } = new()
     {
         TooltipField.Name,
@@ -191,7 +191,7 @@ public sealed class MeterTab
 
     /// <summary>Set of visible columns in the expanded detail panel for this tab.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public HashSet<BarColumn> DetailVisibleColumns { get; set; } = new(Enum.GetValues<BarColumn>());
 
     /// <summary>Whether to show the Details tab in the detail panel.</summary>
@@ -217,12 +217,12 @@ public sealed class MeterTab
 
     /// <summary>Set of columns that start a new line in the detail panel.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumCollectionConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public HashSet<BarColumn> DetailNewLineColumns { get; set; } = new();
 
     /// <summary>Per-section column order for the detail panel. Key is section name, value is ordered column list.</summary>
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-    [JsonConverter(typeof(TolerantEnumListMapConverter))]
+    [JsonConverter(typeof(TolerantEnumConverter))]
     public Dictionary<string, List<BarColumn>> DetailSectionOrder { get; set; } = new();
 
     #endregion
