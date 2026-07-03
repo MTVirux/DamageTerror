@@ -56,34 +56,22 @@ public sealed class CombatantDetailPanel
 
         if (ImGui.BeginTabBar("##detailTabs", ImGuiTabBarFlags.Reorderable))
         {
-            if (showDetailsTab && ImGui.BeginTabItem("Details##detail"))
+            (bool Show, string Label, IDetailTabRenderer Renderer)[] tabs =
             {
-                detailsTab.Render(rctx);
-                ImGui.EndTabItem();
-            }
+                (showDetailsTab, "Details##detail", detailsTab),
+                (showSkillsTab, "Skills##detail", skillsTab),
+                (showGraphTab, "Graph##detail", graphTab),
+                (showBuffsTab, "Buffs/Debuffs##detail", buffsTab),
+                (showItemTab, "Items##detail", itemsTab),
+            };
 
-            if (showSkillsTab && ImGui.BeginTabItem("Skills##detail"))
+            foreach (var (show, label, renderer) in tabs)
             {
-                skillsTab.Render(rctx);
-                ImGui.EndTabItem();
-            }
-
-            if (showGraphTab && ImGui.BeginTabItem("Graph##detail"))
-            {
-                graphTab.Render(rctx);
-                ImGui.EndTabItem();
-            }
-
-            if (showBuffsTab && ImGui.BeginTabItem("Buffs/Debuffs##detail"))
-            {
-                buffsTab.Render(rctx);
-                ImGui.EndTabItem();
-            }
-
-            if (showItemTab && ImGui.BeginTabItem("Items##detail"))
-            {
-                itemsTab.Render(rctx);
-                ImGui.EndTabItem();
+                if (show && ImGui.BeginTabItem(label))
+                {
+                    renderer.Render(rctx);
+                    ImGui.EndTabItem();
+                }
             }
 
             ImGui.EndTabBar();

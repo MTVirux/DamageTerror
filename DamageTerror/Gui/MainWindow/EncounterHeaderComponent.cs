@@ -122,11 +122,7 @@ public sealed class EncounterHeaderComponent
                         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(5, 5));
                         if (ImGui.BeginPopupContextItem("##enc_remove_active"))
                         {
-                            ImGui.PushFont(UiBuilder.IconFont);
-                            ImGui.Text(FontAwesomeIcon.TrashAlt.ToIconString());
-                            ImGui.PopFont();
-                            ImGui.SameLine();
-                            if (ImGui.Selectable("Remove"))
+                            if (MeterWindowHelper.IconMenuItem("Remove", FontAwesomeIcon.TrashAlt))
                                 pendingRemoveIndex = -2;
                             ImGui.EndPopup();
                         }
@@ -167,11 +163,7 @@ public sealed class EncounterHeaderComponent
 
                         ImGui.Separator();
 
-                        ImGui.PushFont(UiBuilder.IconFont);
-                        ImGui.Text(FontAwesomeIcon.TrashAlt.ToIconString());
-                        ImGui.PopFont();
-                        ImGui.SameLine();
-                        if (ImGui.Selectable("Remove"))
+                        if (MeterWindowHelper.IconMenuItem("Remove", FontAwesomeIcon.TrashAlt))
                             pendingRemoveIndex = i;
                         ImGui.EndPopup();
                     }

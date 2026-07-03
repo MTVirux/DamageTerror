@@ -41,6 +41,19 @@ internal struct MeterWindowContext
 
 internal static class MeterWindowHelper
 {
+    /// <summary>Height of the replay control row (frame height plus vertical padding).</summary>
+    public static float ReplayBarRowHeight => ImGui.GetFrameHeight() + 6f;
+
+    /// <summary>Draws a FontAwesome icon followed by a selectable label on the same line.</summary>
+    public static bool IconMenuItem(string label, FontAwesomeIcon icon)
+    {
+        ImGui.PushFont(UiBuilder.IconFont);
+        ImGui.Text(icon.ToIconString());
+        ImGui.PopFont();
+        ImGui.SameLine();
+        return ImGui.Selectable(label);
+    }
+
     /// <summary>Persists across frames: current toggle state for modifier key mode.</summary>
     private static bool toggleState;
     /// <summary>Persists across frames: tracks if modifier was down last frame (for edge detection).</summary>
@@ -265,7 +278,7 @@ internal static class MeterWindowHelper
                         height += config.TabButtonHeight;
                         break;
                     case LayoutElement.ReplayBar when isReplayActive:
-                        height += ImGui.GetFrameHeight() + 6f;
+                        height += ReplayBarRowHeight;
                         break;
                 }
             }

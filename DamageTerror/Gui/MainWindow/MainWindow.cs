@@ -30,6 +30,10 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
     private GifAnimator? gifAnimator;
     private string? gifAnimatorPath;
 
+    private static readonly Vector4 ReplayBarBgColor = new(0.20f, 0.05f, 0.05f, 0.85f);
+    private static readonly Vector4 ReplayLabelColor = new(1f, 0.55f, 0.55f, 1f);
+    private static readonly Vector4 ActiveButtonColor = new(0.30f, 0.55f, 0.30f, 1f);
+
     private int SelectedMeterTab
     {
         get => selectedMeterTab;
@@ -181,17 +185,7 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
 
         DrawBackgroundImage();
 
-        var modifierActive = MeterWindowHelper.IsModifierActive(plugin.Config);
-        LayoutElement? lastVisibleEl = null;
-        foreach (var el in plugin.Config.Layout)
-        {
-            if (plugin.Config.CtrlShiftOnlyElements.Contains(el) && !modifierActive
-                && !(el == LayoutElement.ReplayBar && plugin.Config.ReplayBarPinned))
-                continue;
-            lastVisibleEl = el;
-        }
-
-        if (!BeginPaddedContent(lastVisibleEl))
+        if (!BeginPaddedContent(honorReplayBarPin: true))
         {
             ImGui.EndChild();
             return;
@@ -346,14 +340,14 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
         {
             if (!headerComponent.IsViewingLive)
             {
-                if (IconMenuItem("Go to Live", FontAwesomeIcon.Play))
+                if (MeterWindowHelper.IconMenuItem("Go to Live", FontAwesomeIcon.Play))
                     headerComponent.ResetSelection();
             }
 
             var active = plugin.DataService.Store.ActiveEncounter;
             var isOngoing = active?.Encounter.IsActive == true;
             ImGui.BeginDisabled(!isOngoing);
-            if (IconMenuItem("Cut Encounter", FontAwesomeIcon.Cut))
+            if (MeterWindowHelper.IconMenuItem("Cut Encounter", FontAwesomeIcon.Cut))
             {
                 plugin.DataService.EndEncounter();
                 plugin.DataService.Store.ArchiveActive();
@@ -366,7 +360,7 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
             var viewIcon = currentActiveTab?.ViewMode == ViewMode.LineGraph ? FontAwesomeIcon.ChartBar : FontAwesomeIcon.ChartLine;
             var viewLabel = currentActiveTab?.ViewMode == ViewMode.LineGraph ? "Swap to Bar View" : "Swap to Graph View";
             ImGui.BeginDisabled(currentActiveTab == null);
-            if (IconMenuItem(viewLabel, viewIcon))
+            if (MeterWindowHelper.IconMenuItem(viewLabel, viewIcon))
             {
                 if (currentActiveTab != null)
                 {
@@ -380,7 +374,7 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
 
             var lockIcon = plugin.Config.PinMainWindow ? FontAwesomeIcon.LockOpen : FontAwesomeIcon.Lock;
             var lockLabel = plugin.Config.PinMainWindow ? "Unlock Window" : "Lock Window";
-            if (IconMenuItem(lockLabel, lockIcon))
+            if (MeterWindowHelper.IconMenuItem(lockLabel, lockIcon))
             {
                 if (!plugin.Config.PinMainWindow)
                 {
@@ -393,12 +387,12 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
                     lockButton.Icon = plugin.Config.PinMainWindow ? FontAwesomeIcon.Lock : FontAwesomeIcon.LockOpen;
             }
 
-            if (IconMenuItem("Open Settings", FontAwesomeIcon.Cog))
+            if (MeterWindowHelper.IconMenuItem("Open Settings", FontAwesomeIcon.Cog))
                 plugin.OpenConfigUi();
 
             ImGui.Separator();
 
-            if (IconMenuItem("Close Window", FontAwesomeIcon.Times))
+            if (MeterWindowHelper.IconMenuItem("Close Window", FontAwesomeIcon.Times))
                 IsOpen = false;
 
             ImGui.EndPopup();
@@ -459,12 +453,12 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
             {
                 if (plugin.IsTabPoppedOut(tab.Id))
                 {
-                    if (IconMenuItem("Close Popout Window", FontAwesomeIcon.Times))
+                    if (MeterWindowHelper.IconMenuItem("Close Popout Window", FontAwesomeIcon.Times))
                         plugin.ClosePopoutTab(tab.Id);
                 }
                 else
                 {
-                    if (IconMenuItem("Open in Window", FontAwesomeIcon.ExternalLinkAlt))
+                    if (MeterWindowHelper.IconMenuItem("Open in Window", FontAwesomeIcon.ExternalLinkAlt))
                         plugin.OpenPopoutTab(tab.Id);
                 }
                 ImGui.EndPopup();
@@ -624,18 +618,18 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
         var sim = plugin.DataService.Store.ReplaySimulator;
         if (sim == null) return;
 
-        var rowHeight = ImGui.GetFrameHeight() + 6f;
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.20f, 0.05f, 0.05f, 0.85f));
+        var rowHeight = MeterWindowHelper.ReplayBarRowHeight;
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, ReplayBarBgColor);
         if (ImGui.BeginChild("##replayBar", new Vector2(-1, rowHeight), false))
         {
             ImGui.AlignTextToFramePadding();
-            ImGui.TextColored(new Vector4(1f, 0.55f, 0.55f, 1f), "[REPLAY]");
+            ImGui.TextColored(ReplayLabelColor, "[REPLAY]");
 
             ImGui.SameLine();
             var pinned = plugin.Config.ReplayBarPinned;
             var pinIcon = (pinned ? FontAwesomeIcon.Thumbtack : FontAwesomeIcon.MapPin).ToIconString();
             if (pinned)
-                ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.30f, 0.55f, 0.30f, 1f));
+                ImGui.PushStyleColor(ImGuiCol.Button, ActiveButtonColor);
             ImGui.PushFont(UiBuilder.IconFont);
             var pinClicked = ImGui.SmallButton($"{pinIcon}##rpyPin");
             ImGui.PopFont();
@@ -688,7 +682,7 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
     {
         var isActive = Math.Abs(sim.Speed - speed) < 0.01f;
         if (isActive)
-            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.30f, 0.55f, 0.30f, 1f));
+            ImGui.PushStyleColor(ImGuiCol.Button, ActiveButtonColor);
         if (ImGui.SmallButton(label))
             sim.Speed = speed;
         if (isActive)
@@ -750,16 +744,6 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
             byHps[i].HpsRank = i + 1;
             byHps[i].HpsRankTotal = total;
         }
-    }
-
-    private static bool IconMenuItem(string label, FontAwesomeIcon icon)
-    {
-        var iconStr = icon.ToIconString();
-        ImGui.PushFont(UiBuilder.IconFont);
-        ImGui.Text(iconStr);
-        ImGui.PopFont();
-        ImGui.SameLine();
-        return ImGui.Selectable(label);
     }
 
     private void SpawnReconnect() =>

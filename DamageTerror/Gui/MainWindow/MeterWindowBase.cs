@@ -53,12 +53,24 @@ public abstract class MeterWindowBase : Window
         ImGui.PopStyleColor();
     }
 
-    protected bool BeginPaddedContent(LayoutElement? lastVisibleEl)
+    protected bool BeginPaddedContent(bool honorReplayBarPin, HashSet<LayoutElement>? layoutSkip = null)
     {
-        var padLeft = plugin.Config.WindowPaddingLeft;
-        var padRight = plugin.Config.WindowPaddingRight;
-        var padTop = plugin.Config.WindowPaddingTop;
-        var padBottom = plugin.Config.WindowPaddingBottom;
+        var config = plugin.Config;
+        var modifierActive = MeterWindowHelper.IsModifierActive(config);
+        LayoutElement? lastVisibleEl = null;
+        foreach (var el in config.Layout)
+        {
+            if (layoutSkip?.Contains(el) == true) continue;
+            if (config.CtrlShiftOnlyElements.Contains(el) && !modifierActive
+                && !(honorReplayBarPin && el == LayoutElement.ReplayBar && config.ReplayBarPinned))
+                continue;
+            lastVisibleEl = el;
+        }
+
+        var padLeft = config.WindowPaddingLeft;
+        var padRight = config.WindowPaddingRight;
+        var padTop = config.WindowPaddingTop;
+        var padBottom = config.WindowPaddingBottom;
         var effectivePadBottom = lastVisibleEl == LayoutElement.StatusBar ? 0f : padBottom;
 
         ImGui.SetCursorPos(new Vector2(padLeft, ImGui.GetCursorPosY() + padTop));

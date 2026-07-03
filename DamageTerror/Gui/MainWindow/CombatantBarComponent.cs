@@ -203,9 +203,7 @@ public sealed class CombatantBarComponent
     public bool Render(CombatantEntry combatant, double maxValue, int index, SortField sortBy, MeterTab? activeTab, string currentPlayerName = "", GroupAggregates? groupAggregates = null)
     {
         var barHeight = config.BarHeight;
-        var iconSize = config.IconSize;
         var value = GetSortValue(combatant, sortBy);
-        var isLocalPlayer = combatant.IsLocalPlayer;
 
         var fraction = maxValue > 0 ? (float)(value / maxValue) : 0f;
         fraction = Math.Clamp(fraction, 0f, 1f);
@@ -214,8 +212,32 @@ public sealed class CombatantBarComponent
         var cursorPos = ImGui.GetCursorScreenPos();
         var drawList = ImGui.GetWindowDrawList();
 
-        var bgColor = config.BarBackgroundColor;
-        var barBgColor = ImGui.ColorConvertFloat4ToU32(bgColor);
+        DrawBarBackground(drawList, combatant, cursorPos, windowWidth, barHeight, fraction);
+
+        var clicked = ImGui.InvisibleButton($"##combatant_{index}", new Vector2(windowWidth, barHeight));
+        if (config.ShowTooltip && ImGui.IsItemHovered())
+            DrawTooltip(combatant, activeTab);
+
+        using var fontScope = FontScope.Push(config.GetFontScale(config.BarFontSize));
+
+        var textY = cursorPos.Y + (barHeight - ImGui.GetTextLineHeight()) * 0.5f;
+        var textStartX = cursorPos.X + config.BarLeftPadding;
+
+        DrawLeftLabels(drawList, combatant, index, cursorPos, barHeight, textY, ref textStartX);
+        DrawColumns(drawList, combatant, activeTab, groupAggregates, cursorPos, windowWidth, textY);
+
+        fontScope.Dispose();
+
+        if (config.BarSpacing > 0)
+            ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + barHeight + config.BarSpacing));
+
+        return clicked;
+    }
+
+    private void DrawBarBackground(ImDrawListPtr drawList, CombatantEntry combatant,
+        Vector2 cursorPos, float windowWidth, float barHeight, float fraction)
+    {
+        var barBgColor = ImGui.ColorConvertFloat4ToU32(config.BarBackgroundColor);
         drawList.AddRectFilled(
             cursorPos,
             new Vector2(cursorPos.X + windowWidth, cursorPos.Y + barHeight),
@@ -224,8 +246,7 @@ public sealed class CombatantBarComponent
 
         if (fraction > 0)
         {
-            var barColor = JobColorHelper.GetBarColor(combatant.Job, config.BarAlpha, config);
-            var barColorU32 = ImGui.ColorConvertFloat4ToU32(barColor);
+            var barColorU32 = ImGui.ColorConvertFloat4ToU32(JobColorHelper.GetBarColor(combatant.Job, config.BarAlpha, config));
             drawList.AddRectFilled(
                 cursorPos,
                 new Vector2(cursorPos.X + windowWidth * fraction, cursorPos.Y + barHeight),
@@ -233,7 +254,7 @@ public sealed class CombatantBarComponent
                 config.BarRounding);
         }
 
-        if (config.SelfBarHighlight && isLocalPlayer)
+        if (config.SelfBarHighlight && combatant.IsLocalPlayer)
         {
             var stripWidth = 3f;
             var highlightColor = ImGui.ColorConvertFloat4ToU32(config.SelfBarHighlightColor);
@@ -242,17 +263,11 @@ public sealed class CombatantBarComponent
                 new Vector2(cursorPos.X + stripWidth, cursorPos.Y + barHeight),
                 highlightColor);
         }
+    }
 
-        var clicked = ImGui.InvisibleButton($"##combatant_{index}", new Vector2(windowWidth, barHeight));
-        if (config.ShowTooltip && ImGui.IsItemHovered())
-        {
-            DrawTooltip(combatant, activeTab);
-        }
-        using var fontScope = FontScope.Push(config.GetFontScale(config.BarFontSize));
-
-        var textY = cursorPos.Y + (barHeight - ImGui.GetTextLineHeight()) * 0.5f;
-        var textStartX = cursorPos.X + config.BarLeftPadding;
-
+    private void DrawLeftLabels(ImDrawListPtr drawList, CombatantEntry combatant, int index,
+        Vector2 cursorPos, float barHeight, float textY, ref float textStartX)
+    {
         if (config.ShowRankNumber)
         {
             var rankStr = $"{index + 1}. ";
@@ -269,6 +284,7 @@ public sealed class CombatantBarComponent
                 var icon = textureProvider.GetFromGameIcon(new GameIconLookup(iconId.Value));
                 if (icon.TryGetWrap(out var iconWrap, out _))
                 {
+                    var iconSize = config.IconSize;
                     var iconY = cursorPos.Y + (barHeight - iconSize) * 0.5f;
                     drawList.AddImage(
                         iconWrap.Handle,
@@ -289,14 +305,18 @@ public sealed class CombatantBarComponent
 
         if (config.ShowNameOnBar)
         {
-            var displayName = NameFormatHelper.GetDisplayName(combatant.Name, combatant.Job, isLocalPlayer, config);
-            var nameCol = (isLocalPlayer && config.UseSelfNameColor)
+            var displayName = NameFormatHelper.GetDisplayName(combatant.Name, combatant.Job, combatant.IsLocalPlayer, config);
+            var nameCol = (combatant.IsLocalPlayer && config.UseSelfNameColor)
                 ? config.SelfNameColor
                 : config.NameTextColor;
             var nameColor = ImGui.ColorConvertFloat4ToU32(nameCol);
             drawList.AddText(new Vector2(textStartX, textY), nameColor, displayName);
         }
+    }
 
+    private void DrawColumns(ImDrawListPtr drawList, CombatantEntry combatant, MeterTab? activeTab,
+        GroupAggregates? groupAggregates, Vector2 cursorPos, float windowWidth, float textY)
+    {
         var rightX = cursorPos.X + windowWidth - config.BarRightPadding;
         var defaultValColor = ImGui.ColorConvertFloat4ToU32(config.ValueTextColor);
         var colSpacing = config.BarColumnSpacing;
@@ -318,15 +338,6 @@ public sealed class CombatantBarComponent
             var valColor = colColor.HasValue ? ImGui.ColorConvertFloat4ToU32(colColor.Value) : defaultValColor;
             TableDrawHelper.DrawCenteredColRTL(drawList, ref rightX, colW, colSpacing, text, valColor, textY);
         }
-
-        fontScope.Dispose();
-
-        if (config.BarSpacing > 0)
-        {
-            ImGui.SetCursorScreenPos(new Vector2(cursorPos.X, cursorPos.Y + barHeight + config.BarSpacing));
-        }
-
-        return clicked;
     }
 
     public static double GetSortValue(CombatantEntry c, SortField field) => field switch
@@ -390,55 +401,62 @@ public sealed class CombatantBarComponent
         ImGui.PopStyleVar(2);
     }
 
+    // Tooltip fields whose value is exactly the corresponding bar column's display value.
+    private static readonly Dictionary<TooltipField, BarColumn> TooltipFieldColumns = new()
+    {
+        [TooltipField.Dps] = BarColumn.Dps,
+        [TooltipField.Hps] = BarColumn.Hps,
+        [TooltipField.Damage] = BarColumn.Damage,
+        [TooltipField.Healed] = BarColumn.Healed,
+        [TooltipField.Crit] = BarColumn.Crit,
+        [TooltipField.DirectHit] = BarColumn.DirectHit,
+        [TooltipField.CritDirectHit] = BarColumn.CritDirectHit,
+        [TooltipField.Deaths] = BarColumn.Deaths,
+        [TooltipField.DamageTaken] = BarColumn.DamageTaken,
+        [TooltipField.Overheal] = BarColumn.Overheal,
+        [TooltipField.OverhealAmount] = BarColumn.OverhealAmount,
+        [TooltipField.MaxHitValue] = BarColumn.MaxHitValue,
+        [TooltipField.MaxHealValue] = BarColumn.MaxHealValue,
+        [TooltipField.PeakDps] = BarColumn.PeakDps,
+        [TooltipField.Swings] = BarColumn.Swings,
+        [TooltipField.Hits] = BarColumn.Hits,
+        [TooltipField.Misses] = BarColumn.Misses,
+        [TooltipField.HitRate] = BarColumn.HitRate,
+        [TooltipField.Kills] = BarColumn.Kills,
+        [TooltipField.CombatantDuration] = BarColumn.CombatantDuration,
+        [TooltipField.HealsTaken] = BarColumn.HealsTaken,
+        [TooltipField.InstantDps] = BarColumn.InstantDps,
+        [TooltipField.InstantHps] = BarColumn.InstantHps,
+        [TooltipField.CritHealPct] = BarColumn.CritHealPct,
+        [TooltipField.HealCount] = BarColumn.HealCount,
+        [TooltipField.DamageShield] = BarColumn.DamageShield,
+        [TooltipField.MaxHealWard] = BarColumn.MaxHealWard,
+        [TooltipField.LegsSweeped] = BarColumn.LegsSweeped,
+        [TooltipField.SkillIssue] = BarColumn.SkillIssue,
+        [TooltipField.DamageDown] = BarColumn.DamageDown,
+        [TooltipField.Positionals] = BarColumn.Positionals,
+        [TooltipField.PositionalHits] = BarColumn.PositionalHits,
+        [TooltipField.PositionalMisses] = BarColumn.PositionalMisses,
+        [TooltipField.EncDps] = BarColumn.EncDps,
+        [TooltipField.EncHps] = BarColumn.EncHps,
+    };
+
     private (string Label, string Value) GetTooltipFieldValue(CombatantEntry combatant, TooltipField field, MeterTab? activeTab)
     {
         var label = activeTab != null ? activeTab.GetTooltipFieldLabel(field)
             : ColumnLabels.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString());
+
+        if (TooltipFieldColumns.TryGetValue(field, out var col))
+            return (label, GetColumnDisplayValue(combatant, col, config, activeTab));
+
         var value = field switch
         {
             TooltipField.Name => NameFormatHelper.GetDisplayName(combatant.Name, combatant.Job, combatant.IsLocalPlayer, config),
             TooltipField.Job => !string.IsNullOrEmpty(combatant.Job) ? JobRegistry.GetFullName(combatant.Job) : "—",
-            TooltipField.Dps => GetColumnDisplayValue(combatant, BarColumn.Dps, config, activeTab),
-            TooltipField.Hps => GetColumnDisplayValue(combatant, BarColumn.Hps, config, activeTab),
-            TooltipField.Damage => GetColumnDisplayValue(combatant, BarColumn.Damage, config, activeTab),
-            TooltipField.Healed => GetColumnDisplayValue(combatant, BarColumn.Healed, config, activeTab),
             TooltipField.DamagePercent => combatant.DamagePercent,
             TooltipField.HealPercent => combatant.HealedPercent,
-            TooltipField.Crit => GetColumnDisplayValue(combatant, BarColumn.Crit, config, activeTab),
-            TooltipField.DirectHit => GetColumnDisplayValue(combatant, BarColumn.DirectHit, config, activeTab),
-            TooltipField.CritDirectHit => GetColumnDisplayValue(combatant, BarColumn.CritDirectHit, config, activeTab),
-            TooltipField.Deaths => $"{combatant.Deaths}",
-            TooltipField.DamageTaken => GetColumnDisplayValue(combatant, BarColumn.DamageTaken, config, activeTab),
-            TooltipField.Overheal => GetColumnDisplayValue(combatant, BarColumn.Overheal, config, activeTab),
-            TooltipField.OverhealAmount => GetColumnDisplayValue(combatant, BarColumn.OverhealAmount, config, activeTab),
             TooltipField.MaxHit => combatant.MaxHitSkillName ?? "",
-            TooltipField.MaxHitValue => GetColumnDisplayValue(combatant, BarColumn.MaxHitValue, config, activeTab),
             TooltipField.MaxHeal => combatant.MaxHealSkillName ?? "",
-            TooltipField.MaxHealValue => GetColumnDisplayValue(combatant, BarColumn.MaxHealValue, config, activeTab),
-            TooltipField.PeakDps => GetColumnDisplayValue(combatant, BarColumn.PeakDps, config, activeTab),
-            TooltipField.Swings => $"{combatant.Swings}",
-            TooltipField.Hits => $"{combatant.Hits}",
-            TooltipField.Misses => $"{combatant.Misses}",
-            TooltipField.HitRate => GetColumnDisplayValue(combatant, BarColumn.HitRate, config, activeTab),
-            TooltipField.Kills => $"{combatant.Kills}",
-            TooltipField.CombatantDuration => combatant.CombatantDuration,
-            TooltipField.HealsTaken => GetColumnDisplayValue(combatant, BarColumn.HealsTaken, config, activeTab),
-            TooltipField.InstantDps => GetColumnDisplayValue(combatant, BarColumn.InstantDps, config, activeTab),
-            TooltipField.InstantHps => GetColumnDisplayValue(combatant, BarColumn.InstantHps, config, activeTab),
-            TooltipField.CritHealPct => GetColumnDisplayValue(combatant, BarColumn.CritHealPct, config, activeTab),
-            TooltipField.HealCount => $"{combatant.HealCount}",
-            TooltipField.DamageShield => GetColumnDisplayValue(combatant, BarColumn.DamageShield, config, activeTab),
-            TooltipField.MaxHealWard => GetColumnDisplayValue(combatant, BarColumn.MaxHealWard, config, activeTab),
-            TooltipField.LegsSweeped => $"{combatant.Stuns}",
-            TooltipField.SkillIssue => $"{combatant.SkillIssue}",
-            TooltipField.DamageDown => $"{combatant.DamageDown}",
-            TooltipField.Positionals => $"{combatant.Positionals}",
-            TooltipField.PositionalHits => $"{combatant.PositionalHits}",
-            TooltipField.PositionalMisses => $"{combatant.PositionalMisses}",
-            TooltipField.EncDps => GetColumnDisplayValue(combatant, BarColumn.EncDps, config, activeTab),
-            TooltipField.EncHps => GetColumnDisplayValue(combatant, BarColumn.EncHps, config, activeTab),
-            TooltipField.TopDamageSkills => "",
-            TooltipField.TopHealingSkills => "",
             _ => "",
         };
         return (label, value);

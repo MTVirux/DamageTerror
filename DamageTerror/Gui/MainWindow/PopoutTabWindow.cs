@@ -7,6 +7,8 @@ public sealed class PopoutTabWindow : MeterWindowBase, IDisposable
     private readonly Guid tabId;
     private bool suppressClose;
 
+    private static readonly HashSet<LayoutElement> PaddedContentSkip = new() { LayoutElement.MeterTabs };
+
     public Guid TabId => tabId;
 
     public PopoutTabWindow(DamageTerrorPlugin plugin, ITextureProvider textureProvider, MeterTab tab)
@@ -104,17 +106,7 @@ public sealed class PopoutTabWindow : MeterWindowBase, IDisposable
     {
         wasDrawnLastFrame = true;
 
-        var modifierActiveEarly = MeterWindowHelper.IsModifierActive(plugin.Config);
-        LayoutElement? lastVisibleEl = null;
-        foreach (var el in plugin.Config.Layout)
-        {
-            if (el == LayoutElement.MeterTabs) continue;
-            if (plugin.Config.CtrlShiftOnlyElements.Contains(el) && !modifierActiveEarly)
-                continue;
-            lastVisibleEl = el;
-        }
-
-        if (!BeginPaddedContent(lastVisibleEl))
+        if (!BeginPaddedContent(honorReplayBarPin: false, PaddedContentSkip))
         {
             ImGui.EndChild();
             return;
@@ -157,10 +149,9 @@ public sealed class PopoutTabWindow : MeterWindowBase, IDisposable
                 stampRanks: false, computeAggregates: false);
         }
 
-        var skipElements = new HashSet<LayoutElement> { LayoutElement.MeterTabs };
         var afterBarsHeight = MeterWindowHelper.CalculateAfterBarsHeight(
             config, statusBarComponent.GetHeight, headerComponent.GetHeight,
-            encounter != null, false, skipElements: skipElements);
+            encounter != null, false, skipElements: PaddedContentSkip);
 
         if (DrawDisconnectNoticeIfNeeded(encounter, "disconnect-notice-popout",
                 () => Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false))))
