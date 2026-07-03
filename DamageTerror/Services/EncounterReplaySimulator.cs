@@ -143,12 +143,16 @@ public sealed class EncounterReplaySimulator
     {
         foreach (var c in working.Combatants)
         {
-            AdvanceSkillEvents(c, t);
-            AdvanceDamageTakenEvents(c, t);
-            AdvanceItemEvents(c, t);
-            AdvanceGraphSamples(c.Name, t);
-            AdvanceStatusHistory(c.Name, t);
-            AdvanceStatusReceived(c.Name, t);
+            Advance(source.SkillEvents, working.SkillEvents, skillCursor, c.Name, e => e.TimeSec, t,
+                (e, dst) => { dst.Add(e); ApplySkillEvent(c, e); });
+            Advance(source.DamageTakenEvents, working.DamageTakenEvents, damageTakenCursor, c.Name, e => e.TimeSec, t,
+                (e, dst) => { dst.Add(e); c.DamageTaken += e.Amount; });
+            Advance(source.ItemEvents, working.ItemEvents, itemCursor, c.Name, e => e.TimeSec, t);
+            Advance(source.GraphData, working.GraphData, graphCursor, c.Name, s => s.TimeSec, t);
+            Advance(source.StatusHistory, working.StatusHistory, statusHistCursor, c.Name, s => s.AppliedAtSec, t,
+                (s, dst) => EmitStatus(s, dst, t));
+            Advance(source.StatusesReceived, working.StatusesReceived, statusRecvCursor, c.Name, s => s.AppliedAtSec, t,
+                (s, dst) => EmitStatus(s, dst, t));
         }
         UpdatePendingExpirations(t);
 
@@ -182,139 +186,71 @@ public sealed class EncounterReplaySimulator
 
         foreach (var c in working.Combatants)
         {
-            c.DamagePercent = totalDmg > 0
-                ? $"{(double)c.Damage / totalDmg * 100:F1}%"
-                : "0%";
-            c.HealedPercent = totalHeal > 0
-                ? $"{(double)c.Healed / totalHeal * 100:F1}%"
-                : "0%";
+            c.DamagePercent = SimulatorHelpers.FormatPercent(c.Damage, totalDmg);
+            c.HealedPercent = SimulatorHelpers.FormatPercent(c.Healed, totalHeal);
         }
 
-        var mins = (int)(t / 60f);
-        var secs = (int)(t % 60f);
-        working.Encounter.Duration = $"{mins:D2}:{secs:D2}";
+        working.Encounter.Duration = SimulatorHelpers.FormatDuration(t);
 
         RebuildSkillEntries();
     }
 
-    private void AdvanceSkillEvents(CombatantEntry c, float t)
+    private void Advance<T>(
+        IReadOnlyDictionary<string, List<T>> src,
+        Dictionary<string, List<T>> dst,
+        Dictionary<string, int> cursor,
+        string name,
+        Func<T, float> timeOf,
+        float t,
+        Action<T, List<T>>? onEmit = null)
     {
-        if (!source.SkillEvents.TryGetValue(c.Name, out var src) || src.Count == 0) return;
-        if (!skillCursor.TryGetValue(c.Name, out var idx)) idx = 0;
-        if (!working.SkillEvents.TryGetValue(c.Name, out var dst))
-            working.SkillEvents[c.Name] = dst = new List<SkillUseEvent>();
-        while (idx < src.Count && src[idx].TimeSec <= t)
+        if (!src.TryGetValue(name, out var s) || s.Count == 0) return;
+        if (!cursor.TryGetValue(name, out var idx)) idx = 0;
+        var d = dst.GetOrAdd(name);
+        while (idx < s.Count && timeOf(s[idx]) <= t)
         {
-            var e = src[idx];
-            dst.Add(e);
+            var e = s[idx];
+            if (onEmit != null) onEmit(e, d);
+            else d.Add(e);
+            idx++;
+        }
+        cursor[name] = idx;
+    }
 
-            if (e.IsHeal)
+    private void ApplySkillEvent(CombatantEntry c, SkillUseEvent e)
+    {
+        if (e.IsHeal)
+        {
+            c.Healed += e.Amount;
+            UpdateCounter(healCounters, c.Name, e.SkillName, e);
+            if (e.Amount > c.MaxHealAmount)
             {
-                c.Healed += e.Amount;
-                UpdateCounter(healCounters, c.Name, e.SkillName, e);
-                if (e.Amount > c.MaxHealAmount)
-                {
-                    c.MaxHealAmount = e.Amount;
-                    c.MaxHeal = $"{e.SkillName}-{e.Amount}";
-                }
+                c.MaxHealAmount = e.Amount;
+                c.MaxHeal = $"{e.SkillName}-{e.Amount}";
             }
-            else
+        }
+        else
+        {
+            c.Damage += e.Amount;
+            UpdateCounter(dmgCounters, c.Name, e.SkillName, e);
+            if (e.Amount > c.MaxHitDamage)
             {
-                c.Damage += e.Amount;
-                UpdateCounter(dmgCounters, c.Name, e.SkillName, e);
-                if (e.Amount > c.MaxHitDamage)
-                {
-                    c.MaxHitDamage = e.Amount;
-                    c.MaxHit = $"{e.SkillName}-{e.Amount}";
-                }
-                c.Hits++;
-                if (e.IsCrit) c.CritHitCount++;
-                if (e.IsDirectHit) c.DirectHitCount++;
-                if (e.IsCrit && e.IsDirectHit) c.CritDirectHitCount++;
+                c.MaxHitDamage = e.Amount;
+                c.MaxHit = $"{e.SkillName}-{e.Amount}";
             }
-            idx++;
+            c.Hits++;
+            if (e.IsCrit) c.CritHitCount++;
+            if (e.IsDirectHit) c.DirectHitCount++;
+            if (e.IsCrit && e.IsDirectHit) c.CritDirectHitCount++;
         }
-        skillCursor[c.Name] = idx;
     }
 
-    private void AdvanceDamageTakenEvents(CombatantEntry c, float t)
+    private void EmitStatus(StatusApplication s, List<StatusApplication> dst, float t)
     {
-        if (!source.DamageTakenEvents.TryGetValue(c.Name, out var src) || src.Count == 0) return;
-        if (!damageTakenCursor.TryGetValue(c.Name, out var idx)) idx = 0;
-        if (!working.DamageTakenEvents.TryGetValue(c.Name, out var dst))
-            working.DamageTakenEvents[c.Name] = dst = new List<SkillUseEvent>();
-        while (idx < src.Count && src[idx].TimeSec <= t)
-        {
-            var e = src[idx];
-            dst.Add(e);
-            c.DamageTaken += e.Amount;
-            idx++;
-        }
-        damageTakenCursor[c.Name] = idx;
-    }
-
-    private void AdvanceItemEvents(CombatantEntry c, float t)
-    {
-        if (!source.ItemEvents.TryGetValue(c.Name, out var src) || src.Count == 0) return;
-        if (!itemCursor.TryGetValue(c.Name, out var idx)) idx = 0;
-        if (!working.ItemEvents.TryGetValue(c.Name, out var dst))
-            working.ItemEvents[c.Name] = dst = new List<SkillUseEvent>();
-        while (idx < src.Count && src[idx].TimeSec <= t)
-        {
-            dst.Add(src[idx]);
-            idx++;
-        }
-        itemCursor[c.Name] = idx;
-    }
-
-    private void AdvanceGraphSamples(string name, float t)
-    {
-        if (!source.GraphData.TryGetValue(name, out var src) || src.Count == 0) return;
-        if (!graphCursor.TryGetValue(name, out var idx)) idx = 0;
-        if (!working.GraphData.TryGetValue(name, out var dst))
-            working.GraphData[name] = dst = new List<GraphSample>();
-        while (idx < src.Count && src[idx].TimeSec <= t)
-        {
-            dst.Add(src[idx]);
-            idx++;
-        }
-        graphCursor[name] = idx;
-    }
-
-    private void AdvanceStatusHistory(string name, float t)
-    {
-        if (!source.StatusHistory.TryGetValue(name, out var src) || src.Count == 0) return;
-        if (!statusHistCursor.TryGetValue(name, out var idx)) idx = 0;
-        if (!working.StatusHistory.TryGetValue(name, out var dst))
-            working.StatusHistory[name] = dst = new List<StatusApplication>();
-        while (idx < src.Count && src[idx].AppliedAtSec <= t)
-        {
-            var s = src[idx];
-            var clone = CloneStatus(s, t);
-            dst.Add(clone);
-            if (s.RemovedAtSec.HasValue && s.RemovedAtSec.Value > t)
-                pendingExpirations.Add(new PendingExpiration { Source = s, Clone = clone });
-            idx++;
-        }
-        statusHistCursor[name] = idx;
-    }
-
-    private void AdvanceStatusReceived(string name, float t)
-    {
-        if (!source.StatusesReceived.TryGetValue(name, out var src) || src.Count == 0) return;
-        if (!statusRecvCursor.TryGetValue(name, out var idx)) idx = 0;
-        if (!working.StatusesReceived.TryGetValue(name, out var dst))
-            working.StatusesReceived[name] = dst = new List<StatusApplication>();
-        while (idx < src.Count && src[idx].AppliedAtSec <= t)
-        {
-            var s = src[idx];
-            var clone = CloneStatus(s, t);
-            dst.Add(clone);
-            if (s.RemovedAtSec.HasValue && s.RemovedAtSec.Value > t)
-                pendingExpirations.Add(new PendingExpiration { Source = s, Clone = clone });
-            idx++;
-        }
-        statusRecvCursor[name] = idx;
+        var clone = CloneStatus(s, t);
+        dst.Add(clone);
+        if (s.RemovedAtSec.HasValue && s.RemovedAtSec.Value > t)
+            pendingExpirations.Add(new PendingExpiration { Source = s, Clone = clone });
     }
 
     private void UpdatePendingExpirations(float t)

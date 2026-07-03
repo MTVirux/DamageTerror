@@ -64,9 +64,7 @@ internal sealed class SampleCombatSimulator
         var elapsed = (float)(DateTime.UtcNow - startTime).TotalSeconds;
         if (elapsed < 0.01f) return;
 
-        var mins = (int)(elapsed / 60f);
-        var secs = (int)(elapsed % 60f);
-        snapshot.Encounter.Duration = $"{mins:D2}:{secs:D2}";
+        snapshot.Encounter.Duration = SimulatorHelpers.FormatDuration(elapsed);
 
         if (combatantFactory != null && elapsed - lastSpawnTime >= 0.5f)
         {
@@ -116,12 +114,8 @@ internal sealed class SampleCombatSimulator
 
         foreach (var c in snapshot.Combatants)
         {
-            c.DamagePercent = totalDamage > 0
-                ? $"{(double)c.Damage / totalDamage * 100:F1}%"
-                : "0%";
-            c.HealedPercent = totalHealed > 0
-                ? $"{(double)c.Healed / totalHealed * 100:F1}%"
-                : "0%";
+            c.DamagePercent = SimulatorHelpers.FormatPercent(c.Damage, totalDamage);
+            c.HealedPercent = SimulatorHelpers.FormatPercent(c.Healed, totalHealed);
         }
 
         if (elapsed - lastGraphSampleTime >= 0.5f)
@@ -131,8 +125,7 @@ internal sealed class SampleCombatSimulator
             for (var i = 0; i < snapshot.Combatants.Count; i++)
             {
                 var c = snapshot.Combatants[i];
-                if (!snapshot.GraphData.TryGetValue(c.Name, out var samples))
-                    snapshot.GraphData[c.Name] = samples = new List<GraphSample>();
+                var samples = snapshot.GraphData.GetOrAdd(c.Name);
 
                 samples.Add(new GraphSample
                 {
@@ -185,9 +178,7 @@ internal sealed class SampleCombatSimulator
                 IsDoTTick = !isHeal && skill.DamageType == SkillDamageType.Magic && Rng.NextDouble() < 0.15,
             };
 
-            if (!snapshot.SkillEvents.TryGetValue(c.Name, out var events))
-                snapshot.SkillEvents[c.Name] = events = new List<SkillUseEvent>();
-            events.Add(evt);
+            snapshot.SkillEvents.GetOrAdd(c.Name).Add(evt);
 
             skill.TotalDamage += amount;
             skill.HitCount++;
@@ -203,9 +194,7 @@ internal sealed class SampleCombatSimulator
                     IsCrit = false,
                 };
 
-                if (!snapshot.DamageTakenEvents.TryGetValue(c.Name, out var dtEvents))
-                    snapshot.DamageTakenEvents[c.Name] = dtEvents = new List<SkillUseEvent>();
-                dtEvents.Add(dtEvt);
+                snapshot.DamageTakenEvents.GetOrAdd(c.Name).Add(dtEvt);
             }
         }
     }
@@ -216,8 +205,7 @@ internal sealed class SampleCombatSimulator
         {
             var c = snapshot.Combatants[i];
 
-            if (!activeBuffs.TryGetValue(c.Name, out var buffs))
-                activeBuffs[c.Name] = buffs = new List<ActiveBuff>();
+            var buffs = activeBuffs.GetOrAdd(c.Name);
 
             for (var j = buffs.Count - 1; j >= 0; j--)
             {
@@ -284,13 +272,8 @@ internal sealed class SampleCombatSimulator
 
     private void AddStatusToSnapshot(StatusApplication app)
     {
-        if (!snapshot.StatusHistory.TryGetValue(app.SourceName, out var history))
-            snapshot.StatusHistory[app.SourceName] = history = new List<StatusApplication>();
-        history.Add(app);
-
-        if (!snapshot.StatusesReceived.TryGetValue(app.TargetName, out var received))
-            snapshot.StatusesReceived[app.TargetName] = received = new List<StatusApplication>();
-        received.Add(app);
+        snapshot.StatusHistory.GetOrAdd(app.SourceName).Add(app);
+        snapshot.StatusesReceived.GetOrAdd(app.TargetName).Add(app);
     }
 
     private static string GetRandomBossSkill()
