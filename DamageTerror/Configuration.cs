@@ -1,3 +1,5 @@
+using System.Runtime.Serialization;
+using Newtonsoft.Json.Linq;
 using Dalamud.Configuration;
 
 namespace DamageTerror;
@@ -225,31 +227,27 @@ public sealed class Configuration : IPluginConfiguration
         [MetricType.Dtps] = new SkillMarkerConfig(),
     };
 
-    // Legacy-JSON migration shims: old configs with flat DetailDpsMarkers etc. keys
-    // route through these private setters into DetailMarkers above. Getter returns
-    // null so NullValueHandling.Ignore prevents re-serialization.
-    [JsonProperty("DetailDpsMarkers", NullValueHandling = NullValueHandling.Ignore,
-                  DefaultValueHandling = DefaultValueHandling.Ignore)]
-    private SkillMarkerConfig? DetailDpsMarkersLegacy
-    {
-        get => null;
-        set => DetailMarkers[MetricType.Dps] = value ?? new SkillMarkerConfig();
-    }
+    // Legacy-JSON migration: old configs stored flat DetailDpsMarkers /
+    // GraphViewDpsMarkers etc. keys. Capture unknown keys and route any of
+    // them into the marker dictionaries after deserialization.
+    [JsonExtensionData]
+    private Dictionary<string, JToken>? _extensionData;
 
-    [JsonProperty("DetailHpsMarkers", NullValueHandling = NullValueHandling.Ignore,
-                  DefaultValueHandling = DefaultValueHandling.Ignore)]
-    private SkillMarkerConfig? DetailHpsMarkersLegacy
+    [OnDeserialized]
+    internal void OnDeserialized(StreamingContext context)
     {
-        get => null;
-        set => DetailMarkers[MetricType.Hps] = value ?? new SkillMarkerConfig();
-    }
+        if (_extensionData == null || _extensionData.Count == 0)
+            return;
 
-    [JsonProperty("DetailDtpsMarkers", NullValueHandling = NullValueHandling.Ignore,
-                  DefaultValueHandling = DefaultValueHandling.Ignore)]
-    private SkillMarkerConfig? DetailDtpsMarkersLegacy
-    {
-        get => null;
-        set => DetailMarkers[MetricType.Dtps] = value ?? new SkillMarkerConfig();
+        foreach (var metric in new[] { MetricType.Dps, MetricType.Hps, MetricType.Dtps })
+        {
+            if (_extensionData.TryGetValue($"Detail{metric}Markers", out var detail) && detail.Type != JTokenType.Null)
+                DetailMarkers[metric] = detail.ToObject<SkillMarkerConfig>() ?? new SkillMarkerConfig();
+            if (_extensionData.TryGetValue($"GraphView{metric}Markers", out var graph) && graph.Type != JTokenType.Null)
+                GraphViewMarkers[metric] = graph.ToObject<SkillMarkerConfig>() ?? new SkillMarkerConfig();
+        }
+
+        _extensionData = null;
     }
 
     public bool ShowTooltip { get; set; } = true;
@@ -342,30 +340,6 @@ public sealed class Configuration : IPluginConfiguration
         [MetricType.Hps] = new SkillMarkerConfig(),
         [MetricType.Dtps] = new SkillMarkerConfig(),
     };
-
-    [JsonProperty("GraphViewDpsMarkers", NullValueHandling = NullValueHandling.Ignore,
-                  DefaultValueHandling = DefaultValueHandling.Ignore)]
-    private SkillMarkerConfig? GraphViewDpsMarkersLegacy
-    {
-        get => null;
-        set => GraphViewMarkers[MetricType.Dps] = value ?? new SkillMarkerConfig();
-    }
-
-    [JsonProperty("GraphViewHpsMarkers", NullValueHandling = NullValueHandling.Ignore,
-                  DefaultValueHandling = DefaultValueHandling.Ignore)]
-    private SkillMarkerConfig? GraphViewHpsMarkersLegacy
-    {
-        get => null;
-        set => GraphViewMarkers[MetricType.Hps] = value ?? new SkillMarkerConfig();
-    }
-
-    [JsonProperty("GraphViewDtpsMarkers", NullValueHandling = NullValueHandling.Ignore,
-                  DefaultValueHandling = DefaultValueHandling.Ignore)]
-    private SkillMarkerConfig? GraphViewDtpsMarkersLegacy
-    {
-        get => null;
-        set => GraphViewMarkers[MetricType.Dtps] = value ?? new SkillMarkerConfig();
-    }
 
     public Vector4 SkillDamageFillColor { get; set; } = new(0.35f, 0.35f, 0.55f, 0.7f);
     public Vector4 SkillPhysicalFillColor { get; set; } = new(0.55f, 0.30f, 0.25f, 0.7f);
