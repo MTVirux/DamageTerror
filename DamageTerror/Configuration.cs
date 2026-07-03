@@ -1,5 +1,4 @@
 using System.Runtime.Serialization;
-using Newtonsoft.Json.Linq;
 using Dalamud.Configuration;
 
 namespace DamageTerror;
