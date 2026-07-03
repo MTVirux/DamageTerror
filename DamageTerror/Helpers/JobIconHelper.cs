@@ -34,7 +34,7 @@ public static class JobIconHelper
         if (classJobId == null)
             return null;
 
-        var offset = style == JobIconStyle.Custom ? GetBaseOffset(JobIconStyle.Framed) : GetBaseOffset(style);
+        var offset = GetBaseOffset(style);
         return offset + classJobId.Value;
     }
 

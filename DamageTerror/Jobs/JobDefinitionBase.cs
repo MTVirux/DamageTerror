@@ -1,32 +1,55 @@
 namespace DamageTerror.Jobs;
 
-public abstract class JobDefinitionBase
+public sealed class JobDefinitionBase
 {
+    private static readonly Dictionary<uint, int> EmptyPotencies = new();
+    private static readonly Dictionary<uint, string> EmptyGroundEffects = new();
+    private static readonly HashSet<uint> EmptyStatusIds = [];
+
     // ── Identity ──
-    public abstract string Abbreviation { get; }
-    public abstract string FullName { get; }
-    public abstract JobRole Role { get; }
-    public abstract uint ClassJobId { get; }
-    public abstract Vector4 DefaultColor { get; }
-    public virtual bool IsBaseClass => false;
+    public string Abbreviation { get; }
+    public string FullName { get; }
+    public JobRole Role { get; }
+    public uint ClassJobId { get; }
+    public Vector4 DefaultColor { get; }
+    public bool IsBaseClass { get; }
 
-    // ── DoT Potencies (statusId → tick potency) ──
-    public virtual IReadOnlyDictionary<uint, int> DotTickPotencies { get; } = new Dictionary<uint, int>();
+    // ── Potency / status data ──
+    public IReadOnlyDictionary<uint, int> DotTickPotencies { get; }
+    public IReadOnlyDictionary<uint, int> DotInitialHitPotencies { get; }
+    public IReadOnlyDictionary<uint, int> HotTickPotencies { get; }
+    public IReadOnlySet<uint> KnownReflectStatusIds { get; }
+    public IReadOnlyDictionary<uint, string> GroundEffectDots { get; }
+    public IReadOnlyList<PositionalFallbackEntry> FallbackPositionals { get; }
 
-    // ── DoT Initial Hit Potencies (statusId → initial hit potency) ──
-    public virtual IReadOnlyDictionary<uint, int> DotInitialHitPotencies { get; } = new Dictionary<uint, int>();
+    public JobDefinitionBase(
+        string abbreviation,
+        string fullName,
+        JobRole role,
+        uint classJobId,
+        Vector4 defaultColor,
+        bool isBaseClass = false,
+        Dictionary<uint, int>? dotTickPotencies = null,
+        Dictionary<uint, int>? dotInitialHitPotencies = null,
+        Dictionary<uint, int>? hotTickPotencies = null,
+        HashSet<uint>? knownReflectStatusIds = null,
+        Dictionary<uint, string>? groundEffectDots = null,
+        IReadOnlyList<PositionalFallbackEntry>? fallbackPositionals = null)
+    {
+        Abbreviation = abbreviation;
+        FullName = fullName;
+        Role = role;
+        ClassJobId = classJobId;
+        DefaultColor = defaultColor;
+        IsBaseClass = isBaseClass;
 
-    // ── HoT Potencies (statusId → tick potency) ──
-    public virtual IReadOnlyDictionary<uint, int> HotTickPotencies { get; } = new Dictionary<uint, int>();
-
-    // ── Status IDs whose presence on a target reflects incoming damage back to the attacker ──
-    public virtual IReadOnlySet<uint> KnownReflectStatusIds { get; } = new HashSet<uint>();
-
-    // ── Ground-effect DoT IDs (statusId → skill name) ──
-    public virtual IReadOnlyDictionary<uint, string> GroundEffectDots { get; } = new Dictionary<uint, string>();
-
-    // ── Positional Fallback Data ──
-    public virtual IReadOnlyList<PositionalFallbackEntry> FallbackPositionals { get; } = [];
+        DotTickPotencies = dotTickPotencies ?? EmptyPotencies;
+        DotInitialHitPotencies = dotInitialHitPotencies ?? EmptyPotencies;
+        HotTickPotencies = hotTickPotencies ?? EmptyPotencies;
+        KnownReflectStatusIds = knownReflectStatusIds ?? EmptyStatusIds;
+        GroundEffectDots = groundEffectDots ?? EmptyGroundEffects;
+        FallbackPositionals = fallbackPositionals ?? [];
+    }
 }
 
 public readonly record struct PositionalFallbackEntry(

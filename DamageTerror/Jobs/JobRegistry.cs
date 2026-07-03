@@ -3,45 +3,177 @@ namespace DamageTerror.Jobs;
 
 public static class JobRegistry
 {
+    // Shared role default for every Disciple of the Hand/Land.
+    private static readonly Vector4 DoHLColor = new(0.70f, 0.55f, 0.30f, 1.0f);
+
+    // Opaque colour authored as 8-bit channels (value == channel / 255f).
+    private static Vector4 Rgb(byte r, byte g, byte b) => new(r / 255f, g / 255f, b / 255f, 1f);
+
     private static readonly JobDefinitionBase[] AllDefinitions =
     [
-        // Tanks
-        new PLD(), new WAR(), new DRK(), new GNB(),
-        // Healers
-        new WHM(), new SCH(), new AST(), new SGE(),
-        // Melee DPS
-        new MNK(), new DRG(), new NIN(), new SAM(), new RPR(), new VPR(),
-        // Ranged DPS
-        new BRD(), new MCH(), new DNC(),
-        // Caster DPS
-        new BLM(), new SMN(), new RDM(),
-        new IdentityJob("Pct", "Pictomancer", JobRole.CasterDps, 42, new(0.9882353f, 0.57254905f, 0.88235295f, 1.0f)),
-        new BLU(),
-        // Base Classes
-        new IdentityJob("Gla", "Gladiator", JobRole.Tank, 1, new(0.65882355f, 0.8235294f, 0.9019608f, 1.0f), true),
-        new IdentityJob("Mrd", "Marauder", JobRole.Tank, 3, new(0.8117647f, 0.14901961f, 0.12941177f, 1.0f), true),
-        new IdentityJob("Cnj", "Conjurer", JobRole.Healer, 6, new(1.0f, 0.9411765f, 0.8627451f, 1.0f), true),
-        new IdentityJob("Pgl", "Pugilist", JobRole.MeleeDps, 2, new(0.8392157f, 0.6117647f, 0.0f, 1.0f), true),
-        new IdentityJob("Lnc", "Lancer", JobRole.MeleeDps, 4, new(0.25490198f, 0.39215687f, 0.8039216f, 1.0f), true),
-        new IdentityJob("Arc", "Archer", JobRole.RangedDps, 5, new(0.5686275f, 0.7294118f, 0.36862746f, 1.0f), true),
-        new IdentityJob("Rog", "Rogue", JobRole.MeleeDps, 29, new(0.6862745f, 0.09803922f, 0.39215687f, 1.0f), true),
-        new IdentityJob("Thm", "Thaumaturge", JobRole.CasterDps, 7, new(0.64705884f, 0.4745098f, 0.8392157f, 1.0f), true),
-        new IdentityJob("Acn", "Arcanist", JobRole.CasterDps, 26, new(0.1764706f, 0.60784316f, 0.47058824f, 1.0f), true),
-        // Crafters
-        new IdentityJob("Crp", "Carpenter", JobRole.DoHL, 8, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        new IdentityJob("Bsm", "Blacksmith", JobRole.DoHL, 9, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        new IdentityJob("Arm", "Armorer", JobRole.DoHL, 10, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        new IdentityJob("Gsm", "Goldsmith", JobRole.DoHL, 11, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        new IdentityJob("Ltw", "Leatherworker", JobRole.DoHL, 12, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        new IdentityJob("Wvr", "Weaver", JobRole.DoHL, 13, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        new IdentityJob("Alc", "Alchemist", JobRole.DoHL, 14, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        new IdentityJob("Cul", "Culinarian", JobRole.DoHL, 15, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        // Gatherers
-        new IdentityJob("Min", "Miner", JobRole.DoHL, 16, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        new IdentityJob("Btn", "Botanist", JobRole.DoHL, 17, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        new IdentityJob("Fsh", "Fisher", JobRole.DoHL, 18, new(0.70f, 0.55f, 0.30f, 1.0f)),
-        // Special
-        new IdentityJob("Lmb", "Limit Break", JobRole.LimitBreak, 0, new(0.5f, 0.5f, 0.5f, 1.0f)),
+        // ── Tanks ──
+        new("Pld", "Paladin", JobRole.Tank, 19, Rgb(168, 210, 230),
+            dotTickPotencies: new() { { 248, 30 } },
+            dotInitialHitPotencies: new() { { 248, 140 } },
+            hotTickPotencies: new() { { 2676, 250 } }),
+
+        new("War", "Warrior", JobRole.Tank, 21, Rgb(207, 38, 33),
+            hotTickPotencies: new() { { 2681, 200 }, { 2108, 100 } },
+            knownReflectStatusIds: [89, 3832]),
+
+        new("Drk", "Dark Knight", JobRole.Tank, 32, Rgb(209, 38, 204),
+            dotTickPotencies: new() { { 749, 50 }, { 3036, 80 } },
+            hotTickPotencies: new() { { 3037, 80 } },
+            groundEffectDots: new() { { 749, "Salted Earth" }, { 3036, "Salted Earth" } }),
+
+        new("Gnb", "Gunbreaker", JobRole.Tank, 37, Rgb(121, 109, 48),
+            dotTickPotencies: new() { { 1837, 120 }, { 1838, 60 } },
+            dotInitialHitPotencies: new() { { 1837, 340 }, { 1838, 150 } },
+            hotTickPotencies: new() { { 1835, 200 } }),
+
+        // ── Healers ──
+        new("Whm", "White Mage", JobRole.Healer, 24, Rgb(255, 240, 220),
+            dotTickPotencies: new() { { 1871, 85 }, { 143, 30 }, { 144, 50 }, { 798, 50 } },
+            dotInitialHitPotencies: new() { { 1871, 85 } },
+            hotTickPotencies: new() { { 158, 250 }, { 150, 150 }, { 3880, 175 }, { 1911, 100 } }),
+
+        new("Sch", "Scholar", JobRole.Healer, 28, Rgb(134, 87, 255),
+            dotTickPotencies: new() { { 1895, 85 }, { 189, 40 }, { 3883, 140 }, { 2039, 50 } },
+            dotInitialHitPotencies: new() { { 1895, 75 } },
+            hotTickPotencies: new() { { 315, 120 }, { 1874, 120 }, { 1944, 100 }, { 3885, 100 } }),
+
+        new("Ast", "Astrologian", JobRole.Healer, 33, Rgb(255, 231, 74),
+            dotTickPotencies: new() { { 838, 50 }, { 843, 60 }, { 1881, 70 } },
+            hotTickPotencies: new() { { 835, 250 }, { 836, 150 }, { 3894, 175 }, { 848, 100 }, { 956, 100 } },
+            groundEffectDots: new() { { 1122, "Earthly Star" } }),
+
+        new("Sge", "Sage", JobRole.Healer, 40, Rgb(128, 160, 240),
+            dotTickPotencies: new() { { 2614, 40 }, { 2615, 60 }, { 2616, 90 }, { 3897, 40 }, { 3976, 50 } },
+            hotTickPotencies: new() { { 2617, 100 }, { 2620, 100 }, { 2938, 100 }, { 3898, 170 } }),
+
+        // ── Melee DPS ──
+        new("Mnk", "Monk", JobRole.MeleeDps, 20, Rgb(214, 156, 0),
+            fallbackPositionals:
+            [
+                new(56, "Snap Punch", "Flank", [(0, false), (16, false), (25, false), (17, true), (27, true), (20, true), (30, true)]),
+                new(66, "Demolish", "Rear", [(0, false), (15, true), (18, true)]),
+                new(36947, "Pouncing Coeurl", "Flank", [(0, false), (23, false), (15, true), (18, true), (12, true), (14, true)]),
+            ]),
+
+        new("Drg", "Dragoon", JobRole.MeleeDps, 22, Rgb(65, 100, 205),
+            dotTickPotencies: new() { { 118, 40 }, { 2719, 45 } },
+            dotInitialHitPotencies: new() { { 118, 100 }, { 2719, 300 } },
+            fallbackPositionals:
+            [
+                new(3554, "Fang and Claw", "Flank", [(0, false), (53, false), (10, true), (11, true), (58, true), (59, true)]),
+                new(3556, "Wheeling Thrust", "Rear", [(0, false), (53, false), (10, true), (11, true), (58, true), (59, true)]),
+                new(25772, "Chaotic Spring", "Rear", [(0, false), (53, false), (10, true), (11, true), (58, true), (59, true)]),
+            ]),
+
+        new("Nin", "Ninja", JobRole.MeleeDps, 30, Rgb(175, 25, 100),
+            dotTickPotencies: new() { { 501, 50 }, { 3184, 80 }, { 4304, 50 } },
+            hotTickPotencies: new() { { 3189, 65 } },
+            groundEffectDots: new() { { 501, "Doton" }, { 4304, "Doton" } },
+            fallbackPositionals:
+            [
+                new(2255, "Aeolian Edge", "Rear", [(0, false), (47, false), (23, true), (30, true), (56, true), (59, true)]),
+                new(2258, "Trick Attack", "Rear", [(0, false), (25, true)]),
+                new(3563, "Armor Crush", "Flank", [(0, false), (47, false), (21, true), (27, true), (53, true), (58, true)]),
+            ]),
+
+        new("Sam", "Samurai", JobRole.MeleeDps, 34, Rgb(228, 109, 4),
+            dotTickPotencies: new() { { 1228, 45 } },
+            dotInitialHitPotencies: new() { { 1228, 200 } },
+            fallbackPositionals:
+            [
+                new(7481, "Gekko", "Rear", [(0, false), (53, false), (10, true), (22, true), (11, true), (58, true)]),
+                new(7482, "Kasha", "Flank", [(0, false), (53, false), (10, true), (22, true), (11, true), (58, true)]),
+            ]),
+
+        new("Rpr", "Reaper", JobRole.MeleeDps, 39, Rgb(150, 90, 144),
+            hotTickPotencies: new() { { 2862, 100 } },
+            fallbackPositionals:
+            [
+                new(24382, "Gibbet", "Flank", [(0, false), (10, false), (11, true), (19, true)]),
+                new(24383, "Gallows", "Rear", [(0, false), (10, false), (11, true), (19, true)]),
+                new(36970, "Executioner's Gibbet", "Flank", [(0, false), (7, true)]),
+                new(36971, "Executioner's Gallows", "Rear", [(0, false), (7, true)]),
+            ]),
+
+        new("Vpr", "Viper", JobRole.MeleeDps, 41, Rgb(16, 130, 16),
+            dotTickPotencies: new() { { 3667, 35 } },
+            dotInitialHitPotencies: new() { { 3667, 200 } },
+            fallbackPositionals:
+            [
+                new(34610, "Flanksting Strike", "Flank", [(0, false), (15, true), (12, true)]),
+                new(34611, "Flanksbane Fang", "Flank", [(0, false), (15, true), (12, true)]),
+                new(34612, "Hindsting Strike", "Rear", [(0, false), (15, true), (12, true)]),
+                new(34613, "Hindsbane Fang", "Rear", [(0, false), (15, true), (12, true)]),
+                new(34621, "Hunter's Coil", "Rear", [(0, false), (9, true)]),
+                new(34622, "Swiftskin's Coil", "Flank", [(0, false), (9, true)]),
+            ]),
+
+        // ── Ranged DPS ──
+        new("Brd", "Bard", JobRole.RangedDps, 23, Rgb(145, 186, 94),
+            dotTickPotencies: new() { { 124, 15 }, { 129, 20 }, { 1200, 20 }, { 1201, 25 } },
+            dotInitialHitPotencies: new() { { 1200, 150 }, { 1201, 100 } }),
+
+        new("Mch", "Machinist", JobRole.RangedDps, 31, Rgb(110, 225, 214),
+            dotTickPotencies: new() { { 1866, 50 }, { 2019, 65 } },
+            dotInitialHitPotencies: new() { { 1866, 50 } }),
+
+        new("Dnc", "Dancer", JobRole.RangedDps, 38, Rgb(226, 176, 175),
+            dotTickPotencies: new() { { 3162, 75 } },
+            hotTickPotencies: new() { { 2695, 100 } },
+            groundEffectDots: new() { { 3162, "Honing Dance" } }),
+
+        // ── Caster DPS ──
+        new("Blm", "Black Mage", JobRole.CasterDps, 25, Rgb(165, 121, 214),
+            dotTickPotencies: new() { { 163, 50 }, { 1210, 35 }, { 3871, 60 }, { 3872, 40 } },
+            dotInitialHitPotencies: new() { { 163, 120 }, { 1210, 80 }, { 3871, 150 }, { 3872, 100 } }),
+
+        new("Smn", "Summoner", JobRole.CasterDps, 27, Rgb(45, 155, 120),
+            dotTickPotencies: new() { { 2706, 30 }, { 3231, 65 } },
+            groundEffectDots: new() { { 2706, "Slipstream" } }),
+
+        new("Rdm", "Red Mage", JobRole.CasterDps, 35, Rgb(232, 123, 123),
+            dotTickPotencies: new() { { 4319, 65 } }),
+
+        new("Pct", "Pictomancer", JobRole.CasterDps, 42, Rgb(252, 146, 225)),
+
+        new("Blu", "Blue Mage", JobRole.CasterDps, 36, new(0.30f, 0.55f, 0.90f, 1.0f),
+            dotTickPotencies: new() { { 1714, 50 }, { 1736, 50 }, { 18, 30 }, { 1723, 20 }, { 3712, 80 }, { 3643, 50 } },
+            hotTickPotencies: new() { { 2495, 100 } },
+            knownReflectStatusIds: [1720, 1724, 3631]),
+
+        // ── Base Classes ──
+        new("Gla", "Gladiator", JobRole.Tank, 1, Rgb(168, 210, 230), isBaseClass: true),
+        new("Mrd", "Marauder", JobRole.Tank, 3, Rgb(207, 38, 33), isBaseClass: true),
+        new("Cnj", "Conjurer", JobRole.Healer, 6, Rgb(255, 240, 220), isBaseClass: true),
+        new("Pgl", "Pugilist", JobRole.MeleeDps, 2, Rgb(214, 156, 0), isBaseClass: true),
+        new("Lnc", "Lancer", JobRole.MeleeDps, 4, Rgb(65, 100, 205), isBaseClass: true),
+        new("Arc", "Archer", JobRole.RangedDps, 5, Rgb(145, 186, 94), isBaseClass: true),
+        new("Rog", "Rogue", JobRole.MeleeDps, 29, Rgb(175, 25, 100), isBaseClass: true),
+        new("Thm", "Thaumaturge", JobRole.CasterDps, 7, Rgb(165, 121, 214), isBaseClass: true),
+        new("Acn", "Arcanist", JobRole.CasterDps, 26, Rgb(45, 155, 120), isBaseClass: true),
+
+        // ── Crafters ──
+        new("Crp", "Carpenter", JobRole.DoHL, 8, DoHLColor),
+        new("Bsm", "Blacksmith", JobRole.DoHL, 9, DoHLColor),
+        new("Arm", "Armorer", JobRole.DoHL, 10, DoHLColor),
+        new("Gsm", "Goldsmith", JobRole.DoHL, 11, DoHLColor),
+        new("Ltw", "Leatherworker", JobRole.DoHL, 12, DoHLColor),
+        new("Wvr", "Weaver", JobRole.DoHL, 13, DoHLColor),
+        new("Alc", "Alchemist", JobRole.DoHL, 14, DoHLColor),
+        new("Cul", "Culinarian", JobRole.DoHL, 15, DoHLColor),
+
+        // ── Gatherers ──
+        new("Min", "Miner", JobRole.DoHL, 16, DoHLColor),
+        new("Btn", "Botanist", JobRole.DoHL, 17, DoHLColor),
+        new("Fsh", "Fisher", JobRole.DoHL, 18, DoHLColor),
+
+        // ── Special ──
+        new("Lmb", "Limit Break", JobRole.LimitBreak, 0, new(0.5f, 0.5f, 0.5f, 1.0f)),
     ];
 
     // ── Lookup by abbreviation or full name (case-insensitive) ──
@@ -182,18 +314,4 @@ public static class JobRegistry
         uint ClassJobId,
         Vector4 DefaultColor,
         bool IsBaseClass);
-
-    // ── Data-only job (identity properties, no combat/sample data) ──
-
-    private sealed class IdentityJob(
-        string abbreviation, string fullName, JobRole role, uint classJobId, Vector4 defaultColor, bool isBaseClass = false)
-        : JobDefinitionBase
-    {
-        public override string Abbreviation => abbreviation;
-        public override string FullName => fullName;
-        public override JobRole Role => role;
-        public override uint ClassJobId => classJobId;
-        public override Vector4 DefaultColor => defaultColor;
-        public override bool IsBaseClass => isBaseClass;
-    }
 }
