@@ -30,33 +30,10 @@ internal sealed class BuffsTabRenderer : IDetailTabRenderer
         var isLive = ctx.IsLive;
         var currentSnapshot = ctx.Snapshot;
 
-        List<StatusApplication> received;
-        List<StatusApplication> applied;
-
-        if (isLive)
-        {
-            received = statusTracker.GetStatusesReceived(combatant.Name);
-            applied = statusTracker.GetStatusHistory(combatant.Name);
-
-            if (received.Count == 0
-                && currentSnapshot?.StatusesReceived != null
-                && currentSnapshot.StatusesReceived.TryGetValue(combatant.Name, out var fallbackR))
-                received = fallbackR;
-
-            if (applied.Count == 0
-                && currentSnapshot?.StatusHistory != null
-                && currentSnapshot.StatusHistory.TryGetValue(combatant.Name, out var fallbackA))
-                applied = fallbackA;
-        }
-        else
-        {
-            received = currentSnapshot?.StatusesReceived != null
-                && currentSnapshot.StatusesReceived.TryGetValue(combatant.Name, out var savedR)
-                ? savedR : [];
-            applied = currentSnapshot?.StatusHistory != null
-                && currentSnapshot.StatusHistory.TryGetValue(combatant.Name, out var savedA)
-                ? savedA : [];
-        }
+        var received = GraphRenderHelper.ResolveTracked(isLive,
+            () => statusTracker.GetStatusesReceived(combatant.Name), currentSnapshot?.StatusesReceived, combatant.Name);
+        var applied = GraphRenderHelper.ResolveTracked(isLive,
+            () => statusTracker.GetStatusHistory(combatant.Name), currentSnapshot?.StatusHistory, combatant.Name);
 
         var snapshotDuration = DurationHelper.ParseDuration(currentSnapshot?.Encounter?.Duration, 60f);
         var encounterDuration = isLive ? Math.Max(snapshotDuration, statusTracker.ElapsedSeconds) : snapshotDuration;

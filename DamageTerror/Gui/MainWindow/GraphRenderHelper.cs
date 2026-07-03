@@ -61,6 +61,11 @@ internal struct GraphSettings
 
 internal static class GraphRenderHelper
 {
+    /// <summary>GraphView marker hover radius in screen pixels (squared for distance comparison).</summary>
+    public const float MarkerHoverRadiusPx = 16f;
+    /// <summary>Detail-graph marker hover threshold in normalized axis units (already squared/summed).</summary>
+    public const float DetailMarkerHoverThresholdSq = 0.03f * 0.03f + 0.08f * 0.08f;
+
     public static void PushGraphStyles(in GraphSettings settings)
     {
         ImPlot.PushStyleColor(ImPlotCol.Bg, settings.BackgroundColor);
@@ -342,84 +347,84 @@ internal static class GraphRenderHelper
         }
     }
 
-    public static List<SkillUseEvent> GetSourceEvents(
-        bool isLive, string combatantName,
-        Services.SkillTracker skillTracker, EncounterSnapshot? snapshot)
+    /// <summary>Builds parallel time/metric arrays from a sample list; metric arrays are null when not shown.</summary>
+    public static (float[] times, float[]? dps, float[]? hps, float[]? dtps) BuildSampleArrays(
+        List<GraphSample> samples, bool showDps, bool showHps, bool showDtps)
+    {
+        var times = new float[samples.Count];
+        var dps = showDps ? new float[samples.Count] : null;
+        var hps = showHps ? new float[samples.Count] : null;
+        var dtps = showDtps ? new float[samples.Count] : null;
+        for (var i = 0; i < samples.Count; i++)
+        {
+            times[i] = samples[i].TimeSec;
+            if (dps != null) dps[i] = samples[i].Dps;
+            if (hps != null) hps[i] = samples[i].Hps;
+            if (dtps != null) dtps[i] = samples[i].Dtps;
+        }
+        return (times, dps, hps, dtps);
+    }
+
+    /// <summary>Plots one metric line (with weight/color) plus its optional end-of-line value label.</summary>
+    public static void PlotMetricLine(string label, float[] times, float[] values, int count,
+        Vector4 color, float thickness, bool hidden, bool showLabels, Vector2 labelOffset)
+    {
+        if (hidden)
+            ImPlot.HideNextItem(true, ImPlotCond.Always);
+        ImPlot.PushStyleColor(ImPlotCol.Line, color);
+        ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
+        ImPlot.PlotLine(label, ref times[0], ref values[0], count);
+        ImPlot.PopStyleVar();
+        ImPlot.PopStyleColor();
+
+        if (showLabels && !hidden)
+        {
+            var lastVal = values[^1];
+            ImPlot.PushStyleColor(ImPlotCol.InlayText, color);
+            ImPlot.PlotText(FormatValue(lastVal), times[^1], lastVal, labelOffset);
+            ImPlot.PopStyleColor();
+        }
+    }
+
+    /// <summary>Emits the crit/direct-hit tooltip line for a marker, when crit markers are enabled.</summary>
+    public static void DrawCritMarkerLabel(in SkillUseEvent ev, SkillMarkerConfig mc)
+    {
+        if (!mc.ShowCritMarkers) return;
+        if (ev.IsCrit && ev.IsDirectHit)
+            ImGui.TextColored(mc.CritDirectHitMarkerColor, "Critical Direct Hit !!!");
+        else if (ev.IsDirectHit)
+            ImGui.TextColored(mc.DirectHitMarkerColor, "Direct Hit !!");
+        else if (ev.IsCrit)
+            ImGui.TextColored(mc.CritMarkerColor, "Critical !");
+    }
+
+    /// <summary>
+    /// Resolves per-combatant tracked data with the standard "live tracker → snapshot fallback → empty"
+    /// precedence used across the detail/graph renderers.
+    /// </summary>
+    public static List<T> ResolveTracked<T>(bool isLive, Func<List<T>> live,
+        IReadOnlyDictionary<string, List<T>>? snap, string name)
     {
         if (isLive)
         {
-            var events = skillTracker.GetSkillEvents(combatantName);
-            if (events.Count == 0
-                && snapshot?.SkillEvents != null
-                && snapshot.SkillEvents.TryGetValue(combatantName, out var fallback))
-            {
+            var data = live();
+            if (data.Count == 0 && snap != null && snap.TryGetValue(name, out var fallback) && fallback.Count > 0)
                 return fallback;
-            }
-            return events;
+            return data;
         }
 
-        if (snapshot?.SkillEvents != null
-            && snapshot.SkillEvents.TryGetValue(combatantName, out var saved))
-        {
-            return saved;
-        }
-
-        return [];
+        return snap != null && snap.TryGetValue(name, out var saved) && saved.Count > 0 ? saved : [];
     }
+
+    public static List<SkillUseEvent> GetSourceEvents(
+        bool isLive, string combatantName,
+        Services.SkillTracker skillTracker, EncounterSnapshot? snapshot)
+        => ResolveTracked(isLive, () => skillTracker.GetSkillEvents(combatantName), snapshot?.SkillEvents, combatantName);
 
     public static List<SkillUseEvent> GetDamageTakenEvents(
         bool isLive, string combatantName,
         Services.SkillTracker skillTracker, EncounterSnapshot? snapshot)
-    {
-        if (isLive)
-        {
-            var events = skillTracker.GetDamageTakenEvents(combatantName);
-            if (events.Count == 0
-                && snapshot?.DamageTakenEvents != null
-                && snapshot.DamageTakenEvents.TryGetValue(combatantName, out var fallback))
-            {
-                return fallback;
-            }
-            return events;
-        }
-
-        if (snapshot?.DamageTakenEvents != null
-            && snapshot.DamageTakenEvents.TryGetValue(combatantName, out var saved))
-        {
-            return saved;
-        }
-
-        return [];
-    }
-
-    public static List<GraphSample> GetSamples(
-        bool isLive, string combatantName,
-        GraphDataTracker graphTracker, EncounterSnapshot? snapshot)
-    {
-        if (isLive)
-        {
-            var samples = graphTracker.GetSamples(combatantName);
-            // Fall back to stored data when live tracker is empty
-            // (e.g. encounter restored from history after plugin reload)
-            if (samples.Count == 0
-                && snapshot?.GraphData != null
-                && snapshot.GraphData.TryGetValue(combatantName, out var fallback)
-                && fallback.Count > 0)
-            {
-                return fallback;
-            }
-            return samples;
-        }
-
-        if (snapshot?.GraphData != null
-            && snapshot.GraphData.TryGetValue(combatantName, out var saved)
-            && saved.Count > 0)
-        {
-            return saved;
-        }
-
-        return [];
-    }
+        => ResolveTracked(isLive, () => skillTracker.GetDamageTakenEvents(combatantName), snapshot?.DamageTakenEvents, combatantName);
 
     public static void DrawGraphContextMenu(Configuration config, bool isGraphView, string idSuffix)
     {

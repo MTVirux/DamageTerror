@@ -35,7 +35,10 @@ public sealed class GraphViewComponent
         var allSeries = new List<(CombatantEntry combatant, List<GraphSample> samples)>();
         foreach (var c in combatants)
         {
-            var samples = GraphRenderHelper.GetSamples(isLive, c.Name, graphTracker, snapshot);
+            // Live tracker, falling back to stored data when empty
+            // (e.g. encounter restored from history after plugin reload).
+            var samples = GraphRenderHelper.ResolveTracked(isLive,
+                () => graphTracker.GetSamples(c.Name), snapshot?.GraphData, c.Name);
 
             if (samples.Count >= 2)
                 allSeries.Add((c, samples));
@@ -96,39 +99,16 @@ public sealed class GraphViewComponent
                 var displayName = NameFormatHelper.GetDisplayName(combatant.Name, combatant.Job, isSelf, config);
                 string? primaryLabel = null;
 
-                var times = new float[samples.Count];
-                var dpsVals = showDps ? new float[samples.Count] : null;
-                var hpsVals = showHps ? new float[samples.Count] : null;
-                var dtpsVals = showDtps ? new float[samples.Count] : null;
-
-                for (var i = 0; i < samples.Count; i++)
-                {
-                    times[i] = samples[i].TimeSec;
-                    if (dpsVals != null) dpsVals[i] = samples[i].Dps;
-                    if (hpsVals != null) hpsVals[i] = samples[i].Hps;
-                    if (dtpsVals != null) dtpsVals[i] = samples[i].Dtps;
-                }
+                var (times, dpsVals, hpsVals, dtpsVals) =
+                    GraphRenderHelper.BuildSampleArrays(samples, showDps, showHps, showDtps);
 
                 void PlotMetricLine(float[] values, Vector4 color, string suffix)
                 {
                     var label = metricCount > 1 ? $"{displayName} ({suffix})" : displayName;
                     primaryLabel ??= label;
                     legendLabels.Add((label, combatant.Name));
-                    if (hiddenLegendEntries.Contains(label))
-                        ImPlot.HideNextItem(true, ImPlotCond.Always);
-                    ImPlot.PushStyleColor(ImPlotCol.Line, color);
-                    ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
-                    ImPlot.PlotLine(label, ref times[0], ref values[0], samples.Count);
-                    ImPlot.PopStyleVar();
-                    ImPlot.PopStyleColor();
-
-                    if (config.GraphViewShowLabels && !hiddenLegendEntries.Contains(label))
-                    {
-                        var lastVal = values[^1];
-                        ImPlot.PushStyleColor(ImPlotCol.InlayText, color);
-                        ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
-                        ImPlot.PopStyleColor();
-                    }
+                    GraphRenderHelper.PlotMetricLine(label, times, values, samples.Count, color, thickness,
+                        hiddenLegendEntries.Contains(label), config.GraphViewShowLabels, labelOffset);
                 }
 
                 if (dpsVals != null)
@@ -227,17 +207,7 @@ public sealed class GraphViewComponent
                 {
                     if (hiddenNames.Contains(combatant.Name)) continue;
 
-                    var ts = new float[samples.Count];
-                    var dv = showDps ? new float[samples.Count] : null;
-                    var hv = showHps ? new float[samples.Count] : null;
-                    var tv = showDtps ? new float[samples.Count] : null;
-                    for (var i = 0; i < samples.Count; i++)
-                    {
-                        ts[i] = samples[i].TimeSec;
-                        if (dv != null) dv[i] = samples[i].Dps;
-                        if (hv != null) hv[i] = samples[i].Hps;
-                        if (tv != null) tv[i] = samples[i].Dtps;
-                    }
+                    var (ts, dv, hv, tv) = GraphRenderHelper.BuildSampleArrays(samples, showDps, showHps, showDtps);
 
                     List<SkillUseEvent>? sourceEvents = null;
                     if ((ttDpsMc?.ShowMarkers == true && dv != null)
@@ -277,7 +247,7 @@ public sealed class GraphViewComponent
 
                 // Threshold in pseudo-pixel units (16 px radius when not zoomed,
                 // proportionally tighter when zoomed in).
-                var hoverRadiusSq = 16f * 16f;
+                var hoverRadiusSq = GraphRenderHelper.MarkerHoverRadiusPx * GraphRenderHelper.MarkerHoverRadiusPx;
                 if (bestEvent.HasValue && bestDist <= hoverRadiusSq)
                 {
                     ImGui.BeginTooltip();
@@ -292,14 +262,7 @@ public sealed class GraphViewComponent
                         ImGui.TextColored(bestMc?.DoTApplicationColor ?? new Vector4(0.9f, 0.3f, 0.9f, 0.95f),
                             bestEvent.Value.IsDoTApplication ? "DoT Application" : "HoT Application");
                     else if (bestMc?.ShowCritMarkers == true)
-                    {
-                        if (bestEvent.Value.IsCrit && bestEvent.Value.IsDirectHit)
-                            ImGui.TextColored(bestMc.CritDirectHitMarkerColor, "Critical Direct Hit !!!");
-                        else if (bestEvent.Value.IsDirectHit)
-                            ImGui.TextColored(bestMc.DirectHitMarkerColor, "Direct Hit !!");
-                        else if (bestEvent.Value.IsCrit)
-                            ImGui.TextColored(bestMc.CritMarkerColor, "Critical !");
-                    }
+                        GraphRenderHelper.DrawCritMarkerLabel(bestEvent.Value, bestMc);
                     ImGui.EndTooltip();
                 }
             }

@@ -20,23 +20,8 @@ internal sealed class ItemsTabRenderer : IDetailTabRenderer
         var isLive = ctx.IsLive;
         var currentSnapshot = ctx.Snapshot;
 
-        List<SkillUseEvent> items;
-
-        if (isLive)
-        {
-            items = skillTracker.GetItemEvents(combatant.Name);
-
-            if (items.Count == 0
-                && currentSnapshot?.ItemEvents != null
-                && currentSnapshot.ItemEvents.TryGetValue(combatant.Name, out var fallback))
-                items = fallback;
-        }
-        else
-        {
-            items = currentSnapshot?.ItemEvents != null
-                && currentSnapshot.ItemEvents.TryGetValue(combatant.Name, out var saved)
-                ? saved : [];
-        }
+        var items = GraphRenderHelper.ResolveTracked(isLive,
+            () => skillTracker.GetItemEvents(combatant.Name), currentSnapshot?.ItemEvents, combatant.Name);
 
         if (items.Count == 0)
         {

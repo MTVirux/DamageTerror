@@ -24,7 +24,8 @@ internal sealed class GraphTabRenderer : IDetailTabRenderer
         var isLive = ctx.IsLive;
         var currentSnapshot = ctx.Snapshot;
 
-        var samples = GraphRenderHelper.GetSamples(isLive, combatant.Name, graphTracker, currentSnapshot);
+        var samples = GraphRenderHelper.ResolveTracked(isLive,
+            () => graphTracker.GetSamples(combatant.Name), currentSnapshot?.GraphData, combatant.Name);
 
         if (samples.Count < 2)
         {
@@ -42,18 +43,8 @@ internal sealed class GraphTabRenderer : IDetailTabRenderer
 
         using var graphFont = FontScope.Push(config.GetFontScale(config.GraphFontSize));
 
-        var times = new float[samples.Count];
-        var dpsVals = config.GraphShowDps ? new float[samples.Count] : null;
-        var hpsVals = config.GraphShowHps ? new float[samples.Count] : null;
-        var dtpsVals = config.GraphShowDtps ? new float[samples.Count] : null;
-
-        for (var i = 0; i < samples.Count; i++)
-        {
-            times[i] = samples[i].TimeSec;
-            if (dpsVals != null) dpsVals[i] = samples[i].Dps;
-            if (hpsVals != null) hpsVals[i] = samples[i].Hps;
-            if (dtpsVals != null) dtpsVals[i] = samples[i].Dtps;
-        }
+        var (times, dpsVals, hpsVals, dtpsVals) =
+            GraphRenderHelper.BuildSampleArrays(samples, config.GraphShowDps, config.GraphShowHps, config.GraphShowDtps);
 
         var maxTime = times[^1];
         if (maxTime <= 0f) maxTime = 1f;
@@ -82,23 +73,8 @@ internal sealed class GraphTabRenderer : IDetailTabRenderer
             var dtpsHidden = state.HiddenLegendEntries.Contains("iDTPS");
 
             void PlotMetricLine(float[] values, Vector4 color, string label, bool hidden)
-            {
-                if (hidden)
-                    ImPlot.HideNextItem(true, ImPlotCond.Always);
-                ImPlot.PushStyleColor(ImPlotCol.Line, color);
-                ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, thickness);
-                ImPlot.PlotLine(label, ref times[0], ref values[0], samples.Count);
-                ImPlot.PopStyleVar();
-                ImPlot.PopStyleColor();
-
-                if (config.GraphShowLabels && !hidden)
-                {
-                    var lastVal = values[^1];
-                    ImPlot.PushStyleColor(ImPlotCol.InlayText, color);
-                    ImPlot.PlotText(GraphRenderHelper.FormatValue(lastVal), times[^1], lastVal, labelOffset);
-                    ImPlot.PopStyleColor();
-                }
-            }
+                => GraphRenderHelper.PlotMetricLine(label, times, values, samples.Count, color, thickness,
+                    hidden, config.GraphShowLabels, labelOffset);
 
             if (dpsVals != null)
                 PlotMetricLine(dpsVals, config.GraphDpsColor, "iDPS", dpsHidden);
@@ -185,20 +161,13 @@ internal sealed class GraphTabRenderer : IDetailTabRenderer
                         FindNearestDetail(ev, times, dtpsVals, dtpsMc);
                 }
 
-                if (bestEvent.HasValue && bestDist < 0.03f * 0.03f + 0.08f * 0.08f)
+                if (bestEvent.HasValue && bestDist < GraphRenderHelper.DetailMarkerHoverThresholdSq)
                 {
                     ImGui.BeginTooltip();
                     ImGui.Text(bestEvent.Value.SkillName);
                     ImGui.Text(GraphRenderHelper.FormatValue(bestEvent.Value.Amount));
                     if (bestMc?.ShowCritMarkers == true)
-                    {
-                        if (bestEvent.Value.IsCrit && bestEvent.Value.IsDirectHit)
-                            ImGui.TextColored(bestMc.CritDirectHitMarkerColor, "Critical Direct Hit !!!");
-                        else if (bestEvent.Value.IsDirectHit)
-                            ImGui.TextColored(bestMc.DirectHitMarkerColor, "Direct Hit !!");
-                        else if (bestEvent.Value.IsCrit)
-                            ImGui.TextColored(bestMc.CritMarkerColor, "Critical !");
-                    }
+                        GraphRenderHelper.DrawCritMarkerLabel(bestEvent.Value, bestMc);
                     ImGui.EndTooltip();
                 }
             }
