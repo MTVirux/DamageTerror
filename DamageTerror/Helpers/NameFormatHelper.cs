@@ -1,4 +1,3 @@
-
 namespace DamageTerror.Helpers;
 
 public static class NameFormatHelper

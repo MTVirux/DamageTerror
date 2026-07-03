@@ -1,4 +1,3 @@
-
 namespace DamageTerror.Helpers;
 
 /// <summary>

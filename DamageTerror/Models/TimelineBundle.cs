@@ -20,22 +20,12 @@ public sealed class TimelineBundle
     [OnDeserialized]
     internal void OnDeserialized(StreamingContext context)
     {
-        GraphData = EnsureCaseInsensitive(GraphData);
-        SkillEvents = EnsureCaseInsensitive(SkillEvents);
-        DamageTakenEvents = EnsureCaseInsensitive(DamageTakenEvents);
-        ItemEvents = EnsureCaseInsensitive(ItemEvents);
-        StatusHistory = EnsureCaseInsensitive(StatusHistory);
-        StatusesReceived = EnsureCaseInsensitive(StatusesReceived);
-    }
-
-    private static Dictionary<string, List<TValue>> EnsureCaseInsensitive<TValue>(
-        Dictionary<string, List<TValue>>? dict)
-    {
-        if (dict is null)
-            return new Dictionary<string, List<TValue>>(StringComparer.OrdinalIgnoreCase);
-        if (dict.Count > 0 && dict.Comparer != StringComparer.OrdinalIgnoreCase)
-            return new Dictionary<string, List<TValue>>(dict, StringComparer.OrdinalIgnoreCase);
-        return dict;
+        GraphData = DictionaryHelpers.EnsureCaseInsensitive(GraphData);
+        SkillEvents = DictionaryHelpers.EnsureCaseInsensitive(SkillEvents);
+        DamageTakenEvents = DictionaryHelpers.EnsureCaseInsensitive(DamageTakenEvents);
+        ItemEvents = DictionaryHelpers.EnsureCaseInsensitive(ItemEvents);
+        StatusHistory = DictionaryHelpers.EnsureCaseInsensitive(StatusHistory);
+        StatusesReceived = DictionaryHelpers.EnsureCaseInsensitive(StatusesReceived);
     }
 
     public static TimelineBundle FromSnapshot(EncounterSnapshot snapshot)

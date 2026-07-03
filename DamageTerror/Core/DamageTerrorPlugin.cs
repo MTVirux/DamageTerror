@@ -21,6 +21,8 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public ConfigBackupService ConfigBackup { get; private set; } = null!;
 
+    private const string CommandName = "/dt";
+
     private readonly WindowSystem windowSystem = new(typeof(DamageTerrorPlugin).AssemblyQualifiedName);
     private readonly Gui.MainWindow.MainWindow mainWindow;
     private readonly Gui.ConfigWindow.ConfigWindow configWindow;
@@ -157,7 +159,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         Svc.ClientState.TerritoryChanged += this.OnTerritoryChanged;
 
-        this.commandManager.AddHandler("/dt", new CommandInfo(this.OnCommand)
+        this.commandManager.AddHandler(CommandName, new CommandInfo(this.OnCommand)
         {
             HelpMessage = "Toggle the meter window. Subcommands: config, toggle <group>",
         });
@@ -217,7 +219,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         SafeDispose(() => this.PluginInterface.UiBuilder.OpenConfigUi -= this.OpenConfigUi);
         SafeDispose(() => this.PluginInterface.UiBuilder.OpenMainUi -= this.OpenMainUi);
         SafeDispose(() => Svc.ClientState.TerritoryChanged -= this.OnTerritoryChanged);
-        SafeDispose(() => this.commandManager.RemoveHandler("/dt"));
+        SafeDispose(() => this.commandManager.RemoveHandler(CommandName));
 
         SafeDispose(() => this.windowSystem.RemoveAllWindows());
 

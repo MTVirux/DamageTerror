@@ -7,6 +7,9 @@ namespace DamageTerror.Helpers;
 
 public sealed class GifAnimator : IDisposable
 {
+    private const int DefaultFrameDelayMs = 100;
+    private const int GifFrameDelayPropertyId = 0x5100;
+
     private readonly ISharedImmediateTexture[] frameTextures;
     private readonly int[] frameDelaysMs;
     private readonly int totalDurationMs;
@@ -30,17 +33,17 @@ public sealed class GifAnimator : IDisposable
         frameTextures = new ISharedImmediateTexture[frameCount];
         frameDelaysMs = new int[frameCount];
 
-        // Property 0x5100 = frame delay in hundredths of a second
+        // Frame delay in hundredths of a second
         byte[]? delayBytes = null;
-        try { delayBytes = image.GetPropertyItem(0x5100)?.Value; }
+        try { delayBytes = image.GetPropertyItem(GifFrameDelayPropertyId)?.Value; }
         catch (Exception ex) { ServiceManager.LogDebug(LogChannel.GifAnimator, $"GIF frame delay property not found: {ex.Message}"); }
 
         for (var i = 0; i < frameCount; i++)
         {
-            var delay = 100; // default 100ms
+            var delay = DefaultFrameDelayMs;
             if (delayBytes != null && delayBytes.Length >= (i + 1) * 4)
                 delay = BitConverter.ToInt32(delayBytes, i * 4) * 10;
-            if (delay <= 0) delay = 100;
+            if (delay <= 0) delay = DefaultFrameDelayMs;
             frameDelaysMs[i] = delay;
 
             image.SelectActiveFrame(dimension, i);
@@ -62,7 +65,7 @@ public sealed class GifAnimator : IDisposable
         }
 
         totalDurationMs = frameDelaysMs.Sum();
-        if (totalDurationMs <= 0) totalDurationMs = frameCount * 100;
+        if (totalDurationMs <= 0) totalDurationMs = frameCount * DefaultFrameDelayMs;
     }
 
     public bool TryGetCurrentFrame(out ImTextureID handle, out int width, out int height)
