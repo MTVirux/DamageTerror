@@ -18,21 +18,22 @@ internal static class MeterTabStatusBarSection
         ImGui.Spacing();
         ImGui.TextDisabled("Metrics");
         tab.StatusBarMetrics ??= new List<BarColumn> { BarColumn.Dps, BarColumn.EncDps };
-        Func<BarColumn, bool> sbExtras = col =>
-        {
-            var extChanged = false;
-            extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "sbLbl_",
-                ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
-                tab.StatusBarMetricLabels, MetricPicker.GetBarColumnLabel(col));
-            extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "sbClr", tab.ColumnValueColors);
-            return extChanged;
-        };
         changed |= MetricPicker.Draw("statusBar", tab.StatusBarMetrics,
             MetricPicker.GetBarColumnLabel,
             MetricPicker.BarColumnCategories,
-            sbExtras,
+            col => DrawStatusBarExtras(tab, col),
             c => MetricPicker.BarColumnDescriptions.GetValueOrDefault(c));
 
         return changed;
+    }
+
+    private static bool DrawStatusBarExtras(MeterTab tab, BarColumn col)
+    {
+        var extChanged = false;
+        extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "sbLbl_",
+            ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
+            tab.StatusBarMetricLabels, MetricPicker.GetBarColumnLabel(col));
+        extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "sbClr", tab.ColumnValueColors);
+        return extChanged;
     }
 }

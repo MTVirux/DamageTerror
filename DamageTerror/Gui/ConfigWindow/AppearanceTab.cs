@@ -13,6 +13,8 @@ public sealed class AppearanceTab
 
     internal static readonly FileDialogManager FileDialogManager = new();
 
+    private static readonly Vector4 DimColor = new(0.6f, 0.6f, 0.6f, 1f);
+
     public AppearanceTab(PresetManager presetManager)
     {
         this.presetManager = presetManager;
@@ -226,8 +228,6 @@ public sealed class AppearanceTab
 
     private static void DrawPresetBreakdown(ThemePreset preset)
     {
-        var dimColor = new Vector4(0.6f, 0.6f, 0.6f, 1f);
-
         if (ImGui.CollapsingHeader("Bars##presetBars", ImGuiTreeNodeFlags.DefaultOpen))
         {
             ImGui.Indent();
@@ -407,7 +407,7 @@ public sealed class AppearanceTab
 
     private static void PresetRow(string label, string value)
     {
-        ImGui.TextColored(new Vector4(0.6f, 0.6f, 0.6f, 1f), label + ":");
+        ImGui.TextColored(DimColor, label + ":");
         ImGui.SameLine();
         ImGui.Text(value);
     }
@@ -430,6 +430,6 @@ public sealed class AppearanceTab
     {
         ImGui.ColorButton($"##prev_{label}", color, ImGuiColorEditFlags.NoTooltip | ImGuiColorEditFlags.NoPicker, new Vector2(12, 12));
         ImGui.SameLine();
-        ImGui.TextColored(new Vector4(0.6f, 0.6f, 0.6f, 1f), label);
+        ImGui.TextColored(DimColor, label);
     }
 }

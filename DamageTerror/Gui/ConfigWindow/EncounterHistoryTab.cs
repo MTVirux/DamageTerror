@@ -17,24 +17,14 @@ public sealed class EncounterHistoryTab
     public EncounterHistoryTab(DamageTerrorPlugin plugin)
     {
         this.plugin = plugin;
-        SyncPendingValue();
-        SyncPendingTimelineValue();
+        var config = plugin.Config;
+        SyncPending(config.HistoryLimitMode, config.MaxEncounterHistory, config.MaxEncounterHistoryDays, ref pendingLimitValue);
+        SyncPending(config.TimelineRetentionMode, config.MaxTimelineCount, config.MaxTimelineDays, ref pendingTimelineLimitValue);
     }
 
-    private void SyncPendingValue()
+    private static void SyncPending(HistoryLimitMode mode, int countValue, int daysValue, ref int pending)
     {
-        var config = plugin.Config;
-        pendingLimitValue = config.HistoryLimitMode == HistoryLimitMode.Count
-            ? config.MaxEncounterHistory
-            : config.MaxEncounterHistoryDays;
-    }
-
-    private void SyncPendingTimelineValue()
-    {
-        var config = plugin.Config;
-        pendingTimelineLimitValue = config.TimelineRetentionMode == HistoryLimitMode.Count
-            ? config.MaxTimelineCount
-            : config.MaxTimelineDays;
+        pending = mode == HistoryLimitMode.Count ? countValue : daysValue;
     }
 
     private void DrawRetentionLimit(
@@ -121,7 +111,7 @@ public sealed class EncounterHistoryTab
             "Apply##historyLimitApply",
             ref pendingLimitValue,
             config.HistoryLimitMode,
-            onModeChanged: m => { config.HistoryLimitMode = m; config.Save?.Invoke(); SyncPendingValue(); },
+            onModeChanged: m => { config.HistoryLimitMode = m; config.Save?.Invoke(); SyncPending(config.HistoryLimitMode, config.MaxEncounterHistory, config.MaxEncounterHistoryDays, ref pendingLimitValue); },
             countMin: 1,
             daysMin: 1,
             applyCount: v => config.MaxEncounterHistory = v,
@@ -138,7 +128,7 @@ public sealed class EncounterHistoryTab
             "Apply##timelineLimitApply",
             ref pendingTimelineLimitValue,
             config.TimelineRetentionMode,
-            onModeChanged: m => { config.TimelineRetentionMode = m; config.Save?.Invoke(); SyncPendingTimelineValue(); },
+            onModeChanged: m => { config.TimelineRetentionMode = m; config.Save?.Invoke(); SyncPending(config.TimelineRetentionMode, config.MaxTimelineCount, config.MaxTimelineDays, ref pendingTimelineLimitValue); },
             countMin: 0,
             daysMin: 1,
             applyCount: v => config.MaxTimelineCount = v,

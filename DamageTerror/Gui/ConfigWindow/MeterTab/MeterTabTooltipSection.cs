@@ -12,20 +12,21 @@ internal static class MeterTabTooltipSection
         changed |= ConfigHelpers.SliderIntProp("Top skills to show", tab.TooltipTopSkillCount, 1, 10, v => tab.TooltipTopSkillCount = v, 200);
         ImGui.Spacing();
 
-        Func<TooltipField, bool> tooltipExtras = field =>
-        {
-            var extChanged = false;
-            extChanged |= MeterTabSectionHelpers.DrawLabelOverride(field, "ttLbl_",
-                ColumnLabels.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString()),
-                tab.TooltipFieldLabels, MetricPicker.GetTooltipFieldLabel(field));
-            return extChanged;
-        };
         changed |= MetricPicker.Draw("tooltip", tab.TooltipFields,
             MetricPicker.GetTooltipFieldLabel,
             MetricPicker.TooltipFieldCategories,
-            tooltipExtras,
+            field => DrawTooltipExtras(tab, field),
             f => MetricPicker.TooltipFieldDescriptions.GetValueOrDefault(f));
 
         return changed;
+    }
+
+    private static bool DrawTooltipExtras(MeterTab tab, TooltipField field)
+    {
+        var extChanged = false;
+        extChanged |= MeterTabSectionHelpers.DrawLabelOverride(field, "ttLbl_",
+            ColumnLabels.DefaultTooltipFieldLabels.GetValueOrDefault(field, field.ToString()),
+            tab.TooltipFieldLabels, MetricPicker.GetTooltipFieldLabel(field));
+        return extChanged;
     }
 }

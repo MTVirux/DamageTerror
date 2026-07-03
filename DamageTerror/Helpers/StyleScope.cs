@@ -15,6 +15,14 @@ public readonly struct StyleScope : IDisposable
         return new StyleScope(1);
     }
 
+    public static StyleScope PushColorIf(bool condition, ImGuiCol idx, Vector4 color)
+    {
+        if (!condition)
+            return new StyleScope(0);
+        ImGui.PushStyleColor(idx, color);
+        return new StyleScope(1);
+    }
+
     public static StyleScope PushColors(params ReadOnlySpan<(ImGuiCol Idx, Vector4 Color)> colors)
     {
         foreach (var (idx, color) in colors)

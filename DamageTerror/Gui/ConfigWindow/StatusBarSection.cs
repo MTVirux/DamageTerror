@@ -18,42 +18,14 @@ internal static class StatusBarSection
 
         if (ImGui.CollapsingHeader("Colors##statusbar", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var activeColor = config.StatusBarActiveColor;
-            if (ImGui.ColorEdit4("In combat##statusbar", ref activeColor))
-            {
-                config.StatusBarActiveColor = activeColor;
-                changed = true;
-            }
-
-            var inactiveColor = config.StatusBarInactiveColor;
-            if (ImGui.ColorEdit4("Out of combat##statusbar", ref inactiveColor))
-            {
-                config.StatusBarInactiveColor = inactiveColor;
-                changed = true;
-            }
-
-            var labelColor = config.StatusBarLabelColor;
-            if (ImGui.ColorEdit4("Labels##statusbar", ref labelColor))
-            {
-                config.StatusBarLabelColor = labelColor;
-                changed = true;
-            }
-
-            var bgColor = config.StatusBarBackgroundColor;
-            if (ImGui.ColorEdit4("Background##statusbar", ref bgColor))
-            {
-                config.StatusBarBackgroundColor = bgColor;
-                changed = true;
-            }
+            changed |= ConfigHelpers.ColorEditProp("In combat##statusbar", config.StatusBarActiveColor, v => config.StatusBarActiveColor = v, ImGuiColorEditFlags.None);
+            changed |= ConfigHelpers.ColorEditProp("Out of combat##statusbar", config.StatusBarInactiveColor, v => config.StatusBarInactiveColor = v, ImGuiColorEditFlags.None);
+            changed |= ConfigHelpers.ColorEditProp("Labels##statusbar", config.StatusBarLabelColor, v => config.StatusBarLabelColor = v, ImGuiColorEditFlags.None);
+            changed |= ConfigHelpers.ColorEditProp("Background##statusbar", config.StatusBarBackgroundColor, v => config.StatusBarBackgroundColor = v, ImGuiColorEditFlags.None);
 
             if (config.ShowStatusBarSeparator)
             {
-                var sepColor = config.StatusBarSeparatorColor;
-                if (ImGui.ColorEdit4("Separator##statusbar", ref sepColor))
-                {
-                    config.StatusBarSeparatorColor = sepColor;
-                    changed = true;
-                }
+                changed |= ConfigHelpers.ColorEditProp("Separator##statusbar", config.StatusBarSeparatorColor, v => config.StatusBarSeparatorColor = v, ImGuiColorEditFlags.None);
             }
         }
 

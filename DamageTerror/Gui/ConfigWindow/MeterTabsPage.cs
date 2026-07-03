@@ -100,9 +100,8 @@ public static class MeterTabsPage
         if (!canMoveUp) ImGui.BeginDisabled();
         if (ImGui.Button("^##moveUp"))
         {
-            var tmp = config.MeterTabs[selectedTabIndex];
-            config.MeterTabs[selectedTabIndex] = config.MeterTabs[selectedTabIndex - 1];
-            config.MeterTabs[selectedTabIndex - 1] = tmp;
+            (config.MeterTabs[selectedTabIndex - 1], config.MeterTabs[selectedTabIndex]) =
+                (config.MeterTabs[selectedTabIndex], config.MeterTabs[selectedTabIndex - 1]);
             selectedTabIndex--;
             changed = true;
         }
@@ -113,9 +112,8 @@ public static class MeterTabsPage
         if (!canMoveDown) ImGui.BeginDisabled();
         if (ImGui.Button("v##moveDown"))
         {
-            var tmp = config.MeterTabs[selectedTabIndex];
-            config.MeterTabs[selectedTabIndex] = config.MeterTabs[selectedTabIndex + 1];
-            config.MeterTabs[selectedTabIndex + 1] = tmp;
+            (config.MeterTabs[selectedTabIndex + 1], config.MeterTabs[selectedTabIndex]) =
+                (config.MeterTabs[selectedTabIndex], config.MeterTabs[selectedTabIndex + 1]);
             selectedTabIndex++;
             changed = true;
         }

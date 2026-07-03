@@ -35,36 +35,10 @@ internal static class MeterTabContentSection
 
             var enabledCols = tab.ColumnOrder.Where(c => tab.IsColumnVisible(c)).ToList();
 
-            Func<BarColumn, bool> barColExtras = col =>
-            {
-                var extChanged = false;
-
-                extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "hdr_",
-                    ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
-                    tab.ColumnHeaderLabels, MetricPicker.GetBarColumnLabel(col));
-
-                if (tab.ColumnFormatOverrides != null && ColumnFormatOverride.SupportsFormatting(col))
-                {
-                    extChanged |= MeterTabSectionHelpers.DrawColumnButtonPopup(col, "F", "fmt",
-                        tab.ColumnFormatOverrides.ContainsKey(col), new Vector4(0.4f, 0.8f, 1.0f, 1.0f),
-                        "Custom format (click to edit)", "Set custom format",
-                        () => ColumnFormatHelper.DrawColumnFormatPopup(col, tab.ColumnFormatOverrides));
-                }
-
-                extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "clr", tab.ColumnValueColors);
-
-                extChanged |= MeterTabSectionHelpers.DrawColumnButtonPopup(col, "W", "wid",
-                    tab.ColumnWidthOverrides.ContainsKey(col), new Vector4(0.4f, 1.0f, 0.4f, 1.0f),
-                    "Custom width (click to edit)", "Set custom column width",
-                    () => DrawColumnWidthPopup(col, tab.ColumnWidthOverrides));
-
-                return extChanged;
-            };
-
             if (MetricPicker.Draw("barCols", enabledCols,
                 MetricPicker.GetBarColumnLabel,
                 MetricPicker.BarColumnCategories,
-                barColExtras,
+                col => DrawBarColExtras(tab, col),
                 c => MetricPicker.BarColumnDescriptions.GetValueOrDefault(c)))
             {
                 var newEnabledSet = new HashSet<BarColumn>(enabledCols);
@@ -79,6 +53,32 @@ internal static class MeterTabContentSection
         }
 
         return changed;
+    }
+
+    private static bool DrawBarColExtras(MeterTab tab, BarColumn col)
+    {
+        var extChanged = false;
+
+        extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "hdr_",
+            ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
+            tab.ColumnHeaderLabels, MetricPicker.GetBarColumnLabel(col));
+
+        if (tab.ColumnFormatOverrides != null && ColumnFormatOverride.SupportsFormatting(col))
+        {
+            extChanged |= MeterTabSectionHelpers.DrawColumnButtonPopup(col, "F", "fmt",
+                tab.ColumnFormatOverrides.ContainsKey(col), new Vector4(0.4f, 0.8f, 1.0f, 1.0f),
+                "Custom format (click to edit)", "Set custom format",
+                () => ColumnFormatHelper.DrawColumnFormatPopup(col, tab.ColumnFormatOverrides));
+        }
+
+        extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "clr", tab.ColumnValueColors);
+
+        extChanged |= MeterTabSectionHelpers.DrawColumnButtonPopup(col, "W", "wid",
+            tab.ColumnWidthOverrides.ContainsKey(col), new Vector4(0.4f, 1.0f, 0.4f, 1.0f),
+            "Custom width (click to edit)", "Set custom column width",
+            () => DrawColumnWidthPopup(col, tab.ColumnWidthOverrides));
+
+        return extChanged;
     }
 
     private static bool DrawColumnWidthPopup(BarColumn col, Dictionary<BarColumn, float> widths)

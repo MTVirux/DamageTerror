@@ -52,12 +52,11 @@ internal static class MeterTabSectionHelpers
         var changed = false;
 
         ImGui.SameLine();
-        if (highlighted)
-            ImGui.PushStyleColor(ImGuiCol.Text, highlightColor);
-        if (ImGui.SmallButton($"{buttonLabel}##{idSlug}_{col}"))
-            ImGui.OpenPopup($"##{idSlug}Popup_{col}");
-        if (highlighted)
-            ImGui.PopStyleColor();
+        using (StyleScope.PushColorIf(highlighted, ImGuiCol.Text, highlightColor))
+        {
+            if (ImGui.SmallButton($"{buttonLabel}##{idSlug}_{col}"))
+                ImGui.OpenPopup($"##{idSlug}Popup_{col}");
+        }
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(highlighted ? tooltipOn : tooltipOff);
         if (ImGui.BeginPopup($"##{idSlug}Popup_{col}"))

@@ -2,10 +2,11 @@ namespace DamageTerror.Gui.ConfigWindow;
 
 public static class ConfigHelpers
 {
-    public static bool ColorEditProp(string label, Vector4 color, Action<Vector4> setter)
+    public static bool ColorEditProp(string label, Vector4 color, Action<Vector4> setter,
+        ImGuiColorEditFlags flags = ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar)
     {
         var c = color;
-        if (ImGui.ColorEdit4(label, ref c, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
+        if (ImGui.ColorEdit4(label, ref c, flags))
         {
             setter(c);
             return true;

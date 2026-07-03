@@ -43,39 +43,11 @@ internal static class MeterTabDetailsSection
 
         ImGui.Spacing();
 
-        Func<BarColumn, bool> detailExtras = col =>
-        {
-            var extChanged = false;
-            extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "dtLbl_",
-                ColumnLabels.DefaultDetailColumnLabels.GetValueOrDefault(col, col.ToString()),
-                tab.DetailColumnLabels, MetricPicker.GetBarColumnLabel(col));
-
-            extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "dtClr", tab.ColumnValueColors);
-
-            ImGui.SameLine();
-            var hasNewLine = tab.DetailNewLineColumns.Contains(col);
-            if (hasNewLine)
-                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.3f, 0.85f, 1f, 1f));
-            if (ImGui.SmallButton($"NL##dtNl_{col}"))
-            {
-                if (hasNewLine)
-                    tab.DetailNewLineColumns.Remove(col);
-                else
-                    tab.DetailNewLineColumns.Add(col);
-                extChanged = true;
-            }
-            if (hasNewLine)
-                ImGui.PopStyleColor();
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Starts a new line with this metric");
-
-            return extChanged;
-        };
         changed |= MetricPicker.DrawCategorized("detailVis", tab.DetailVisibleColumns,
             MetricPicker.GetBarColumnLabel,
             MetricPicker.BarColumnCategories,
             tab.DetailSectionOrder,
-            detailExtras,
+            col => DrawDetailExtras(tab, col),
             c => MetricPicker.BarColumnDescriptions.GetValueOrDefault(c));
 
         ImGui.Spacing();
@@ -90,5 +62,33 @@ internal static class MeterTabDetailsSection
         }
 
         return changed;
+    }
+
+    private static bool DrawDetailExtras(MeterTab tab, BarColumn col)
+    {
+        var extChanged = false;
+        extChanged |= MeterTabSectionHelpers.DrawLabelOverride(col, "dtLbl_",
+            ColumnLabels.DefaultDetailColumnLabels.GetValueOrDefault(col, col.ToString()),
+            tab.DetailColumnLabels, MetricPicker.GetBarColumnLabel(col));
+
+        extChanged |= MeterTabSectionHelpers.DrawColorButton(col, "dtClr", tab.ColumnValueColors);
+
+        ImGui.SameLine();
+        var hasNewLine = tab.DetailNewLineColumns.Contains(col);
+        using (StyleScope.PushColorIf(hasNewLine, ImGuiCol.Text, new Vector4(0.3f, 0.85f, 1f, 1f)))
+        {
+            if (ImGui.SmallButton($"NL##dtNl_{col}"))
+            {
+                if (hasNewLine)
+                    tab.DetailNewLineColumns.Remove(col);
+                else
+                    tab.DetailNewLineColumns.Add(col);
+                extChanged = true;
+            }
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Starts a new line with this metric");
+
+        return extChanged;
     }
 }
