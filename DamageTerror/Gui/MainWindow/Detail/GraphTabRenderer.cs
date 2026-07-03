@@ -1,4 +1,3 @@
-using ImPlot = Dalamud.Bindings.ImPlot.ImPlot;
 
 namespace DamageTerror.Gui.MainWindow.Detail;
 

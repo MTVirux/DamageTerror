@@ -504,7 +504,7 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
 
         try
         {
-            var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "DamageTerror", "gif_frames");
+            var tempDir = Path.Combine(Path.GetTempPath(), "DamageTerror", "gif_frames");
             gifAnimator = new GifAnimator(textureProvider, path, tempDir);
         }
         catch
@@ -516,7 +516,7 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
     private void DrawBackgroundImage()
     {
         var path = plugin.Config.BackgroundImagePath;
-        if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
         {
             if (gifAnimatorPath != null)
             {

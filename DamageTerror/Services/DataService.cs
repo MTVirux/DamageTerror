@@ -65,7 +65,7 @@ public sealed class DataService : IDisposable
 
         Store = new EncounterStore(config);
 
-        var savePath = System.IO.Path.Combine(configDir, "encounters.json");
+        var savePath = Path.Combine(configDir, "encounters.json");
         Store.SetSavePath(savePath);
         Store.Load();
         log.Debug($"Encounter history loaded from {savePath}");

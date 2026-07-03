@@ -39,7 +39,7 @@ public sealed class EncounterStore
                 return 0;
             try
             {
-                var info = new System.IO.FileInfo(savePath);
+                var info = new FileInfo(savePath);
                 return info.Exists ? info.Length : 0;
             }
             catch { return 0; }
@@ -495,7 +495,7 @@ public sealed class EncounterStore
 
     public void Load()
     {
-        if (string.IsNullOrEmpty(savePath) || !System.IO.File.Exists(savePath))
+        if (string.IsNullOrEmpty(savePath) || !File.Exists(savePath))
         {
             loadedSuccessfully = true;
             return;
@@ -503,7 +503,7 @@ public sealed class EncounterStore
 
         try
         {
-            var json = System.IO.File.ReadAllText(savePath);
+            var json = File.ReadAllText(savePath);
             var loaded = JsonConvert.DeserializeObject<List<EncounterSnapshot>>(json);
             if (loaded != null)
             {
@@ -550,7 +550,7 @@ public sealed class EncounterStore
         {
             ServiceManager.LogWarning(LogChannel.EncounterStore, $"Encounter history is corrupt and could not be loaded: {ex.Message}");
         }
-        catch (System.IO.IOException ex)
+        catch (IOException ex)
         {
             ServiceManager.LogWarning(LogChannel.EncounterStore, $"Failed to read encounter history file: {ex.Message}");
         }
@@ -615,10 +615,10 @@ public sealed class EncounterStore
     private bool MigrateEmbeddedTimelinesLocked(string fileJson, List<EncounterSnapshot> loaded)
     {
         if (timelineStore == null) return false;
-        Newtonsoft.Json.Linq.JArray jarr;
+        JArray jarr;
         try
         {
-            jarr = Newtonsoft.Json.Linq.JArray.Parse(fileJson);
+            jarr = JArray.Parse(fileJson);
         }
         catch
         {
@@ -631,7 +631,7 @@ public sealed class EncounterStore
         var failed = 0;
         for (int i = 0; i < jarr.Count; i++)
         {
-            if (jarr[i] is not Newtonsoft.Json.Linq.JObject jobj) continue;
+            if (jarr[i] is not JObject jobj) continue;
             var snap = loaded[i];
 
             var bundle = new TimelineBundle { EncounterId = 0 };
@@ -664,10 +664,10 @@ public sealed class EncounterStore
     }
 
     private static bool TryPopulateDict<TValue>(
-        Newtonsoft.Json.Linq.JToken? token,
+        JToken? token,
         Dictionary<string, List<TValue>> target)
     {
-        if (token is not Newtonsoft.Json.Linq.JObject jobj) return false;
+        if (token is not JObject jobj) return false;
         if (jobj.Count == 0) return false;
         var converted = jobj.ToObject<Dictionary<string, List<TValue>>>(JsonSerializer.CreateDefault());
         if (converted == null || converted.Count == 0) return false;
@@ -676,7 +676,7 @@ public sealed class EncounterStore
         return true;
     }
 
-    private static bool PopulateBundleFromJson(Newtonsoft.Json.Linq.JObject jobj, TimelineBundle bundle)
+    private static bool PopulateBundleFromJson(JObject jobj, TimelineBundle bundle)
     {
         var any = false;
         any |= TryPopulateDict(jobj["GraphData"], bundle.GraphData);
@@ -832,7 +832,7 @@ public sealed class EncounterStore
         try
         {
             EncounterSnapshot? snapshot;
-            var jobj = Newtonsoft.Json.Linq.JObject.Parse(json);
+            var jobj = JObject.Parse(json);
             var summaryToken = jobj["Summary"];
             if (summaryToken != null)
             {
@@ -840,7 +840,7 @@ public sealed class EncounterStore
                 if (snapshot != null)
                 {
                     var timelineToken = jobj["Timeline"];
-                    if (timelineToken != null && timelineToken.Type != Newtonsoft.Json.Linq.JTokenType.Null)
+                    if (timelineToken != null && timelineToken.Type != JTokenType.Null)
                     {
                         var bundle = timelineToken.ToObject<TimelineBundle>();
                         if (bundle != null)
@@ -900,9 +900,9 @@ public sealed class EncounterStore
     public string GetExportsDirectory()
     {
         var dir = string.IsNullOrEmpty(savePath)
-            ? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DamageTerror", "exports")
-            : System.IO.Path.Combine(System.IO.Path.GetDirectoryName(savePath)!, "exports");
-        System.IO.Directory.CreateDirectory(dir);
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DamageTerror", "exports")
+            : Path.Combine(Path.GetDirectoryName(savePath)!, "exports");
+        Directory.CreateDirectory(dir);
         return dir;
     }
 
@@ -936,11 +936,11 @@ public sealed class EncounterStore
                     DefaultValueHandling = DefaultValueHandling.Ignore,
                 });
 
-                var dir = System.IO.Path.GetDirectoryName(path);
+                var dir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(dir))
-                    System.IO.Directory.CreateDirectory(dir);
+                    Directory.CreateDirectory(dir);
 
-                System.IO.File.WriteAllText(path, json);
+                File.WriteAllText(path, json);
             }
             catch (Exception ex)
             {

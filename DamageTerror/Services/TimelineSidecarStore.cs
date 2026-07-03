@@ -14,24 +14,24 @@ public sealed class TimelineSidecarStore
 
     public TimelineSidecarStore(string configFilePath)
     {
-        var configDir = System.IO.Path.GetDirectoryName(configFilePath)
+        var configDir = Path.GetDirectoryName(configFilePath)
                         ?? throw new ArgumentException("configFilePath must contain a directory", nameof(configFilePath));
-        baseDirectory = System.IO.Path.Combine(configDir, "timelines");
+        baseDirectory = Path.Combine(configDir, "timelines");
     }
 
     public string DirectoryPath => baseDirectory;
 
     public string PathFor(long encounterId)
-        => System.IO.Path.Combine(baseDirectory, $"{encounterId}.json");
+        => Path.Combine(baseDirectory, $"{encounterId}.json");
 
     public TimelineBundle? Load(long encounterId)
     {
         var path = PathFor(encounterId);
-        if (!System.IO.File.Exists(path))
+        if (!File.Exists(path))
             return null;
         try
         {
-            var json = System.IO.File.ReadAllText(path);
+            var json = File.ReadAllText(path);
             return JsonConvert.DeserializeObject<TimelineBundle>(json);
         }
         catch (Exception ex)
@@ -46,10 +46,10 @@ public sealed class TimelineSidecarStore
     {
         try
         {
-            System.IO.Directory.CreateDirectory(baseDirectory);
+            Directory.CreateDirectory(baseDirectory);
             var path = PathFor(bundle.EncounterId);
             var json = JsonConvert.SerializeObject(bundle);
-            System.IO.File.WriteAllText(path, json);
+            File.WriteAllText(path, json);
             return true;
         }
         catch (Exception ex)
@@ -65,9 +65,9 @@ public sealed class TimelineSidecarStore
         var path = PathFor(encounterId);
         try
         {
-            if (System.IO.File.Exists(path))
+            if (File.Exists(path))
             {
-                System.IO.File.Delete(path);
+                File.Delete(path);
                 return true;
             }
         }
@@ -83,10 +83,10 @@ public sealed class TimelineSidecarStore
     {
         try
         {
-            if (!System.IO.Directory.Exists(baseDirectory)) return 0;
+            if (!Directory.Exists(baseDirectory)) return 0;
             long total = 0;
-            foreach (var f in System.IO.Directory.EnumerateFiles(baseDirectory, "*.json"))
-                total += new System.IO.FileInfo(f).Length;
+            foreach (var f in Directory.EnumerateFiles(baseDirectory, "*.json"))
+                total += new FileInfo(f).Length;
             return total;
         }
         catch { return 0; }
@@ -96,8 +96,8 @@ public sealed class TimelineSidecarStore
     {
         try
         {
-            if (!System.IO.Directory.Exists(baseDirectory)) return 0;
-            return System.IO.Directory.EnumerateFiles(baseDirectory, "*.json").Count();
+            if (!Directory.Exists(baseDirectory)) return 0;
+            return Directory.EnumerateFiles(baseDirectory, "*.json").Count();
         }
         catch { return 0; }
     }
@@ -105,11 +105,11 @@ public sealed class TimelineSidecarStore
     /// <summary>Return all sidecar IDs currently present on disk.</summary>
     public IEnumerable<long> EnumerateIds()
     {
-        if (!System.IO.Directory.Exists(baseDirectory))
+        if (!Directory.Exists(baseDirectory))
             yield break;
-        foreach (var f in System.IO.Directory.EnumerateFiles(baseDirectory, "*.json"))
+        foreach (var f in Directory.EnumerateFiles(baseDirectory, "*.json"))
         {
-            var name = System.IO.Path.GetFileNameWithoutExtension(f);
+            var name = Path.GetFileNameWithoutExtension(f);
             if (long.TryParse(name, out var id))
                 yield return id;
         }
