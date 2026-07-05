@@ -53,14 +53,63 @@ public sealed class Configuration : IPluginConfiguration
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<MeterTab> MeterTabs { get; set; } = new()
     {
-        new MeterTab("DPS", TabFilterMode.All, SortField.EncDps, true),
+        new MeterTab("DPS", TabFilterMode.All, SortField.EncDps, true)
+        {
+            StatusBarMetrics = new() { BarColumn.DpsRank, BarColumn.Dps, BarColumn.EncDps },
+            VisibleColumns = new()
+            {
+                BarColumn.Damage, BarColumn.Dps, BarColumn.DirectHit, BarColumn.Crit,
+                BarColumn.CritDirectHit, BarColumn.DamagePercent, BarColumn.MaxHit,
+            },
+            ColumnOrder = new()
+            {
+                BarColumn.Damage, BarColumn.Dps, BarColumn.DirectHit, BarColumn.Crit, BarColumn.CritDirectHit, BarColumn.DamagePercent,
+                BarColumn.MaxHit, BarColumn.EncDps, BarColumn.SkillIssue, BarColumn.Hps, BarColumn.Healed, BarColumn.HealPercent,
+                BarColumn.Deaths, BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.Overheal, BarColumn.OverhealAmount, BarColumn.MaxHitValue,
+                BarColumn.PeakDps, BarColumn.MaxHeal, BarColumn.MaxHealValue, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses,
+                BarColumn.HitRate, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.BlockPct, BarColumn.ParryPct,
+                BarColumn.HealsTaken, BarColumn.AbsorbHeal, BarColumn.Kills, BarColumn.InstantDps, BarColumn.InstantHps, BarColumn.CritHealPct,
+                BarColumn.HealCount, BarColumn.CombatantDuration, BarColumn.DamageShield, BarColumn.MaxHealWard, BarColumn.PowerDrain, BarColumn.PowerHeal,
+                BarColumn.LegsSweeped, BarColumn.DamageDown, BarColumn.Positionals, BarColumn.PositionalHits, BarColumn.PositionalMisses, BarColumn.PositionalPct,
+                BarColumn.EncHps, BarColumn.DpsRank, BarColumn.HpsRank, BarColumn.GroupDps, BarColumn.GroupHps, BarColumn.GroupDamage,
+                BarColumn.GroupHealed, BarColumn.GroupDamageTaken, BarColumn.GroupDeaths, BarColumn.GroupOverheal, BarColumn.GroupInstantDps, BarColumn.GroupInstantHps,
+                BarColumn.GroupSkillIssue, BarColumn.GroupDamageDown, BarColumn.GroupAvgDps, BarColumn.GroupAvgHps, BarColumn.GroupAvgCrit, BarColumn.GroupAvgDirectHit,
+                BarColumn.GroupAvgCritDirectHit, BarColumn.GroupAvgOverhealPct, BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate, BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue,
+                BarColumn.GroupMaxHealValue,
+            },
+            DetailSectionOrder = new()
+            {
+                ["Damage"] = new() { BarColumn.Dps, BarColumn.InstantDps, BarColumn.PeakDps, BarColumn.Damage, BarColumn.DamagePercent, BarColumn.MaxHit, BarColumn.MaxHitValue, BarColumn.DamageShield, BarColumn.EncDps },
+                ["Healing"] = new() { BarColumn.Hps, BarColumn.InstantHps, BarColumn.Healed, BarColumn.HealPercent, BarColumn.Overheal, BarColumn.OverhealAmount, BarColumn.CritHealPct, BarColumn.MaxHeal, BarColumn.MaxHealValue, BarColumn.HealCount, BarColumn.EncHps },
+            },
+        },
         new MeterTab("Healing", TabFilterMode.All, SortField.EncHps, true)
         {
-            VisibleColumns = new() { BarColumn.Hps, BarColumn.Healed, BarColumn.HealPercent },
+            GraphShowDpsLine = false,
+            GraphShowHpsLine = true,
+            VisibleColumns = new() { BarColumn.Hps, BarColumn.Overheal },
+            ColumnOrder = new()
+            {
+                BarColumn.Hps, BarColumn.Overheal, BarColumn.Dps, BarColumn.Damage, BarColumn.DirectHit, BarColumn.Crit,
+                BarColumn.CritDirectHit, BarColumn.Healed, BarColumn.HealPercent, BarColumn.DamagePercent, BarColumn.Deaths, BarColumn.DamageTaken,
+                BarColumn.DamageTakenPercent, BarColumn.OverhealAmount, BarColumn.MaxHit, BarColumn.MaxHitValue, BarColumn.PeakDps, BarColumn.MaxHeal,
+                BarColumn.MaxHealValue, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses, BarColumn.HitRate, BarColumn.CritHitCount,
+                BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.BlockPct, BarColumn.ParryPct, BarColumn.HealsTaken, BarColumn.AbsorbHeal,
+                BarColumn.Kills, BarColumn.InstantDps, BarColumn.InstantHps, BarColumn.CritHealPct, BarColumn.HealCount, BarColumn.CombatantDuration,
+                BarColumn.DamageShield, BarColumn.MaxHealWard, BarColumn.PowerDrain, BarColumn.PowerHeal, BarColumn.LegsSweeped, BarColumn.SkillIssue,
+                BarColumn.DamageDown, BarColumn.Positionals, BarColumn.PositionalHits, BarColumn.PositionalMisses, BarColumn.PositionalPct, BarColumn.EncDps,
+                BarColumn.EncHps, BarColumn.DpsRank, BarColumn.HpsRank, BarColumn.GroupDps, BarColumn.GroupHps, BarColumn.GroupDamage,
+                BarColumn.GroupHealed, BarColumn.GroupDamageTaken, BarColumn.GroupDeaths, BarColumn.GroupOverheal, BarColumn.GroupInstantDps, BarColumn.GroupInstantHps,
+                BarColumn.GroupSkillIssue, BarColumn.GroupDamageDown, BarColumn.GroupAvgDps, BarColumn.GroupAvgHps, BarColumn.GroupAvgCrit, BarColumn.GroupAvgDirectHit,
+                BarColumn.GroupAvgCritDirectHit, BarColumn.GroupAvgOverhealPct, BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate, BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue,
+                BarColumn.GroupMaxHealValue,
+            },
         },
         new MeterTab("Solo", TabFilterMode.All, SortField.EncDps, true)
         {
             GroupFilter = GroupFilter.Solo,
+            // Matches enum declaration order: this tab's column order was never manually reordered.
+            ColumnOrder = new(Enum.GetValues<BarColumn>()),
         },
     };
 
