@@ -96,10 +96,11 @@ public sealed class FirstRunWindow : Window
         var navWidth = btnSize.X * 2 + ImGui.GetStyle().ItemSpacing.X;
         ImGui.SameLine(ImGui.GetWindowWidth() - navWidth - ImGui.GetStyle().WindowPadding.X);
 
-        if (currentStep == 0) ImGui.BeginDisabled();
+        var atFirstStep = currentStep == 0;
+        if (atFirstStep) ImGui.BeginDisabled();
         if (ImGui.Button("Back", btnSize))
             GoToStep(currentStep - 1);
-        if (currentStep == 0) ImGui.EndDisabled();
+        if (atFirstStep) ImGui.EndDisabled();
 
         ImGui.SameLine();
         if (currentStep < StepCount - 1)
