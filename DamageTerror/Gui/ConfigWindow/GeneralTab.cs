@@ -22,6 +22,11 @@ public sealed class GeneralTab
     {
         var changed = false;
 
+        if (ImGui.Button("Run setup wizard"))
+            plugin.OpenSetupWizard();
+        ConfigHelpers.HelpMarker("Walks through data source, theme preset, and core behavior again. Nothing changes until you pick something.");
+        ImGui.Spacing();
+
         if (ImGui.CollapsingHeader("Connection", ImGuiTreeNodeFlags.DefaultOpen))
         {
             changed |= ConfigHelpers.CheckboxProp("Prefer IPC (in-process, lowest latency)", config.PreferIpc, v => config.PreferIpc = v);
