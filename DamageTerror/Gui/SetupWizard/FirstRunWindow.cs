@@ -9,14 +9,19 @@ public sealed class FirstRunWindow : Window
     private static readonly string[] StepTitles = { "Data source", "Pick a look", "Behavior", "All done" };
 
     private readonly DamageTerrorPlugin plugin;
+    private readonly PresetManager presetManager;
 
     private int currentStep;
     private bool sampleLoadedByWizard;
+    private string wsUrlBuffer;
+    private int selectedPresetIndex = -1;
 
     public FirstRunWindow(DamageTerrorPlugin plugin, PresetManager presetManager)
         : base("Damage Terror — Setup###DamageTerrorSetup")
     {
         this.plugin = plugin;
+        this.presetManager = presetManager;
+        this.wsUrlBuffer = plugin.Config.WebSocketUrl;
         this.Flags = ImGuiWindowFlags.NoCollapse;
         this.SizeConstraints = new WindowSizeConstraints()
         {
@@ -32,6 +37,8 @@ public sealed class FirstRunWindow : Window
     public void Restart()
     {
         currentStep = 0;
+        selectedPresetIndex = -1;
+        wsUrlBuffer = plugin.Config.WebSocketUrl;
     }
 
     public override void OnClose()
@@ -106,13 +113,155 @@ public sealed class FirstRunWindow : Window
         }
     }
 
-    private void GoToStep(int step) => currentStep = Math.Clamp(step, 0, StepCount - 1);
+    private void GoToStep(int step)
+    {
+        currentStep = Math.Clamp(step, 0, StepCount - 1);
+        if (currentStep == 1)
+            EnsurePreview();
+    }
 
-    private void DrawDataSourceStep() => ImGui.TextWrapped("Data source selection goes here.");
+    private void DrawDataSourceStep()
+    {
+        var config = plugin.Config;
 
-    private void DrawAppearanceStep() => ImGui.TextWrapped("Theme preset selection goes here.");
+        ImGui.TextWrapped("Welcome to Damage Terror! This quick setup covers the essentials — everything here can be changed later in Settings.");
+        ImGui.Spacing();
+        ImGui.TextWrapped("First: where should combat data come from?");
+        ImGui.Spacing();
 
-    private void DrawBehaviorStep() => ImGui.TextWrapped("Behavior toggles go here.");
+        if (ImGui.RadioButton("IINACT plugin (recommended)", config.PreferIpc))
+            SetDataSource(preferIpc: true);
+        ImGui.Indent();
+        ImGui.TextDisabled("Talks directly to the IINACT Dalamud plugin. No extra setup.");
+        ImGui.Unindent();
+        ImGui.Spacing();
 
-    private void DrawFinishStep() => ImGui.TextWrapped("Recap goes here.");
+        if (ImGui.RadioButton("WebSocket (ACT / external parser)", !config.PreferIpc))
+            SetDataSource(preferIpc: false);
+        ImGui.Indent();
+        ImGui.TextDisabled("Connects to an OverlayPlugin-style WebSocket server.");
+        if (!config.PreferIpc)
+        {
+            ImGui.SetNextItemWidth(280);
+            if (ImGui.InputText("WebSocket URL", ref wsUrlBuffer, 256))
+            {
+                config.WebSocketUrl = wsUrlBuffer;
+                plugin.SaveConfig();
+            }
+        }
+        ImGui.Unindent();
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        var connected = plugin.DataService.IsConnected;
+        var statusColor = connected ? new Vector4(0.4f, 1f, 0.4f, 1f) : new Vector4(1f, 0.8f, 0.3f, 1f);
+        ImGui.TextColored(statusColor, $"Status: {plugin.DataService.ConnectionStatus}");
+        if (ImGui.Button("Reconnect"))
+            TriggerReconnect();
+        if (!connected)
+        {
+            ImGui.Spacing();
+            ImGui.TextWrapped("Not connected yet? You can keep going — the connection can be sorted out any time under Settings → General.");
+        }
+    }
+
+    private void SetDataSource(bool preferIpc)
+    {
+        if (plugin.Config.PreferIpc == preferIpc) return;
+        plugin.Config.PreferIpc = preferIpc;
+        plugin.SaveConfig();
+        TriggerReconnect();
+    }
+
+    private void TriggerReconnect()
+        => Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
+
+    private void DrawAppearanceStep()
+    {
+        ImGui.TextWrapped("The meter beside this window is showing sample combat data. Click a preset to try it on — whatever you leave selected is what you keep.");
+        ImGui.Spacing();
+
+        var presets = presetManager.GetAllPresets().ToList();
+        if (ImGui.BeginChild("##wizardPresetList", new Vector2(0, 0), true))
+        {
+            DrawPresetGroup(presets, builtIn: true);
+            if (presets.Any(p => !p.IsBuiltIn))
+            {
+                ImGui.Spacing();
+                ImGui.TextDisabled("Custom");
+                DrawPresetGroup(presets, builtIn: false);
+            }
+        }
+        ImGui.EndChild();
+    }
+
+    private void DrawPresetGroup(List<ThemePreset> presets, bool builtIn)
+    {
+        for (var i = 0; i < presets.Count; i++)
+        {
+            var preset = presets[i];
+            if (preset.IsBuiltIn != builtIn) continue;
+
+            if (ImGui.Selectable($"{preset.Name}##wizardPreset{i}", selectedPresetIndex == i))
+            {
+                selectedPresetIndex = i;
+                preset.ApplyTo(plugin.Config);
+                plugin.SaveConfig();
+                EnsurePreview();
+            }
+            if (!string.IsNullOrEmpty(preset.Description) && ImGui.IsItemHovered())
+                ImGui.SetTooltip(preset.Description);
+        }
+    }
+
+    private void EnsurePreview()
+    {
+        plugin.OpenMainUi();
+        var store = plugin.DataService.Store;
+        if (!store.IsSampleDataActive)
+        {
+            store.LoadSampleData(SampleDataGenerator.CreateFullParty(), simulate: true);
+            sampleLoadedByWizard = true;
+        }
+    }
+
+    private void DrawBehaviorStep()
+    {
+        var config = plugin.Config;
+
+        ImGui.TextWrapped("A couple of behavior choices — the rest lives in Settings when you want it.");
+        ImGui.Spacing();
+
+        var changed = ConfigHelpers.CheckboxProp("Open meter on plugin start", config.ShowOnStart, v => config.ShowOnStart = v);
+        ConfigHelpers.HelpMarker("When disabled, the meter stays hidden until you open it with /dt.");
+
+        changed |= ConfigHelpers.CheckboxProp("Hide when out of combat", config.HideOutOfCombat, v => config.HideOutOfCombat = v);
+        ConfigHelpers.HelpMarker("The meter fades out a few seconds after combat ends and returns when a new fight starts.");
+
+        if (changed)
+            plugin.SaveConfig();
+    }
+
+    private void DrawFinishStep()
+    {
+        ImGui.TextWrapped("All set! A few things worth remembering:");
+        ImGui.Spacing();
+
+        ImGui.Bullet();
+        ImGui.SameLine();
+        ImGui.TextWrapped("/dt shows or hides the meter.");
+
+        ImGui.Bullet();
+        ImGui.SameLine();
+        ImGui.TextWrapped("/dt config — or the cog on the meter's title bar — opens the full settings.");
+
+        ImGui.Bullet();
+        ImGui.SameLine();
+        ImGui.TextWrapped("You can re-run this setup any time from Settings → General.");
+
+        ImGui.Spacing();
+        ImGui.TextWrapped("Finishing clears the sample data from the meter.");
+    }
 }
