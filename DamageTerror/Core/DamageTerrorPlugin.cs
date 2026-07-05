@@ -26,6 +26,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
     private readonly WindowSystem windowSystem = new(typeof(DamageTerrorPlugin).AssemblyQualifiedName);
     private readonly Gui.MainWindow.MainWindow mainWindow;
     private readonly Gui.ConfigWindow.ConfigWindow configWindow;
+    private readonly Gui.SetupWizard.FirstRunWindow firstRunWindow;
     private readonly ICommandManager commandManager;
     private readonly IPluginLog pluginLog;
     private readonly ITextureProvider textureProvider;
@@ -158,9 +159,11 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         this.mainWindow = new Gui.MainWindow.MainWindow(this, textureProvider);
         this.configWindow = new Gui.ConfigWindow.ConfigWindow(this, presetManager);
+        this.firstRunWindow = new Gui.SetupWizard.FirstRunWindow(this, presetManager);
 
         this.windowSystem.AddWindow(this.mainWindow);
         this.windowSystem.AddWindow(this.configWindow);
+        this.windowSystem.AddWindow(this.firstRunWindow);
 
         this.PluginInterface.UiBuilder.Draw += this.DrawUi;
         this.PluginInterface.UiBuilder.OpenConfigUi += this.OpenConfigUi;
@@ -174,6 +177,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         });
 
         this.mainWindow.IsOpen = this.Config.ShowOnStart;
+        this.firstRunWindow.IsOpen = !this.Config.HasCompletedSetup;
 
         foreach (var tabId in this.Config.PopoutTabIds.ToList())
         {
@@ -207,6 +211,12 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public void OpenConfigUi() => this.configWindow.IsOpen = true;
 
+    public void OpenSetupWizard()
+    {
+        this.firstRunWindow.Restart();
+        this.firstRunWindow.IsOpen = true;
+    }
+
     public void SaveConfig()
     {
         this.PluginInterface.SavePluginConfig(this.Config);
@@ -231,6 +241,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         SafeDispose(() => this.commandManager.RemoveHandler(CommandName));
 
         SafeDispose(() => this.windowSystem.RemoveAllWindows());
+        SafeDispose(() => this.firstRunWindow.CleanupOwnedSampleData());
 
         foreach (var popout in this.popoutWindows.Values)
             SafeDispose(() => popout.Dispose());
