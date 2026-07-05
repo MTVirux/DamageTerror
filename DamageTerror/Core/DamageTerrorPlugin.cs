@@ -88,6 +88,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             }
         }
 
+        var isFreshInstall = cfg == null;
         if (cfg == null)
         {
             cfg = new();
@@ -126,6 +127,14 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         {
             cfg.DetailVisibleColumns.Add(BarColumn.PositionalPct);
             cfg.Version = 3;
+        }
+
+        if (cfg.Version < 4)
+        {
+            // Installs that predate the setup wizard should never be nagged by it.
+            if (!isFreshInstall)
+                cfg.HasCompletedSetup = true;
+            cfg.Version = 4;
         }
 
         if (cfg.Version != loadedVersion)

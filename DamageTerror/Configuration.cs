@@ -28,6 +28,8 @@ public sealed class Configuration : IPluginConfiguration
 
     public bool ShowOnStart { get; set; } = true;
 
+    public bool HasCompletedSetup { get; set; } = false;
+
     public bool HideDebugFeatures { get; set; } = false;
 
 
