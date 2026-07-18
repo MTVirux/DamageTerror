@@ -68,6 +68,15 @@ public sealed class FirstRunWindow : Window
         plugin.DataService.Store.ClearSampleData();
     }
 
+    // Handoff to the customization wizard: give up sample-data ownership so
+    // this window's close doesn't clear the preview out from under it.
+    public bool ReleaseSampleOwnership()
+    {
+        var owned = sampleLoadedByWizard;
+        sampleLoadedByWizard = false;
+        return owned;
+    }
+
     public override void Draw()
     {
         // Held in-combat every frame so the preview meter stays visible while the
@@ -383,6 +392,18 @@ public sealed class FirstRunWindow : Window
         ImGui.Bullet();
         ImGui.SameLine();
         ImGui.TextWrapped("You can re-run this setup any time from Settings → General.");
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        ImGui.TextWrapped("Want to fine-tune the look? A short second wizard covers colors, icons, and markings. It is also available later under Settings → General.");
+        ImGui.Spacing();
+        if (ImGui.Button("Customize the look further..."))
+        {
+            plugin.OpenCustomizationWizard(takeOverSampleData: ReleaseSampleOwnership());
+            IsOpen = false;
+        }
 
         ImGui.Spacing();
         ImGui.TextWrapped("Finishing clears the sample data from the meter.");
