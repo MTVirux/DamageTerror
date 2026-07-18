@@ -80,6 +80,14 @@ public sealed class GeneralTab
                 }
             }
 
+            changed |= ConfigHelpers.CheckboxProp("Enable encounter replays", config.EnableReplays, v =>
+            {
+                config.EnableReplays = v;
+                if (!v)
+                    plugin.DataService.Store.StopActiveReplay();
+            });
+            ConfigHelpers.HelpMarker("Play a finished encounter back through the meter. When off, the Replay buttons and the Replay Bar layout entry are hidden.");
+
             changed |= ConfigHelpers.CheckboxProp("Ignore ESC key closing the meter", config.IgnoreEscClose, v => config.IgnoreEscClose = v);
 
             ImGui.Spacing();

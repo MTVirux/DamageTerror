@@ -416,18 +416,21 @@ public sealed class EncounterHistoryTab
                     SetStatus($"Saved to {path}");
                 }
 
-                ImGui.SameLine();
-                var canReplay = (enc.SkillEvents.Count > 0 || enc.GraphData.Count > 0)
-                                && DurationHelper.ParseDuration(encounter.Duration, 0f) > 0.5f;
-                ImGui.BeginDisabled(!canReplay);
-                if (ImGui.SmallButton("Replay"))
+                if (plugin.Config.EnableReplays)
                 {
-                    plugin.DataService.Store.LoadReplay(enc);
-                    SetStatus("Replay started — see main window.");
+                    ImGui.SameLine();
+                    var canReplay = (enc.SkillEvents.Count > 0 || enc.GraphData.Count > 0)
+                                    && DurationHelper.ParseDuration(encounter.Duration, 0f) > 0.5f;
+                    ImGui.BeginDisabled(!canReplay);
+                    if (ImGui.SmallButton("Replay"))
+                    {
+                        plugin.DataService.Store.LoadReplay(enc);
+                        SetStatus("Replay started — see main window.");
+                    }
+                    ImGui.EndDisabled();
+                    if (!canReplay && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                        ImGui.SetTooltip("Encounter has no replayable timeline data.");
                 }
-                ImGui.EndDisabled();
-                if (!canReplay && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    ImGui.SetTooltip("Encounter has no replayable timeline data.");
 
 #if DEBUG
                 if (!plugin.Config.HideDebugFeatures)

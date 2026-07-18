@@ -147,21 +147,24 @@ public sealed class EncounterHeaderComponent
                     ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(5, 5));
                     if (ImGui.BeginPopupContextItem($"##enc_remove_{i}"))
                     {
-                        var encDuration = DurationHelper.ParseDuration(hEnc.Duration, 0f);
-                        var canReplay = h.HasTimeline && encDuration > 0.5f;
-
-                        ImGui.BeginDisabled(!canReplay);
-                        if (ImGui.Selectable("Replay##rpyMenu"))
+                        if (config.EnableReplays)
                         {
-                            dataService.Store.LoadReplay(h);
-                            selectedIndex = -1;
-                            ImGui.CloseCurrentPopup();
-                        }
-                        ImGui.EndDisabled();
-                        if (!canReplay && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                            ImGui.SetTooltip("No timeline data available — replay unavailable for this encounter.");
+                            var encDuration = DurationHelper.ParseDuration(hEnc.Duration, 0f);
+                            var canReplay = h.HasTimeline && encDuration > 0.5f;
 
-                        ImGui.Separator();
+                            ImGui.BeginDisabled(!canReplay);
+                            if (ImGui.Selectable("Replay##rpyMenu"))
+                            {
+                                dataService.Store.LoadReplay(h);
+                                selectedIndex = -1;
+                                ImGui.CloseCurrentPopup();
+                            }
+                            ImGui.EndDisabled();
+                            if (!canReplay && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                                ImGui.SetTooltip("No timeline data available — replay unavailable for this encounter.");
+
+                            ImGui.Separator();
+                        }
 
                         if (MeterWindowHelper.IconMenuItem("Remove", FontAwesomeIcon.TrashAlt))
                             pendingRemoveIndex = i;

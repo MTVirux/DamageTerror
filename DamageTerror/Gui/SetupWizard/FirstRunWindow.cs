@@ -4,9 +4,9 @@ namespace DamageTerror.Gui.SetupWizard;
 
 public sealed class FirstRunWindow : Window
 {
-    private const int StepCount = 4;
+    private const int StepCount = 5;
 
-    private static readonly string[] StepTitles = { "Data source", "Pick a look", "Behavior", "All done" };
+    private static readonly string[] StepTitles = { "Data source", "Pick a look", "Behavior", "Layout", "All done" };
 
     private readonly DamageTerrorPlugin plugin;
     private readonly PresetManager presetManager;
@@ -15,6 +15,9 @@ public sealed class FirstRunWindow : Window
     private bool sampleLoadedByWizard;
     private string wsUrlBuffer;
     private int selectedPresetIndex = -1;
+    private bool modifierDemonstrated;
+    private bool simulateInCombat = true;
+    private DateTime? simOutOfCombatSince;
 
     public FirstRunWindow(DamageTerrorPlugin plugin, PresetManager presetManager)
         : base("Damage Terror — Setup###DamageTerrorSetup")
@@ -38,11 +41,16 @@ public sealed class FirstRunWindow : Window
     {
         currentStep = 0;
         selectedPresetIndex = -1;
+        modifierDemonstrated = false;
         wsUrlBuffer = plugin.Config.WebSocketUrl;
+        simulateInCombat = true;
+        simOutOfCombatSince = null;
     }
 
     public override void OnClose()
     {
+        MeterWindowHelper.SimulatedCombat = null;
+        MeterWindowHelper.PreviewReplayBar = false;
         CleanupOwnedSampleData();
         if (!plugin.Config.HasCompletedSetup)
         {
@@ -62,6 +70,15 @@ public sealed class FirstRunWindow : Window
 
     public override void Draw()
     {
+        // Held in-combat every frame so the preview meter stays visible while the
+        // user pages through the wizard; only the behaviour step's simulator flips
+        // it out of combat. OnClose restores real visibility.
+        MeterWindowHelper.SimulatedCombat = true;
+
+        // Show the demo replay bar in the preview only while arranging the layout,
+        // and only when replays are on. OnClose clears it.
+        MeterWindowHelper.PreviewReplayBar = currentStep == 3 && plugin.Config.EnableReplays;
+
         ImGui.TextDisabled($"Step {currentStep + 1} of {StepCount} — {StepTitles[currentStep]}");
         ImGui.Separator();
         ImGui.Spacing();
@@ -74,7 +91,8 @@ public sealed class FirstRunWindow : Window
                 case 0: DrawDataSourceStep(); break;
                 case 1: DrawAppearanceStep(); break;
                 case 2: DrawBehaviorStep(); break;
-                case 3: DrawFinishStep(); break;
+                case 3: DrawLayoutStep(); break;
+                case 4: DrawFinishStep(); break;
             }
         }
         ImGui.EndChild();
@@ -88,13 +106,8 @@ public sealed class FirstRunWindow : Window
         var scale = ImGui.GetIO().FontGlobalScale;
         var btnSize = new Vector2(80f * scale, 0);
 
-        if (ImGui.Button("Skip", btnSize))
-            IsOpen = false;
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Keep the defaults. You can re-run setup from Settings → General.");
-
         var navWidth = btnSize.X * 2 + ImGui.GetStyle().ItemSpacing.X;
-        ImGui.SameLine(ImGui.GetWindowWidth() - navWidth - ImGui.GetStyle().WindowPadding.X);
+        ImGui.SetCursorPosX(ImGui.GetWindowWidth() - navWidth - ImGui.GetStyle().WindowPadding.X);
 
         var atFirstStep = currentStep == 0;
         if (atFirstStep) ImGui.BeginDisabled();
@@ -105,8 +118,14 @@ public sealed class FirstRunWindow : Window
         ImGui.SameLine();
         if (currentStep < StepCount - 1)
         {
+            var onLayoutStep = currentStep == 3;
+            var gated = onLayoutStep && !modifierDemonstrated;
+            if (gated) ImGui.BeginDisabled();
             if (ImGui.Button("Next", btnSize))
                 GoToStep(currentStep + 1);
+            if (gated) ImGui.EndDisabled();
+            if (gated && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGui.SetTooltip($"Press {MeterWindowHelper.ModifierComboName(plugin.Config.ModifierKeyCombo)} to continue.");
         }
         else if (ImGui.Button("Finish", btnSize))
         {
@@ -117,7 +136,11 @@ public sealed class FirstRunWindow : Window
     private void GoToStep(int step)
     {
         currentStep = Math.Clamp(step, 0, StepCount - 1);
-        if (currentStep == 1)
+        // Reset the combat simulator to in-combat on every navigation so the
+        // preview meter is showing when the user lands on the new page.
+        simulateInCombat = true;
+        simOutOfCombatSince = null;
+        if (currentStep is 1 or 3)
             EnsurePreview();
     }
 
@@ -228,6 +251,38 @@ public sealed class FirstRunWindow : Window
         }
     }
 
+    private void DrawLayoutStep()
+    {
+        var config = plugin.Config;
+
+        ImGui.TextWrapped("Reorder the meter's parts below, and tick the box beside a part to hide it until you hold the reveal shortcut. Set the shortcut below — the preview beside this window updates as you go.");
+        ImGui.Spacing();
+
+        if (LayoutPage.Draw(config))
+            plugin.SaveConfig();
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        var shortcutChanged = false;
+        var comboNames = new[] { "Ctrl + Shift", "Ctrl + Alt", "Shift + Alt", "Ctrl", "Shift", "Alt" };
+        shortcutChanged |= ConfigHelpers.ComboProp("Reveal shortcut keys", (int)config.ModifierKeyCombo, comboNames, v => config.ModifierKeyCombo = (ModifierCombo)v, 150);
+
+        var modeNames = new[] { "Hold", "Toggle" };
+        shortcutChanged |= ConfigHelpers.ComboProp("Reveal shortcut mode", (int)config.ModifierKeyMode, modeNames, v => config.ModifierKeyMode = (ModifierMode)v, 150);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Hold: active only while keys are pressed.\nToggle: press once to activate, press again to deactivate.");
+
+        if (shortcutChanged)
+            plugin.SaveConfig();
+
+        // Latch on the raw combo (not IsModifierActive) so we don't disturb the
+        // meter's toggle-mode edge detection running in the same frame.
+        if (MeterWindowHelper.IsModifierComboDown(config))
+            modifierDemonstrated = true;
+    }
+
     private void DrawBehaviorStep()
     {
         var config = plugin.Config;
@@ -241,8 +296,75 @@ public sealed class FirstRunWindow : Window
         changed |= ConfigHelpers.CheckboxProp("Hide when out of combat", config.HideOutOfCombat, v => config.HideOutOfCombat = v);
         ConfigHelpers.HelpMarker("The meter fades out a few seconds after combat ends and returns when a new fight starts.");
 
+        if (config.HideOutOfCombat)
+            changed |= DrawHideOutOfCombatDemo(config);
+
+        changed |= ConfigHelpers.CheckboxProp("Enable encounter replays", config.EnableReplays, v =>
+        {
+            config.EnableReplays = v;
+            if (!v)
+                plugin.DataService.Store.StopActiveReplay();
+        });
+        ConfigHelpers.HelpMarker("Play a finished encounter back through the meter. When off, the Replay buttons and the Replay Bar layout entry are hidden.");
+
         if (changed)
             plugin.SaveConfig();
+    }
+
+    // Interactive demo of the out-of-combat hide behaviour: the delay slider is
+    // the timer and the checkbox fakes combat state; the growing bar mirrors the
+    // grace countdown. Feeding the toggle to MeterWindowHelper.SimulatedCombat
+    // makes the live preview meter hide/show along with it rather than following
+    // real encounters.
+    private bool DrawHideOutOfCombatDemo(Configuration config)
+    {
+        ImGui.Indent();
+
+        var changed = ConfigHelpers.SliderFloatProp("Hide delay (seconds)", config.HideOutOfCombatDelay, 0f, 30f, "%.1f", v => config.HideOutOfCombatDelay = v, 150);
+
+        ImGui.Spacing();
+        if (ImGui.Checkbox("Simulate: in combat", ref simulateInCombat) && simulateInCombat)
+            simOutOfCombatSince = null;
+        ConfigHelpers.HelpMarker("Untick to watch the countdown that tucks the meter away after combat ends.");
+
+        MeterWindowHelper.SimulatedCombat = simulateInCombat;
+
+        var delay = config.HideOutOfCombatDelay;
+        float fraction;
+        string status;
+        Vector4 barColor;
+
+        if (simulateInCombat)
+        {
+            simOutOfCombatSince = null;
+            fraction = 0f;
+            status = "In combat - meter visible";
+            barColor = new Vector4(0.4f, 0.8f, 0.4f, 1f);
+        }
+        else
+        {
+            simOutOfCombatSince ??= DateTime.UtcNow;
+            var elapsed = (float)(DateTime.UtcNow - simOutOfCombatSince.Value).TotalSeconds;
+            fraction = delay > 0f ? Math.Clamp(elapsed / delay, 0f, 1f) : 1f;
+            if (fraction < 1f)
+            {
+                status = $"Hiding in {Math.Max(0f, delay - elapsed):0.0}s…";
+                barColor = new Vector4(1f, 0.8f, 0.3f, 1f);
+            }
+            else
+            {
+                status = "Hidden";
+                barColor = new Vector4(0.5f, 0.5f, 0.5f, 1f);
+            }
+        }
+
+        ImGui.Spacing();
+        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, barColor);
+        ImGui.ProgressBar(fraction, new Vector2(-1f, 0f), status);
+        ImGui.PopStyleColor();
+
+        ImGui.Unindent();
+        return changed;
     }
 
     private void DrawFinishStep()

@@ -217,6 +217,22 @@ public sealed class EncounterStore
         }
     }
 
+    /// <summary>Stop an in-progress encounter replay and restore the pre-replay
+    /// view. No-op if no replay is active.</summary>
+    public void StopActiveReplay()
+    {
+        lock (syncLock)
+        {
+            if (replaySimulator == null) return;
+            replaySimulator.Stop();
+            replaySimulator = null;
+            pendingFactory = null;
+            sampleDataActive = false;
+            active = previewBackup;
+            previewBackup = null;
+        }
+    }
+
     public bool Update(EncounterSnapshot snapshot)
     {
         lock (syncLock)

@@ -63,10 +63,14 @@ internal static class MeterWindowHelper
     /// Returns true when the configured modifier combo is active,
     /// respecting the hold/toggle mode setting.
     /// </summary>
-    public static bool IsModifierActive(Configuration config)
+    /// <summary>
+    /// Raw physical state of the configured modifier combo, without the
+    /// hold/toggle interpretation or its edge-detection side effects.
+    /// </summary>
+    public static bool IsModifierComboDown(Configuration config)
     {
         var io = ImGui.GetIO();
-        var down = config.ModifierKeyCombo switch
+        return config.ModifierKeyCombo switch
         {
             ModifierCombo.CtrlShift => io.KeyCtrl && io.KeyShift,
             ModifierCombo.CtrlAlt   => io.KeyCtrl && io.KeyAlt,
@@ -76,6 +80,22 @@ internal static class MeterWindowHelper
             ModifierCombo.Alt       => io.KeyAlt,
             _ => io.KeyCtrl && io.KeyShift,
         };
+    }
+
+    public static string ModifierComboName(ModifierCombo combo) => combo switch
+    {
+        ModifierCombo.CtrlShift => "Ctrl + Shift",
+        ModifierCombo.CtrlAlt   => "Ctrl + Alt",
+        ModifierCombo.ShiftAlt  => "Shift + Alt",
+        ModifierCombo.Ctrl      => "Ctrl",
+        ModifierCombo.Shift     => "Shift",
+        ModifierCombo.Alt       => "Alt",
+        _ => "Ctrl + Shift",
+    };
+
+    public static bool IsModifierActive(Configuration config)
+    {
+        var down = IsModifierComboDown(config);
 
         if (config.ModifierKeyMode == ModifierMode.Hold)
             return down;
@@ -107,6 +127,20 @@ internal static class MeterWindowHelper
         };
     }
 
+    /// <summary>
+    /// When set, the setup wizard's combat simulator overrides the real in-game
+    /// combat condition so the preview meter's hide/show follows the toggle
+    /// instead of actual encounters. Null restores normal behaviour.
+    /// </summary>
+    public static bool? SimulatedCombat;
+
+    /// <summary>
+    /// When true, the preview meter draws a non-interactive demo replay bar even
+    /// with no live replay running. The setup wizard sets this on the Layout step
+    /// so the user can see and arrange the Replay Bar element.
+    /// </summary>
+    public static bool PreviewReplayBar;
+
     public static bool ShouldDraw(Configuration config, ref MeterVisibilityState state)
     {
         if (!Svc.ClientState.IsLoggedIn)
@@ -121,7 +155,9 @@ internal static class MeterWindowHelper
             return true;
         }
 
-        if (Svc.Condition[ConditionFlag.InCombat])
+        var inCombat = SimulatedCombat ?? Svc.Condition[ConditionFlag.InCombat];
+
+        if (inCombat)
         {
             state.CombatEndTime = null;
             if (state.UserOverride)
@@ -132,6 +168,11 @@ internal static class MeterWindowHelper
         state.CombatEndTime ??= DateTime.UtcNow;
         var elapsed = (DateTime.UtcNow - state.CombatEndTime.Value).TotalSeconds;
         var graceExpired = elapsed >= config.HideOutOfCombatDelay;
+
+        // While simulating, the toggle is authoritative: ignore the user
+        // visibility override so the preview hides exactly as configured.
+        if (SimulatedCombat.HasValue)
+            return !graceExpired;
 
         // Override is cleared once a full combat cycle has completed after it was set.
         if (graceExpired && state.UserOverride && state.ObservedCombatSinceOverride)

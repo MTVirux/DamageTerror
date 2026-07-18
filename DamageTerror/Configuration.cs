@@ -144,6 +144,8 @@ public sealed class Configuration : IPluginConfiguration
 
     public bool ReplayBarPinned { get; set; } = false;
 
+    public bool EnableReplays { get; set; } = true;
+
     public ModifierCombo ModifierKeyCombo { get; set; } = ModifierCombo.CtrlShift;
     public ModifierMode ModifierKeyMode { get; set; } = ModifierMode.Hold;
 
@@ -165,7 +167,7 @@ public sealed class Configuration : IPluginConfiguration
     public int MaxTimelineDays { get; set; } = 7;
 
     public bool IgnoreEscClose { get; set; } = true;
-    public bool HideWindowHeader { get; set; } = true;
+    public bool HideWindowHeader { get; set; } = false;
     public float BarAlpha { get; set; } = 0.7f;
 
     public Vector4 TankColor { get; set; } = new(0.2f, 0.4f, 0.8f, 1.0f);

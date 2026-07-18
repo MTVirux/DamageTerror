@@ -2,24 +2,6 @@ namespace DamageTerror.Gui.ConfigWindow;
 
 public static class LayoutPage
 {
-    private static readonly Dictionary<LayoutElement, string> ElementLabels = new()
-    {
-        { LayoutElement.EncounterSelect, "Encounter Select" },
-        { LayoutElement.ReplayBar, "Replay Bar" },
-        { LayoutElement.MeterTabs, "Meter Tabs" },
-        { LayoutElement.StatusBar, "Status Bar" },
-        { LayoutElement.CombatantBars, "Combatant Bars" },
-    };
-
-    private static readonly Dictionary<LayoutElement, string> ElementDescriptions = new()
-    {
-        { LayoutElement.EncounterSelect, "The encounter picker and sort controls." },
-        { LayoutElement.ReplayBar, "Playback controls shown only during encounter replay." },
-        { LayoutElement.MeterTabs, "Filter tabs (DPS, Heal, Tank, etc.) when enabled." },
-        { LayoutElement.StatusBar, "Combat timer, personal DPS, and raid DPS summary." },
-        { LayoutElement.CombatantBars, "The main combatant list with bars and details." },
-    };
-
     public static bool Draw(Configuration config)
     {
         var changed = false;
@@ -34,7 +16,9 @@ public static class LayoutPage
         for (var i = 0; i < config.Layout.Count; i++)
         {
             var element = config.Layout[i];
-            var label = ElementLabels.GetValueOrDefault(element, element.ToString());
+            if (element == LayoutElement.ReplayBar && !config.EnableReplays)
+                continue;
+            var label = LayoutElementInfo.Label(element);
 
             ImGui.PushID(i);
 
@@ -56,8 +40,14 @@ public static class LayoutPage
 
             ImGui.Text($"{i + 1}.  {label}");
 
-            if (ImGui.IsItemHovered() && ElementDescriptions.TryGetValue(element, out var desc))
+            if (ImGui.IsItemHovered() && LayoutElementInfo.Descriptions.TryGetValue(element, out var desc))
                 ImGui.SetTooltip(desc);
+
+            if (element == LayoutElement.ReplayBar)
+            {
+                ImGui.SameLine();
+                ImGui.TextDisabled("(only shown during replay)");
+            }
 
             ImGui.PopID();
         }

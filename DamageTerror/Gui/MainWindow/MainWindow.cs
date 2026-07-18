@@ -245,9 +245,11 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
                 stampRanks: true, computeAggregates: true);
         }
 
+        var isReplayActive = plugin.DataService.Store.IsReplayActive || MeterWindowHelper.PreviewReplayBar;
+
         var afterBarsHeight = MeterWindowHelper.CalculateAfterBarsHeight(
             config, statusBarComponent.GetHeight, headerComponent.GetHeight,
-            encounter != null, useTabBar, plugin.DataService.Store.IsReplayActive);
+            encounter != null, useTabBar, isReplayActive);
 
         if (DrawDisconnectNoticeIfNeeded(encounter, "disconnect-notice", SpawnReconnect))
         {
@@ -282,7 +284,7 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
             SpawnReconnect = SpawnReconnect,
             DismissDisconnectNotice = () => plugin.DataService.DismissDisconnectNotice(),
             ReconnectButtonIdSuffix = "",
-            IsReplayActive = plugin.DataService.Store.IsReplayActive,
+            IsReplayActive = isReplayActive,
         };
 
         ctx.DrawMeterTabButtons = () =>
@@ -616,7 +618,12 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
     private void DrawReplayBar()
     {
         var sim = plugin.DataService.Store.ReplaySimulator;
-        if (sim == null) return;
+        if (sim == null)
+        {
+            if (MeterWindowHelper.PreviewReplayBar)
+                DrawReplayBarDemo();
+            return;
+        }
 
         var rowHeight = MeterWindowHelper.ReplayBarRowHeight;
         ImGui.PushStyleColor(ImGuiCol.ChildBg, ReplayBarBgColor);
@@ -625,25 +632,30 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
             ImGui.AlignTextToFramePadding();
             ImGui.TextColored(ReplayLabelColor, "[REPLAY]");
 
-            ImGui.SameLine();
-            var pinned = plugin.Config.ReplayBarPinned;
-            var pinIcon = (pinned ? FontAwesomeIcon.Thumbtack : FontAwesomeIcon.MapPin).ToIconString();
-            if (pinned)
-                ImGui.PushStyleColor(ImGuiCol.Button, ActiveButtonColor);
-            ImGui.PushFont(UiBuilder.IconFont);
-            var pinClicked = ImGui.SmallButton($"{pinIcon}##rpyPin");
-            ImGui.PopFont();
-            if (pinned)
-                ImGui.PopStyleColor();
-            if (pinClicked)
+            // The pin only matters when the bar is hidden by the layout (modifier-only);
+            // when it is always visible the pin does nothing, so hide it.
+            if (plugin.Config.CtrlShiftOnlyElements.Contains(LayoutElement.ReplayBar))
             {
-                plugin.Config.ReplayBarPinned = !pinned;
-                plugin.SaveConfig();
+                ImGui.SameLine();
+                var pinned = plugin.Config.ReplayBarPinned;
+                var pinIcon = (pinned ? FontAwesomeIcon.Thumbtack : FontAwesomeIcon.MapPin).ToIconString();
+                if (pinned)
+                    ImGui.PushStyleColor(ImGuiCol.Button, ActiveButtonColor);
+                ImGui.PushFont(UiBuilder.IconFont);
+                var pinClicked = ImGui.SmallButton($"{pinIcon}##rpyPin");
+                ImGui.PopFont();
+                if (pinned)
+                    ImGui.PopStyleColor();
+                if (pinClicked)
+                {
+                    plugin.Config.ReplayBarPinned = !pinned;
+                    plugin.SaveConfig();
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(pinned
+                        ? "Pinned: replay bar stays visible even if the modifier key is required.\nClick to unpin."
+                        : "Pin the replay bar so it stays visible without holding the modifier key.");
             }
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(pinned
-                    ? "Pinned: replay bar stays visible even if the modifier key is required.\nClick to unpin."
-                    : "Pin the replay bar so it stays visible without holding the modifier key.");
 
             ImGui.SameLine();
             var playLabel = sim.IsRunning ? "Pause##rpyToggle" : "Play##rpyToggle";
@@ -673,6 +685,60 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
             ImGui.SameLine();
             if (ImGui.SmallButton("Stop##rpyStop"))
                 plugin.DataService.Store.ClearSampleData();
+        }
+        ImGui.EndChild();
+        ImGui.PopStyleColor();
+    }
+
+    // Static, non-interactive stand-in shown in the setup wizard so the user can
+    // see and arrange the Replay Bar element without a real replay running.
+    private void DrawReplayBarDemo()
+    {
+        var rowHeight = MeterWindowHelper.ReplayBarRowHeight;
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, ReplayBarBgColor);
+        if (ImGui.BeginChild("##replayBarDemo", new Vector2(-1, rowHeight), false))
+        {
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextColored(ReplayLabelColor, "[REPLAY - DEMO]");
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Setup preview - the replay bar only works during an actual encounter replay.");
+
+            ImGui.BeginDisabled();
+
+            if (plugin.Config.CtrlShiftOnlyElements.Contains(LayoutElement.ReplayBar))
+            {
+                ImGui.SameLine();
+                ImGui.PushFont(UiBuilder.IconFont);
+                ImGui.SmallButton($"{FontAwesomeIcon.MapPin.ToIconString()}##rpyPinDemo");
+                ImGui.PopFont();
+            }
+
+            ImGui.SameLine();
+            ImGui.SmallButton("Play##rpyToggleDemo");
+
+            ImGui.SameLine();
+            const float demoElapsed = 204f;
+            const float demoDuration = 512f;
+            var seek = demoElapsed;
+            ImGui.SetNextItemWidth(-235f);
+            var sliderLabel = $"{FormatMmSs(demoElapsed)} / {FormatMmSs(demoDuration)}";
+            ImGui.SliderFloat("##rpySeekDemo", ref seek, 0f, demoDuration, sliderLabel, ImGuiSliderFlags.NoInput);
+
+            ImGui.SameLine();
+            ImGui.SmallButton("0.5x##rpy0_5Demo");
+            ImGui.SameLine();
+            ImGui.PushStyleColor(ImGuiCol.Button, ActiveButtonColor);
+            ImGui.SmallButton("1x##rpy1Demo");
+            ImGui.PopStyleColor();
+            ImGui.SameLine();
+            ImGui.SmallButton("2x##rpy2Demo");
+            ImGui.SameLine();
+            ImGui.SmallButton("4x##rpy4Demo");
+
+            ImGui.SameLine();
+            ImGui.SmallButton("Stop##rpyStopDemo");
+
+            ImGui.EndDisabled();
         }
         ImGui.EndChild();
         ImGui.PopStyleColor();
