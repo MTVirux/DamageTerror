@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Dalamud.Interface.Windowing;
 
 namespace DamageTerror.Gui.SetupWizard;
@@ -81,6 +82,7 @@ public sealed class ColumnWizardWindow : Window
                 var firstVisible = tabs.FindIndex(t => !t.IsHidden);
                 if (firstVisible < 0) return null;
                 selectedTabIndex = firstVisible;
+                plugin.SelectMeterTab(firstVisible);
             }
             return tabs[selectedTabIndex];
         }
@@ -183,6 +185,15 @@ public sealed class ColumnWizardWindow : Window
         CombatantBarComponent.EnsureColumnOrderComplete(tab.ColumnOrder);
     }
 
+    // All tabs were hidden or deleted (e.g. via the config window) while the
+    // wizard was open on a later step.
+    private static bool NoTargetTab([NotNullWhen(false)] MeterTab? tab)
+    {
+        if (tab != null) return false;
+        ImGui.TextWrapped("No visible meter tabs found. Tabs are managed under Settings -> Tabs.");
+        return true;
+    }
+
     private void DrawTabPickStep()
     {
         var tabs = plugin.Config.MeterTabs;
@@ -195,6 +206,12 @@ public sealed class ColumnWizardWindow : Window
         {
             ImGui.TextWrapped("No visible meter tabs found. Tabs are managed under Settings -> Tabs.");
             return;
+        }
+
+        if (target.ViewMode == ViewMode.LineGraph)
+        {
+            ImGui.TextDisabled("This tab is in graph mode - columns apply to its bars view.");
+            ImGui.Spacing();
         }
 
         if (ImGui.BeginChild("##columnWizardTabList", new Vector2(0, 0), true))
@@ -211,18 +228,12 @@ public sealed class ColumnWizardWindow : Window
             }
         }
         ImGui.EndChild();
-
-        if (target.ViewMode == ViewMode.LineGraph)
-        {
-            ImGui.Spacing();
-            ImGui.TextDisabled("This tab is in graph mode - columns apply to its bars view.");
-        }
     }
 
     private void DrawCategoryStep(string intro, string categoryName)
     {
         var tab = TargetTab;
-        if (tab == null) return;
+        if (NoTargetTab(tab)) return;
         EnsureColumnOrder(tab);
 
         ImGui.TextWrapped(intro);
@@ -242,7 +253,7 @@ public sealed class ColumnWizardWindow : Window
     private void DrawMoreStatsStep()
     {
         var tab = TargetTab;
-        if (tab == null) return;
+        if (NoTargetTab(tab)) return;
         EnsureColumnOrder(tab);
 
         ImGui.TextWrapped("Everything else - hit stats, defense, and group-wide numbers.");
@@ -284,7 +295,7 @@ public sealed class ColumnWizardWindow : Window
     private void DrawOrderStep()
     {
         var tab = TargetTab;
-        if (tab == null) return;
+        if (NoTargetTab(tab)) return;
         EnsureColumnOrder(tab);
 
         ImGui.TextWrapped("Arrange the enabled columns - the top of this list is the leftmost column on the meter.");
