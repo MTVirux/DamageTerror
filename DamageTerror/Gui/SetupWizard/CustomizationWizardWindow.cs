@@ -40,6 +40,15 @@ public sealed class CustomizationWizardWindow : Window
     // so it survives that wizard's close and is cleaned up by this one.
     public void AdoptSampleOwnership() => sampleLoadedByWizard = true;
 
+    // Handoff to another wizard: give up sample-data ownership so this
+    // window's close doesn't clear the preview out from under it.
+    public bool ReleaseSampleOwnership()
+    {
+        var owned = sampleLoadedByWizard;
+        sampleLoadedByWizard = false;
+        return owned;
+    }
+
     public override void OnClose()
     {
         MeterWindowHelper.SimulatedCombat = null;
@@ -113,6 +122,11 @@ public sealed class CustomizationWizardWindow : Window
         }
         else if (ImGui.Button("Finish", btnSize))
         {
+            if (!plugin.Config.HasCompletedCustomizationWizard)
+            {
+                plugin.Config.HasCompletedCustomizationWizard = true;
+                plugin.SaveConfig();
+            }
             IsOpen = false;
         }
     }

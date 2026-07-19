@@ -214,9 +214,11 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public void OpenConfigUi() => this.configWindow.IsOpen = true;
 
-    public void OpenSetupWizard()
+    public void OpenSetupWizard(bool takeOverSampleData = false)
     {
         this.firstRunWindow.Restart();
+        if (takeOverSampleData)
+            this.firstRunWindow.AdoptSampleOwnership();
         this.firstRunWindow.IsOpen = true;
     }
 

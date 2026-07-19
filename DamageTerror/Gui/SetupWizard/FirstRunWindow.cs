@@ -77,6 +77,10 @@ public sealed class FirstRunWindow : Window
         return owned;
     }
 
+    // Handoff from another wizard: take over the sample data it loaded so it
+    // survives that wizard's close and is cleaned up by this one.
+    public void AdoptSampleOwnership() => sampleLoadedByWizard = true;
+
     public override void Draw()
     {
         // Held in-combat every frame so the preview meter stays visible while the

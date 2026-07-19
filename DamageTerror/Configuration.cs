@@ -30,6 +30,10 @@ public sealed class Configuration : IPluginConfiguration
 
     public bool HasCompletedSetup { get; set; } = false;
 
+    public bool HasCompletedCustomizationWizard { get; set; } = false;
+
+    public bool HasCompletedColumnWizard { get; set; } = false;
+
     public bool HideDebugFeatures { get; set; } = false;
 
 
