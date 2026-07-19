@@ -28,6 +28,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
     private readonly Gui.ConfigWindow.ConfigWindow configWindow;
     private readonly Gui.SetupWizard.FirstRunWindow firstRunWindow;
     private readonly Gui.SetupWizard.CustomizationWizardWindow customizationWizardWindow;
+    private readonly Gui.SetupWizard.ColumnWizardWindow columnWizardWindow;
     private readonly ICommandManager commandManager;
     private readonly IPluginLog pluginLog;
     private readonly ITextureProvider textureProvider;
@@ -162,11 +163,13 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.configWindow = new Gui.ConfigWindow.ConfigWindow(this, presetManager);
         this.firstRunWindow = new Gui.SetupWizard.FirstRunWindow(this, presetManager);
         this.customizationWizardWindow = new Gui.SetupWizard.CustomizationWizardWindow(this);
+        this.columnWizardWindow = new Gui.SetupWizard.ColumnWizardWindow(this);
 
         this.windowSystem.AddWindow(this.mainWindow);
         this.windowSystem.AddWindow(this.configWindow);
         this.windowSystem.AddWindow(this.firstRunWindow);
         this.windowSystem.AddWindow(this.customizationWizardWindow);
+        this.windowSystem.AddWindow(this.columnWizardWindow);
 
         this.PluginInterface.UiBuilder.Draw += this.DrawUi;
         this.PluginInterface.UiBuilder.OpenConfigUi += this.OpenConfigUi;
@@ -230,6 +233,16 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.customizationWizardWindow.IsOpen = true;
     }
 
+    public void OpenColumnWizard(bool takeOverSampleData = false)
+    {
+        this.columnWizardWindow.Restart();
+        if (takeOverSampleData)
+            this.columnWizardWindow.AdoptSampleOwnership();
+        this.columnWizardWindow.IsOpen = true;
+    }
+
+    public void SelectMeterTab(int index) => this.mainWindow.SelectTab(index);
+
     public void SaveConfig()
     {
         this.PluginInterface.SavePluginConfig(this.Config);
@@ -256,6 +269,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         SafeDispose(() => this.windowSystem.RemoveAllWindows());
         SafeDispose(() => this.firstRunWindow.CleanupOwnedSampleData());
         SafeDispose(() => this.customizationWizardWindow.CleanupOwnedSampleData());
+        SafeDispose(() => this.columnWizardWindow.CleanupOwnedSampleData());
 
         foreach (var popout in this.popoutWindows.Values)
             SafeDispose(() => popout.Dispose());

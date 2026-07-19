@@ -48,6 +48,13 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
         }
     }
 
+    /// <summary>Switches the meter to the given tab index (persisted to config).</summary>
+    public void SelectTab(int index)
+    {
+        if (index >= 0 && index < plugin.Config.MeterTabs.Count)
+            SelectedMeterTab = index;
+    }
+
     public MainWindow(DamageTerrorPlugin plugin, ITextureProvider textureProvider)
         : base(plugin, textureProvider, GetTitleWithVersion())
     {

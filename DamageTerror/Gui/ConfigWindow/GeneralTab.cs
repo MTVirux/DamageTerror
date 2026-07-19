@@ -28,6 +28,9 @@ public sealed class GeneralTab
         if (ImGui.Button("Run customization wizard"))
             plugin.OpenCustomizationWizard();
         ConfigHelpers.HelpMarker("A quick pass over colors, icons, and markings. The full set of options can be found under Appearance.");
+        if (ImGui.Button("Run column wizard"))
+            plugin.OpenColumnWizard();
+        ConfigHelpers.HelpMarker("Pick which columns a meter tab shows and their order. Per-column extras live under Appearance.");
         ImGui.Spacing();
 
         if (ImGui.CollapsingHeader("Connection", ImGuiTreeNodeFlags.DefaultOpen))
