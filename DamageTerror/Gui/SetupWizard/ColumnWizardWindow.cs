@@ -324,5 +324,11 @@ public sealed class ColumnWizardWindow : Window
         ImGui.TextWrapped("Columns set. Per-column extras - custom labels, formats, value colors, and widths - live under Settings -> Appearance.");
         ImGui.Spacing();
         ImGui.TextWrapped("Finishing clears the sample data from the meter.");
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        WizardFinishNav.Draw(plugin, WizardFinishNav.WizardKind.Columns, ReleaseSampleOwnership, () => IsOpen = false);
     }
 }

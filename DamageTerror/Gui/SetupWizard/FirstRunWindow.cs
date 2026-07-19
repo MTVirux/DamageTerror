@@ -401,13 +401,7 @@ public sealed class FirstRunWindow : Window
         ImGui.Separator();
         ImGui.Spacing();
 
-        ImGui.TextWrapped("Want to fine-tune the look? A short second wizard covers colors, icons, and markings. It is also available later under Settings → General.");
-        ImGui.Spacing();
-        if (ImGui.Button("Customize the look further..."))
-        {
-            plugin.OpenCustomizationWizard(takeOverSampleData: ReleaseSampleOwnership());
-            IsOpen = false;
-        }
+        WizardFinishNav.Draw(plugin, WizardFinishNav.WizardKind.Setup, ReleaseSampleOwnership, () => IsOpen = false);
 
         ImGui.Spacing();
         ImGui.TextWrapped("Finishing clears the sample data from the meter.");

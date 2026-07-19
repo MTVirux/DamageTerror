@@ -278,5 +278,11 @@ public sealed class CustomizationWizardWindow : Window
         ImGui.TextWrapped("That's the quick pass. Everything here - and much more - can be found under Settings → Appearance.");
         ImGui.Spacing();
         ImGui.TextWrapped("Finishing clears the sample data from the meter.");
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        WizardFinishNav.Draw(plugin, WizardFinishNav.WizardKind.Customization, ReleaseSampleOwnership, () => IsOpen = false);
     }
 }
