@@ -4,9 +4,9 @@ namespace DamageTerror.Gui.SetupWizard;
 
 public sealed class FirstRunWindow : Window
 {
-    private const int StepCount = 5;
+    private const int StepCount = 6;
 
-    private static readonly string[] StepTitles = { "Data source", "Pick a look", "Behavior", "Layout", "All done" };
+    private static readonly string[] StepTitles = { "Data source", "Pick a look", "Behavior", "Layout", "Position and size", "All done" };
 
     private readonly DamageTerrorPlugin plugin;
     private readonly PresetManager presetManager;
@@ -105,7 +105,8 @@ public sealed class FirstRunWindow : Window
                 case 1: DrawAppearanceStep(); break;
                 case 2: DrawBehaviorStep(); break;
                 case 3: DrawLayoutStep(); break;
-                case 4: DrawFinishStep(); break;
+                case 4: DrawPositionStep(); break;
+                case 5: DrawFinishStep(); break;
             }
         }
         ImGui.EndChild();
@@ -153,7 +154,7 @@ public sealed class FirstRunWindow : Window
         // preview meter is showing when the user lands on the new page.
         simulateInCombat = true;
         simOutOfCombatSince = null;
-        if (currentStep is 1 or 3)
+        if (currentStep is 1 or 3 or 4)
             EnsurePreview();
     }
 
@@ -294,6 +295,26 @@ public sealed class FirstRunWindow : Window
         // meter's toggle-mode edge detection running in the same frame.
         if (MeterWindowHelper.IsModifierComboDown(config))
             modifierDemonstrated = true;
+    }
+
+    private void DrawPositionStep()
+    {
+        var config = plugin.Config;
+
+        ImGui.TextWrapped("Put the meter where you want it. Drag the preview meter to move it, drag its edges to resize - or use the controls below.");
+        ImGui.Spacing();
+
+        var changed = PositionSizeSection.Draw(config);
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        changed |= ConfigHelpers.CheckboxProp("Lock meter position and size", config.PinMainWindow, v => config.PinMainWindow = v);
+        ConfigHelpers.HelpMarker("Locked: the meter can't be dragged or resized. The lock icon on the meter's title bar toggles this too.");
+
+        if (changed)
+            plugin.SaveConfig();
     }
 
     private void DrawBehaviorStep()
