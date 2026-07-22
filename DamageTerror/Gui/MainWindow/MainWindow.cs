@@ -185,7 +185,10 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
         wasDrawnLastFrame = true;
 
         if (!plugin.Config.PinMainWindow)
+        {
+            plugin.Config.MainWindowPos = ImGui.GetWindowPos();
             plugin.Config.MainWindowSize = ImGui.GetWindowSize();
+        }
 
         plugin.DataService.CheckStaleness();
         plugin.DataService.Store.TickSampleSimulation();
