@@ -63,8 +63,18 @@ public static class PositionSizeSection
         ImGui.Separator();
         ImGui.Spacing();
 
-        changed |= ConfigHelpers.SliderFloatProp("Width", config.MainWindowSize.X, 250f, workSize.X, "%.0f", v => config.MainWindowSize = new Vector2(v, config.MainWindowSize.Y), 200);
-        changed |= ConfigHelpers.SliderFloatProp("Height", config.MainWindowSize.Y, 150f, workSize.Y, "%.0f", v => config.MainWindowSize = new Vector2(config.MainWindowSize.X, v), 200);
+        // Sliders pin like the dock buttons do - while unpinned, the live
+        // window overwrites this value again next frame.
+        changed |= ConfigHelpers.SliderFloatProp("Width", config.MainWindowSize.X, 250f, workSize.X, "%.0f", v =>
+        {
+            config.MainWindowSize = new Vector2(v, config.MainWindowSize.Y);
+            config.PinMainWindow = true;
+        }, 200);
+        changed |= ConfigHelpers.SliderFloatProp("Height", config.MainWindowSize.Y, 150f, workSize.Y, "%.0f", v =>
+        {
+            config.MainWindowSize = new Vector2(config.MainWindowSize.X, v);
+            config.PinMainWindow = true;
+        }, 200);
 
         return changed;
     }
