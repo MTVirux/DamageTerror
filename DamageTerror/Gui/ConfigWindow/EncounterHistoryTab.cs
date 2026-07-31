@@ -88,9 +88,10 @@ public sealed class EncounterHistoryTab
 
         var summaryMb = store.StorageSizeBytes / (1024.0 * 1024.0);
         var timelinesMb = store.TimelineStorageSizeBytes / (1024.0 * 1024.0);
-        var totalMb = summaryMb + timelinesMb;
+        var rawMb = store.RawCaptureStorageSizeBytes / (1024.0 * 1024.0);
+        var totalMb = summaryMb + timelinesMb + rawMb;
         ImGui.TextDisabled(
-            $"{history.Count} encounter(s) stored — encounters.json {summaryMb:F2} MB · {store.TimelineFileCount} timelines ({timelinesMb:F2} MB) · total {totalMb:F2} MB");
+            $"{history.Count} encounter(s) stored — encounters.json {summaryMb:F2} MB · {store.TimelineFileCount} timelines ({timelinesMb:F2} MB) · {store.RawCaptureFileCount} raw ({rawMb:F2} MB) · total {totalMb:F2} MB");
         ConfigHelpers.HelpMarker("Encounter history is saved automatically and persists across restarts.");
 #if DEBUG
         if (!config.HideDebugFeatures)
@@ -349,9 +350,14 @@ public sealed class EncounterHistoryTab
                 {
                     ImGui.TextUnformatted(ValueFormatter.FormatBytes(size.TotalBytes));
                     ImGui.SameLine();
-                    ImGui.TextDisabled(enc.HasTimeline
-                        ? $"(encounters.json {ValueFormatter.FormatBytes(size.SummaryBytes)} · timeline {ValueFormatter.FormatBytes(size.TimelineBytes)})"
-                        : "(encounters.json only - no timeline stored)");
+                    var breakdown = $"encounters.json {ValueFormatter.FormatBytes(size.SummaryBytes)}";
+                    if (enc.HasTimeline)
+                        breakdown += $" · timeline {ValueFormatter.FormatBytes(size.TimelineBytes)}";
+                    if (enc.HasRawCapture)
+                        breakdown += $" · raw {ValueFormatter.FormatBytes(size.RawBytes)}";
+                    ImGui.TextDisabled(enc.HasTimeline || enc.HasRawCapture
+                        ? $"({breakdown})"
+                        : "(encounters.json only - no sidecars stored)");
                 }
 
                 if (enc.Combatants.Count > 0)
@@ -453,7 +459,7 @@ public sealed class EncounterHistoryTab
 #if DEBUG
                 if (!plugin.Config.HideDebugFeatures)
                 {
-                    if (enc.RawLogLines.Count > 0)
+                    if (enc.HasRawCapture)
                     {
                         ImGui.SameLine();
                         if (ImGui.SmallButton($"Recalculate##{i}"))
@@ -461,14 +467,11 @@ public sealed class EncounterHistoryTab
                             plugin.DataService.RecalculateFromLogLines(enc);
                             SetStatus("Recalculated from raw log lines!");
                         }
-                    }
-                    if (enc.RawCombatDataFrames.Count > 0)
-                    {
                         ImGui.SameLine();
                         if (ImGui.SmallButton($"Replay CombatData##{i}"))
                         {
                             plugin.DataService.ReplayCombatData(enc);
-                            SetStatus($"Replayed {enc.RawCombatDataFrames.Count} CombatData frames — see plugin log.");
+                            SetStatus("Replayed captured CombatData frames - see plugin log.");
                         }
                     }
                 }

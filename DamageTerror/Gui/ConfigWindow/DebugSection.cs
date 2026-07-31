@@ -39,6 +39,23 @@ internal static class DebugSection
 
         ImGui.Spacing();
 
+        if (ImGui.CollapsingHeader("Raw Capture##debugCapture", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            var captureRaw = config.CaptureRawFrames;
+            if (ImGui.Checkbox("Capture raw frames##captureRawFrames", ref captureRaw))
+            {
+                config.CaptureRawFrames = captureRaw;
+                changed = true;
+            }
+            ConfigHelpers.HelpMarker(
+                "Stores every raw ACT log line and IINACT CombatData frame of an encounter in a sidecar file " +
+                "next to the history, enabling the Recalculate and Replay CombatData buttons. Costs memory and " +
+                "disk space per encounter, so it stays off unless you need offline reparsing. " +
+                "Has no effect in release builds.");
+        }
+
+        ImGui.Spacing();
+
         if (ImGui.CollapsingHeader("Log Channels##logCh"))
         {
             ImGui.TextWrapped("Enable or disable log output per service. Disabled channels will not write to the Dalamud log. Useful for silencing noisy services during testing.");

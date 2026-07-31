@@ -36,6 +36,8 @@ public sealed class Configuration : IPluginConfiguration
 
     public bool HideDebugFeatures { get; set; } = false;
 
+    public bool CaptureRawFrames { get; set; } = false;
+
 
     public bool EnableInOverworld { get; set; } = true;
     public bool EnableInDungeons { get; set; } = true;

@@ -23,6 +23,11 @@ public sealed class EncounterSnapshot
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Include)]
     public bool HasTimeline { get; set; }
 
+    /// <summary>True if this encounter has a raw capture sidecar file on disk.
+    /// Persisted with the summary so the debug tools can offer replay without disk I/O.</summary>
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Include)]
+    public bool HasRawCapture { get; set; }
+
     /// <summary>Per-combatant graph samples, keyed by name. Populated on encounter archive.</summary>
     [JsonIgnore]
     public Dictionary<string, List<GraphSample>> GraphData { get; set; } = new(StringComparer.OrdinalIgnoreCase);
@@ -50,13 +55,23 @@ public sealed class EncounterSnapshot
     [Newtonsoft.Json.JsonIgnore]
     internal bool TimelineLoaded { get; set; }
 
-    /// <summary>Raw ACT network log lines for the encounter. Populated from imported data or live capture.</summary>
+    [Newtonsoft.Json.JsonIgnore]
+    internal bool RawCaptureLoaded { get; set; }
+
+    /// <summary>Raw ACT network log lines for the encounter. Populated from imported data or live capture.
+    /// Persisted in the raw capture sidecar, not with the summary.</summary>
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public List<string> RawLogLines { get; set; } = new();
 
-    /// <summary>Raw IINACT CombatData JSON frames captured during the encounter. Debug-only; used for offline replay through the parser pipeline.</summary>
+    /// <summary>Raw IINACT CombatData JSON frames captured during the encounter. Debug-only; used for offline replay
+    /// through the parser pipeline. Persisted in the raw capture sidecar, not with the summary.</summary>
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public List<string> RawCombatDataFrames { get; set; } = new();
+
+    // Raw capture lives in its own sidecar; deserialization still populates these so
+    // pre-split files and older exports migrate on load.
+    public bool ShouldSerializeRawLogLines() => false;
+    public bool ShouldSerializeRawCombatDataFrames() => false;
 
     /// <summary>
     /// Rebuild dictionaries with case-insensitive comparers after JSON deserialization,
@@ -174,6 +189,10 @@ public sealed class EncounterSnapshot
         GraphData = new Dictionary<string, List<GraphSample>>(StringComparer.OrdinalIgnoreCase);
         StatusHistory = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
         StatusesReceived = new Dictionary<string, List<StatusApplication>>(StringComparer.OrdinalIgnoreCase);
+
         RawLogLines = new List<string>();
+        RawCombatDataFrames = new List<string>();
+        HasRawCapture = false;
+        RawCaptureLoaded = false;
     }
 }

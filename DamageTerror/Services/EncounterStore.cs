@@ -18,6 +18,7 @@ public sealed class EncounterStore
     private bool activeAlreadyInHistory;
     private string? savePath;
     private TimelineSidecarStore? timelineStore;
+    private SidecarStore<RawCaptureBundle>? rawStore;
     private bool dirty;
     private bool loadedSuccessfully;
     private bool sampleDataActive;
@@ -54,9 +55,12 @@ public sealed class EncounterStore
     public int TimelineFileCount => timelineStore?.FileCount() ?? 0;
     public string? TimelineDirectory => timelineStore?.DirectoryPath;
 
+    public long RawCaptureStorageSizeBytes => rawStore?.TotalSizeBytes() ?? 0;
+    public int RawCaptureFileCount => rawStore?.FileCount() ?? 0;
+
     /// <summary>
     /// On-disk footprint of a single encounter: its slice of encounters.json plus
-    /// its timeline sidecar. Sizing the summary means serializing it, which is far
+    /// its timeline and raw capture sidecars. Sizing the summary means serializing it, which is far
     /// too slow for a draw call, so the work is queued onto a background worker:
     /// this returns false until the result lands. Results are cached until the
     /// store next changes.
@@ -102,11 +106,12 @@ public sealed class EncounterStore
         }
 
         var timelineBytes = snapshot.HasTimeline ? timelineStore?.SizeBytes(snapshot.Id) ?? 0 : 0;
+        var rawBytes = snapshot.HasRawCapture ? rawStore?.SizeBytes(snapshot.Id) ?? 0 : 0;
 
         lock (syncLock)
         {
             if (version == diskSizeVersion)
-                diskSizeCache[snapshot] = new EncounterDiskSize(summaryBytes, timelineBytes);
+                diskSizeCache[snapshot] = new EncounterDiskSize(summaryBytes, timelineBytes, rawBytes);
         }
     }
 
@@ -381,6 +386,7 @@ public sealed class EncounterStore
             AssignIdIfMissing(current);
             history.Add(current);
             SaveTimelineSidecarLocked(current);
+            SaveRawSidecarLocked(current);
             MarkDirtyLocked();
             archived = true;
             PruneHistoryLocked();
@@ -453,6 +459,8 @@ public sealed class EncounterStore
                 MarkDirtyLocked();
                 if (timelineStore != null && snap.HasTimeline)
                     timelineStore.Delete(snap.Id);
+                if (rawStore != null && snap.HasRawCapture)
+                    rawStore.Delete(snap.Id);
             }
         }
     }
@@ -485,6 +493,7 @@ public sealed class EncounterStore
                 {
                     history.Add(active);
                     SaveTimelineSidecarLocked(active);
+                    SaveRawSidecarLocked(active);
                 }
                 MarkDirtyLocked();
             }
@@ -515,6 +524,7 @@ public sealed class EncounterStore
 
             history.Add(active);
             SaveTimelineSidecarLocked(active);
+            SaveRawSidecarLocked(active);
             MarkDirtyLocked();
             activeAlreadyInHistory = true;
             PruneHistoryLocked();
@@ -579,6 +589,7 @@ public sealed class EncounterStore
             throw new ArgumentException("Save path must not be null or empty.", nameof(path));
         savePath = path;
         timelineStore = new TimelineSidecarStore(path);
+        rawStore = new SidecarStore<RawCaptureBundle>(path, "raw");
     }
 
     public void Load()
@@ -599,6 +610,8 @@ public sealed class EncounterStore
                 lock (syncLock)
                 {
                     if (MigrateEmbeddedTimelinesLocked(json, loaded))
+                        anyRepaired = true;
+                    if (MigrateEmbeddedRawCaptureLocked(loaded))
                         anyRepaired = true;
                 }
 
@@ -695,6 +708,40 @@ public sealed class EncounterStore
     }
 
     /// <summary>
+    /// Load the snapshot's raw capture sidecar into its in-memory lists if not already
+    /// loaded. Safe to call repeatedly. If the sidecar is missing or unreadable,
+    /// <see cref="EncounterSnapshot.HasRawCapture"/> is flipped to false and the lists
+    /// stay empty.
+    /// </summary>
+    public void EnsureRawCaptureLoaded(EncounterSnapshot snapshot)
+    {
+        if (rawStore == null) return;
+        if (!snapshot.HasRawCapture) return;
+
+        lock (syncLock)
+        {
+            if (snapshot.RawCaptureLoaded) return;
+        }
+
+        var bundle = rawStore.Load(snapshot.Id);
+
+        lock (syncLock)
+        {
+            if (snapshot.RawCaptureLoaded) return;
+
+            if (bundle == null)
+            {
+                snapshot.HasRawCapture = false;
+                MarkDirtyLocked();
+                return;
+            }
+
+            bundle.CopyInto(snapshot);
+            snapshot.RawCaptureLoaded = true;
+        }
+    }
+
+    /// <summary>
     /// Detect encounters loaded from the pre-split monolithic format and migrate
     /// their embedded timeline streams into sidecar files. The timeline dicts on
     /// <see cref="EncounterSnapshot"/> are [JsonIgnore], so the embedded data is
@@ -751,6 +798,45 @@ public sealed class EncounterStore
         return migrated > 0;
     }
 
+    /// <summary>
+    /// Move raw capture embedded by the pre-split format into sidecar files. Unlike the
+    /// timeline streams these properties still deserialize, so the data is already on the
+    /// loaded snapshots and no second parse of the file is needed - only the write-out
+    /// and the in-memory clear.
+    /// </summary>
+    private bool MigrateEmbeddedRawCaptureLocked(List<EncounterSnapshot> loaded)
+    {
+        if (rawStore == null) return false;
+
+        var migrated = 0;
+        var failed = 0;
+        foreach (var snap in loaded)
+        {
+            if (snap.RawLogLines.Count == 0 && snap.RawCombatDataFrames.Count == 0)
+                continue;
+
+            AssignIdIfMissing(snap);
+            // Leaves the in-memory lists alone when the write fails, so the data
+            // survives for the rest of the session and is retried next launch.
+            SaveRawSidecarLocked(snap);
+
+            if (snap.HasRawCapture)
+                migrated++;
+            else
+                failed++;
+        }
+        if (migrated > 0)
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Migrated {migrated} encounter(s) to raw capture sidecars.");
+        if (failed > 0)
+        {
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Raw capture migration: {failed} encounter(s) failed to write sidecar. Their raw capture is not on disk and will be dropped from encounters.json on the next save.");
+            return false;
+        }
+        return migrated > 0;
+    }
+
     private static bool TryPopulateDict<TValue>(
         JToken? token,
         Dictionary<string, List<TValue>> target)
@@ -789,6 +875,26 @@ public sealed class EncounterStore
         {
             snapshot.HasTimeline = true;
             snapshot.TimelineLoaded = true;
+        }
+    }
+
+    /// <summary>
+    /// Write the snapshot's debug raw capture to its sidecar, then drop the in-memory
+    /// copy. Unlike the timeline this does not stay resident: a single fight's raw
+    /// capture runs to tens of megabytes, so it is re-read on demand instead.
+    /// </summary>
+    private void SaveRawSidecarLocked(EncounterSnapshot snapshot)
+    {
+        if (rawStore == null) return;
+        var bundle = RawCaptureBundle.FromSnapshot(snapshot);
+        if (bundle.IsEmpty)
+            return;
+        if (rawStore.Save(snapshot.Id, bundle))
+        {
+            snapshot.HasRawCapture = true;
+            snapshot.RawLogLines = new List<string>();
+            snapshot.RawCombatDataFrames = new List<string>();
+            snapshot.RawCaptureLoaded = false;
         }
     }
 
@@ -841,6 +947,27 @@ public sealed class EncounterStore
             MarkDirtyLocked();
 
         PruneTimelinesLocked();
+        PruneRawCaptureLocked();
+    }
+
+    /// <summary>Delete raw capture sidecars no history entry claims. Raw capture has no
+    /// retention setting of its own - it lives and dies with its encounter.</summary>
+    private void PruneRawCaptureLocked()
+    {
+        if (rawStore == null) return;
+
+        var referenced = new HashSet<long>();
+        foreach (var snap in history)
+        {
+            if (snap.HasRawCapture)
+                referenced.Add(snap.Id);
+        }
+
+        foreach (var id in rawStore.EnumerateIds().ToList())
+        {
+            if (!referenced.Contains(id))
+                rawStore.Delete(id);
+        }
     }
 
     private void PruneTimelinesLocked()
@@ -918,6 +1045,9 @@ public sealed class EncounterStore
         {
             Summary = encounter,
             Timeline = encounter.HasTimeline ? TimelineBundle.FromSnapshot(encounter) : null,
+            // Read straight from the sidecar rather than hydrating the snapshot, so a
+            // single export does not leave tens of megabytes resident.
+            RawCapture = encounter.HasRawCapture ? rawStore?.Load(encounter.Id) : null,
         };
         return JsonConvert.SerializeObject(composite, ExportSettings);
     }
@@ -942,6 +1072,10 @@ public sealed class EncounterStore
                         if (bundle != null)
                             bundle.CopyInto(snapshot);
                     }
+
+                    var rawToken = jobj["RawCapture"];
+                    if (rawToken != null && rawToken.Type != JTokenType.Null)
+                        rawToken.ToObject<RawCaptureBundle>()?.CopyInto(snapshot);
                 }
             }
             else
@@ -979,6 +1113,7 @@ public sealed class EncounterStore
                 else
                     history.Insert(idx, snapshot);
                 SaveTimelineSidecarLocked(snapshot);
+                SaveRawSidecarLocked(snapshot);
 
                 MarkDirtyLocked();
                 PruneHistoryLocked();
@@ -1073,7 +1208,7 @@ public sealed class EncounterStore
 }
 
 /// <summary>Bytes a single encounter occupies on disk, split by file.</summary>
-public readonly record struct EncounterDiskSize(long SummaryBytes, long TimelineBytes)
+public readonly record struct EncounterDiskSize(long SummaryBytes, long TimelineBytes, long RawBytes)
 {
-    public long TotalBytes => SummaryBytes + TimelineBytes;
+    public long TotalBytes => SummaryBytes + TimelineBytes + RawBytes;
 }

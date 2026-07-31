@@ -427,7 +427,7 @@ public sealed class DataService : IDisposable
 
         CaptureGraphData(outgoing);
 #if DEBUG
-        CaptureRawFrames(outgoing);
+        CopyRawAccumulatorsTo(outgoing);
 #endif
         return outgoing;
     }
@@ -513,8 +513,11 @@ public sealed class DataService : IDisposable
                 SkillTracker.ProcessLogLine(line);
             }
 #if DEBUG
-            lock (rawLogLineAccumulator)
-                rawLogLineAccumulator.Add(string.Join("|", line));
+            if (config.CaptureRawFrames)
+            {
+                lock (rawLogLineAccumulator)
+                    rawLogLineAccumulator.Add(string.Join("|", line));
+            }
 #endif
         }
 
@@ -573,12 +576,19 @@ public sealed class DataService : IDisposable
 #if DEBUG
     private void OnRawCombatData(JObject data)
     {
+        if (!config.CaptureRawFrames) return;
+
         lock (rawCombatDataAccumulator)
             rawCombatDataAccumulator.Add(data.ToString(Newtonsoft.Json.Formatting.None));
     }
 
-    private void CaptureRawFrames(EncounterSnapshot target)
+    private void CopyRawAccumulatorsTo(EncounterSnapshot target)
     {
+        // Skip when capture is off so imported encounters keep their own log lines and frames.
+        // Skip once flushed too: a repeated end frame would otherwise refill the lists of an
+        // encounter the store has already written and cleared, stranding them in memory.
+        if (!config.CaptureRawFrames || target.HasRawCapture) return;
+
         lock (rawLogLineAccumulator)
             target.RawLogLines = new List<string>(rawLogLineAccumulator);
         lock (rawCombatDataAccumulator)
@@ -593,6 +603,8 @@ public sealed class DataService : IDisposable
     /// </summary>
     public void ReplayCombatData(EncounterSnapshot encounter)
     {
+        Store.EnsureRawCaptureLoaded(encounter);
+
         if (encounter.RawCombatDataFrames.Count == 0)
             return;
 
@@ -633,6 +645,8 @@ public sealed class DataService : IDisposable
     /// </summary>
     public void RecalculateFromLogLines(EncounterSnapshot encounter)
     {
+        Store.EnsureRawCaptureLoaded(encounter);
+
         if (encounter.RawLogLines.Count == 0)
             return;
 
@@ -931,9 +945,6 @@ public sealed class DataService : IDisposable
         if (active == null) return;
 
         CaptureGraphData(active);
-#if DEBUG
-        CaptureRawFrames(active);
-#endif
         Store.Save();
     }
 
@@ -950,7 +961,7 @@ public sealed class DataService : IDisposable
         {
             CaptureGraphData(active);
 #if DEBUG
-            CaptureRawFrames(active);
+            CopyRawAccumulatorsTo(active);
 #endif
         }
 
