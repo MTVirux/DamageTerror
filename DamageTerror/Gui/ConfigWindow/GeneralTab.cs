@@ -221,7 +221,7 @@ public sealed class GeneralTab
                 ImGui.Text($"{FormatRelativeTime(entry.Timestamp)} ({entry.Timestamp.ToLocalTime():yyyy-MM-dd HH:mm:ss})");
 
                 ImGui.TableNextColumn();
-                ImGui.Text(FormatSize(entry.SizeBytes));
+                ImGui.Text(ValueFormatter.FormatBytes(entry.SizeBytes));
 
                 ImGui.TableNextColumn();
                 if (ImGui.Button("Restore##restore"))
@@ -325,12 +325,5 @@ public sealed class GeneralTab
         if (span.TotalHours < 24) return $"{(int)span.TotalHours} h ago";
         if (span.TotalDays < 30) return $"{(int)span.TotalDays} d ago";
         return utc.ToLocalTime().ToString("yyyy-MM-dd");
-    }
-
-    private static string FormatSize(long bytes)
-    {
-        if (bytes < 1024) return $"{bytes} B";
-        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
-        return $"{bytes / (1024.0 * 1024.0):F1} MB";
     }
 }

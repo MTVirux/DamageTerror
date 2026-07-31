@@ -313,7 +313,10 @@ public sealed class EncounterHistoryTab
             if (!EncounterSearchHelper.MatchesFilter(enc, filter))
                 continue;
 
-            var header = $"[{enc.Timestamp.ToLocalTime():yyyy-MM-dd HH:mm}]  {label}  ({encounter.Duration})";
+            var sizeKnown = store.TryGetDiskSize(enc, out var size);
+            var sizeText = sizeKnown ? ValueFormatter.FormatBytes(size.TotalBytes) : "...";
+            // Trailing ### keeps the node's open state stable while the size resolves.
+            var header = $"[{enc.Timestamp.ToLocalTime():yyyy-MM-dd HH:mm}]  {label}  ({encounter.Duration})  \u00b7  {sizeText}###encounter";
 
             ImGui.PushID(i);
             if (ImGui.TreeNodeEx(header, ImGuiTreeNodeFlags.None))
@@ -335,6 +338,21 @@ public sealed class EncounterHistoryTab
                 ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Deaths:");
                 ImGui.SameLine();
                 ImGui.TextUnformatted($"{encounter.Deaths}");
+
+                ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 1f), "Size on disk:");
+                ImGui.SameLine();
+                if (!sizeKnown)
+                {
+                    ImGui.TextDisabled("measuring...");
+                }
+                else
+                {
+                    ImGui.TextUnformatted(ValueFormatter.FormatBytes(size.TotalBytes));
+                    ImGui.SameLine();
+                    ImGui.TextDisabled(enc.HasTimeline
+                        ? $"(encounters.json {ValueFormatter.FormatBytes(size.SummaryBytes)} · timeline {ValueFormatter.FormatBytes(size.TimelineBytes)})"
+                        : "(encounters.json only - no timeline stored)");
+                }
 
                 if (enc.Combatants.Count > 0)
                 {

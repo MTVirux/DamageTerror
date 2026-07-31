@@ -1,3 +1,4 @@
+using System.Text;
 
 namespace DamageTerror.Services;
 
@@ -5,7 +6,10 @@ public sealed class EncounterStore
 {
     private readonly object syncLock = new();
     private readonly List<EncounterSnapshot> history = new();
+    private readonly Dictionary<EncounterSnapshot, EncounterDiskSize?> diskSizeCache = new();
     private readonly Configuration config;
+    private Task measureQueue = Task.CompletedTask;
+    private int diskSizeVersion;
     private EncounterSnapshot? active;
     private bool prevSnapshotActive;
     /// <summary>When true, drop incoming CombatData until a genuinely new encounter starts.
@@ -49,6 +53,74 @@ public sealed class EncounterStore
     public long TimelineStorageSizeBytes => timelineStore?.TotalSizeBytes() ?? 0;
     public int TimelineFileCount => timelineStore?.FileCount() ?? 0;
     public string? TimelineDirectory => timelineStore?.DirectoryPath;
+
+    /// <summary>
+    /// On-disk footprint of a single encounter: its slice of encounters.json plus
+    /// its timeline sidecar. Sizing the summary means serializing it, which is far
+    /// too slow for a draw call, so the work is queued onto a background worker:
+    /// this returns false until the result lands. Results are cached until the
+    /// store next changes.
+    /// </summary>
+    public bool TryGetDiskSize(EncounterSnapshot snapshot, out EncounterDiskSize size)
+    {
+        size = default;
+        lock (syncLock)
+        {
+            if (diskSizeCache.TryGetValue(snapshot, out var cached))
+            {
+                // A null entry is queued, in flight, or failed to measure; either
+                // way it is retried only after the next store change.
+                if (cached == null)
+                    return false;
+                size = cached.Value;
+                return true;
+            }
+
+            diskSizeCache[snapshot] = null;
+            var version = diskSizeVersion;
+            // Chained so a long history is measured one encounter at a time.
+            measureQueue = measureQueue.ContinueWith(_ => MeasureDiskSize(snapshot, version));
+        }
+
+        return false;
+    }
+
+    private void MeasureDiskSize(EncounterSnapshot snapshot, int version)
+    {
+        long summaryBytes;
+        try
+        {
+            using var counter = new Utf8ByteCounter();
+            JsonSerializer.Create(SaveSettings).Serialize(counter, snapshot);
+            summaryBytes = counter.ByteCount;
+        }
+        catch (Exception ex)
+        {
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Failed to measure encounter size: {ex.Message}");
+            return;
+        }
+
+        var timelineBytes = snapshot.HasTimeline ? timelineStore?.SizeBytes(snapshot.Id) ?? 0 : 0;
+
+        lock (syncLock)
+        {
+            if (version == diskSizeVersion)
+                diskSizeCache[snapshot] = new EncounterDiskSize(summaryBytes, timelineBytes);
+        }
+    }
+
+    private void MarkDirtyLocked()
+    {
+        dirty = true;
+        InvalidateDiskSizesLocked();
+    }
+
+    private void InvalidateDiskSizesLocked()
+    {
+        diskSizeCache.Clear();
+        diskSizeVersion++;
+    }
 
     public EncounterSnapshot? ActiveEncounter
     {
@@ -309,7 +381,7 @@ public sealed class EncounterStore
             AssignIdIfMissing(current);
             history.Add(current);
             SaveTimelineSidecarLocked(current);
-            dirty = true;
+            MarkDirtyLocked();
             archived = true;
             PruneHistoryLocked();
         }
@@ -378,7 +450,7 @@ public sealed class EncounterStore
             {
                 var snap = history[index];
                 history.RemoveAt(index);
-                dirty = true;
+                MarkDirtyLocked();
                 if (timelineStore != null && snap.HasTimeline)
                     timelineStore.Delete(snap.Id);
             }
@@ -393,7 +465,7 @@ public sealed class EncounterStore
             active = null;
             prevSnapshotActive = false;
             isStaleDataSuppressed = true;
-            dirty = true;
+            MarkDirtyLocked();
         }
     }
 
@@ -414,7 +486,7 @@ public sealed class EncounterStore
                     history.Add(active);
                     SaveTimelineSidecarLocked(active);
                 }
-                dirty = true;
+                MarkDirtyLocked();
             }
 
             activeAlreadyInHistory = false;
@@ -443,7 +515,7 @@ public sealed class EncounterStore
 
             history.Add(active);
             SaveTimelineSidecarLocked(active);
-            dirty = true;
+            MarkDirtyLocked();
             activeAlreadyInHistory = true;
             PruneHistoryLocked();
             return true;
@@ -474,7 +546,7 @@ public sealed class EncounterStore
             active = history[idx];
             history.RemoveAt(idx);
             prevSnapshotActive = false;
-            dirty = true;
+            MarkDirtyLocked();
             toHydrate = active;
         }
 
@@ -497,7 +569,7 @@ public sealed class EncounterStore
             history.Clear();
             active = null;
             prevSnapshotActive = false;
-            dirty = true;
+            MarkDirtyLocked();
         }
     }
 
@@ -551,7 +623,7 @@ public sealed class EncounterStore
                     history.AddRange(loaded);
 
                     if (anyRepaired)
-                        dirty = true;
+                        MarkDirtyLocked();
                 }
             }
 
@@ -613,7 +685,7 @@ public sealed class EncounterStore
             if (bundle == null)
             {
                 snapshot.HasTimeline = false;
-                dirty = true;
+                MarkDirtyLocked();
                 return;
             }
 
@@ -740,7 +812,7 @@ public sealed class EncounterStore
             history.RemoveAll(s => s.Encounter.EncDps == 0);
             var removed = before - history.Count;
             if (removed > 0)
-                dirty = true;
+                MarkDirtyLocked();
             return removed;
         }
     }
@@ -766,7 +838,7 @@ public sealed class EncounterStore
         }
 
         if (removed)
-            dirty = true;
+            MarkDirtyLocked();
 
         PruneTimelinesLocked();
     }
@@ -822,13 +894,21 @@ public sealed class EncounterStore
             }
         }
         if (purged)
-            dirty = true;
+            MarkDirtyLocked();
     }
 
     private static readonly JsonSerializerSettings ExportSettings = new()
     {
         DefaultValueHandling = DefaultValueHandling.Ignore,
         Formatting = Formatting.Indented,
+    };
+
+    /// <summary>Settings encounters.json is written with. Per-encounter size
+    /// measurement reuses them so the reported bytes match what lands on disk.</summary>
+    private static readonly JsonSerializerSettings SaveSettings = new()
+    {
+        DefaultValueHandling = DefaultValueHandling.Ignore,
+        Formatting = Formatting.None,
     };
 
     public string ExportEncounter(EncounterSnapshot encounter)
@@ -900,7 +980,7 @@ public sealed class EncounterStore
                     history.Insert(idx, snapshot);
                 SaveTimelineSidecarLocked(snapshot);
 
-                dirty = true;
+                MarkDirtyLocked();
                 PruneHistoryLocked();
             }
 
@@ -939,6 +1019,9 @@ public sealed class EncounterStore
                 return;
 
             dirty = false;
+            // Callers that mutate a snapshot in place (rather than the store) still
+            // reach here, so drop measured sizes on every write.
+            InvalidateDiskSizesLocked();
             snapshot = new List<EncounterSnapshot>(history);
         }
 
@@ -947,10 +1030,7 @@ public sealed class EncounterStore
         {
             try
             {
-                var json = JsonConvert.SerializeObject(snapshot, Formatting.None, new JsonSerializerSettings
-                {
-                    DefaultValueHandling = DefaultValueHandling.Ignore,
-                });
+                var json = JsonConvert.SerializeObject(snapshot, SaveSettings);
 
                 var dir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(dir))
@@ -964,4 +1044,36 @@ public sealed class EncounterStore
             }
         });
     }
+
+    /// <summary>Measures the UTF-8 length of what is written to it and discards
+    /// the text, so a snapshot can be sized without building its JSON string.</summary>
+    private sealed class Utf8ByteCounter : TextWriter
+    {
+        private readonly Encoder encoder = Encoding.UTF8.GetEncoder();
+
+        public long ByteCount { get; private set; }
+
+        public override Encoding Encoding => Encoding.UTF8;
+
+        public override void Write(char value)
+        {
+            Span<char> one = [value];
+            ByteCount += encoder.GetByteCount(one, false);
+        }
+
+        public override void Write(char[] buffer, int index, int count)
+            => ByteCount += encoder.GetByteCount(buffer.AsSpan(index, count), false);
+
+        public override void Write(string? value)
+        {
+            if (!string.IsNullOrEmpty(value))
+                ByteCount += encoder.GetByteCount(value.AsSpan(), false);
+        }
+    }
+}
+
+/// <summary>Bytes a single encounter occupies on disk, split by file.</summary>
+public readonly record struct EncounterDiskSize(long SummaryBytes, long TimelineBytes)
+{
+    public long TotalBytes => SummaryBytes + TimelineBytes;
 }

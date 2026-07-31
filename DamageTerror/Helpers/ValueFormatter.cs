@@ -37,6 +37,13 @@ public static class ValueFormatter
         return value.ToString($"F{decimals}") + "%";
     }
 
+    public static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+
     public static string AbbreviateSkillName(string name, int maxLength, bool truncate = false)
     {
         if (maxLength <= 0 || string.IsNullOrEmpty(name) || name.Length <= maxLength)

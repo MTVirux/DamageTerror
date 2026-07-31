@@ -79,6 +79,17 @@ public sealed class TimelineSidecarStore
         return false;
     }
 
+    /// <summary>Size of a single encounter's sidecar file, or 0 if it has none.</summary>
+    public long SizeBytes(long encounterId)
+    {
+        try
+        {
+            var info = new FileInfo(PathFor(encounterId));
+            return info.Exists ? info.Length : 0;
+        }
+        catch { return 0; }
+    }
+
     public long TotalSizeBytes()
     {
         try
