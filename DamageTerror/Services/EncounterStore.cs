@@ -669,6 +669,7 @@ public sealed class EncounterStore
         List<EncounterSnapshot>? monolithLeftover = null;
         var loaded = new List<EncounterSnapshot>();
         var repairedIds = new List<long>();
+        var loadOk = true;
 
         // A read failure must not take plugin init down with it: log and carry on
         // with whatever was read, as the pre-split loader did.
@@ -677,8 +678,11 @@ public sealed class EncounterStore
             if (!string.IsNullOrEmpty(savePath) && File.Exists(savePath))
             {
                 if (!TryMigrateMonolith(out monolithLeftover))
+                {
+                    loadOk = false;
                     ServiceManager.LogWarning(LogChannel.EncounterStore,
                         "encounters.json migration incomplete; the file is kept and will be retried on next launch.");
+                }
             }
 
             foreach (var id in summaryStore.EnumerateIds().ToList())
@@ -705,11 +709,13 @@ public sealed class EncounterStore
         }
         catch (IOException ex)
         {
+            loadOk = false;
             ServiceManager.LogWarning(LogChannel.EncounterStore,
                 $"Failed to read encounter history: {ex.Message}");
         }
         catch (Exception ex)
         {
+            loadOk = false;
             ServiceManager.LogWarning(LogChannel.EncounterStore,
                 $"Unexpected error loading encounter history: {ex.Message}");
         }
@@ -736,16 +742,23 @@ public sealed class EncounterStore
                 dirtyIds.Add(id);
         }
 
-        PruneHistory();
-        Save();
+        // Pruning deletes every timeline and raw sidecar no history entry claims,
+        // so it must not run on a history known to be incomplete - it would wipe
+        // the sidecars of the encounters that failed to load.
+        if (loadOk)
+        {
+            PruneHistory();
+            Save();
+        }
     }
 
     /// <summary>
     /// One-time migration of the pre-split encounters.json monolith into
     /// per-encounter summary files (plus timeline/raw sidecars for the very old
-    /// embedded format). Returns true and deletes the monolith when every entry
-    /// was written; on failure returns false with the parsed entries in
-    /// <paramref name="leftover"/> so this session still sees its history.
+    /// embedded format). Returns true and deletes the monolith only when every
+    /// summary and every embedded timeline was written; on failure returns false
+    /// with the parsed entries in <paramref name="leftover"/> so this session
+    /// still sees its history and the monolith survives for a retry.
     /// </summary>
     private bool TryMigrateMonolith(out List<EncounterSnapshot>? leftover)
     {
@@ -780,15 +793,19 @@ public sealed class EncounterStore
             return true;
         }
 
+        bool timelinesOk;
         lock (syncLock)
         {
-            MigrateEmbeddedTimelinesLocked(json, parsed);
+            timelinesOk = MigrateEmbeddedTimelinesLocked(json, parsed);
+            // Raw capture is debug-only and its own warning already says the data
+            // is dropped, so a failed raw sidecar write does not hold the monolith
+            // back. Embedded timelines have no other copy, so they do.
             MigrateEmbeddedRawCaptureLocked(parsed);
         }
 
         parsed.RemoveAll(s => double.IsNaN(s.Encounter.EncDps));
 
-        var ok = true;
+        var ok = timelinesOk;
         foreach (var snap in parsed)
         {
             snap.Encounter.IsActive = false;
@@ -908,10 +925,13 @@ public sealed class EncounterStore
     /// their embedded timeline streams into sidecar files. The timeline dicts on
     /// <see cref="EncounterSnapshot"/> are [JsonIgnore], so the embedded data is
     /// pulled directly from the original JSON tokens before they are dropped.
+    /// Returns false only when a sidecar write failed, meaning the caller must
+    /// keep the monolith - it holds the only copy of that timeline data.
+    /// Nothing to migrate counts as success.
     /// </summary>
     private bool MigrateEmbeddedTimelinesLocked(string fileJson, List<EncounterSnapshot> loaded)
     {
-        if (timelineStore == null) return false;
+        if (timelineStore == null) return true;
         // Post-migration files never contain these keys (the properties are
         // [JsonIgnore] on EncounterSnapshot), so skip the expensive second
         // parse unless embedded timeline data is actually present.
@@ -921,7 +941,7 @@ public sealed class EncounterStore
             && !fileJson.Contains("\"ItemEvents\"", StringComparison.Ordinal)
             && !fileJson.Contains("\"StatusHistory\"", StringComparison.Ordinal)
             && !fileJson.Contains("\"StatusesReceived\"", StringComparison.Ordinal))
-            return false;
+            return true;
         JArray jarr;
         try
         {
@@ -929,10 +949,12 @@ public sealed class EncounterStore
         }
         catch
         {
-            return false;
+            // Unrecoverable rather than transient: retrying next launch would fail
+            // the same way and strand the monolith forever.
+            return true;
         }
         if (jarr.Count != loaded.Count)
-            return false;
+            return true;
 
         var migrated = 0;
         var failed = 0;
@@ -964,10 +986,10 @@ public sealed class EncounterStore
         if (failed > 0)
         {
             ServiceManager.LogWarning(LogChannel.EncounterStore,
-                $"Timeline migration: {failed} encounter(s) failed to write sidecar. encounters.json will NOT be rewritten this load; will retry on next launch.");
+                $"Timeline migration: {failed} encounter(s) failed to write sidecar. encounters.json is kept and migration will retry on next launch.");
             return false;
         }
-        return migrated > 0;
+        return true;
     }
 
     /// <summary>
