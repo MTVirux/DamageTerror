@@ -12,6 +12,9 @@ public class SidecarStore<T> where T : class
 {
     private readonly string baseDirectory;
     private readonly string subdirectoryName;
+    private readonly object cacheLock = new();
+    private long cachedTotalBytes = -1;
+    private int cachedFileCount = -1;
 
     public SidecarStore(string configFilePath, string subdirectoryName)
     {
@@ -19,6 +22,19 @@ public class SidecarStore<T> where T : class
                         ?? throw new ArgumentException("configFilePath must contain a directory", nameof(configFilePath));
         baseDirectory = Path.Combine(configDir, subdirectoryName);
         this.subdirectoryName = subdirectoryName;
+        CleanupTempFiles();
+    }
+
+    /// <summary>Remove .tmp files left behind by a crash mid-write.</summary>
+    private void CleanupTempFiles()
+    {
+        try
+        {
+            if (!Directory.Exists(baseDirectory)) return;
+            foreach (var f in Directory.EnumerateFiles(baseDirectory, "*.tmp"))
+                File.Delete(f);
+        }
+        catch { }
     }
 
     public string DirectoryPath => baseDirectory;
@@ -50,8 +66,11 @@ public class SidecarStore<T> where T : class
         {
             Directory.CreateDirectory(baseDirectory);
             var path = PathFor(encounterId);
+            var tmp = path + ".tmp";
             var json = JsonConvert.SerializeObject(value);
-            File.WriteAllText(path, json);
+            File.WriteAllText(tmp, json);
+            File.Move(tmp, path, overwrite: true);
+            InvalidateSizeCache();
             return true;
         }
         catch (Exception ex)
@@ -70,6 +89,7 @@ public class SidecarStore<T> where T : class
             if (File.Exists(path))
             {
                 File.Delete(path);
+                InvalidateSizeCache();
                 return true;
             }
         }
@@ -94,25 +114,51 @@ public class SidecarStore<T> where T : class
 
     public long TotalSizeBytes()
     {
-        try
+        lock (cacheLock)
         {
-            if (!Directory.Exists(baseDirectory)) return 0;
-            long total = 0;
-            foreach (var f in Directory.EnumerateFiles(baseDirectory, "*.json"))
-                total += new FileInfo(f).Length;
-            return total;
+            if (cachedTotalBytes < 0)
+                RefreshSizeCacheLocked();
+            return cachedTotalBytes;
         }
-        catch { return 0; }
     }
 
     public int FileCount()
     {
+        lock (cacheLock)
+        {
+            if (cachedFileCount < 0)
+                RefreshSizeCacheLocked();
+            return cachedFileCount;
+        }
+    }
+
+    private void RefreshSizeCacheLocked()
+    {
+        long total = 0;
+        var count = 0;
         try
         {
-            if (!Directory.Exists(baseDirectory)) return 0;
-            return Directory.EnumerateFiles(baseDirectory, "*.json").Count();
+            if (Directory.Exists(baseDirectory))
+            {
+                foreach (var f in Directory.EnumerateFiles(baseDirectory, "*.json"))
+                {
+                    total += new FileInfo(f).Length;
+                    count++;
+                }
+            }
         }
-        catch { return 0; }
+        catch { }
+        cachedTotalBytes = total;
+        cachedFileCount = count;
+    }
+
+    private void InvalidateSizeCache()
+    {
+        lock (cacheLock)
+        {
+            cachedTotalBytes = -1;
+            cachedFileCount = -1;
+        }
     }
 
     /// <summary>Return all sidecar IDs currently present on disk.</summary>
