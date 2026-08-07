@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace DamageTerror.Services;
 
 public sealed class EncounterStore
@@ -8,13 +6,11 @@ public sealed class EncounterStore
     private readonly List<EncounterSnapshot> history = new();
     /// <summary>Ids of history entries whose summary file is out of date.</summary>
     private readonly HashSet<long> dirtyIds = new();
-    private readonly Dictionary<EncounterSnapshot, EncounterDiskSize?> diskSizeCache = new();
+    private readonly Dictionary<EncounterSnapshot, EncounterDiskSize> diskSizeCache = new();
     private readonly Configuration config;
-    private Task measureQueue = Task.CompletedTask;
     /// <summary>FIFO queue for all sidecar and history file I/O so archive paths
     /// never block the data thread (or the UI, via syncLock) on a disk write.</summary>
     private Task ioQueue = Task.CompletedTask;
-    private int diskSizeVersion;
     private EncounterSnapshot? active;
     private bool prevSnapshotActive;
     /// <summary>When true, drop incoming CombatData until a genuinely new encounter starts.
@@ -53,60 +49,28 @@ public sealed class EncounterStore
     public int RawCaptureFileCount => rawStore?.FileCount() ?? 0;
 
     /// <summary>
-    /// On-disk footprint of a single encounter: its summary file plus
-    /// its timeline and raw capture sidecars. Sizing the summary means serializing it, which is far
-    /// too slow for a draw call, so the work is queued onto a background worker:
-    /// this returns false until the result lands. Results are cached until the
-    /// store next changes.
+    /// On-disk footprint of a single encounter: its summary file plus its
+    /// timeline and raw capture sidecars. Three file stats, cached until the
+    /// store next changes. A summary write still queued shows as 0 bytes until
+    /// the next store change re-measures it.
     /// </summary>
     public bool TryGetDiskSize(EncounterSnapshot snapshot, out EncounterDiskSize size)
     {
-        size = default;
         lock (syncLock)
         {
-            if (diskSizeCache.TryGetValue(snapshot, out var cached))
-            {
-                // A null entry is queued, in flight, or failed to measure; either
-                // way it is retried only after the next store change.
-                if (cached == null)
-                    return false;
-                size = cached.Value;
+            if (diskSizeCache.TryGetValue(snapshot, out size))
                 return true;
-            }
-
-            diskSizeCache[snapshot] = null;
-            var version = diskSizeVersion;
-            // Chained so a long history is measured one encounter at a time.
-            measureQueue = measureQueue.ContinueWith(_ => MeasureDiskSize(snapshot, version));
         }
 
-        return false;
-    }
-
-    private void MeasureDiskSize(EncounterSnapshot snapshot, int version)
-    {
-        long summaryBytes;
-        try
-        {
-            using var counter = new Utf8ByteCounter();
-            JsonSerializer.Create(SaveSettings).Serialize(counter, snapshot);
-            summaryBytes = counter.ByteCount;
-        }
-        catch (Exception ex)
-        {
-            ServiceManager.LogWarning(LogChannel.EncounterStore,
-                $"Failed to measure encounter size: {ex.Message}");
-            return;
-        }
-
+        var summaryBytes = summaryStore?.SizeBytes(snapshot.Id) ?? 0;
         var timelineBytes = snapshot.HasTimeline ? timelineStore?.SizeBytes(snapshot.Id) ?? 0 : 0;
         var rawBytes = snapshot.HasRawCapture ? rawStore?.SizeBytes(snapshot.Id) ?? 0 : 0;
+        size = new EncounterDiskSize(summaryBytes, timelineBytes, rawBytes);
 
         lock (syncLock)
-        {
-            if (version == diskSizeVersion)
-                diskSizeCache[snapshot] = new EncounterDiskSize(summaryBytes, timelineBytes, rawBytes);
-        }
+            diskSizeCache[snapshot] = size;
+
+        return true;
     }
 
     private void MarkSnapshotDirtyLocked(EncounterSnapshot snapshot)
@@ -151,7 +115,6 @@ public sealed class EncounterStore
     private void InvalidateDiskSizesLocked()
     {
         diskSizeCache.Clear();
-        diskSizeVersion++;
     }
 
     public EncounterSnapshot? ActiveEncounter
@@ -1450,32 +1413,6 @@ public sealed class EncounterStore
                 var s = snap;
                 EnqueueIoLocked(() => ss.Save(s.Id, s));
             }
-        }
-    }
-
-    /// <summary>Measures the UTF-8 length of what is written to it and discards
-    /// the text, so a snapshot can be sized without building its JSON string.</summary>
-    private sealed class Utf8ByteCounter : TextWriter
-    {
-        private readonly Encoder encoder = Encoding.UTF8.GetEncoder();
-
-        public long ByteCount { get; private set; }
-
-        public override Encoding Encoding => Encoding.UTF8;
-
-        public override void Write(char value)
-        {
-            Span<char> one = [value];
-            ByteCount += encoder.GetByteCount(one, false);
-        }
-
-        public override void Write(char[] buffer, int index, int count)
-            => ByteCount += encoder.GetByteCount(buffer.AsSpan(index, count), false);
-
-        public override void Write(string? value)
-        {
-            if (!string.IsNullOrEmpty(value))
-                ByteCount += encoder.GetByteCount(value.AsSpan(), false);
         }
     }
 }
