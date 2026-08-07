@@ -6,6 +6,8 @@ public sealed class EncounterStore
 {
     private readonly object syncLock = new();
     private readonly List<EncounterSnapshot> history = new();
+    /// <summary>Ids of history entries whose summary file is out of date.</summary>
+    private readonly HashSet<long> dirtyIds = new();
     private readonly Dictionary<EncounterSnapshot, EncounterDiskSize?> diskSizeCache = new();
     private readonly Configuration config;
     private Task measureQueue = Task.CompletedTask;
@@ -22,8 +24,7 @@ public sealed class EncounterStore
     private string? savePath;
     private TimelineSidecarStore? timelineStore;
     private SidecarStore<RawCaptureBundle>? rawStore;
-    private bool dirty;
-    private bool loadedSuccessfully;
+    private SidecarStore<EncounterSnapshot>? summaryStore;
     private bool sampleDataActive;
     private EncounterSnapshot? previewBackup;
     private SampleCombatSimulator? sampleSimulator;
@@ -39,20 +40,7 @@ public sealed class EncounterStore
         this.config = config;
     }
 
-    public long StorageSizeBytes
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(savePath))
-                return 0;
-            try
-            {
-                var info = new FileInfo(savePath);
-                return info.Exists ? info.Length : 0;
-            }
-            catch { return 0; }
-        }
-    }
+    public long StorageSizeBytes => summaryStore?.TotalSizeBytes() ?? 0;
 
     public long TimelineStorageSizeBytes => timelineStore?.TotalSizeBytes() ?? 0;
     public int TimelineFileCount => timelineStore?.FileCount() ?? 0;
@@ -62,7 +50,7 @@ public sealed class EncounterStore
     public int RawCaptureFileCount => rawStore?.FileCount() ?? 0;
 
     /// <summary>
-    /// On-disk footprint of a single encounter: its slice of encounters.json plus
+    /// On-disk footprint of a single encounter: its summary file plus
     /// its timeline and raw capture sidecars. Sizing the summary means serializing it, which is far
     /// too slow for a draw call, so the work is queued onto a background worker:
     /// this returns false until the result lands. Results are cached until the
@@ -118,10 +106,18 @@ public sealed class EncounterStore
         }
     }
 
-    private void MarkDirtyLocked()
+    private void MarkSnapshotDirtyLocked(EncounterSnapshot snapshot)
     {
-        dirty = true;
+        AssignIdIfMissing(snapshot);
+        dirtyIds.Add(snapshot.Id);
         InvalidateDiskSizesLocked();
+    }
+
+    /// <summary>Mark a history snapshot for a summary rewrite after an in-place
+    /// mutation from outside the store (e.g. debug recalculation).</summary>
+    public void MarkDirty(EncounterSnapshot snapshot)
+    {
+        lock (syncLock) MarkSnapshotDirtyLocked(snapshot);
     }
 
     /// <summary>Append work to the background I/O queue. Must be called while
@@ -415,7 +411,7 @@ public sealed class EncounterStore
             history.Add(current);
             SaveTimelineSidecarLocked(current);
             SaveRawSidecarLocked(current);
-            MarkDirtyLocked();
+            MarkSnapshotDirtyLocked(current);
             archived = true;
             PruneHistoryLocked();
         }
@@ -484,7 +480,13 @@ public sealed class EncounterStore
             {
                 var snap = history[index];
                 history.RemoveAt(index);
-                MarkDirtyLocked();
+                dirtyIds.Remove(snap.Id);
+                InvalidateDiskSizesLocked();
+                if (summaryStore != null && snap.Id != 0)
+                {
+                    var ss = summaryStore;
+                    EnqueueIoLocked(() => ss.Delete(snap.Id));
+                }
                 if (timelineStore != null && snap.HasTimeline)
                 {
                     var ts = timelineStore;
@@ -504,10 +506,23 @@ public sealed class EncounterStore
         lock (syncLock)
         {
             if (sampleDataActive) return;
+            // A restored-from-history encounter still has its summary file on
+            // disk; delete it or the removed encounter resurrects on next load.
+            // Skip when it is (also) a live history entry (CopyActiveToHistory).
+            if (active != null && active.Id != 0
+                && !activeAlreadyInHistory && !history.Contains(active)
+                && summaryStore != null)
+            {
+                var id = active.Id;
+                dirtyIds.Remove(id);
+                var ss = summaryStore;
+                EnqueueIoLocked(() => ss.Delete(id));
+            }
             active = null;
+            activeAlreadyInHistory = false;
             prevSnapshotActive = false;
             isStaleDataSuppressed = true;
-            MarkDirtyLocked();
+            InvalidateDiskSizesLocked();
         }
     }
 
@@ -529,7 +544,7 @@ public sealed class EncounterStore
                     SaveTimelineSidecarLocked(active);
                     SaveRawSidecarLocked(active);
                 }
-                MarkDirtyLocked();
+                MarkSnapshotDirtyLocked(active);
             }
 
             activeAlreadyInHistory = false;
@@ -559,7 +574,7 @@ public sealed class EncounterStore
             history.Add(active);
             SaveTimelineSidecarLocked(active);
             SaveRawSidecarLocked(active);
-            MarkDirtyLocked();
+            MarkSnapshotDirtyLocked(active);
             activeAlreadyInHistory = true;
             PruneHistoryLocked();
             return true;
@@ -590,7 +605,6 @@ public sealed class EncounterStore
             active = history[idx];
             history.RemoveAt(idx);
             prevSnapshotActive = false;
-            MarkDirtyLocked();
             toHydrate = active;
         }
 
@@ -620,10 +634,20 @@ public sealed class EncounterStore
                     });
                 }
             }
+            if (summaryStore != null)
+            {
+                var ss = summaryStore;
+                EnqueueIoLocked(() =>
+                {
+                    foreach (var id in ss.EnumerateIds().ToList())
+                        ss.Delete(id);
+                });
+            }
             history.Clear();
+            dirtyIds.Clear();
             active = null;
             prevSnapshotActive = false;
-            MarkDirtyLocked();
+            InvalidateDiskSizesLocked();
         }
     }
 
@@ -632,76 +656,154 @@ public sealed class EncounterStore
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentException("Save path must not be null or empty.", nameof(path));
         savePath = path;
+        summaryStore = new SidecarStore<EncounterSnapshot>(path, "summaries", SaveSettings);
         timelineStore = new TimelineSidecarStore(path);
         rawStore = new SidecarStore<RawCaptureBundle>(path, "raw");
     }
 
     public void Load()
     {
-        if (string.IsNullOrEmpty(savePath) || !File.Exists(savePath))
-        {
-            loadedSuccessfully = true;
+        if (summaryStore == null)
             return;
+
+        List<EncounterSnapshot>? monolithLeftover = null;
+        if (!string.IsNullOrEmpty(savePath) && File.Exists(savePath))
+        {
+            if (!TryMigrateMonolith(out monolithLeftover))
+                ServiceManager.LogWarning(LogChannel.EncounterStore,
+                    "encounters.json migration incomplete; the file is kept and will be retried on next launch.");
         }
 
+        var loaded = new List<EncounterSnapshot>();
+        var repairedIds = new List<long>();
+        foreach (var id in summaryStore.EnumerateIds().ToList())
+        {
+            var snap = summaryStore.Load(id);
+            if (snap == null) continue;
+            if (double.IsNaN(snap.Encounter.EncDps)) continue;
+            if (snap.Id == 0) snap.Id = id;
+
+            var repaired = false;
+            // History entries are never live - clear stale active flags.
+            if (snap.Encounter.IsActive)
+            {
+                snap.Encounter.IsActive = false;
+                repaired = true;
+            }
+            if (snap.ValidateAndRepair())
+                repaired = true;
+            if (repaired)
+                repairedIds.Add(snap.Id);
+
+            loaded.Add(snap);
+        }
+
+        // Entries a failed migration could not write out still exist in memory
+        // this session; the monolith stays on disk for a retry next launch.
+        if (monolithLeftover != null)
+        {
+            var known = new HashSet<long>(loaded.ConvertAll(s => s.Id));
+            foreach (var snap in monolithLeftover)
+            {
+                if (!known.Contains(snap.Id))
+                    loaded.Add(snap);
+            }
+        }
+
+        loaded.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+
+        lock (syncLock)
+        {
+            history.Clear();
+            history.AddRange(loaded);
+            foreach (var id in repairedIds)
+                dirtyIds.Add(id);
+        }
+
+        PruneHistory();
+        Save();
+    }
+
+    /// <summary>
+    /// One-time migration of the pre-split encounters.json monolith into
+    /// per-encounter summary files (plus timeline/raw sidecars for the very old
+    /// embedded format). Returns true and deletes the monolith when every entry
+    /// was written; on failure returns false with the parsed entries in
+    /// <paramref name="leftover"/> so this session still sees its history.
+    /// </summary>
+    private bool TryMigrateMonolith(out List<EncounterSnapshot>? leftover)
+    {
+        leftover = null;
+        string json;
         try
         {
-            var json = File.ReadAllText(savePath);
-            var loaded = JsonConvert.DeserializeObject<List<EncounterSnapshot>>(json);
-            if (loaded != null)
-            {
-                var anyRepaired = false;
-                lock (syncLock)
-                {
-                    if (MigrateEmbeddedTimelinesLocked(json, loaded))
-                        anyRepaired = true;
-                    if (MigrateEmbeddedRawCaptureLocked(loaded))
-                        anyRepaired = true;
-                }
-
-                loaded.RemoveAll(s => double.IsNaN(s.Encounter.EncDps));
-                foreach (var snapshot in loaded)
-                {
-                    // History entries are never live — clear stale active flags
-                    // that may have been persisted by older versions.
-                    if (snapshot.Encounter.IsActive)
-                    {
-                        snapshot.Encounter.IsActive = false;
-                        anyRepaired = true;
-                    }
-
-                    if (snapshot.ValidateAndRepair())
-                        anyRepaired = true;
-                }
-
-                lock (syncLock)
-                {
-                    history.Clear();
-                    history.AddRange(loaded);
-
-                    if (anyRepaired)
-                        MarkDirtyLocked();
-                }
-            }
-
-            loadedSuccessfully = true;
-
-            PruneHistory();
-
-            // Persist repaired data back to disk so the rebuild is a one-time migration.
-            Save();
-        }
-        catch (JsonException ex)
-        {
-            ServiceManager.LogWarning(LogChannel.EncounterStore, $"Encounter history is corrupt and could not be loaded: {ex.Message}");
+            json = File.ReadAllText(savePath!);
         }
         catch (IOException ex)
         {
-            ServiceManager.LogWarning(LogChannel.EncounterStore, $"Failed to read encounter history file: {ex.Message}");
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Failed to read encounter history file: {ex.Message}");
+            return false;
         }
-        catch (Exception ex)
+
+        List<EncounterSnapshot>? parsed;
+        try
         {
-            ServiceManager.LogWarning(LogChannel.EncounterStore, $"Unexpected error loading encounter history: {ex.Message}");
+            parsed = JsonConvert.DeserializeObject<List<EncounterSnapshot>>(json);
+        }
+        catch (JsonException ex)
+        {
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Encounter history is corrupt and could not be loaded: {ex.Message}");
+            return false;
+        }
+
+        if (parsed == null || parsed.Count == 0)
+        {
+            TryDeleteMonolith();
+            return true;
+        }
+
+        lock (syncLock)
+        {
+            MigrateEmbeddedTimelinesLocked(json, parsed);
+            MigrateEmbeddedRawCaptureLocked(parsed);
+        }
+
+        parsed.RemoveAll(s => double.IsNaN(s.Encounter.EncDps));
+
+        var ok = true;
+        foreach (var snap in parsed)
+        {
+            snap.Encounter.IsActive = false;
+            snap.ValidateAndRepair();
+            AssignIdIfMissing(snap);
+            if (!summaryStore!.Save(snap.Id, snap))
+                ok = false;
+        }
+
+        if (!ok)
+        {
+            leftover = parsed;
+            return false;
+        }
+
+        TryDeleteMonolith();
+        ServiceManager.LogWarning(LogChannel.EncounterStore,
+            $"Migrated {parsed.Count} encounter(s) to per-encounter summary files.");
+        return true;
+    }
+
+    private void TryDeleteMonolith()
+    {
+        try
+        {
+            File.Delete(savePath!);
+        }
+        catch (IOException ex)
+        {
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Could not remove migrated encounters.json: {ex.Message}");
         }
     }
 
@@ -742,7 +844,7 @@ public sealed class EncounterStore
             if (bundle == null)
             {
                 snapshot.HasTimeline = false;
-                MarkDirtyLocked();
+                MarkSnapshotDirtyLocked(snapshot);
                 return;
             }
 
@@ -776,7 +878,7 @@ public sealed class EncounterStore
             if (bundle == null)
             {
                 snapshot.HasRawCapture = false;
-                MarkDirtyLocked();
+                MarkSnapshotDirtyLocked(snapshot);
                 return;
             }
 
@@ -1003,40 +1105,64 @@ public sealed class EncounterStore
     {
         lock (syncLock)
         {
-            var before = history.Count;
+            var toRemove = history.FindAll(s => s.Encounter.EncDps == 0);
+            if (toRemove.Count == 0)
+                return 0;
             history.RemoveAll(s => s.Encounter.EncDps == 0);
-            var removed = before - history.Count;
-            if (removed > 0)
-                MarkDirtyLocked();
-            return removed;
+            DeleteSummariesLocked(toRemove);
+            InvalidateDiskSizesLocked();
+            return toRemove.Count;
         }
     }
 
     private void PruneHistoryLocked()
     {
-        var removed = false;
+        var pruned = new List<EncounterSnapshot>();
 
         if (config.HistoryLimitMode == HistoryLimitMode.Count)
         {
             while (history.Count > config.MaxEncounterHistory && config.MaxEncounterHistory > 0)
             {
+                pruned.Add(history[0]);
                 history.RemoveAt(0);
-                removed = true;
             }
         }
         else if (config.HistoryLimitMode == HistoryLimitMode.Days)
         {
             var cutoff = DateTime.UtcNow.AddDays(-config.MaxEncounterHistoryDays);
-            var before = history.Count;
+            pruned.AddRange(history.FindAll(s => s.Timestamp < cutoff));
             history.RemoveAll(s => s.Timestamp < cutoff);
-            removed = history.Count < before;
         }
 
-        if (removed)
-            MarkDirtyLocked();
+        if (pruned.Count > 0)
+        {
+            DeleteSummariesLocked(pruned);
+            InvalidateDiskSizesLocked();
+        }
 
         PruneTimelinesLocked();
         PruneRawCaptureLocked();
+    }
+
+    /// <summary>Queue deletion of the summary files for snapshots that have been
+    /// removed from history. Must be called while holding syncLock.</summary>
+    private void DeleteSummariesLocked(List<EncounterSnapshot> snapshots)
+    {
+        if (summaryStore == null) return;
+        var ids = new List<long>();
+        foreach (var snap in snapshots)
+        {
+            if (snap.Id == 0) continue;
+            dirtyIds.Remove(snap.Id);
+            ids.Add(snap.Id);
+        }
+        if (ids.Count == 0) return;
+        var ss = summaryStore;
+        EnqueueIoLocked(() =>
+        {
+            foreach (var id in ids)
+                ss.Delete(id);
+        });
     }
 
     /// <summary>Delete raw capture sidecars no history entry claims. Raw capture has no
@@ -1101,12 +1227,11 @@ public sealed class EncounterStore
             toPurge = withTimelines.Where(s => s.Timestamp < cutoff);
         }
 
-        var purged = false;
         foreach (var snap in toPurge)
         {
             snap.HasTimeline = false;
             snap.TimelineLoaded = false;
-            purged = true;
+            MarkSnapshotDirtyLocked(snap);
             var purgeSnap = snap;
             // Delete and clear on the queue so a pending write of this same
             // encounter (FIFO-ordered ahead of us) finishes serializing first.
@@ -1124,8 +1249,6 @@ public sealed class EncounterStore
                 }
             });
         }
-        if (purged)
-            MarkDirtyLocked();
     }
 
     private static readonly JsonSerializerSettings ExportSettings = new()
@@ -1134,7 +1257,7 @@ public sealed class EncounterStore
         Formatting = Formatting.Indented,
     };
 
-    /// <summary>Settings encounters.json is written with. Per-encounter size
+    /// <summary>Settings summary files are written with. Per-encounter size
     /// measurement reuses them so the reported bytes match what lands on disk.</summary>
     private static readonly JsonSerializerSettings SaveSettings = new()
     {
@@ -1219,7 +1342,7 @@ public sealed class EncounterStore
                 SaveTimelineSidecarLocked(snapshot);
                 SaveRawSidecarLocked(snapshot);
 
-                MarkDirtyLocked();
+                MarkSnapshotDirtyLocked(snapshot);
                 PruneHistoryLocked();
             }
 
@@ -1243,33 +1366,35 @@ public sealed class EncounterStore
 
     public void Save(bool force = false)
     {
-        if (string.IsNullOrEmpty(savePath))
-            return;
-
         lock (syncLock)
         {
-            if (!force && !dirty)
+            if (summaryStore == null)
                 return;
 
-            // Don't overwrite the file with empty data when Load failed,
-            // as that would permanently wipe previously saved history.
-            if (!loadedSuccessfully && history.Count == 0)
-                return;
-
-            dirty = false;
-            // Callers that mutate a snapshot in place (rather than the store) still
-            // reach here, so drop measured sizes on every write.
-            InvalidateDiskSizesLocked();
-            var snapshot = new List<EncounterSnapshot>(history);
-            var path = savePath;
-            EnqueueIoLocked(() =>
+            // After a failed legacy-file load, only new archives are known to be
+            // intact; per-file writes cannot clobber the old monolith, so writing
+            // dirty entries is always safe.
+            List<EncounterSnapshot> toWrite;
+            if (force)
             {
-                var json = JsonConvert.SerializeObject(snapshot, SaveSettings);
-                var dir = Path.GetDirectoryName(path);
-                if (!string.IsNullOrEmpty(dir))
-                    Directory.CreateDirectory(dir);
-                File.WriteAllText(path, json);
-            });
+                toWrite = new List<EncounterSnapshot>(history);
+            }
+            else
+            {
+                if (dirtyIds.Count == 0)
+                    return;
+                toWrite = history.FindAll(s => dirtyIds.Contains(s.Id));
+            }
+
+            dirtyIds.Clear();
+            InvalidateDiskSizesLocked();
+
+            var ss = summaryStore;
+            foreach (var snap in toWrite)
+            {
+                var s = snap;
+                EnqueueIoLocked(() => ss.Save(s.Id, s));
+            }
         }
     }
 

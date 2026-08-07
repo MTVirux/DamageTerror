@@ -13,15 +13,17 @@ public class SidecarStore<T> where T : class
     private readonly string baseDirectory;
     private readonly string subdirectoryName;
     private readonly object cacheLock = new();
+    private readonly JsonSerializerSettings? serializerSettings;
     private long cachedTotalBytes = -1;
     private int cachedFileCount = -1;
 
-    public SidecarStore(string configFilePath, string subdirectoryName)
+    public SidecarStore(string configFilePath, string subdirectoryName, JsonSerializerSettings? settings = null)
     {
         var configDir = Path.GetDirectoryName(configFilePath)
                         ?? throw new ArgumentException("configFilePath must contain a directory", nameof(configFilePath));
         baseDirectory = Path.Combine(configDir, subdirectoryName);
         this.subdirectoryName = subdirectoryName;
+        serializerSettings = settings;
         CleanupTempFiles();
     }
 
@@ -67,7 +69,7 @@ public class SidecarStore<T> where T : class
             Directory.CreateDirectory(baseDirectory);
             var path = PathFor(encounterId);
             var tmp = path + ".tmp";
-            var json = JsonConvert.SerializeObject(value);
+            var json = JsonConvert.SerializeObject(value, serializerSettings);
             File.WriteAllText(tmp, json);
             File.Move(tmp, path, overwrite: true);
             InvalidateSizeCache();

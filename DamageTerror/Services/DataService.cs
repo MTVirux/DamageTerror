@@ -700,7 +700,8 @@ public sealed class DataService : IDisposable
 
         log.Debug(tempSkillTracker.GetDotDiagnostics());
 
-        Store.Save(force: true);
+        Store.MarkDirty(encounter);
+        Store.Save();
         log.Debug($"Recalculated encounter '{encounter.Encounter.Title}' from {encounter.RawLogLines.Count} raw log lines");
     }
 #endif
@@ -716,7 +717,7 @@ public sealed class DataService : IDisposable
             CaptureGraphData(outgoing);
 
         Store.ArchiveActive();
-        Store.Save(force: true);
+        Store.Save();
         Store.FlushPendingWrites(TimeSpan.FromSeconds(10));
         PositionalTable.Dispose();
     }
@@ -969,7 +970,7 @@ public sealed class DataService : IDisposable
         }
 
         if (Store.CopyActiveToHistory())
-            Store.Save(force: true);
+            Store.Save();
     }
 
     private readonly struct CombatDataFrame

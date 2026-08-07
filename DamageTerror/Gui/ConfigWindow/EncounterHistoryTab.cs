@@ -91,7 +91,7 @@ public sealed class EncounterHistoryTab
         var rawMb = store.RawCaptureStorageSizeBytes / (1024.0 * 1024.0);
         var totalMb = summaryMb + timelinesMb + rawMb;
         ImGui.TextDisabled(
-            $"{history.Count} encounter(s) stored — encounters.json {summaryMb:F2} MB · {store.TimelineFileCount} timelines ({timelinesMb:F2} MB) · {store.RawCaptureFileCount} raw ({rawMb:F2} MB) · total {totalMb:F2} MB");
+            $"{history.Count} encounter(s) stored — summaries {summaryMb:F2} MB · {store.TimelineFileCount} timelines ({timelinesMb:F2} MB) · {store.RawCaptureFileCount} raw ({rawMb:F2} MB) · total {totalMb:F2} MB");
         ConfigHelpers.HelpMarker("Encounter history is saved automatically and persists across restarts.");
 #if DEBUG
         if (!config.HideDebugFeatures)
@@ -350,14 +350,14 @@ public sealed class EncounterHistoryTab
                 {
                     ImGui.TextUnformatted(ValueFormatter.FormatBytes(size.TotalBytes));
                     ImGui.SameLine();
-                    var breakdown = $"encounters.json {ValueFormatter.FormatBytes(size.SummaryBytes)}";
+                    var breakdown = $"summary {ValueFormatter.FormatBytes(size.SummaryBytes)}";
                     if (enc.HasTimeline)
                         breakdown += $" · timeline {ValueFormatter.FormatBytes(size.TimelineBytes)}";
                     if (enc.HasRawCapture)
                         breakdown += $" · raw {ValueFormatter.FormatBytes(size.RawBytes)}";
                     ImGui.TextDisabled(enc.HasTimeline || enc.HasRawCapture
                         ? $"({breakdown})"
-                        : "(encounters.json only - no sidecars stored)");
+                        : "(summary only - no sidecars stored)");
                 }
 
                 if (enc.Combatants.Count > 0)
