@@ -25,6 +25,9 @@ public sealed class EncounterStore
     private TimelineSidecarStore? timelineStore;
     private SidecarStore<RawCaptureBundle>? rawStore;
     private SidecarStore<EncounterSnapshot>? summaryStore;
+    /// <summary>While true, orphan sweeps are skipped because history may not
+    /// reflect every encounter on disk.</summary>
+    private bool historyIncomplete;
     private bool sampleDataActive;
     private EncounterSnapshot? previewBackup;
     private SampleCombatSimulator? sampleSimulator;
@@ -688,7 +691,14 @@ public sealed class EncounterStore
             foreach (var id in summaryStore.EnumerateIds().ToList())
             {
                 var snap = summaryStore.Load(id);
-                if (snap == null) continue;
+                if (snap == null)
+                {
+                    // The id came from the directory listing, so null means the
+                    // file is unreadable rather than absent - its sidecars must
+                    // not be treated as orphans.
+                    loadOk = false;
+                    continue;
+                }
                 if (double.IsNaN(snap.Encounter.EncDps)) continue;
                 if (snap.Id == 0) snap.Id = id;
 
@@ -740,6 +750,7 @@ public sealed class EncounterStore
             history.AddRange(loaded);
             foreach (var id in repairedIds)
                 dirtyIds.Add(id);
+            historyIncomplete = !loadOk;
         }
 
         // Pruning deletes every timeline and raw sidecar no history entry claims,
@@ -1208,6 +1219,7 @@ public sealed class EncounterStore
     private void PruneRawCaptureLocked()
     {
         if (rawStore == null) return;
+        if (historyIncomplete) return;
 
         var referenced = new HashSet<long>();
         foreach (var snap in history)
@@ -1232,21 +1244,26 @@ public sealed class EncounterStore
         if (timelineStore == null) return;
         var ts = timelineStore;
 
-        var referenced = new HashSet<long>();
-        foreach (var snap in history)
+        // The retention purge below stays active either way - it only touches
+        // snapshots that are actually in history.
+        if (!historyIncomplete)
         {
-            if (snap.HasTimeline)
-                referenced.Add(snap.Id);
-        }
-
-        EnqueueIoLocked(() =>
-        {
-            foreach (var id in ts.EnumerateIds().ToList())
+            var referenced = new HashSet<long>();
+            foreach (var snap in history)
             {
-                if (!referenced.Contains(id))
-                    ts.Delete(id);
+                if (snap.HasTimeline)
+                    referenced.Add(snap.Id);
             }
-        });
+
+            EnqueueIoLocked(() =>
+            {
+                foreach (var id in ts.EnumerateIds().ToList())
+                {
+                    if (!referenced.Contains(id))
+                        ts.Delete(id);
+                }
+            });
+        }
 
         var withTimelines = history
             .Where(s => s.HasTimeline)
