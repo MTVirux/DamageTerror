@@ -1042,16 +1042,21 @@ public sealed class EncounterStore
                 referenced.Add(snap.Id);
         }
 
-        foreach (var id in rawStore.EnumerateIds().ToList())
+        var rs = rawStore;
+        EnqueueIoLocked(() =>
         {
-            if (!referenced.Contains(id))
-                rawStore.Delete(id);
-        }
+            foreach (var id in rs.EnumerateIds().ToList())
+            {
+                if (!referenced.Contains(id))
+                    rs.Delete(id);
+            }
+        });
     }
 
     private void PruneTimelinesLocked()
     {
         if (timelineStore == null) return;
+        var ts = timelineStore;
 
         var referenced = new HashSet<long>();
         foreach (var snap in history)
@@ -1060,11 +1065,14 @@ public sealed class EncounterStore
                 referenced.Add(snap.Id);
         }
 
-        foreach (var id in timelineStore.EnumerateIds().ToList())
+        EnqueueIoLocked(() =>
         {
-            if (!referenced.Contains(id))
-                timelineStore.Delete(id);
-        }
+            foreach (var id in ts.EnumerateIds().ToList())
+            {
+                if (!referenced.Contains(id))
+                    ts.Delete(id);
+            }
+        });
 
         var withTimelines = history
             .Where(s => s.HasTimeline)
@@ -1084,7 +1092,6 @@ public sealed class EncounterStore
         }
 
         var purged = false;
-        var ts2 = timelineStore;
         foreach (var snap in toPurge)
         {
             snap.HasTimeline = false;
@@ -1095,7 +1102,7 @@ public sealed class EncounterStore
             // encounter (FIFO-ordered ahead of us) finishes serializing first.
             EnqueueIoLocked(() =>
             {
-                ts2.Delete(purgeSnap.Id);
+                ts.Delete(purgeSnap.Id);
                 lock (syncLock)
                 {
                     purgeSnap.SkillEvents.Clear();
