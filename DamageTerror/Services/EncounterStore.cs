@@ -667,35 +667,51 @@ public sealed class EncounterStore
             return;
 
         List<EncounterSnapshot>? monolithLeftover = null;
-        if (!string.IsNullOrEmpty(savePath) && File.Exists(savePath))
-        {
-            if (!TryMigrateMonolith(out monolithLeftover))
-                ServiceManager.LogWarning(LogChannel.EncounterStore,
-                    "encounters.json migration incomplete; the file is kept and will be retried on next launch.");
-        }
-
         var loaded = new List<EncounterSnapshot>();
         var repairedIds = new List<long>();
-        foreach (var id in summaryStore.EnumerateIds().ToList())
+
+        // A read failure must not take plugin init down with it: log and carry on
+        // with whatever was read, as the pre-split loader did.
+        try
         {
-            var snap = summaryStore.Load(id);
-            if (snap == null) continue;
-            if (double.IsNaN(snap.Encounter.EncDps)) continue;
-            if (snap.Id == 0) snap.Id = id;
-
-            var repaired = false;
-            // History entries are never live - clear stale active flags.
-            if (snap.Encounter.IsActive)
+            if (!string.IsNullOrEmpty(savePath) && File.Exists(savePath))
             {
-                snap.Encounter.IsActive = false;
-                repaired = true;
+                if (!TryMigrateMonolith(out monolithLeftover))
+                    ServiceManager.LogWarning(LogChannel.EncounterStore,
+                        "encounters.json migration incomplete; the file is kept and will be retried on next launch.");
             }
-            if (snap.ValidateAndRepair())
-                repaired = true;
-            if (repaired)
-                repairedIds.Add(snap.Id);
 
-            loaded.Add(snap);
+            foreach (var id in summaryStore.EnumerateIds().ToList())
+            {
+                var snap = summaryStore.Load(id);
+                if (snap == null) continue;
+                if (double.IsNaN(snap.Encounter.EncDps)) continue;
+                if (snap.Id == 0) snap.Id = id;
+
+                var repaired = false;
+                // History entries are never live - clear stale active flags.
+                if (snap.Encounter.IsActive)
+                {
+                    snap.Encounter.IsActive = false;
+                    repaired = true;
+                }
+                if (snap.ValidateAndRepair())
+                    repaired = true;
+                if (repaired)
+                    repairedIds.Add(snap.Id);
+
+                loaded.Add(snap);
+            }
+        }
+        catch (IOException ex)
+        {
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Failed to read encounter history: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Unexpected error loading encounter history: {ex.Message}");
         }
 
         // Entries a failed migration could not write out still exist in memory
