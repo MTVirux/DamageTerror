@@ -9,6 +9,9 @@ public sealed class EncounterStore
     private readonly Dictionary<EncounterSnapshot, EncounterDiskSize?> diskSizeCache = new();
     private readonly Configuration config;
     private Task measureQueue = Task.CompletedTask;
+    /// <summary>FIFO queue for all sidecar and history file I/O so archive paths
+    /// never block the data thread (or the UI, via syncLock) on a disk write.</summary>
+    private Task ioQueue = Task.CompletedTask;
     private int diskSizeVersion;
     private EncounterSnapshot? active;
     private bool prevSnapshotActive;
@@ -119,6 +122,31 @@ public sealed class EncounterStore
     {
         dirty = true;
         InvalidateDiskSizesLocked();
+    }
+
+    /// <summary>Append work to the background I/O queue. Must be called while
+    /// holding syncLock. The work runs without syncLock held.</summary>
+    private void EnqueueIoLocked(Action work)
+    {
+        ioQueue = ioQueue.ContinueWith(_ =>
+        {
+            try { work(); }
+            catch (Exception ex)
+            {
+                ServiceManager.LogWarning(LogChannel.EncounterStore,
+                    $"Background encounter I/O failed: {ex.Message}");
+            }
+        }, TaskScheduler.Default);
+    }
+
+    /// <summary>Block until all queued file writes have landed. Called on plugin
+    /// dispose so pending archives are not lost on unload.</summary>
+    public void FlushPendingWrites(TimeSpan timeout)
+    {
+        Task pending;
+        lock (syncLock) pending = ioQueue;
+        try { pending.Wait(timeout); }
+        catch (AggregateException) { }
     }
 
     private void InvalidateDiskSizesLocked()
@@ -458,9 +486,15 @@ public sealed class EncounterStore
                 history.RemoveAt(index);
                 MarkDirtyLocked();
                 if (timelineStore != null && snap.HasTimeline)
-                    timelineStore.Delete(snap.Id);
+                {
+                    var ts = timelineStore;
+                    EnqueueIoLocked(() => ts.Delete(snap.Id));
+                }
                 if (rawStore != null && snap.HasRawCapture)
-                    rawStore.Delete(snap.Id);
+                {
+                    var rs = rawStore;
+                    EnqueueIoLocked(() => rs.Delete(snap.Id));
+                }
             }
         }
     }
@@ -570,10 +604,20 @@ public sealed class EncounterStore
         {
             if (timelineStore != null)
             {
+                var ids = new List<long>();
                 foreach (var snap in history)
                 {
                     if (snap.HasTimeline)
-                        timelineStore.Delete(snap.Id);
+                        ids.Add(snap.Id);
+                }
+                if (ids.Count > 0)
+                {
+                    var ts = timelineStore;
+                    EnqueueIoLocked(() =>
+                    {
+                        foreach (var id in ids)
+                            ts.Delete(id);
+                    });
                 }
             }
             history.Clear();
@@ -816,14 +860,23 @@ public sealed class EncounterStore
                 continue;
 
             AssignIdIfMissing(snap);
-            // Leaves the in-memory lists alone when the write fails, so the data
-            // survives for the rest of the session and is retried next launch.
-            SaveRawSidecarLocked(snap);
-
-            if (snap.HasRawCapture)
+            // Migration runs once during Load, before the UI exists - write inline
+            // so the migrated/failed counts are accurate. Leaves the in-memory
+            // lists alone when the write fails, so the data survives for the rest
+            // of the session and is retried next launch.
+            var bundle = RawCaptureBundle.FromSnapshot(snap);
+            if (rawStore.Save(snap.Id, bundle))
+            {
+                snap.HasRawCapture = true;
+                snap.RawLogLines = new List<string>();
+                snap.RawCombatDataFrames = new List<string>();
+                snap.RawCaptureLoaded = false;
                 migrated++;
+            }
             else
+            {
                 failed++;
+            }
         }
         if (migrated > 0)
             ServiceManager.LogWarning(LogChannel.EncounterStore,
@@ -871,17 +924,28 @@ public sealed class EncounterStore
             snapshot.HasTimeline = false;
             return;
         }
-        if (timelineStore.Save(bundle))
+
+        // Optimistic: the timeline stays resident on the snapshot, so readers are
+        // correct while the write is queued. Flipped back on failure.
+        snapshot.HasTimeline = true;
+        snapshot.TimelineLoaded = true;
+        var store = timelineStore;
+        EnqueueIoLocked(() =>
         {
-            snapshot.HasTimeline = true;
-            snapshot.TimelineLoaded = true;
-        }
+            if (store.Save(bundle)) return;
+            lock (syncLock)
+            {
+                snapshot.HasTimeline = false;
+                snapshot.TimelineLoaded = false;
+            }
+        });
     }
 
     /// <summary>
-    /// Write the snapshot's debug raw capture to its sidecar, then drop the in-memory
-    /// copy. Unlike the timeline this does not stay resident: a single fight's raw
-    /// capture runs to tens of megabytes, so it is re-read on demand instead.
+    /// Queue the snapshot's debug raw capture write to its sidecar; the in-memory
+    /// copy is dropped once the write lands. Unlike the timeline this does not stay
+    /// resident: a single fight's raw capture runs to tens of megabytes, so it is
+    /// re-read on demand instead.
     /// </summary>
     private void SaveRawSidecarLocked(EncounterSnapshot snapshot)
     {
@@ -889,13 +953,28 @@ public sealed class EncounterStore
         var bundle = RawCaptureBundle.FromSnapshot(snapshot);
         if (bundle.IsEmpty)
             return;
-        if (rawStore.Save(snapshot.Id, bundle))
+
+        // Optimistic: lists stay resident until the write lands, so
+        // EnsureRawCaptureLoaded never hits disk for a pending write.
+        snapshot.HasRawCapture = true;
+        snapshot.RawCaptureLoaded = true;
+        var store = rawStore;
+        EnqueueIoLocked(() =>
         {
-            snapshot.HasRawCapture = true;
-            snapshot.RawLogLines = new List<string>();
-            snapshot.RawCombatDataFrames = new List<string>();
-            snapshot.RawCaptureLoaded = false;
-        }
+            if (store.Save(snapshot.Id, bundle))
+            {
+                lock (syncLock)
+                {
+                    snapshot.RawLogLines = new List<string>();
+                    snapshot.RawCombatDataFrames = new List<string>();
+                    snapshot.RawCaptureLoaded = false;
+                }
+            }
+            else
+            {
+                lock (syncLock) snapshot.HasRawCapture = false;
+            }
+        });
     }
 
     public void PruneHistory()
@@ -1005,20 +1084,28 @@ public sealed class EncounterStore
         }
 
         var purged = false;
+        var ts2 = timelineStore;
         foreach (var snap in toPurge)
         {
-            if (timelineStore.Delete(snap.Id))
+            snap.HasTimeline = false;
+            snap.TimelineLoaded = false;
+            purged = true;
+            var purgeSnap = snap;
+            // Delete and clear on the queue so a pending write of this same
+            // encounter (FIFO-ordered ahead of us) finishes serializing first.
+            EnqueueIoLocked(() =>
             {
-                snap.HasTimeline = false;
-                snap.TimelineLoaded = false;
-                snap.SkillEvents.Clear();
-                snap.GraphData.Clear();
-                snap.DamageTakenEvents.Clear();
-                snap.ItemEvents.Clear();
-                snap.StatusHistory.Clear();
-                snap.StatusesReceived.Clear();
-                purged = true;
-            }
+                ts2.Delete(purgeSnap.Id);
+                lock (syncLock)
+                {
+                    purgeSnap.SkillEvents.Clear();
+                    purgeSnap.GraphData.Clear();
+                    purgeSnap.DamageTakenEvents.Clear();
+                    purgeSnap.ItemEvents.Clear();
+                    purgeSnap.StatusHistory.Clear();
+                    purgeSnap.StatusesReceived.Clear();
+                }
+            });
         }
         if (purged)
             MarkDirtyLocked();
@@ -1142,7 +1229,6 @@ public sealed class EncounterStore
         if (string.IsNullOrEmpty(savePath))
             return;
 
-        List<EncounterSnapshot> snapshot;
         lock (syncLock)
         {
             if (!force && !dirty)
@@ -1157,27 +1243,17 @@ public sealed class EncounterStore
             // Callers that mutate a snapshot in place (rather than the store) still
             // reach here, so drop measured sizes on every write.
             InvalidateDiskSizesLocked();
-            snapshot = new List<EncounterSnapshot>(history);
-        }
-
-        var path = savePath;
-        Task.Run(() =>
-        {
-            try
+            var snapshot = new List<EncounterSnapshot>(history);
+            var path = savePath;
+            EnqueueIoLocked(() =>
             {
                 var json = JsonConvert.SerializeObject(snapshot, SaveSettings);
-
                 var dir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(dir))
                     Directory.CreateDirectory(dir);
-
                 File.WriteAllText(path, json);
-            }
-            catch (Exception ex)
-            {
-                ServiceManager.LogWarning(LogChannel.EncounterStore, $"Failed to save encounter history: {ex.Message}");
-            }
-        });
+            });
+        }
     }
 
     /// <summary>Measures the UTF-8 length of what is written to it and discards
