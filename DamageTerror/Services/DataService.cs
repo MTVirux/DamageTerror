@@ -717,6 +717,7 @@ public sealed class DataService : IDisposable
 
         Store.ArchiveActive();
         Store.Save(force: true);
+        Store.FlushPendingWrites(TimeSpan.FromSeconds(10));
         PositionalTable.Dispose();
     }
 
@@ -931,8 +932,10 @@ public sealed class DataService : IDisposable
         }
     }
 
-    // Periodically capture graph data during active encounters so that
-    // at most ~30 seconds of data is lost on an unexpected shutdown.
+    // Periodically capture graph data during active encounters. The active
+    // encounter is not part of history until it ends, so this keeps the
+    // in-memory snapshot fresh for the end-of-fight archive; the Save call
+    // only writes if some other path dirtied the store.
     private void MaybePeriodicSave(in CombatDataFrame frame)
     {
         if (!frame.IsActive) return;
