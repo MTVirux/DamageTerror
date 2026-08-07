@@ -750,6 +750,16 @@ public sealed class EncounterStore
     private bool MigrateEmbeddedTimelinesLocked(string fileJson, List<EncounterSnapshot> loaded)
     {
         if (timelineStore == null) return false;
+        // Post-migration files never contain these keys (the properties are
+        // [JsonIgnore] on EncounterSnapshot), so skip the expensive second
+        // parse unless embedded timeline data is actually present.
+        if (!fileJson.Contains("\"GraphData\"", StringComparison.Ordinal)
+            && !fileJson.Contains("\"SkillEvents\"", StringComparison.Ordinal)
+            && !fileJson.Contains("\"DamageTakenEvents\"", StringComparison.Ordinal)
+            && !fileJson.Contains("\"ItemEvents\"", StringComparison.Ordinal)
+            && !fileJson.Contains("\"StatusHistory\"", StringComparison.Ordinal)
+            && !fileJson.Contains("\"StatusesReceived\"", StringComparison.Ordinal))
+            return false;
         JArray jarr;
         try
         {
