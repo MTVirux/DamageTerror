@@ -7,6 +7,9 @@ public sealed class EncounterStore
     /// <summary>Ids of history entries whose summary file is out of date.</summary>
     private readonly HashSet<long> dirtyIds = new();
     private readonly Dictionary<EncounterSnapshot, EncounterDiskSize> diskSizeCache = new();
+    /// <summary>Bumped on every disk size invalidation so a measurement taken
+    /// across one is discarded instead of caching a stale size.</summary>
+    private int diskSizeVersion;
     private readonly Configuration config;
     /// <summary>FIFO queue for all sidecar and history file I/O so archive paths
     /// never block the data thread (or the UI, via syncLock) on a disk write.</summary>
@@ -56,10 +59,12 @@ public sealed class EncounterStore
     /// </summary>
     public bool TryGetDiskSize(EncounterSnapshot snapshot, out EncounterDiskSize size)
     {
+        int version;
         lock (syncLock)
         {
             if (diskSizeCache.TryGetValue(snapshot, out size))
                 return true;
+            version = diskSizeVersion;
         }
 
         var summaryBytes = summaryStore?.SizeBytes(snapshot.Id) ?? 0;
@@ -68,7 +73,12 @@ public sealed class EncounterStore
         size = new EncounterDiskSize(summaryBytes, timelineBytes, rawBytes);
 
         lock (syncLock)
-            diskSizeCache[snapshot] = size;
+        {
+            // Stats taken across an invalidation describe the old files, so show
+            // them once but do not cache them.
+            if (version == diskSizeVersion)
+                diskSizeCache[snapshot] = size;
+        }
 
         return true;
     }
@@ -115,6 +125,7 @@ public sealed class EncounterStore
     private void InvalidateDiskSizesLocked()
     {
         diskSizeCache.Clear();
+        diskSizeVersion++;
     }
 
     public EncounterSnapshot? ActiveEncounter
