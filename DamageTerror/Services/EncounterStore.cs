@@ -486,10 +486,15 @@ public sealed class EncounterStore
             // A restored-from-history encounter still has its summary file on
             // disk; delete it or the removed encounter resurrects on next load.
             // Skip when it is (also) a live history entry (CopyActiveToHistory).
-            if (active != null && active.Id != 0
+            // The id is derived here rather than trusted: after a restore, IINACT
+            // re-sends the fight and Update swaps in a fresh snapshot that carries
+            // the Timestamp but not the Id. A never-archived fight has no file, so
+            // the queued delete simply no-ops.
+            if (active != null
                 && !activeAlreadyInHistory && !history.Contains(active)
                 && summaryStore != null)
             {
+                AssignIdIfMissing(active);
                 var id = active.Id;
                 dirtyIds.Remove(id);
                 var ss = summaryStore;
@@ -646,6 +651,7 @@ public sealed class EncounterStore
         List<EncounterSnapshot>? monolithLeftover = null;
         var loaded = new List<EncounterSnapshot>();
         var repairedIds = new List<long>();
+        var unusableIds = new List<long>();
         var loadOk = true;
 
         // A read failure must not take plugin init down with it: log and carry on
@@ -661,7 +667,18 @@ public sealed class EncounterStore
                         "encounters.json migration incomplete; the file is kept and will be retried on next launch.");
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            loadOk = false;
+            ServiceManager.LogWarning(LogChannel.EncounterStore,
+                $"Encounter history migration failed: {ex.Message}");
+        }
 
+        // Separate from the migration above so a stuck monolith never costs this
+        // session the summaries already on disk - they do not depend on it.
+        try
+        {
             foreach (var id in summaryStore.EnumerateIds().ToList())
             {
                 var snap = summaryStore.Load(id);
@@ -673,7 +690,13 @@ public sealed class EncounterStore
                     loadOk = false;
                     continue;
                 }
-                if (double.IsNaN(snap.Encounter.EncDps)) continue;
+                if (double.IsNaN(snap.Encounter.EncDps))
+                {
+                    // Never loadable - drop the file instead of re-parsing and
+                    // counting it towards the reported storage size every launch.
+                    unusableIds.Add(id);
+                    continue;
+                }
                 if (snap.Id == 0) snap.Id = id;
 
                 var repaired = false;
@@ -725,6 +748,16 @@ public sealed class EncounterStore
             foreach (var id in repairedIds)
                 dirtyIds.Add(id);
             historyIncomplete = !loadOk;
+
+            if (unusableIds.Count > 0 && summaryStore != null)
+            {
+                var ss = summaryStore;
+                EnqueueIoLocked(() =>
+                {
+                    foreach (var id in unusableIds)
+                        ss.Delete(id);
+                });
+            }
         }
 
         // Pruning deletes every timeline and raw sidecar no history entry claims,
@@ -753,7 +786,7 @@ public sealed class EncounterStore
         {
             json = File.ReadAllText(savePath!);
         }
-        catch (IOException ex)
+        catch (Exception ex)
         {
             ServiceManager.LogWarning(LogChannel.EncounterStore,
                 $"Failed to read encounter history file: {ex.Message}");
@@ -818,7 +851,9 @@ public sealed class EncounterStore
         {
             File.Delete(savePath!);
         }
-        catch (IOException ex)
+        // Broad on purpose: a read-only file raises UnauthorizedAccessException, and
+        // letting that escape would abort Load before it reads the summaries.
+        catch (Exception ex)
         {
             ServiceManager.LogWarning(LogChannel.EncounterStore,
                 $"Could not remove migrated encounters.json: {ex.Message}");
@@ -1072,6 +1107,8 @@ public sealed class EncounterStore
             {
                 snapshot.HasTimeline = false;
                 snapshot.TimelineLoaded = false;
+                // The summary may already claim a timeline that was never written.
+                MarkSnapshotDirtyLocked(snapshot);
             }
         });
     }
@@ -1422,7 +1459,13 @@ public sealed class EncounterStore
             foreach (var snap in toWrite)
             {
                 var s = snap;
-                EnqueueIoLocked(() => ss.Save(s.Id, s));
+                EnqueueIoLocked(() =>
+                {
+                    // Re-dirty on failure so the next Save retries instead of
+                    // leaving the summary stale until something else touches it.
+                    if (!ss.Save(s.Id, s))
+                        lock (syncLock) dirtyIds.Add(s.Id);
+                });
             }
         }
     }
