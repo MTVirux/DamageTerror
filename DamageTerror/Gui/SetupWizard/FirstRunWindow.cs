@@ -20,7 +20,7 @@ public sealed class FirstRunWindow : Window
     private DateTime? simOutOfCombatSince;
 
     public FirstRunWindow(DamageTerrorPlugin plugin, PresetManager presetManager)
-        : base("Damage Terror — Setup###DamageTerrorSetup")
+        : base("Damage Terror - Setup###DamageTerrorSetup")
     {
         this.plugin = plugin;
         this.presetManager = presetManager;
@@ -92,7 +92,7 @@ public sealed class FirstRunWindow : Window
         // and only when replays are on. OnClose clears it.
         MeterWindowHelper.PreviewReplayBar = currentStep == 3 && plugin.Config.EnableReplays;
 
-        ImGui.TextDisabled($"Step {currentStep + 1} of {StepCount} — {StepTitles[currentStep]}");
+        ImGui.TextDisabled($"Step {currentStep + 1} of {StepCount} - {StepTitles[currentStep]}");
         ImGui.Separator();
         ImGui.Spacing();
 
@@ -162,22 +162,22 @@ public sealed class FirstRunWindow : Window
     {
         var config = plugin.Config;
 
-        ImGui.TextWrapped("Welcome to Damage Terror! This quick setup covers the essentials — everything here can be changed later in Settings.");
+        ImGui.TextWrapped("Welcome to Damage Terror. This takes a minute, and everything here can be changed later in Settings.");
         ImGui.Spacing();
-        ImGui.TextWrapped("First: where should combat data come from?");
+        ImGui.TextWrapped("First up: where should the combat data come from?");
         ImGui.Spacing();
 
         if (ImGui.RadioButton("IINACT plugin (recommended)", config.PreferIpc))
             SetDataSource(preferIpc: true);
         ImGui.Indent();
-        ImGui.TextDisabled("Talks directly to the IINACT Dalamud plugin. No extra setup.");
+        ImGui.TextDisabled("Talks straight to the IINACT plugin. Nothing else to set up.");
         ImGui.Unindent();
         ImGui.Spacing();
 
         if (ImGui.RadioButton("WebSocket (ACT / external parser)", !config.PreferIpc))
             SetDataSource(preferIpc: false);
         ImGui.Indent();
-        ImGui.TextDisabled("Connects to an OverlayPlugin-style WebSocket server.");
+        ImGui.TextDisabled("For ACT or another parser running outside the game.");
         if (!config.PreferIpc)
         {
             ImGui.SetNextItemWidth(280);
@@ -201,7 +201,7 @@ public sealed class FirstRunWindow : Window
         if (!connected)
         {
             ImGui.Spacing();
-            ImGui.TextWrapped("Not connected yet? You can keep going — the connection can be sorted out any time under Settings → General.");
+            ImGui.TextWrapped("Not connected? Keep going anyway - you can sort this out later in Settings -> General.");
         }
     }
 
@@ -218,7 +218,7 @@ public sealed class FirstRunWindow : Window
 
     private void DrawAppearanceStep()
     {
-        ImGui.TextWrapped("The meter beside this window is showing sample combat data. Click a preset to try it on — whatever you leave selected is what you keep.");
+        ImGui.TextWrapped("The meter next to this window is running on sample data. Click a preset to try it on - whatever you leave picked is what you keep.");
         ImGui.Spacing();
 
         var presets = presetManager.GetAllPresets().ToList();
@@ -269,7 +269,7 @@ public sealed class FirstRunWindow : Window
     {
         var config = plugin.Config;
 
-        ImGui.TextWrapped("Reorder the meter's parts below, and tick the box beside a part to hide it until you hold the reveal shortcut. Set the shortcut below — the preview beside this window updates as you go.");
+        ImGui.TextWrapped("Put the meter's parts in the order you want. Tick one to keep it hidden until you hold the reveal keys, which you can set below. The preview updates as you go.");
         ImGui.Spacing();
 
         if (LayoutPage.Draw(config))
@@ -286,7 +286,7 @@ public sealed class FirstRunWindow : Window
         var modeNames = new[] { "Hold", "Toggle" };
         shortcutChanged |= ConfigHelpers.ComboProp("Reveal shortcut mode", (int)config.ModifierKeyMode, modeNames, v => config.ModifierKeyMode = (ModifierMode)v, 150);
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Hold: active only while keys are pressed.\nToggle: press once to activate, press again to deactivate.");
+            ImGui.SetTooltip("Hold: on only while the keys are held down.\nToggle: press once for on, press again for off.");
 
         if (shortcutChanged)
             plugin.SaveConfig();
@@ -301,7 +301,7 @@ public sealed class FirstRunWindow : Window
     {
         var config = plugin.Config;
 
-        ImGui.TextWrapped("Put the meter where you want it. Drag the preview meter to move it, drag its edges to resize - or use the controls below.");
+        ImGui.TextWrapped("Put the meter where you want it. Drag it to move, drag its edges to resize, or use the controls below.");
         ImGui.Spacing();
 
         var changed = PositionSizeSection.Draw(config);
@@ -311,7 +311,7 @@ public sealed class FirstRunWindow : Window
         ImGui.Spacing();
 
         changed |= ConfigHelpers.CheckboxProp("Lock meter position and size", config.PinMainWindow, v => config.PinMainWindow = v);
-        ConfigHelpers.HelpMarker("Locked: the meter can't be dragged or resized. The lock icon on the meter's title bar toggles this too.");
+        ConfigHelpers.HelpMarker("Locked, the meter can't be moved or resized. The lock icon on its title bar does the same thing.");
 
         if (changed)
             plugin.SaveConfig();
@@ -321,14 +321,14 @@ public sealed class FirstRunWindow : Window
     {
         var config = plugin.Config;
 
-        ImGui.TextWrapped("A couple of behavior choices — the rest lives in Settings when you want it.");
+        ImGui.TextWrapped("A couple of choices about how the meter behaves. The rest is in Settings.");
         ImGui.Spacing();
 
         var changed = ConfigHelpers.CheckboxProp("Open meter on plugin start", config.ShowOnStart, v => config.ShowOnStart = v);
-        ConfigHelpers.HelpMarker("When disabled, the meter stays hidden until you open it with /dt.");
+        ConfigHelpers.HelpMarker("Off means the meter stays hidden until you open it with /dt.");
 
         changed |= ConfigHelpers.CheckboxProp("Hide when out of combat", config.HideOutOfCombat, v => config.HideOutOfCombat = v);
-        ConfigHelpers.HelpMarker("The meter fades out a few seconds after combat ends and returns when a new fight starts.");
+        ConfigHelpers.HelpMarker("The meter fades out a few seconds after a fight ends and comes back for the next one.");
 
         if (config.HideOutOfCombat)
             changed |= DrawHideOutOfCombatDemo(config);
@@ -339,7 +339,7 @@ public sealed class FirstRunWindow : Window
             if (!v)
                 plugin.DataService.Store.StopActiveReplay();
         });
-        ConfigHelpers.HelpMarker("Play a finished encounter back through the meter. When off, the Replay buttons and the Replay Bar layout entry are hidden.");
+        ConfigHelpers.HelpMarker("Play a finished fight back through the meter. Off hides the Replay buttons and the Replay Bar.");
 
         if (changed)
             plugin.SaveConfig();
@@ -359,7 +359,7 @@ public sealed class FirstRunWindow : Window
         ImGui.Spacing();
         if (ImGui.Checkbox("Simulate: in combat", ref simulateInCombat) && simulateInCombat)
             simOutOfCombatSince = null;
-        ConfigHelpers.HelpMarker("Untick to watch the countdown that tucks the meter away after combat ends.");
+        ConfigHelpers.HelpMarker("Untick to watch the countdown that hides the meter after a fight.");
 
         MeterWindowHelper.SimulatedCombat = simulateInCombat;
 
@@ -372,7 +372,7 @@ public sealed class FirstRunWindow : Window
         {
             simOutOfCombatSince = null;
             fraction = 0f;
-            status = "In combat - meter visible";
+            status = "In a fight - meter visible";
             barColor = new Vector4(0.4f, 0.8f, 0.4f, 1f);
         }
         else
@@ -382,7 +382,7 @@ public sealed class FirstRunWindow : Window
             fraction = delay > 0f ? Math.Clamp(elapsed / delay, 0f, 1f) : 1f;
             if (fraction < 1f)
             {
-                status = $"Hiding in {Math.Max(0f, delay - elapsed):0.0}s…";
+                status = $"Hiding in {Math.Max(0f, delay - elapsed):0.0}s";
                 barColor = new Vector4(1f, 0.8f, 0.3f, 1f);
             }
             else
@@ -403,7 +403,7 @@ public sealed class FirstRunWindow : Window
 
     private void DrawFinishStep()
     {
-        ImGui.TextWrapped("All set! A few things worth remembering:");
+        ImGui.TextWrapped("All done. A few things worth knowing:");
         ImGui.Spacing();
 
         ImGui.Bullet();
@@ -412,11 +412,11 @@ public sealed class FirstRunWindow : Window
 
         ImGui.Bullet();
         ImGui.SameLine();
-        ImGui.TextWrapped("/dt config — or the cog on the meter's title bar — opens the full settings.");
+        ImGui.TextWrapped("/dt config, or the cog on the meter's title bar, opens the settings.");
 
         ImGui.Bullet();
         ImGui.SameLine();
-        ImGui.TextWrapped("You can re-run this setup any time from Settings → General.");
+        ImGui.TextWrapped("You can run this setup again from Settings -> General.");
 
         ImGui.Spacing();
         ImGui.Separator();
@@ -425,6 +425,6 @@ public sealed class FirstRunWindow : Window
         WizardFinishNav.Draw(plugin, WizardFinishNav.WizardKind.Setup, ReleaseSampleOwnership, () => IsOpen = false);
 
         ImGui.Spacing();
-        ImGui.TextWrapped("Finishing clears the sample data from the meter.");
+        ImGui.TextWrapped("Closing this clears the sample data off the meter.");
     }
 }

@@ -122,11 +122,6 @@ public sealed class CustomizationWizardWindow : Window
         }
         else if (ImGui.Button("Finish", btnSize))
         {
-            if (!plugin.Config.HasCompletedCustomizationWizard)
-            {
-                plugin.Config.HasCompletedCustomizationWizard = true;
-                plugin.SaveConfig();
-            }
             IsOpen = false;
         }
     }
@@ -134,6 +129,16 @@ public sealed class CustomizationWizardWindow : Window
     private void GoToStep(int step)
     {
         currentStep = Math.Clamp(step, 0, StepCount - 1);
+
+        // Reaching the last step is what counts as done - the finish page's own
+        // buttons lead off to the other wizards, so waiting for Finish would
+        // lose the completion whenever the user leaves that way.
+        if (currentStep == StepCount - 1 && !plugin.Config.HasCompletedCustomizationWizard)
+        {
+            plugin.Config.HasCompletedCustomizationWizard = true;
+            plugin.SaveConfig();
+        }
+
         // Reloads the preview if something else (e.g. the first-run wizard
         // closing while both were open) cleared the sample data.
         EnsurePreview();
@@ -154,11 +159,11 @@ public sealed class CustomizationWizardWindow : Window
     {
         var config = plugin.Config;
 
-        ImGui.TextWrapped("Colors first - the preview meter beside this window updates as you pick.");
+        ImGui.TextWrapped("Colors first. The meter next to this window updates as you pick.");
         ImGui.Spacing();
 
         var changed = ConfigHelpers.CheckboxProp("Use per-job colors", config.UsePerJobColors, v => config.UsePerJobColors = v);
-        ConfigHelpers.HelpMarker("Off: one color per role. On: a color for every job.");
+        ConfigHelpers.HelpMarker("Off: one color per role. On: one color per job.");
         ImGui.Spacing();
 
         if (!config.UsePerJobColors)
@@ -203,7 +208,7 @@ public sealed class CustomizationWizardWindow : Window
     {
         var config = plugin.Config;
 
-        ImGui.TextWrapped("How each combatant's job shows up on the meter bars.");
+        ImGui.TextWrapped("How each player's job shows up on their bar.");
         ImGui.Spacing();
 
         var changed = ConfigHelpers.CheckboxProp("Show job icons", config.ShowJobIcons, v => config.ShowJobIcons = v);
@@ -217,13 +222,13 @@ public sealed class CustomizationWizardWindow : Window
             changed |= ConfigHelpers.SliderFloatProp("Icon-text padding", config.IconTextPadding, 0.0f, 12.0f, "%.0f px", v => config.IconTextPadding = v, 200);
 
             if (config.JobIconStyle == JobIconStyle.Custom)
-                ImGui.TextDisabled("Per-job icon IDs live under Settings → Appearance → Meter Bars.");
+                ImGui.TextDisabled("Per-job icon IDs are in Settings -> Appearance -> Meter Bars.");
             ImGui.Unindent();
         }
 
         ImGui.Spacing();
         changed |= ConfigHelpers.CheckboxProp("Job abbreviation before names", config.ShowJobAbbrevOnBar, v => config.ShowJobAbbrevOnBar = v);
-        ConfigHelpers.HelpMarker("Shows the job tag, e.g. [WAR], in front of each name.");
+        ConfigHelpers.HelpMarker("Puts the job tag, like [WAR], in front of each name.");
 
         if (changed)
             plugin.SaveConfig();
@@ -233,7 +238,7 @@ public sealed class CustomizationWizardWindow : Window
     {
         var config = plugin.Config;
 
-        ImGui.TextWrapped("Markings that call out your bar and the meter's rows.");
+        ImGui.TextWrapped("Markings that make your own bar and the rows easier to pick out.");
         ImGui.Spacing();
 
         var changed = ConfigHelpers.CheckboxProp("Highlight local player bar", config.SelfBarHighlight, v => config.SelfBarHighlight = v);
@@ -275,9 +280,9 @@ public sealed class CustomizationWizardWindow : Window
 
     private void DrawFinishStep()
     {
-        ImGui.TextWrapped("That's the quick pass. Everything here - and much more - can be found under Settings → Appearance.");
+        ImGui.TextWrapped("That's the quick pass. All of this, and a lot more, is in Settings -> Appearance.");
         ImGui.Spacing();
-        ImGui.TextWrapped("Finishing clears the sample data from the meter.");
+        ImGui.TextWrapped("Closing this clears the sample data off the meter.");
 
         ImGui.Spacing();
         ImGui.Separator();

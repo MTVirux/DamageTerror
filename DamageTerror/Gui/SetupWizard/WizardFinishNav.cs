@@ -10,17 +10,17 @@ internal static class WizardFinishNav
 
     public static void Draw(DamageTerrorPlugin plugin, WizardKind current, Func<bool> releaseSampleOwnership, Action closeSelf)
     {
-        ImGui.TextWrapped("Keep going with the other wizards - each is also available later under Settings -> General:");
+        ImGui.TextWrapped("There are other wizards too. You can also get to them later from Settings -> General:");
         ImGui.Spacing();
 
         if (current != WizardKind.Setup)
-            DrawRow("Run the setup wizard...", plugin.Config.HasCompletedSetup,
+            DrawRow("Run the setup wizard", plugin.Config.HasCompletedSetup,
                 () => plugin.OpenSetupWizard(takeOverSampleData: releaseSampleOwnership()), closeSelf);
         if (current != WizardKind.Customization)
-            DrawRow("Customize the look...", plugin.Config.HasCompletedCustomizationWizard,
+            DrawRow("Customize the look", plugin.Config.HasCompletedCustomizationWizard,
                 () => plugin.OpenCustomizationWizard(takeOverSampleData: releaseSampleOwnership()), closeSelf);
         if (current != WizardKind.Columns)
-            DrawRow("Customize the columns...", plugin.Config.HasCompletedColumnWizard,
+            DrawRow("Set up the columns", plugin.Config.HasCompletedColumnWizard,
                 () => plugin.OpenColumnWizard(takeOverSampleData: releaseSampleOwnership()), closeSelf);
     }
 

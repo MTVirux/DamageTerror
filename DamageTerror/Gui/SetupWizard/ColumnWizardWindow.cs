@@ -113,8 +113,8 @@ public sealed class ColumnWizardWindow : Window
             switch (currentStep)
             {
                 case 0: DrawTabPickStep(); break;
-                case 1: DrawCategoryStep("Damage numbers - the meter's bread and butter.", "Damage"); break;
-                case 2: DrawCategoryStep("Healing output and overheal.", "Healing"); break;
+                case 1: DrawCategoryStep("The damage numbers - what most people are here for.", "Damage"); break;
+                case 2: DrawCategoryStep("Healing done, and how much of it was overheal.", "Healing"); break;
                 case 3: DrawMoreStatsStep(); break;
                 case 4: DrawOrderStep(); break;
                 case 5: DrawFinishStep(); break;
@@ -151,11 +151,6 @@ public sealed class ColumnWizardWindow : Window
         }
         else if (ImGui.Button("Finish", btnSize))
         {
-            if (!plugin.Config.HasCompletedColumnWizard)
-            {
-                plugin.Config.HasCompletedColumnWizard = true;
-                plugin.SaveConfig();
-            }
             IsOpen = false;
         }
     }
@@ -163,6 +158,16 @@ public sealed class ColumnWizardWindow : Window
     private void GoToStep(int step)
     {
         currentStep = Math.Clamp(step, 0, StepCount - 1);
+
+        // Reaching the last step is what counts as done - the finish page's own
+        // buttons lead off to the other wizards, so waiting for Finish would
+        // lose the completion whenever the user leaves that way.
+        if (currentStep == StepCount - 1 && !plugin.Config.HasCompletedColumnWizard)
+        {
+            plugin.Config.HasCompletedColumnWizard = true;
+            plugin.SaveConfig();
+        }
+
         // Reloads the preview if something else (e.g. another wizard closing
         // while both were open) cleared the sample data.
         EnsurePreview();
@@ -190,7 +195,7 @@ public sealed class ColumnWizardWindow : Window
     private static bool NoTargetTab([NotNullWhen(false)] MeterTab? tab)
     {
         if (tab != null) return false;
-        ImGui.TextWrapped("No visible meter tabs found. Tabs are managed under Settings -> Tabs.");
+        ImGui.TextWrapped("No visible tabs to set up. You can add them in Settings -> Tabs.");
         return true;
     }
 
@@ -199,18 +204,18 @@ public sealed class ColumnWizardWindow : Window
         var tabs = plugin.Config.MeterTabs;
         var target = TargetTab;
 
-        ImGui.TextWrapped("Pick the meter tab whose columns you want to set up. The preview meter switches to whichever tab you select - run this wizard again to do another tab.");
+        ImGui.TextWrapped("Pick the tab you want to set columns for. The meter switches to it as you select. Run this wizard again for another tab.");
         ImGui.Spacing();
 
         if (target == null)
         {
-            ImGui.TextWrapped("No visible meter tabs found. Tabs are managed under Settings -> Tabs.");
+            ImGui.TextWrapped("No visible tabs to set up. You can add them in Settings -> Tabs.");
             return;
         }
 
         if (target.ViewMode == ViewMode.LineGraph)
         {
-            ImGui.TextDisabled("This tab is in graph mode - columns apply to its bars view.");
+            ImGui.TextDisabled("This tab is in graph mode - these columns show up in its bars view.");
             ImGui.Spacing();
         }
 
@@ -298,13 +303,13 @@ public sealed class ColumnWizardWindow : Window
         if (NoTargetTab(tab)) return;
         EnsureColumnOrder(tab);
 
-        ImGui.TextWrapped("Arrange the enabled columns - the top of this list is the leftmost column on the meter.");
+        ImGui.TextWrapped("Put the columns in order. Top of the list is the leftmost column on the meter.");
         ImGui.Spacing();
 
         var enabled = tab.ColumnOrder.Where(tab.IsColumnVisible).ToList();
         if (enabled.Count == 0)
         {
-            ImGui.TextDisabled("No columns enabled - go back and tick some first.");
+            ImGui.TextDisabled("Nothing enabled yet - go back and tick a few columns.");
             return;
         }
 
@@ -332,9 +337,9 @@ public sealed class ColumnWizardWindow : Window
 
     private void DrawFinishStep()
     {
-        ImGui.TextWrapped("Columns set. Per-column extras - custom labels, formats, value colors, and widths - live under Settings -> Appearance.");
+        ImGui.TextWrapped("Columns are set. Labels, formats, colors and widths for each one are in Settings -> Appearance.");
         ImGui.Spacing();
-        ImGui.TextWrapped("Finishing clears the sample data from the meter.");
+        ImGui.TextWrapped("Closing this clears the sample data off the meter.");
 
         ImGui.Spacing();
         ImGui.Separator();
