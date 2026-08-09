@@ -83,7 +83,7 @@ internal static class SampleDataGenerator
             ("Cerulean Shot", "Mch"), ("Marcelo Benevides", "Whm"),
             ("Red Diamond", "Drg"), ("Nikita Airisu", "Pct"),
             ("Blazing Heart", "Sam"), ("Atrina Vermillion", "Rpr"),
-            ("Dusk Warden", "Gnb"), ("Morning Dew", "Ast"),
+            ("Nik Baldking", "Gnb"), ("Morning Dew", "Ast"),
             ("Rtb Baytolachefe", "Pld"), ("Tidal Wave", "Smn"),
             ("Gentle Spark", "Dnc"), ("Arctic Fox", "Vpr"),
             ("Crimson Tide", "War"), ("Night Bloom", "Sch"),
@@ -113,7 +113,7 @@ internal static class SampleDataGenerator
         {
             // Maelstrom (24)
             ("Kotoshiro Dazaria", "War"), ("Rtb Baytolachefe", "Pld"), ("Gale Runner", "Nin"), ("Vermillion Terrorr", "Blm"),
-            ("Coral Shield", "Gnb"), ("Marcelo Benevides", "Whm"), ("Red Diamond", "Drg"), ("Riptide Shot", "Mch"),
+            ("Nik Baldking", "Gnb"), ("Marcelo Benevides", "Whm"), ("Red Diamond", "Drg"), ("Riptide Shot", "Mch"),
             ("Sea Breeze", "Dnc"), ("Ocean Fury", "Sam"), ("Atrina Vermillion", "Rpr"), ("Brine Sage", "Sge"),
             ("Sanaya Minatozaki", "Drg"), ("Whirlpool", "Smn"), ("Tsunami Edge", "Drk"), ("Tide Caller", "Ast"),
             ("Surge Strike", "Vpr"), ("Nikita Airisu", "Pct"), ("Tataru Terror", "Rdm"), ("Nestefxia Reanna", "Rdm"),
