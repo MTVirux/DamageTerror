@@ -28,5 +28,6 @@
 
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="10.0.0-preview.3.25173.2" />
+    <PackageReference Include="KamiToolKit" Version="2.2.11" />
   </ItemGroup>
 </Project>

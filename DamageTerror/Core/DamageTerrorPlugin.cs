@@ -2,6 +2,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Game.Command;
 using ECommons;
+using KamiToolKit;
 
 namespace DamageTerror.Core;
 
@@ -33,6 +34,8 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
     private readonly IPluginLog pluginLog;
     private readonly ITextureProvider textureProvider;
     private readonly Dictionary<Guid, Gui.MainWindow.PopoutTabWindow> popoutWindows = new();
+    private readonly PartyListDpsOverlay partyListOverlay;
+    private readonly Gui.PartyListConfigWindow partyListConfigWindow;
     private bool disposed;
 
     public DamageTerrorPlugin(
@@ -147,6 +150,15 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         this.PartyService = new PartyMembershipService();
 
+        KamiToolKitLibrary.Initialize(pluginInterface);
+        this.partyListOverlay = new PartyListDpsOverlay(this.DataService, this.Config);
+
+        // Plugin construction runs on a task, not the framework thread, and KamiToolKit
+        // asserts the framework thread when it touches the addon. Command handlers are
+        // already on it, so this is the only caller that needs marshalling.
+        if (this.Config.ShowPartyListDps)
+            framework.RunOnFrameworkThread(() => this.partyListOverlay.SetEnabled(true));
+
         this.FontService = new FontService(this.Config, pluginLog);
         if (this.Config.EnableCustomFont)
             this.FontService.Initialize(pluginInterface.UiBuilder);
@@ -171,6 +183,9 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.windowSystem.AddWindow(this.customizationWizardWindow);
         this.windowSystem.AddWindow(this.columnWizardWindow);
 
+        this.partyListConfigWindow = new Gui.PartyListConfigWindow(this);
+        this.windowSystem.AddWindow(this.partyListConfigWindow);
+
         this.PluginInterface.UiBuilder.Draw += this.DrawUi;
         this.PluginInterface.UiBuilder.OpenConfigUi += this.OpenConfigUi;
         this.PluginInterface.UiBuilder.OpenMainUi += this.OpenMainUi;
@@ -179,7 +194,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         this.commandManager.AddHandler(CommandName, new CommandInfo(this.OnCommand)
         {
-            HelpMessage = "Toggle the meter window. Subcommands: config, toggle <group>",
+            HelpMessage = "Toggle the meter window. Subcommands: config, toggle <group>, partylist, partylist config",
         });
 
         this.mainWindow.IsOpen = this.Config.ShowOnStart;
@@ -243,6 +258,11 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
     public void SelectMeterTab(int index) => this.mainWindow.SelectTab(index);
 
+    /// <summary>Called from the config window, which draws on the framework thread.</summary>
+    public void SetPartyListOverlayEnabled(bool value) => this.partyListOverlay.SetEnabled(value);
+
+    public void ResyncPartyListNames() => this.partyListOverlay.ResyncNameText();
+
     public void SaveConfig()
     {
         this.PluginInterface.SavePluginConfig(this.Config);
@@ -274,6 +294,11 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         foreach (var popout in this.popoutWindows.Values)
             SafeDispose(() => popout.Dispose());
         this.popoutWindows.Clear();
+
+        // Native nodes must go while the party list addon is still alive, and the
+        // library must go after every node it owns.
+        SafeDispose(() => this.partyListOverlay.Dispose());
+        SafeDispose(KamiToolKitLibrary.Dispose);
 
         SafeDispose(() => this.mainWindow.Dispose());
         SafeDispose(() => this.configWindow.Dispose());
@@ -369,6 +394,15 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         }
         else if (args.Equals("config", StringComparison.OrdinalIgnoreCase))
             this.configWindow.IsOpen = !this.configWindow.IsOpen;
+        else if (args.Equals("partylist config", StringComparison.OrdinalIgnoreCase))
+            this.partyListConfigWindow.IsOpen = !this.partyListConfigWindow.IsOpen;
+        else if (args.Equals("partylist", StringComparison.OrdinalIgnoreCase))
+        {
+            this.Config.ShowPartyListDps = !this.Config.ShowPartyListDps;
+            this.partyListOverlay.SetEnabled(this.Config.ShowPartyListDps);
+            this.SaveConfig();
+            Svc.Chat.Print($"[Damage Terror] Party list DPS {(this.Config.ShowPartyListDps ? "enabled" : "disabled")}.");
+        }
         else if (args.StartsWith("toggle ", StringComparison.OrdinalIgnoreCase))
         {
             var groupName = args[7..].Trim();

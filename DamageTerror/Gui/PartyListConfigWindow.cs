@@ -1,0 +1,346 @@
+using Dalamud.Interface.Windowing;
+
+namespace DamageTerror.Gui;
+
+/// <summary>
+/// Live editor for the native party list integration. Every value is read by the overlay
+/// each frame, so changes show up in the party list as the slider moves.
+/// </summary>
+public sealed class PartyListConfigWindow : Window, IDisposable
+{
+    private readonly DamageTerrorPlugin plugin;
+
+    public PartyListConfigWindow(DamageTerrorPlugin plugin)
+        : base("Party List Integration###DamageTerrorPartyListConfig")
+    {
+        this.plugin = plugin;
+        Size = new Vector2(430f, 600f);
+        SizeCondition = ImGuiCond.FirstUseEver;
+    }
+
+    public void Dispose()
+    {
+    }
+
+    public override void Draw()
+    {
+        var config = plugin.Config;
+        var settings = config.PartyList;
+        var changed = false;
+
+        var enabled = config.ShowPartyListDps;
+        if (ImGui.Checkbox("Enable party list integration", ref enabled))
+        {
+            config.ShowPartyListDps = enabled;
+            plugin.SetPartyListOverlayEnabled(enabled);
+            changed = true;
+        }
+
+        ImGui.TextDisabled("Turning this off restores every node the game owns.");
+        ImGui.Separator();
+
+        if (!enabled)
+            ImGui.BeginDisabled();
+
+        if (ImGui.CollapsingHeader("DPS Bar##plBar", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Show bar##plShowBar", settings.ShowBar,
+                v => settings.ShowBar = v);
+            changed |= Slider("Start under icon##plUnderlap", settings.IconUnderlap, -20f, 40f,
+                v => settings.IconUnderlap = v,
+                "How far the bar's left edge tucks back under the job icon.");
+            changed |= Slider("Height##plBarHeight", settings.BarHeightPixels, 2f, 512f,
+                v => settings.BarHeightPixels = v, "Bar height in pixels, centred on the job icon.");
+            changed |= Slider("Opacity##plBarAlpha", settings.BarOpacity, 0f, 1f,
+                v => settings.BarOpacity = v, null, "%.2f");
+            changed |= Slider("Horizontal offset##plBarX", settings.BarOffsetX, -80f, 80f,
+                v => settings.BarOffsetX = v, null);
+            changed |= Slider("Vertical offset##plBarY", settings.BarOffsetY, -40f, 40f,
+                v => settings.BarOffsetY = v, null);
+            changed |= Slider("Max width##plBarMaxWidth", settings.BarMaxWidth, 0f, 400f,
+                v => settings.BarMaxWidth = v,
+                "Width a 100% bar draws to; 0 uses the whole row. Bars scale inside this, " +
+                "so they stay proportional rather than the longest being clipped.");
+            changed |= ConfigHelpers.CheckboxProp("Draw behind row content##plBarBehind",
+                settings.BarBehindRowContent, v => settings.BarBehindRowContent = v);
+            ConfigHelpers.HelpMarker(
+                "Puts the fill under the name, gauges and status icons. Off draws it on top.");
+        }
+
+        if (ImGui.CollapsingHeader("DPS Number##plText", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Show number##plShowText", settings.ShowText,
+                v => settings.ShowText = v);
+            changed |= Slider("Width##plTextW", settings.TextWidth, 10f, 200f,
+                v => settings.TextWidth = v, null);
+            changed |= Slider("Height##plTextH", settings.TextHeight, 8f, 60f,
+                v => settings.TextHeight = v, null);
+            changed |= Slider("Right margin##plTextMargin", settings.TextRightMargin, -40f, 80f,
+                v => settings.TextRightMargin = v, null);
+            changed |= SliderInt("Font size##plTextFont", settings.TextFontSize, 6, 40,
+                v => settings.TextFontSize = v, null);
+        }
+
+        if (ImGui.CollapsingHeader("Name, HP and MP##plRow"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Move row content##plShiftRow", settings.ShiftRowContent,
+                v => settings.ShiftRowContent = v);
+            changed |= Slider("Vertical offset##plRowY", settings.RowContentShiftY, -30f, 30f,
+                v => settings.RowContentShiftY = v,
+                "Negative moves the name, HP and MP up.");
+
+            ImGui.Spacing();
+            changed |= ConfigHelpers.CheckboxProp("Hide level##plHideLevel", settings.HideLevel,
+                v => settings.HideLevel = v);
+            ConfigHelpers.HelpMarker(
+                "The level isn't a separate node - the game prefixes it to the name as glyphs, " +
+                "so this rewrites the name text. Turning it back off restores the game's string.");
+
+            changed |= ConfigHelpers.CheckboxProp("Resize player name##plAdjustNameFont", settings.AdjustNameFont,
+                v => settings.AdjustNameFont = v);
+            changed |= SliderInt("Name font size change##plNameFont", settings.NameFontDelta, -8, 8,
+                v => settings.NameFontDelta = v,
+                "Added to the game's own font size for the player name.");
+        }
+
+        if (ImGui.CollapsingHeader("Metrics After Name##plMetrics"))
+        {
+            ImGui.TextDisabled("Drawn after the name, in the order listed.");
+            ImGui.Spacing();
+
+            changed |= SliderInt("Font size change##plMetricsFont", settings.MetricsFontDelta, -8, 8,
+                v => settings.MetricsFontDelta = v,
+                "Offset from the name's font, which the metrics otherwise copy exactly.");
+            changed |= Slider("Gap after name##plMetricsGap", settings.MetricsGap, -20f, 60f,
+                v => settings.MetricsGap = v,
+                "Measured from where the name's text actually ends.");
+            ImGui.Spacing();
+
+            changed |= ConfigHelpers.CheckboxProp("DPS##plMetricDps", settings.MetricDps,
+                v => settings.MetricDps = v);
+            changed |= ConfigHelpers.CheckboxProp("Damage##plMetricDamage", settings.MetricDamage,
+                v => settings.MetricDamage = v);
+            changed |= ConfigHelpers.CheckboxProp("Crit %##plMetricCrit", settings.MetricCrit,
+                v => settings.MetricCrit = v);
+            changed |= ConfigHelpers.CheckboxProp("Direct Hit %##plMetricDh", settings.MetricDirectHit,
+                v => settings.MetricDirectHit = v);
+            changed |= ConfigHelpers.CheckboxProp("Crit Direct Hit %##plMetricCdh", settings.MetricCritDirectHit,
+                v => settings.MetricCritDirectHit = v);
+            changed |= ConfigHelpers.CheckboxProp("Damage %##plMetricDamagePct", settings.MetricDamagePercent,
+                v => settings.MetricDamagePercent = v);
+
+            ImGui.Spacing();
+
+            if (ImGui.Button("Reset to name only##plMetricReset"))
+            {
+                settings.MetricDps = false;
+                settings.MetricDamage = false;
+                settings.MetricCrit = false;
+                settings.MetricDirectHit = false;
+                settings.MetricCritDirectHit = false;
+                settings.MetricDamagePercent = false;
+                plugin.ResyncPartyListNames();
+                changed = true;
+            }
+
+            ConfigHelpers.HelpMarker(
+                "Clears every metric and re-reads each name from the game, dropping anything " +
+                "an earlier session left on it.");
+
+            ImGui.Spacing();
+            ImGui.TextDisabled("Values and formatting match the meter window.");
+        }
+
+        if (ImGui.CollapsingHeader("Buffs and Debuffs##plStatus"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Adjust status icons##plAdjustStatus", settings.AdjustStatusIcons,
+                v => settings.AdjustStatusIcons = v);
+            changed |= Slider("Horizontal offset##plStatusX", settings.StatusOffsetX, -120f, 120f,
+                v => settings.StatusOffsetX = v, null);
+            changed |= Slider("Vertical offset##plStatusY", settings.StatusOffsetY, -60f, 60f,
+                v => settings.StatusOffsetY = v, null);
+            changed |= Slider("Scale##plStatusScale", settings.StatusScale, 0.3f, 2.5f,
+                v => settings.StatusScale = v,
+                "Scales the whole list from its top-left, so icon spacing scales with the icons.",
+                "%.2f");
+
+            ImGui.Spacing();
+            changed |= ConfigHelpers.CheckboxProp("Adjust timers##plAdjustTimers", settings.AdjustStatusTimers,
+                v => settings.AdjustStatusTimers = v);
+            ConfigHelpers.HelpMarker(
+                "The timer text sits inside each icon, so it already scales with the icon. " +
+                "These are on top of that.");
+
+            changed |= SliderInt("Timer font size change##plTimerFont", settings.StatusTimerFontDelta, -8, 8,
+                v => settings.StatusTimerFontDelta = v, null);
+            changed |= Slider("Timer horizontal offset##plTimerX", settings.StatusTimerOffsetX, -30f, 30f,
+                v => settings.StatusTimerOffsetX = v, null);
+            changed |= Slider("Timer vertical offset##plTimerY", settings.StatusTimerOffsetY, -30f, 30f,
+                v => settings.StatusTimerOffsetY = v, null);
+        }
+
+        if (ImGui.CollapsingHeader("Hover and Selection Glow##plGlow"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Adjust glows##plAdjustGlow", settings.AdjustSelectionGlow,
+                v => settings.AdjustSelectionGlow = v);
+            ConfigHelpers.HelpMarker(
+                "Each state draws more than one node, and all of them are adjusted together. " +
+                "Which settings apply is decided by the row's state, so hover and selection " +
+                "stay independent without needing to tell the nodes apart. " +
+                "Tint is a colour multiply - the game fades these in on a timeline, and " +
+                "writing opacity would pin it and stop the fade.");
+
+            changed |= ConfigHelpers.CheckboxProp("Freeze glow animation##plFreezeGlow", settings.FreezeGlowTransform,
+                v => settings.FreezeGlowTransform = v);
+            ConfigHelpers.HelpMarker(
+                "The game animates the glow's position, scale and tint as it appears, which " +
+                "overwrites these settings while it plays. This stops the timeline driving " +
+                "those, leaving the fade animated. Turn it off to keep the pop-in movement, " +
+                "at the cost of the settings below not holding until the animation ends.");
+
+            changed |= ConfigHelpers.CheckboxProp("Selection wins over hover##plGlowPrecedence",
+                settings.SelectionOverridesHover, v => settings.SelectionOverridesHover = v);
+            ConfigHelpers.HelpMarker(
+                "The game draws one node for both states - selection is marked by also showing " +
+                "the job icon glow, not by a second highlight - so a row that is hovered and " +
+                "selected can only use one of the two. On, a selected row keeps its selection " +
+                "look while you hover it; off, hovering switches it to the hover look.");
+
+            ImGui.Spacing();
+            ImGui.TextDisabled("Hover");
+            changed |= Slider("Horizontal offset##plHoverX", settings.HoverOffsetX, -60f, 60f,
+                v => settings.HoverOffsetX = v, null);
+            changed |= Slider("Vertical offset##plHoverY", settings.HoverOffsetY, -40f, 40f,
+                v => settings.HoverOffsetY = v, null);
+            changed |= Slider("Scale##plHoverScale", settings.HoverScale, 0.3f, 2.5f,
+                v => settings.HoverScale = v, null, "%.2f");
+            changed |= ConfigHelpers.ColorEditProp("Tint##plHoverTint", settings.HoverTint,
+                v => settings.HoverTint = v, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+
+            ImGui.Spacing();
+            ImGui.TextDisabled("Selection");
+            changed |= Slider("Horizontal offset##plSelX", settings.SelectionOffsetX, -60f, 60f,
+                v => settings.SelectionOffsetX = v, null);
+            changed |= Slider("Vertical offset##plSelY", settings.SelectionOffsetY, -40f, 40f,
+                v => settings.SelectionOffsetY = v, null);
+            changed |= Slider("Scale##plSelScale", settings.SelectionScale, 0.3f, 2.5f,
+                v => settings.SelectionScale = v, null, "%.2f");
+            changed |= ConfigHelpers.ColorEditProp("Tint##plSelTint", settings.SelectionTint,
+                v => settings.SelectionTint = v, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+
+            ImGui.Spacing();
+            ImGui.TextDisabled("Job icon glow");
+            changed |= Slider("Horizontal offset##plIconGlowX", settings.IconGlowOffsetX, -60f, 60f,
+                v => settings.IconGlowOffsetX = v, null);
+            changed |= Slider("Vertical offset##plIconGlowY", settings.IconGlowOffsetY, -40f, 40f,
+                v => settings.IconGlowOffsetY = v, null);
+            changed |= Slider("Scale##plIconGlowScale", settings.IconGlowScale, 0.3f, 2.5f,
+                v => settings.IconGlowScale = v, null, "%.2f");
+            changed |= ConfigHelpers.ColorEditProp("Tint##plIconGlowTint", settings.IconGlowTint,
+                v => settings.IconGlowTint = v, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+        }
+
+        if (ImGui.CollapsingHeader("Encounter Totals##plTotals"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Hide \"Solo\" / \"Party\" label##plHidePartyType",
+                settings.HidePartyTypeLabel, v => settings.HidePartyTypeLabel = v);
+            ConfigHelpers.HelpMarker("Blanks the game's header text. Restored when turned off.");
+
+            changed |= ConfigHelpers.CheckboxProp("Show on party list header##plShowTotals", settings.ShowEncounterTotals,
+                v => settings.ShowEncounterTotals = v);
+            ConfigHelpers.HelpMarker("Appended to the \"Party\" / \"Light Party\" label above the list.");
+
+            changed |= ConfigHelpers.CheckboxProp("Encounter name##plTotalsTitle", settings.TotalsShowTitle,
+                v => settings.TotalsShowTitle = v);
+            changed |= ConfigHelpers.CheckboxProp("Duration##plTotalsDuration", settings.TotalsShowDuration,
+                v => settings.TotalsShowDuration = v);
+            changed |= ConfigHelpers.CheckboxProp("Raid DPS##plTotalsDps", settings.TotalsShowRaidDps,
+                v => settings.TotalsShowRaidDps = v);
+            changed |= ConfigHelpers.CheckboxProp("Total damage##plTotalsDamage", settings.TotalsShowDamage,
+                v => settings.TotalsShowDamage = v);
+            changed |= ConfigHelpers.CheckboxProp("Deaths##plTotalsDeaths", settings.TotalsShowDeaths,
+                v => settings.TotalsShowDeaths = v);
+        }
+
+        if (ImGui.CollapsingHeader("Cast Bar##plCastBar"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Adjust cast bar##plAdjustCastBar", settings.AdjustCastBar,
+                v => settings.AdjustCastBar = v);
+            changed |= Slider("Left inset##plCastBarX", settings.CastBarShiftX, 0f, 80f,
+                v => settings.CastBarShiftX = v,
+                "Moves the left edge right and narrows the bar by the same amount.");
+            changed |= Slider("Vertical offset##plCastBarY", settings.CastBarShiftY, -30f, 30f,
+                v => settings.CastBarShiftY = v, null);
+        }
+
+        if (ImGui.CollapsingHeader("Casting Spell Name##plCastName"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Adjust spell name##plAdjustCastName", settings.AdjustCastName,
+                v => settings.AdjustCastName = v);
+            changed |= Slider("Horizontal offset##plCastNameX", settings.CastNameOffsetX, -40f, 40f,
+                v => settings.CastNameOffsetX = v, null);
+            changed |= Slider("Vertical offset##plCastNameY", settings.CastNameOffsetY, -30f, 30f,
+                v => settings.CastNameOffsetY = v,
+                "Measured from the cast bar's centre line.");
+            changed |= SliderInt("Font size change##plCastNameFont", settings.CastNameFontDelta, -12, 12,
+                v => settings.CastNameFontDelta = v,
+                "Added to the game's own font size for the spell name.");
+        }
+
+        if (ImGui.CollapsingHeader("HP / MP Numbers##plGauge"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Adjust numbers##plAdjustGauge", settings.AdjustGaugeNumbers,
+                v => settings.AdjustGaugeNumbers = v);
+            changed |= SliderInt("Font size change##plGaugeFont", settings.GaugeFontDelta, -8, 8,
+                v => settings.GaugeFontDelta = v,
+                "Added to the game's own font size for the HP and MP numbers.");
+            changed |= Slider("Vertical offset##plGaugeY", settings.GaugeNumberOffsetY, -20f, 20f,
+                v => settings.GaugeNumberOffsetY = v,
+                "Applied to both the HP and MP numbers.");
+
+            ImGui.Spacing();
+            ImGui.TextDisabled("MP's last two digits are a second, smaller text node.");
+
+            changed |= SliderInt("Trailing digits size##plTrailFont", settings.MpTrailingFontDelta, -4, 8,
+                v => settings.MpTrailingFontDelta = v,
+                "0 keeps the game's smaller size. Raise it to match the leading digits - " +
+                "they're then re-aligned, since the game's baseline offset only suits the small size.");
+
+            changed |= Slider("Trailing digits X##plTrailX", settings.TrailingDigitsOffsetX, -20f, 20f,
+                v => settings.TrailingDigitsOffsetX = v, null);
+            changed |= Slider("Trailing digits Y##plTrailY", settings.TrailingDigitsOffsetY, -20f, 20f,
+                v => settings.TrailingDigitsOffsetY = v, null);
+        }
+
+        if (!enabled)
+            ImGui.EndDisabled();
+
+        ImGui.Separator();
+
+        if (ImGui.Button("Reset to defaults##plReset"))
+        {
+            config.PartyList = new PartyListOverlaySettings();
+            changed = true;
+        }
+
+        if (changed)
+            config.Save?.Invoke();
+    }
+
+    private static bool Slider(string label, float value, float min, float max, Action<float> setter,
+        string? tooltip, string format = "%.0f")
+    {
+        var result = ConfigHelpers.SliderFloatProp(label, value, min, max, format, setter, 180f);
+        if (tooltip != null)
+            ConfigHelpers.HelpMarker(tooltip);
+        return result;
+    }
+
+    private static bool SliderInt(string label, int value, int min, int max, Action<int> setter, string? tooltip)
+    {
+        var result = ConfigHelpers.SliderIntProp(label, value, min, max, setter, 180f);
+        if (tooltip != null)
+            ConfigHelpers.HelpMarker(tooltip);
+        return result;
+    }
+}

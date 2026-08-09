@@ -38,6 +38,10 @@ public sealed class Configuration : IPluginConfiguration
 
     public bool CaptureRawFrames { get; set; } = false;
 
+    /// <summary>Draw encounter DPS into the game's native party list via Atk nodes.</summary>
+    public bool ShowPartyListDps { get; set; } = false;
+
+    public PartyListOverlaySettings PartyList { get; set; } = new();
 
     public bool EnableInOverworld { get; set; } = true;
     public bool EnableInDungeons { get; set; } = true;
