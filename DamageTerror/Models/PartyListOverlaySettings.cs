@@ -9,29 +9,25 @@ public sealed class PartyListOverlaySettings
 {
     // DPS fill bar
     public bool ShowBar { get; set; } = true;
-    public float IconUnderlap { get; set; } = 4f;
-    /// <summary>
-    /// Bar height in pixels, centred on the job icon. Defaults to the selection
-    /// background's own height - its corner artwork insets 20px top and bottom, so below
-    /// about 42px there is no flat middle left and the corners bow into an oval.
-    /// </summary>
-    public float BarHeightPixels { get; set; } = 48f;
+    public float IconUnderlap { get; set; } = 7f;
+    /// <summary>Bar height in pixels, centred on the job icon.</summary>
+    public float BarHeightPixels { get; set; } = 14f;
 
     /// <summary>
     /// Opacity of the fill, used directly rather than as a floor under the meter's own
     /// alpha - as a floor, lowering it below the meter's value did nothing.
     /// </summary>
     [JsonProperty("BarMinAlpha")]
-    public float BarOpacity { get; set; } = 0.35f;
+    public float BarOpacity { get; set; } = 0.75f;
 
     /// <summary>
     /// Caps the width a 100% bar draws to. Everything scales inside it, so the bars stay
     /// proportional to each other instead of the longest one being clipped. 0 uses the
     /// space available in the row.
     /// </summary>
-    public float BarMaxWidth { get; set; } = 0f;
-    public float BarOffsetX { get; set; } = 0f;
-    public float BarOffsetY { get; set; } = 0f;
+    public float BarMaxWidth { get; set; } = 400f;
+    public float BarOffsetX { get; set; } = 24f;
+    public float BarOffsetY { get; set; } = -6f;
 
     /// <summary>
     /// Draws the fill behind the name, gauges and status icons by putting it in a container
@@ -41,20 +37,20 @@ public sealed class PartyListOverlaySettings
     public bool BarBehindRowContent { get; set; } = true;
 
     // DPS number
-    public bool ShowText { get; set; } = true;
-    public float TextWidth { get; set; } = 58f;
+    public bool ShowText { get; set; } = false;
+    public float TextWidth { get; set; } = 53f;
     public float TextHeight { get; set; } = 18f;
-    public float TextRightMargin { get; set; } = 4f;
-    public int TextFontSize { get; set; } = 12;
+    public float TextRightMargin { get; set; } = 0f;
+    public int TextFontSize { get; set; } = 20;
 
     // The row's own name, HP and MP
     public bool ShiftRowContent { get; set; } = true;
-    public float RowContentShiftY { get; set; } = -7f;
+    public float RowContentShiftY { get; set; } = -5f;
 
     // Player name font. Delta rather than absolute, so it tracks the game's own size
     // across UI scale settings.
     public bool AdjustNameFont { get; set; } = false;
-    public int NameFontDelta { get; set; } = 0;
+    public int NameFontDelta { get; set; } = -4;
 
     /// <summary>Strips the level glyphs the game prefixes to the name text.</summary>
     public bool HideLevel { get; set; } = false;
@@ -74,7 +70,7 @@ public sealed class PartyListOverlaySettings
     /// copies the name's font so the two read as one line; this is an offset from it.
     /// </summary>
     public int MetricsFontDelta { get; set; } = 0;
-    public float MetricsGap { get; set; } = 6f;
+    public float MetricsGap { get; set; } = 7f;
 
     [JsonIgnore]
     public bool AnyNameMetric
@@ -83,21 +79,21 @@ public sealed class PartyListOverlaySettings
 
     // Buff / debuff icons
     public bool AdjustStatusIcons { get; set; } = false;
-    public float StatusOffsetX { get; set; } = 0f;
-    public float StatusOffsetY { get; set; } = 0f;
-    public float StatusScale { get; set; } = 1f;
+    public float StatusOffsetX { get; set; } = 1f;
+    public float StatusOffsetY { get; set; } = 8f;
+    public float StatusScale { get; set; } = 1.01f;
 
     // The timer text inside each status icon. It's a child of the icon, so it already
     // inherits the icon scale - these are on top of that.
     public bool AdjustStatusTimers { get; set; } = false;
-    public int StatusTimerFontDelta { get; set; } = 0;
+    public int StatusTimerFontDelta { get; set; } = 1;
     public float StatusTimerOffsetX { get; set; } = 0f;
-    public float StatusTimerOffsetY { get; set; } = 0f;
+    public float StatusTimerOffsetY { get; set; } = -11f;
 
     // The glows behind a row. Hover and selection each draw more than one node, and the
     // game fades them in on a timeline, so tint is a colour multiply only - writing alpha
     // would pin it and kill the fade.
-    public bool AdjustSelectionGlow { get; set; } = false;
+    public bool AdjustSelectionGlow { get; set; } = true;
 
     /// <summary>
     /// Which settings a row uses when it is hovered *and* selected. Hover and selection
@@ -107,13 +103,13 @@ public sealed class PartyListOverlaySettings
     /// </summary>
     public bool SelectionOverridesHover { get; set; } = true;
 
-    public float HoverOffsetX { get; set; } = 0f;
-    public float HoverOffsetY { get; set; } = 0f;
+    public float HoverOffsetX { get; set; } = -11f;
+    public float HoverOffsetY { get; set; } = -6f;
     public float HoverScale { get; set; } = 1f;
     public Vector4 HoverTint { get; set; } = new(1f, 1f, 1f, 1f);
 
-    public float SelectionOffsetX { get; set; } = 0f;
-    public float SelectionOffsetY { get; set; } = 0f;
+    public float SelectionOffsetX { get; set; } = -20f;
+    public float SelectionOffsetY { get; set; } = -8f;
     public float SelectionScale { get; set; } = 1f;
     public Vector4 SelectionTint { get; set; } = new(1f, 1f, 1f, 1f);
 
@@ -134,29 +130,29 @@ public sealed class PartyListOverlaySettings
     /// Hides the game's "Solo" / "Party" header label. Shares the encounter totals' text
     /// handling, since both write to the same node.
     /// </summary>
-    public bool HidePartyTypeLabel { get; set; } = false;
+    public bool HidePartyTypeLabel { get; set; } = true;
 
     // Encounter totals, drawn on the party list's header text
-    public bool ShowEncounterTotals { get; set; } = false;
-    public bool TotalsShowTitle { get; set; } = false;
-    public bool TotalsShowDuration { get; set; } = false;
+    public bool ShowEncounterTotals { get; set; } = true;
+    public bool TotalsShowTitle { get; set; } = true;
+    public bool TotalsShowDuration { get; set; } = true;
     public bool TotalsShowRaidDps { get; set; } = true;
     public bool TotalsShowDamage { get; set; } = false;
-    public bool TotalsShowDeaths { get; set; } = false;
+    public bool TotalsShowDeaths { get; set; } = true;
 
     // Cast bar
     public bool AdjustCastBar { get; set; } = true;
-    public float CastBarShiftX { get; set; } = 10f;
-    public float CastBarShiftY { get; set; } = 4f;
+    public float CastBarShiftX { get; set; } = 11f;
+    public float CastBarShiftY { get; set; } = 5f;
 
     // Casting spell name
     public bool AdjustCastName { get; set; } = true;
-    public float CastNameOffsetX { get; set; } = -6f;
-    public float CastNameOffsetY { get; set; } = -2f;
-    public int CastNameFontDelta { get; set; } = -4;
+    public float CastNameOffsetX { get; set; } = -5f;
+    public float CastNameOffsetY { get; set; } = -1f;
+    public int CastNameFontDelta { get; set; } = -3;
 
     // HP/MP numbers
-    public bool AdjustGaugeNumbers { get; set; } = true;
+    public bool AdjustGaugeNumbers { get; set; } = false;
     public int GaugeFontDelta { get; set; } = 0;
 
     /// <summary>
@@ -165,8 +161,8 @@ public sealed class PartyListOverlaySettings
     /// the leading digits. Measured against the leading node rather than the trailing
     /// node's own size, which can't be trusted once we've written to it.
     /// </summary>
-    public int MpTrailingFontDelta { get; set; } = -2;
+    public int MpTrailingFontDelta { get; set; } = 0;
     public float GaugeNumberOffsetY { get; set; } = -1f;
-    public float TrailingDigitsOffsetX { get; set; } = 1f;
-    public float TrailingDigitsOffsetY { get; set; } = 1f;
+    public float TrailingDigitsOffsetX { get; set; } = 0f;
+    public float TrailingDigitsOffsetY { get; set; } = 0f;
 }

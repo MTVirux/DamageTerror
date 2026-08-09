@@ -755,6 +755,49 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// across two nodes. Placed immediately after the name's drawn text, measured rather
     /// than assumed, so it tracks whatever the name actually renders to.
     /// </summary>
+    /// <summary>
+    /// Copies every property that decides how the name is drawn, so the metrics read as a
+    /// continuation of it rather than as a second label. Size is the only thing that can
+    /// differ, and only by the amount the user asks for.
+    /// </summary>
+    private void CopyNameFont(TextNode node, AtkTextNode* name)
+    {
+        var font = (uint)Math.Clamp(name->FontSize + Settings.MetricsFontDelta, 6, 60);
+        if (node.FontSize != font)
+            node.FontSize = font;
+
+        if (node.FontType != name->FontType)
+            node.FontType = name->FontType;
+
+        // The left-aligned member of whichever vertical band the name uses - the metrics
+        // always start where the name ends, so only the vertical part is worth copying.
+        var alignment = (AlignmentType)((int)name->AlignmentType / 3 * 3);
+        if (node.AlignmentType != alignment)
+            node.AlignmentType = alignment;
+
+        if (node.TextFlags != name->TextFlags)
+            node.TextFlags = name->TextFlags;
+        if (node.LineSpacing != name->LineSpacing)
+            node.LineSpacing = name->LineSpacing;
+        if (node.CharSpacing != name->CharSpacing)
+            node.CharSpacing = name->CharSpacing;
+
+        var raw = (AtkTextNode*)node;
+        if (raw->SheetType != name->SheetType)
+            raw->SheetType = name->SheetType;
+
+        var textColor = ToVector4(name->TextColor);
+        if (node.TextColor != textColor)
+            node.TextColor = textColor;
+
+        var edgeColor = ToVector4(name->EdgeColor);
+        if (node.TextOutlineColor != edgeColor)
+            node.TextOutlineColor = edgeColor;
+    }
+
+    private static Vector4 ToVector4(FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor color)
+        => new(color.R / 255f, color.G / 255f, color.B / 255f, color.A / 255f);
+
     private void UpdateMetrics(AddonPartyList* addon, int row, RowStats? stats)
     {
         var node = metricNodes[row];
@@ -786,26 +829,28 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (node.IsVisible != visible)
             node.IsVisible = visible;
 
-        if (!visible || nameNode == null || owner == null)
+        if (!visible || nameNode == null || owner == null || overlayRoot == null)
             return;
 
-        // Match the name's font so the two read as a single line.
-        var font = (uint)Math.Clamp(nameNode->FontSize + Settings.MetricsFontDelta, 6, 60);
-        if (node.FontSize != font)
-            node.FontSize = font;
-        if (node.FontType != nameNode->FontType)
-            node.FontType = nameNode->FontType;
+        CopyNameFont(node, nameNode);
 
-        if (!TryProjectRect(addon, &nameNode->AtkResNode, &owner->AtkResNode, out var nameRect))
+        // Projected into our own container, not the row's, since that is the space our
+        // position is read in. This also makes the metrics follow the name wherever the
+        // row content offset puts it.
+        if (!TryProjectRect(addon, &nameNode->AtkResNode, (AtkResNode*)overlayRoot, out var nameRect))
             return;
 
         ushort drawnWidth;
         ushort drawnHeight;
         nameNode->GetTextDrawSize(&drawnWidth, &drawnHeight);
 
-        node.Position = new Vector2(
-            nameRect.X + drawnWidth + Settings.MetricsGap,
-            nameRect.Y + ((nameRect.Height - node.Height) / 2f));
+        // Same box height and the same vertical alignment band as the name, so both sit on
+        // one line whether the game centres its text in the box or hangs it from the top.
+        var size = new Vector2(node.Size.X, Math.Max(1f, nameRect.Height));
+        if (node.Size != size)
+            node.Size = size;
+
+        node.Position = new Vector2(nameRect.X + drawnWidth + Settings.MetricsGap, nameRect.Y);
     }
 
     /// <summary>
