@@ -37,10 +37,24 @@ public sealed class PartyListConfigWindow : Window, IDisposable
         }
 
         ImGui.TextDisabled("Turning this off restores every node the game owns.");
-        ImGui.Separator();
 
         if (!enabled)
             ImGui.BeginDisabled();
+
+        changed |= ConfigHelpers.CheckboxProp("Hide metrics when out of combat##plHideOoc",
+            settings.HideOutOfCombat, v => settings.HideOutOfCombat = v);
+        ImGui.TextDisabled("The bar, number, name metrics and totals only. The restyle stays.");
+
+        if (settings.HideOutOfCombat)
+        {
+            ImGui.Indent();
+            changed |= ConfigHelpers.SliderFloatProp("Hide delay (seconds)##plHideOocDelay",
+                settings.HideOutOfCombatDelay, 0f, 30f, "%.1f",
+                v => settings.HideOutOfCombatDelay = v, 150);
+            ImGui.Unindent();
+        }
+
+        ImGui.Separator();
 
         if (ImGui.CollapsingHeader("DPS Bar##plBar", ImGuiTreeNodeFlags.DefaultOpen))
         {

@@ -143,6 +143,14 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             cfg.Version = 4;
         }
 
+        if (cfg.Version < 5)
+        {
+            // Party list integration is off for everyone while it's still being
+            // worked on, including installs that already had it on.
+            cfg.ShowPartyListDps = false;
+            cfg.Version = 5;
+        }
+
         if (cfg.Version != loadedVersion)
             this.PluginInterface.SavePluginConfig(cfg);
 

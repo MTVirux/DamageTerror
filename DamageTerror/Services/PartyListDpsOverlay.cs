@@ -276,6 +276,19 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private double maxDps;
     private PartyListOverlaySettings Settings => config.PartyList;
 
+    private bool encounterActive;
+    private DateTime lastEncounterActive = DateTime.MinValue;
+
+    /// <summary>
+    /// Whether the parts derived from parse data - the bars, the number, the name metrics
+    /// and the header totals - should draw. The restyle is deliberately not gated, so the
+    /// rows keep their layout between pulls instead of jumping on every boundary.
+    /// </summary>
+    private bool MetricsVisible
+        => !Settings.HideOutOfCombat
+           || encounterActive
+           || (DateTime.UtcNow - lastEncounterActive).TotalSeconds < Settings.HideOutOfCombatDelay;
+
     private DateTime lastCacheRefresh = DateTime.MinValue;
     private bool enabled;
     private bool disposed;
@@ -691,6 +704,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void HandleUpdate(AddonPartyList* addon)
     {
+        // Ahead of the apply pass, so the header totals and the rows agree on whether an
+        // encounter is live this frame rather than one frame apart.
+        RefreshCacheIfStale();
+
         SyncOverlayRoot(addon);
 
         if (overlayRoot != null)
@@ -708,18 +725,21 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
         ApplyEncounterTotals(addon);
-        RefreshCacheIfStale();
 
         var agent = AgentHUD.Instance();
         var members = agent == null ? default : agent->PartyMembers;
         var count = agent == null ? 0 : Math.Min(agent->PartyMemberCount, members.Length);
+
+        // Out of combat every row is treated as unmatched, which is already the path that
+        // blanks the text, hides the metrics node and zero-widths the bar.
+        var showMetrics = MetricsVisible;
 
         for (var i = 0; i < MaxRows; i++)
         {
             var matched = false;
             var stats = default(RowStats);
 
-            if (i < count)
+            if (showMetrics && i < count)
             {
                 var name = members[i].Name.ToString();
                 matched = !string.IsNullOrEmpty(name) && statsByName.TryGetValue(name, out stats);
@@ -1904,7 +1924,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // Hiding the label just means dropping the game's own text and keeping whatever we
         // append, so the original is still captured and restored when this is turned off.
         var body = Settings.HidePartyTypeLabel ? string.Empty : originalTotalsText;
-        var extra = Settings.ShowEncounterTotals ? BuildEncounterTotals() : string.Empty;
+        var extra = Settings.ShowEncounterTotals && MetricsVisible ? BuildEncounterTotals() : string.Empty;
         var target = (body + extra).TrimStart();
 
         if (current != target)
@@ -2393,7 +2413,16 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         try
         {
-            var combatants = dataService.Store.ActiveEncounter?.Combatants;
+            // Read the snapshot once - the property takes the store's lock on every access.
+            var snapshot = dataService.Store.ActiveEncounter;
+
+            // Sample data counts as live, so the config window and the wizard can be tuned
+            // in town where no real encounter is running.
+            encounterActive = (snapshot?.Encounter.IsActive ?? false) || dataService.Store.IsSampleDataActive;
+            if (encounterActive)
+                lastEncounterActive = now;
+
+            var combatants = snapshot?.Combatants;
             if (combatants == null)
                 return;
 

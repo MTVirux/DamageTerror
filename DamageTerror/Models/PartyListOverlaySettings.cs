@@ -7,6 +7,15 @@ namespace DamageTerror.Models;
 /// </summary>
 public sealed class PartyListOverlaySettings
 {
+    /// <summary>
+    /// Hides everything derived from parse data - the fill bars, the number, the name
+    /// metrics and the header totals - once an encounter has been over for
+    /// <see cref="HideOutOfCombatDelay"/> seconds. The restyle stays applied either way, so
+    /// the rows don't jump layout on pull. Separate from the meter window's own setting.
+    /// </summary>
+    public bool HideOutOfCombat { get; set; } = true;
+    public float HideOutOfCombatDelay { get; set; } = 5f;
+
     // DPS fill bar
     public bool ShowBar { get; set; } = true;
     public float IconUnderlap { get; set; } = 7f;
