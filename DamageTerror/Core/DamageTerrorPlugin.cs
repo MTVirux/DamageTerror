@@ -202,7 +202,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         this.commandManager.AddHandler(CommandName, new CommandInfo(this.OnCommand)
         {
-            HelpMessage = "Toggle the meter window. Subcommands: config, toggle <group>, partylist, partylist config",
+            HelpMessage = "Toggle the meter window. Subcommands: config, toggle <group>, partylist, partylist enable, partylist disable",
         });
 
         this.mainWindow.IsOpen = this.Config.ShowOnStart;
@@ -402,21 +402,27 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         }
         else if (args.Equals("config", StringComparison.OrdinalIgnoreCase))
             this.configWindow.IsOpen = !this.configWindow.IsOpen;
-        else if (args.Equals("partylist config", StringComparison.OrdinalIgnoreCase))
+        else if (args.Equals("partylist", StringComparison.OrdinalIgnoreCase) ||
+                 args.Equals("partylist config", StringComparison.OrdinalIgnoreCase))
             this.partyListConfigWindow.IsOpen = !this.partyListConfigWindow.IsOpen;
-        else if (args.Equals("partylist", StringComparison.OrdinalIgnoreCase))
-        {
-            this.Config.ShowPartyListDps = !this.Config.ShowPartyListDps;
-            this.partyListOverlay.SetEnabled(this.Config.ShowPartyListDps);
-            this.SaveConfig();
-            Svc.Chat.Print($"[Damage Terror] Party list DPS {(this.Config.ShowPartyListDps ? "enabled" : "disabled")}.");
-        }
+        else if (args.Equals("partylist enable", StringComparison.OrdinalIgnoreCase))
+            SetPartyListDps(true);
+        else if (args.Equals("partylist disable", StringComparison.OrdinalIgnoreCase))
+            SetPartyListDps(false);
         else if (args.StartsWith("toggle ", StringComparison.OrdinalIgnoreCase))
         {
             var groupName = args[7..].Trim();
             if (groupName.Length > 0)
                 TogglePopoutGroup(groupName);
         }
+    }
+
+    private void SetPartyListDps(bool value)
+    {
+        this.Config.ShowPartyListDps = value;
+        this.partyListOverlay.SetEnabled(value);
+        this.SaveConfig();
+        Svc.Chat.Print($"[Damage Terror] Party list DPS {(value ? "enabled" : "disabled")}.");
     }
 
     private void TogglePopoutGroup(string groupName)
