@@ -1,3 +1,4 @@
+using System.Globalization;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -280,6 +281,18 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[,,] appliedGaugeY = new float[MaxRows, GaugeCount, GaugeTextSlots];
     private readonly bool[,,] gaugeTextApplied = new bool[MaxRows, GaugeCount, GaugeTextSlots];
     private readonly Vector4[] lastBarColor = new Vector4[MaxRows];
+
+    /// <summary>
+    /// Sentinel for "nothing has been written to this node's colour yet". A real colour can
+    /// never compare equal to it, so a fresh node always gets its first write - without it a
+    /// rebuilt node kept the transparent colour it was created with whenever the colour the
+    /// row resolved to happened to match the one written before the rebuild.
+    /// </summary>
+    private static readonly Vector4 NoColor = new(float.NaN);
+
+    /// <summary>Last line <see cref="LogBarState"/> emitted per row, so it only logs on change.</summary>
+    private readonly string[] lastBarTrace = new string[MaxRows];
+    private string lastGateTrace = string.Empty;
     private readonly Dictionary<string, RowStats> statsByName = new(StringComparer.OrdinalIgnoreCase);
 
     private string originalTotalsText = string.Empty;
@@ -320,6 +333,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             lastBarWidth[i] = -1f;
             lastBarHeight[i] = -1f;
             lastBarPos[i] = new Vector2(float.NaN, float.NaN);
+            lastBarColor[i] = NoColor;
         }
 
         controller = new AddonController<AddonPartyList>
@@ -535,6 +549,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         lastBarWidth[row] = -1f;
         lastBarHeight[row] = -1f;
         lastBarPos[row] = new Vector2(float.NaN, float.NaN);
+        lastBarColor[row] = NoColor;
     }
 
     private void HandleSetup(AddonPartyList* addon)
@@ -542,6 +557,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var root = addon->RootNode;
         if (root == null)
             return;
+
+        // A live overlayRoot here means setup arrived without a finalize, which is the case
+        // the sweep below silently detaches our own containers in.
+        ServiceManager.LogInfo(
+            LogChannel.PartyMembership,
+            $"[PartyList] Setup addon={(nint)addon:X} root={(nint)root:X} " +
+            $"overlayRoot={(overlayRoot == null ? "null" : "LIVE")} barRoot={(barRoot == null ? "null" : "LIVE")}");
 
         // Anything already carrying our ids is a leftover from a previous instance.
         SweepOrphanedNodes(root);
@@ -652,6 +674,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void HandleFinalize(AddonPartyList* addon)
     {
+        ServiceManager.LogInfo(
+            LogChannel.PartyMembership,
+            $"[PartyList] Finalize addon={(nint)addon:X} overlayRoot={(overlayRoot == null ? "null" : "LIVE")}");
+
         // Hand the game's own nodes back before ours go away.
         RestoreEncounterTotals(addon);
         RestoreSelectionGlowLayout(addon);
@@ -678,6 +704,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             lastBarWidth[i] = -1f;
             lastBarHeight[i] = -1f;
             lastBarPos[i] = new Vector2(float.NaN, float.NaN);
+            lastBarColor[i] = NoColor;
+            lastBarTrace[i] = string.Empty;
         }
 
         Array.Clear(barTextureApplied);
@@ -749,6 +777,17 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // Out of combat every row is treated as unmatched, which is already the path that
         // blanks the text, hides the metrics node and zero-widths the bar.
         var showMetrics = MetricsVisible;
+
+        var gate = $"{showMetrics}|{encounterActive}|{count}|{statsByName.Count > 0}";
+        if (lastGateTrace != gate)
+        {
+            lastGateTrace = gate;
+            ServiceManager.LogInfo(
+                LogChannel.PartyMembership,
+                $"[PartyList] gate showMetrics={showMetrics} encounterActive={encounterActive} " +
+                $"hideOutOfCombat={Settings.HideOutOfCombat} showBar={Settings.ShowBar} " +
+                $"rows={count} parsedNames={statsByName.Count} maxDps={maxDps:F0}");
+        }
 
         for (var i = 0; i < MaxRows; i++)
         {
@@ -903,13 +942,24 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         var bar = barNodes[row];
         if (bar == null)
+        {
+            if (lastBarTrace[row] != "no-node")
+            {
+                lastBarTrace[row] = "no-node";
+                ServiceManager.LogInfo(LogChannel.PartyMembership, $"[PartyList] row {row} no-node");
+            }
+
             return;
+        }
 
         if (!barTextureApplied[row])
             ApplyBarTexture(bar, row);
 
         if (!TryGetRowAnchor(addon, row, out var anchor))
+        {
+            LogBarState(row, bar, stats, "no-anchor");
             return;
+        }
 
         var fraction = stats.HasValue && Settings.ShowBar && maxDps > 0
             ? Math.Clamp(stats.Value.Dps / maxDps, 0d, 1d)
@@ -973,12 +1023,72 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         }
 
         // Sub-pixel changes aren't worth a native write plus a dirty flag every frame.
-        if (Math.Abs(lastBarWidth[row] - width) < 0.5f)
+        if (Math.Abs(lastBarWidth[row] - width) >= 0.5f)
+        {
+            lastBarWidth[row] = width;
+            bar.Width = width;
+            bar.IsVisible = width >= 1f;
+        }
+
+        LogBarState(row, bar, stats, "ok");
+    }
+
+    /// <summary>
+    /// Traces why a row's fill is or isn't drawing. Reads the node's own values rather than
+    /// what we meant to write, so a skipped write shows up as a mismatch. Emits only when the
+    /// row's state changes, so a stuck row logs once instead of every frame.
+    /// </summary>
+    private void LogBarState(int row, ImGuiImageNode bar, RowStats? stats, string note)
+    {
+        var node = (AtkResNode*)bar;
+        var attached = node != null && node->ParentNode != null;
+        var color = bar.Color;
+
+        // Categorical only, so a fight's changing numbers don't re-log every frame - one line
+        // per meaningful transition. The exact values go in the message.
+        var signature = string.Format(
+            CultureInfo.InvariantCulture,
+            "{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}",
+            note,
+            barOnBarRoot[row],
+            attached,
+            barTextureApplied[row],
+            stats.HasValue,
+            bar.Width >= 1f,
+            bar.IsVisible,
+            color.W > 0.001f,
+            maxDps > 0);
+
+        if (lastBarTrace[row] == signature)
             return;
 
-        lastBarWidth[row] = width;
-        bar.Width = width;
-        bar.IsVisible = width >= 1f;
+        lastBarTrace[row] = signature;
+
+        ServiceManager.LogInfo(LogChannel.PartyMembership, string.Format(
+            CultureInfo.InvariantCulture,
+            "[PartyList] row {0} {1} parent={2} attached={3} tex={4} pend={5} req={6} " +
+            "stats={7} maxDps={8:F0} w={9:F1} h={10:F1} pos=({11:F1},{12:F1}) vis={13} " +
+            "colour=({14:F2},{15:F2},{16:F2},a={17:F2})",
+            row,
+            note,
+            barOnBarRoot[row] ? "barRoot" : "overlayRoot",
+            attached ? 1 : 0,
+            barTextureApplied[row] ? 1 : 0,
+            pendingBarTexture[row] != null ? 1 : 0,
+            barTextureRequested[row] ? 1 : 0,
+            stats.HasValue
+                ? string.Format(CultureInfo.InvariantCulture, "{0}/{1:F0}dps", stats.Value.Job, stats.Value.Dps)
+                : "none",
+            maxDps,
+            bar.Width,
+            bar.Height,
+            bar.X,
+            bar.Y,
+            bar.IsVisible ? 1 : 0,
+            color.X,
+            color.Y,
+            color.Z,
+            color.W));
     }
 
     private void PositionNodes(AddonPartyList* addon)
