@@ -110,8 +110,15 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly string? barTexturePath = EnsureBarTexture();
     private readonly bool[] barTextureApplied = new bool[MaxRows];
     private readonly bool[] barOnBarRoot = new bool[MaxRows];
-    private Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap? barTexture;
-    private bool barTextureRequested;
+
+    /// <remarks>
+    /// One wrap per row, never shared: the node takes ownership and disposes the wrap with
+    /// itself, so handing the same one to every row left the rest pointing at a disposed
+    /// texture the moment the party list was torn down.
+    /// </remarks>
+    private readonly Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[] pendingBarTexture
+        = new Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[MaxRows];
+    private readonly bool[] barTextureRequested = new bool[MaxRows];
 
     /// <summary>
     /// Our own bar artwork: a white body so the job colour tints it exactly, a darker
@@ -162,35 +169,43 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// Rents the image once and hands it to the node. Rented rather than borrowed: the
-    /// shared-cache wrap is only valid for the frame it is fetched in, so a node holding it
-    /// ends up pointing at a released texture and draws nothing.
+    /// Rents the image for a row and hands it to that row's node, which owns it from then on.
+    /// Rented rather than borrowed: the shared-cache wrap is only valid for the frame it is
+    /// fetched in, so a node holding it ends up pointing at a released texture and draws
+    /// nothing. The rent completes off the framework thread, so the hand-off waits for the
+    /// next update pass rather than happening in the continuation.
     /// </summary>
     private void ApplyBarTexture(ImGuiImageNode bar, int row)
     {
         if (barTexturePath == null)
             return;
 
-        if (barTexture == null)
+        var pending = Interlocked.Exchange(ref pendingBarTexture[row], null);
+        if (pending != null)
         {
-            if (barTextureRequested)
-                return;
+            bar.LoadTexture(pending);
+            bar.FitTexture = true;
+            barTextureApplied[row] = true;
 
-            barTextureRequested = true;
-            Svc.Texture.GetFromFile(barTexturePath).RentAsync().ContinueWith(task =>
-            {
-                if (task.IsCompletedSuccessfully)
-                    barTexture = task.Result;
-                else
-                    ServiceManager.LogWarning(LogChannel.PartyMembership, "Bar texture rent failed.");
-            });
-
+            // The node owns that wrap now, so a replacement node needs a rent of its own.
+            barTextureRequested[row] = false;
             return;
         }
 
-        bar.LoadTexture(barTexture);
-        bar.FitTexture = true;
-        barTextureApplied[row] = true;
+        if (barTextureRequested[row])
+            return;
+
+        barTextureRequested[row] = true;
+        Svc.Texture.GetFromFile(barTexturePath).RentAsync().ContinueWith(task =>
+        {
+            if (task.IsCompletedSuccessfully)
+                Interlocked.Exchange(ref pendingBarTexture[row], task.Result)?.Dispose();
+            else
+            {
+                barTextureRequested[row] = false;
+                ServiceManager.LogWarning(LogChannel.PartyMembership, "Bar texture rent failed.");
+            }
+        });
     }
     private readonly TextNode?[] metricNodes = new TextNode?[MaxRows];
     private readonly string[] lastMetricText = new string[MaxRows];
@@ -394,8 +409,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         controller.Dispose();
 
-        barTexture?.Dispose();
-        barTexture = null;
+        // Anything still waiting to be handed over was never adopted by a node, so it is ours.
+        for (var i = 0; i < MaxRows; i++)
+            Interlocked.Exchange(ref pendingBarTexture[i], null)?.Dispose();
     }
 
     /// <summary>Ours are decoration, so they stay out of the addon's input handling.</summary>
