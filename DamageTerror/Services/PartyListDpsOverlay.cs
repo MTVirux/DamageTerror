@@ -1924,7 +1924,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // Hiding the label just means dropping the game's own text and keeping whatever we
         // append, so the original is still captured and restored when this is turned off.
         var body = Settings.HidePartyTypeLabel ? string.Empty : originalTotalsText;
-        var extra = Settings.ShowEncounterTotals && MetricsVisible ? BuildEncounterTotals() : string.Empty;
+        var extra = Settings.ShowEncounterTotals ? BuildEncounterTotals() : string.Empty;
+
+        // Nothing to show either because the metrics are hidden or because no encounter is
+        // active - either way the user's own text stands in for them.
+        if (Settings.ShowEncounterTotals && extra.Length == 0 && Settings.TotalsHiddenText.Length > 0)
+            extra = TotalsSeparator + Settings.TotalsHiddenText;
+
         var target = (body + extra).TrimStart();
 
         if (current != target)
@@ -1954,8 +1960,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         appliedTotalsExtra = string.Empty;
     }
 
+    /// <summary>Separates the totals from the game's label, and each other.</summary>
+    private const string TotalsSeparator = "  ";
+
     private string BuildEncounterTotals()
     {
+        if (!MetricsVisible)
+            return string.Empty;
+
         CombatEncounter? encounter = null;
         try
         {
@@ -1982,7 +1994,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (Settings.TotalsShowDeaths)
             parts.Add($"{encounter.Deaths} deaths");
 
-        return parts.Count == 0 ? string.Empty : "  " + string.Join("  ", parts);
+        return parts.Count == 0 ? string.Empty : TotalsSeparator + string.Join(TotalsSeparator, parts);
     }
 
     /// <summary>

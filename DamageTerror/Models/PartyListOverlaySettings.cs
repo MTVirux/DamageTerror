@@ -149,6 +149,12 @@ public sealed class PartyListOverlaySettings
     public bool TotalsShowDamage { get; set; } = false;
     public bool TotalsShowDeaths { get; set; } = true;
 
+    /// <summary>
+    /// Drawn in place of the totals whenever there are none to show - out of combat, or with
+    /// no encounter active. Empty leaves the header blank, which is the original behaviour.
+    /// </summary>
+    public string TotalsHiddenText { get; set; } = string.Empty;
+
     // Cast bar
     public bool AdjustCastBar { get; set; } = true;
     public float CastBarShiftX { get; set; } = 11f;
