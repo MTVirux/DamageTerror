@@ -45,14 +45,31 @@ public sealed class PartyListConfigWindow : Window, IDisposable
             settings.HideOutOfCombat, v => settings.HideOutOfCombat = v);
         ImGui.TextDisabled("The bar, number, name metrics and totals only. The restyle stays.");
 
+        ImGui.Indent();
+
         if (settings.HideOutOfCombat)
-        {
-            ImGui.Indent();
             changed |= ConfigHelpers.SliderFloatProp("Hide delay (seconds)##plHideOocDelay",
                 settings.HideOutOfCombatDelay, 0f, 30f, "%.1f",
                 v => settings.HideOutOfCombatDelay = v, 150);
-            ImGui.Unindent();
+
+        if (!settings.ShowEncounterTotals)
+            ImGui.BeginDisabled();
+
+        var hiddenText = settings.TotalsHiddenText;
+        ImGui.SetNextItemWidth(200);
+        if (ImGui.InputText("Header text when hidden##plTotalsHidden", ref hiddenText, 128))
+        {
+            settings.TotalsHiddenText = hiddenText;
+            changed = true;
         }
+
+        ConfigHelpers.HelpMarker("Shown on the party list header in place of the encounter " +
+            "totals, out of combat and between encounters. Leave empty for a blank header.");
+
+        ImGui.Unindent();
+
+        if (!settings.ShowEncounterTotals)
+            ImGui.EndDisabled();
 
         ImGui.Separator();
 
@@ -274,23 +291,6 @@ public sealed class PartyListConfigWindow : Window, IDisposable
                 v => settings.TotalsShowDamage = v);
             changed |= ConfigHelpers.CheckboxProp("Deaths##plTotalsDeaths", settings.TotalsShowDeaths,
                 v => settings.TotalsShowDeaths = v);
-
-            if (!settings.ShowEncounterTotals)
-                ImGui.BeginDisabled();
-
-            var hiddenText = settings.TotalsHiddenText;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.InputText("Text when hidden##plTotalsHidden", ref hiddenText, 128))
-            {
-                settings.TotalsHiddenText = hiddenText;
-                changed = true;
-            }
-
-            ConfigHelpers.HelpMarker("Shown in place of the totals out of combat and between " +
-                "encounters. Leave empty for a blank header.");
-
-            if (!settings.ShowEncounterTotals)
-                ImGui.EndDisabled();
         }
 
         if (ImGui.CollapsingHeader("Cast Bar##plCastBar"))

@@ -78,7 +78,7 @@ public sealed class PartyListOverlaySettings
     /// size, which is why the game splits its own MP value across two nodes. The node
     /// copies the name's font so the two read as one line; this is an offset from it.
     /// </summary>
-    public int MetricsFontDelta { get; set; } = 0;
+    public int MetricsFontDelta { get; set; } = -2;
     public float MetricsGap { get; set; } = 7f;
 
     [JsonIgnore]
