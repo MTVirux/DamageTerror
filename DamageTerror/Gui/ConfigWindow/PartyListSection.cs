@@ -1,30 +1,13 @@
-using Dalamud.Interface.Windowing;
-
-namespace DamageTerror.Gui;
+namespace DamageTerror.Gui.ConfigWindow;
 
 /// <summary>
 /// Live editor for the native party list integration. Every value is read by the overlay
 /// each frame, so changes show up in the party list as the slider moves.
 /// </summary>
-public sealed class PartyListConfigWindow : Window, IDisposable
+internal static class PartyListSection
 {
-    private readonly DamageTerrorPlugin plugin;
-
-    public PartyListConfigWindow(DamageTerrorPlugin plugin)
-        : base("Party List Integration###DamageTerrorPartyListConfig")
+    public static bool Draw(Configuration config, DamageTerrorPlugin plugin)
     {
-        this.plugin = plugin;
-        Size = new Vector2(430f, 600f);
-        SizeCondition = ImGuiCond.FirstUseEver;
-    }
-
-    public void Dispose()
-    {
-    }
-
-    public override void Draw()
-    {
-        var config = plugin.Config;
         var settings = config.PartyList;
         var changed = false;
 
@@ -343,8 +326,7 @@ public sealed class PartyListConfigWindow : Window, IDisposable
             changed = true;
         }
 
-        if (changed)
-            config.Save?.Invoke();
+        return changed;
     }
 
     private static readonly string[] BarColorModeLabels =

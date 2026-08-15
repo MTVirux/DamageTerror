@@ -17,6 +17,7 @@ public sealed class ConfigWindow : Window, IDisposable
         General,
         Tabs,
         Layout,
+        PartyList,
         Presets,
         AppearanceGeneral,
         Bars,
@@ -42,6 +43,7 @@ public sealed class ConfigWindow : Window, IDisposable
         (ConfigPage.General,      "General",                null,           FontAwesomeIcon.Cog),
         (ConfigPage.Tabs,         "Tabs",                   null,           FontAwesomeIcon.Columns),
         (ConfigPage.Layout,       "Layout",                 null,           FontAwesomeIcon.ThLarge),
+        (ConfigPage.PartyList,    "Party List",             null,           FontAwesomeIcon.Users),
         (ConfigPage.Presets,      "Presets",                "Appearance",   FontAwesomeIcon.Palette),
         (ConfigPage.AppearanceGeneral, "General",             "Appearance",   FontAwesomeIcon.SlidersH),
         (ConfigPage.Bars,         "Meter Bars",             "Appearance",   FontAwesomeIcon.GripLines),
@@ -78,6 +80,19 @@ public sealed class ConfigWindow : Window, IDisposable
     }
 
     public void Dispose() { }
+
+    /// <summary>Opens the window on the party list page, or closes it if it is already there.</summary>
+    public void TogglePartyListPage()
+    {
+        if (IsOpen && selectedPage == ConfigPage.PartyList)
+        {
+            IsOpen = false;
+            return;
+        }
+
+        selectedPage = ConfigPage.PartyList;
+        IsOpen = true;
+    }
 
     public override void Draw()
     {
@@ -213,6 +228,10 @@ public sealed class ConfigWindow : Window, IDisposable
 
             case ConfigPage.Layout:
                 changed |= LayoutPage.Draw(config);
+                break;
+
+            case ConfigPage.PartyList:
+                changed |= PartyListSection.Draw(config, plugin);
                 break;
 
             case ConfigPage.Presets:

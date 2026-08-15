@@ -35,7 +35,6 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
     private readonly ITextureProvider textureProvider;
     private readonly Dictionary<Guid, Gui.MainWindow.PopoutTabWindow> popoutWindows = new();
     private readonly PartyListDpsOverlay partyListOverlay;
-    private readonly Gui.PartyListConfigWindow partyListConfigWindow;
     private bool disposed;
 
     public DamageTerrorPlugin(
@@ -190,9 +189,6 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
         this.windowSystem.AddWindow(this.firstRunWindow);
         this.windowSystem.AddWindow(this.customizationWizardWindow);
         this.windowSystem.AddWindow(this.columnWizardWindow);
-
-        this.partyListConfigWindow = new Gui.PartyListConfigWindow(this);
-        this.windowSystem.AddWindow(this.partyListConfigWindow);
 
         this.PluginInterface.UiBuilder.Draw += this.DrawUi;
         this.PluginInterface.UiBuilder.OpenConfigUi += this.OpenConfigUi;
@@ -404,7 +400,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             this.configWindow.IsOpen = !this.configWindow.IsOpen;
         else if (args.Equals("partylist", StringComparison.OrdinalIgnoreCase) ||
                  args.Equals("partylist config", StringComparison.OrdinalIgnoreCase))
-            this.partyListConfigWindow.IsOpen = !this.partyListConfigWindow.IsOpen;
+            this.configWindow.TogglePartyListPage();
         else if (args.Equals("partylist enable", StringComparison.OrdinalIgnoreCase))
             SetPartyListDps(true);
         else if (args.Equals("partylist disable", StringComparison.OrdinalIgnoreCase))
