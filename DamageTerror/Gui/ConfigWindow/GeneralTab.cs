@@ -26,13 +26,13 @@ public sealed class GeneralTab
         {
             if (ImGui.Button("Run setup wizard"))
                 plugin.OpenSetupWizard();
-            ConfigHelpers.HelpMarker("Walks through data source, theme preset, and core behavior again. Nothing changes until you pick something.");
+            ConfigHelpers.HelpMarker("Walks through data source, theme preset, and core behavior again.\nNothing changes until you pick something.");
             if (ImGui.Button("Run customization wizard"))
                 plugin.OpenCustomizationWizard();
-            ConfigHelpers.HelpMarker("A quick pass over colors, icons, and markings. The full set of options can be found under Appearance.");
+            ConfigHelpers.HelpMarker("A quick pass over colors, icons, and markings.\nThe full set of options can be found under Appearance.");
             if (ImGui.Button("Run column wizard"))
                 plugin.OpenColumnWizard();
-            ConfigHelpers.HelpMarker("Pick which columns a meter tab shows and their order. Per-column extras live under Appearance.");
+            ConfigHelpers.HelpMarker("Pick which columns a meter tab shows and their order.\nPer-column extras live under Appearance.");
         }
 
         ImGui.Spacing();
@@ -96,7 +96,7 @@ public sealed class GeneralTab
                 if (!v)
                     plugin.DataService.Store.StopActiveReplay();
             });
-            ConfigHelpers.HelpMarker("Play a finished encounter back through the meter. When off, the Replay buttons and the Replay Bar layout entry are hidden.");
+            ConfigHelpers.HelpMarker("Play a finished encounter back through the meter.\nWhen off, the Replay buttons and the Replay Bar layout entry are hidden.");
 
             changed |= ConfigHelpers.CheckboxProp("Ignore ESC key closing the meter", config.IgnoreEscClose, v => config.IgnoreEscClose = v);
 
@@ -112,7 +112,7 @@ public sealed class GeneralTab
             changed |= ConfigHelpers.ComboProp("Encounter cut command", (int)config.EndEncounterMode, endEncLabels, v => config.EndEncounterMode = (EndEncounterMode)v, 280);
             ConfigHelpers.HelpMarker(
                 "/echo end: sends a visible echo message that both ACT and IINACT recognize as an encounter split trigger.\n" +
-                "/endenc: IINACT's built-in Dalamud command. Silent, but only works with IINACT.");
+                "/endenc: IINACT's built-in Dalamud command.\nSilent, but only works with IINACT.");
 
             ImGui.Spacing();
             ImGui.Separator();

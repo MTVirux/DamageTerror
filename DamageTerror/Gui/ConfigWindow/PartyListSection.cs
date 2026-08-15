@@ -31,7 +31,7 @@ internal static class PartyListSection
 
         changed |= ConfigHelpers.CheckboxProp("Hide metrics when out of combat##plHideOoc",
             settings.HideOutOfCombat, v => settings.HideOutOfCombat = v);
-        ConfigHelpers.HelpMarker("The bar, name metrics and totals only. The restyle stays.");
+        ConfigHelpers.HelpMarker("The bar, name metrics and totals only.\nThe restyle stays.");
 
         if (settings.HideOutOfCombat)
         {
@@ -46,7 +46,7 @@ internal static class PartyListSection
         changed |= ConfigHelpers.CheckboxProp("Override \"Solo\" / \"Party\" label##plHidePartyType",
             settings.HidePartyTypeLabel, v => settings.HidePartyTypeLabel = v);
         ConfigHelpers.HelpMarker("Drops the game's header text and puts the encounter totals or " +
-            "the text below in its place. Restored when turned off.");
+            "the text below in its place.\nRestored when turned off.");
 
         if (settings.HidePartyTypeLabel)
         {
@@ -64,7 +64,7 @@ internal static class PartyListSection
             }
 
             ConfigHelpers.HelpMarker("Shown on the party list header in place of the encounter " +
-                "totals, out of combat and between encounters. Leave empty for a blank header.");
+                "totals, out of combat and between encounters.\nLeave empty for a blank header.");
 
             if (!settings.ShowEncounterTotals)
                 ImGui.EndDisabled();
@@ -75,7 +75,7 @@ internal static class PartyListSection
         changed |= ConfigHelpers.CheckboxProp("Tint text outline##plTintOutline",
             settings.TintTextOutline, v => settings.TintTextOutline = v);
         ConfigHelpers.HelpMarker("The glow around each glyph follows whatever colour the text " +
-            "is given below. Off leaves the game's own outline, which stays dark under a " +
+            "is given below.\nOff leaves the game's own outline, which stays dark under a " +
             "recoloured name.");
 
         if (settings.TintTextOutline)
@@ -138,7 +138,7 @@ internal static class PartyListSection
         changed |= ConfigHelpers.CheckboxProp("Draw behind row content##plBarBehind",
             settings.BarBehindRowContent, v => settings.BarBehindRowContent = v);
         ConfigHelpers.HelpMarker(
-            "Puts the fill under the name, gauges and status icons. Off draws it on top.");
+            "Puts the fill under the name, gauges and status icons.\nOff draws it on top.");
         EndSection();
 
         Section("Size");
@@ -146,7 +146,7 @@ internal static class PartyListSection
             v => settings.BarHeightPixels = v, "Bar height in pixels, centred on the job icon.");
         changed |= Slider("Max width##plBarMaxWidth", settings.BarMaxWidth, 0f, 400f,
             v => settings.BarMaxWidth = v,
-            "Width a 100% bar draws to; 0 uses the whole row. Bars scale inside this, " +
+            "Width a 100% bar draws to; 0 uses the whole row.\nBars scale inside this, " +
             "so they stay proportional rather than the longest being clipped.");
         EndSection();
 
@@ -178,7 +178,7 @@ internal static class PartyListSection
             v => settings.HideLevel = v);
         ConfigHelpers.HelpMarker(
             "The level isn't a separate node - the game prefixes it to the name as glyphs, " +
-            "so this rewrites the name text. Turning it back off restores the game's string.");
+            "so this rewrites the name text.\nTurning it back off restores the game's string.");
         EndSection();
 
         Section("Position");
@@ -192,7 +192,7 @@ internal static class PartyListSection
                 v => name.OffsetX = v, null);
             changed |= Slider("Vertical offset##plNameY", name.OffsetY, -30f, 30f,
                 v => name.OffsetY = v,
-                "Negative moves the player name up. The metrics after it follow.");
+                "Negative moves the player name up.\nThe metrics after it follow.");
             ImGui.Unindent();
         }
 
@@ -226,8 +226,8 @@ internal static class PartyListSection
         changed |= ConfigHelpers.CheckboxProp("Override index##plAdjustIndex", settings.AdjustPartyIndex,
             v => settings.AdjustPartyIndex = v);
         ConfigHelpers.HelpMarker(
-            "The party slot number drawn before the name. Off, it takes the name's size " +
-            "change, move and colour, so the two stay on one line and match. On, it uses " +
+            "The party slot number drawn before the name.\nOff, it takes the name's size " +
+            "change, move and colour, so the two stay on one line and match.\nOn, it uses " +
             "the values below instead and the name no longer carries it.");
 
         if (settings.AdjustPartyIndex)
@@ -284,8 +284,8 @@ internal static class PartyListSection
             Section("Trailing digits");
             changed |= SliderInt("Trailing digits size##plTrailFont", settings.MpTrailingFontDelta, -4, 8,
                 v => settings.MpTrailingFontDelta = v,
-                "MP's last two digits are a second, smaller text node. " +
-                "0 keeps the game's smaller size. Raise it to match the leading digits - " +
+                "MP's last two digits are a second, smaller text node.\n" +
+                "0 keeps the game's smaller size.\nRaise it to match the leading digits - " +
                 "they're then re-aligned, since the game's baseline offset only suits the small size.");
             changed |= Slider("Trailing digits X##plTrailX", settings.TrailingDigitsOffsetX, -20f, 20f,
                 v => settings.TrailingDigitsOffsetX = v, null);
@@ -371,7 +371,7 @@ internal static class PartyListSection
         changed |= ConfigHelpers.CheckboxProp("Adjust timers##plAdjustTimers",
             settings.AdjustStatusTimers, v => settings.AdjustStatusTimers = v);
         ConfigHelpers.HelpMarker(
-            "The timer text sits inside each icon, so it already scales with the icon. " +
+            "The timer text sits inside each icon, so it already scales with the icon.\n" +
             "These are on top of that.");
 
         if (settings.AdjustStatusTimers)
@@ -408,9 +408,9 @@ internal static class PartyListSection
         var changed = ConfigHelpers.CheckboxProp("Adjust glows##plAdjustGlow",
             settings.AdjustSelectionGlow, v => settings.AdjustSelectionGlow = v);
         ConfigHelpers.HelpMarker(
-            "Each state draws more than one node, and all of them are adjusted together. " +
+            "Each state draws more than one node, and all of them are adjusted together.\n" +
             "Which settings apply is decided by the row's state, so hover and selection " +
-            "stay independent without needing to tell the nodes apart. " +
+            "stay independent without needing to tell the nodes apart.\n" +
             "Tint is a colour multiply - the game fades these in on a timeline, and " +
             "writing opacity would pin it and stop the fade.");
 
@@ -422,8 +422,8 @@ internal static class PartyListSection
             settings.FreezeGlowTransform, v => settings.FreezeGlowTransform = v);
         ConfigHelpers.HelpMarker(
             "The game animates the glow's position, scale and tint as it appears, which " +
-            "overwrites these settings while it plays. This stops the timeline driving " +
-            "those, leaving the fade animated. Turn it off to keep the pop-in movement, " +
+            "overwrites these settings while it plays.\nThis stops the timeline driving " +
+            "those, leaving the fade animated.\nTurn it off to keep the pop-in movement, " +
             "at the cost of the settings below not holding until the animation ends.");
 
         changed |= ConfigHelpers.CheckboxProp("Selection wins over hover##plGlowPrecedence",
@@ -431,7 +431,7 @@ internal static class PartyListSection
         ConfigHelpers.HelpMarker(
             "The game draws one node for both states - selection is marked by also showing " +
             "the job icon glow, not by a second highlight - so a row that is hovered and " +
-            "selected can only use one of the two. On, a selected row keeps its selection " +
+            "selected can only use one of the two.\nOn, a selected row keeps its selection " +
             "look while you hover it; off, hovering switches it to the hover look.");
         EndGroup();
 
@@ -660,7 +660,7 @@ internal static class PartyListSection
         Section("Color");
         changed |= DrawCustomColor($"{id}Color", part, style.UseCustomColor, style.Color,
             v => style.UseCustomColor = v, v => style.Color = v,
-            "Off leaves the game's own artwork. On tints it - a texture can be shaded, not repainted.");
+            "Off leaves the game's own artwork.\nOn tints it - a texture can be shaded, not repainted.");
         EndSection();
 
         return changed;
@@ -784,7 +784,7 @@ internal static class PartyListSection
             v => settings.SetMetricEnabled(metric, v));
 
         if (metric == NameMetric.Dps)
-            ConfigHelpers.HelpMarker("Drawn after the name, in the order listed. Values and " +
+            ConfigHelpers.HelpMarker("Drawn after the name, in the order listed.\nValues and " +
                 "formatting match the meter window.");
 
         if (enabled)
@@ -800,7 +800,7 @@ internal static class PartyListSection
                 "the metric before it.");
             changed |= Slider("Vertical offset", style.OffsetY, -30f, 30f,
                 v => style.OffsetY = v,
-                "Lifts this metric off the name's line. The metrics after it stay where they were.");
+                "Lifts this metric off the name's line.\nThe metrics after it stay where they were.");
             EndSection();
 
             Section("Size");
@@ -835,8 +835,8 @@ internal static class PartyListSection
 
         ConfigHelpers.HelpMarker(
             "Match meter window: the same job colours the meter draws its bars with, dimmed the " +
-            "same way. Party list palette: colours kept for the party list alone. " +
-            "Single color: one colour for every row. " +
+            "same way.\nParty list palette: colours kept for the party list alone.\n" +
+            "Single color: one colour for every row.\n" +
             "Opacity comes from the bar's own setting, not from these.");
 
         ImGui.Spacing();

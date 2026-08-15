@@ -54,7 +54,7 @@ internal static class FormattingSection
         ImGui.TextDisabled("Skill Name Abbreviation");
 
         changed |= ConfigHelpers.SliderIntProp("Max skill name length", config.MaxHitSkillNameLength, 0, 30, v => config.MaxHitSkillNameLength = v, 200);
-        ConfigHelpers.HelpMarker("Shorten Max Hit / Max Heal skill names when they exceed this length.\nEach word after the first is replaced by its initial. 0 = disabled.");
+        ConfigHelpers.HelpMarker("Shorten Max Hit / Max Heal skill names when they exceed this length.\nEach word after the first is replaced by its initial.\n0 = disabled.");
 
         if (config.MaxHitSkillNameLength > 0)
         {

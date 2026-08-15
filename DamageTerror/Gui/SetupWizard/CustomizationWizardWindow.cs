@@ -163,7 +163,7 @@ public sealed class CustomizationWizardWindow : Window
         ImGui.Spacing();
 
         var changed = ConfigHelpers.CheckboxProp("Use per-job colors", config.UsePerJobColors, v => config.UsePerJobColors = v);
-        ConfigHelpers.HelpMarker("Off: one color per role. On: one color per job.");
+        ConfigHelpers.HelpMarker("Off: one color per role.\nOn: one color per job.");
         ImGui.Spacing();
 
         if (!config.UsePerJobColors)

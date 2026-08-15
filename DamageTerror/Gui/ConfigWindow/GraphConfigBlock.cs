@@ -114,7 +114,7 @@ internal static class GraphConfigBlock
                 isGraphView ? config.GraphViewAutoScrollSmoothing : config.GraphAutoScrollSmoothing, 1f, 30f, "%.1f",
                 v => { if (isGraphView) config.GraphViewAutoScrollSmoothing = v; else config.GraphAutoScrollSmoothing = v; }, 200);
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("How quickly the graph scrolls to the new position. Higher = snappier, lower = smoother.");
+                ImGui.SetTooltip("How quickly the graph scrolls to the new position.\nHigher = snappier, lower = smoother.");
         }
 
         changed |= ConfigHelpers.SliderFloatProp($"X axis padding{suffix}",

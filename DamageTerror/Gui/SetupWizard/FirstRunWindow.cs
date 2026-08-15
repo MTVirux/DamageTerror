@@ -311,7 +311,7 @@ public sealed class FirstRunWindow : Window
         ImGui.Spacing();
 
         changed |= ConfigHelpers.CheckboxProp("Lock meter position and size", config.PinMainWindow, v => config.PinMainWindow = v);
-        ConfigHelpers.HelpMarker("Locked, the meter can't be moved or resized. The lock icon on its title bar does the same thing.");
+        ConfigHelpers.HelpMarker("Locked, the meter can't be moved or resized.\nThe lock icon on its title bar does the same thing.");
 
         if (changed)
             plugin.SaveConfig();
@@ -339,7 +339,7 @@ public sealed class FirstRunWindow : Window
             if (!v)
                 plugin.DataService.Store.StopActiveReplay();
         });
-        ConfigHelpers.HelpMarker("Play a finished fight back through the meter. Off hides the Replay buttons and the Replay Bar.");
+        ConfigHelpers.HelpMarker("Play a finished fight back through the meter.\nOff hides the Replay buttons and the Replay Bar.");
 
         if (changed)
             plugin.SaveConfig();

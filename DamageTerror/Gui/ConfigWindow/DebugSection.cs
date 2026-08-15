@@ -33,8 +33,8 @@ internal static class DebugSection
                 changed = true;
             }
             ConfigHelpers.HelpMarker(
-                "Hides debug-only buttons (Recalculate, Replay CombatData) and any other debug UI surfaces. " +
-                "The Debug page itself stays visible so you can flip this back. Has no effect in release builds.");
+                "Hides debug-only buttons (Recalculate, Replay CombatData) and any other debug UI surfaces.\n" +
+                "The Debug page itself stays visible so you can flip this back.\nHas no effect in release builds.");
         }
 
         ImGui.Spacing();
@@ -49,8 +49,8 @@ internal static class DebugSection
             }
             ConfigHelpers.HelpMarker(
                 "Stores every raw ACT log line and IINACT CombatData frame of an encounter in a sidecar file " +
-                "next to the history, enabling the Recalculate and Replay CombatData buttons. Costs memory and " +
-                "disk space per encounter, so it stays off unless you need offline reparsing. " +
+                "next to the history, enabling the Recalculate and Replay CombatData buttons.\nCosts memory and " +
+                "disk space per encounter, so it stays off unless you need offline reparsing.\n" +
                 "Has no effect in release builds.");
         }
 

@@ -100,7 +100,7 @@ public static class ConfigHelpers
 
         var changed = CheckboxProp("Use per-job colors", palette.UsePerJobColors,
             v => palette.UsePerJobColors = v);
-        HelpMarker("Off: one color per role. On: one color per job.");
+        HelpMarker("Off: one color per role.\nOn: one color per job.");
 
         ImGui.Spacing();
 
