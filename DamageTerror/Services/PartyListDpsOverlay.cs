@@ -1410,18 +1410,31 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// The slot number before each name. It has its own text node, so its size and position
-    /// are independent of the name's.
+    /// The slot number before each name. It has its own text node, so by default it is given
+    /// the same size change and vertical shift as the name to keep the two reading as one
+    /// line; the override replaces that with values of its own.
     /// </summary>
     private void ApplyPartyIndexLayout(AddonPartyList* addon)
     {
         if (addon == null)
             return;
 
+        var fontDelta = Settings.PartyIndexFontDelta;
+        var offsetX = Settings.PartyIndexOffsetX;
+        var offsetY = Settings.PartyIndexOffsetY;
+
         if (!Settings.AdjustPartyIndex)
         {
-            RestorePartyIndexLayout(addon);
-            return;
+            fontDelta = Settings.AdjustNameFont ? Settings.NameFontDelta : 0;
+            offsetX = 0f;
+            offsetY = Settings.NameShift.Enabled ? Settings.NameShift.OffsetY : 0f;
+
+            // Nothing is being done to the name either, so leave the node alone.
+            if (fontDelta == 0 && offsetY == 0f)
+            {
+                RestorePartyIndexLayout(addon);
+                return;
+            }
         }
 
         for (var row = 0; row < MaxRows; row++)
@@ -1443,9 +1456,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             if (fresh || Math.Abs(res->Y - appliedIndexY[row]) > 0.01f)
                 originalIndexY[row] = res->Y;
 
-            var font = (byte)Math.Clamp(originalIndexFont[row] + Settings.PartyIndexFontDelta, 8, 60);
-            var targetX = originalIndexX[row] + Settings.PartyIndexOffsetX;
-            var targetY = originalIndexY[row] + Settings.PartyIndexOffsetY;
+            var font = (byte)Math.Clamp(originalIndexFont[row] + fontDelta, 8, 60);
+            var targetX = originalIndexX[row] + offsetX;
+            var targetY = originalIndexY[row] + offsetY;
 
             if (index->FontSize != font)
                 index->FontSize = font;

@@ -108,15 +108,15 @@ internal static class PartyListSection
 
         if (ImGui.CollapsingHeader("Name##plName"))
         {
-            changed |= DrawRowShift("Move name##plShiftName", settings.NameShift,
-                "Negative moves the player name up. The metrics after it follow.");
-
-            ImGui.Spacing();
             changed |= ConfigHelpers.CheckboxProp("Hide level##plHideLevel", settings.HideLevel,
                 v => settings.HideLevel = v);
             ConfigHelpers.HelpMarker(
                 "The level isn't a separate node - the game prefixes it to the name as glyphs, " +
                 "so this rewrites the name text. Turning it back off restores the game's string.");
+
+            ImGui.Spacing();
+            changed |= DrawRowShift("Move name##plShiftName", settings.NameShift,
+                "Negative moves the player name up. The metrics after it follow.");
 
             changed |= ConfigHelpers.CheckboxProp("Resize player name##plAdjustNameFont", settings.AdjustNameFont,
                 v => settings.AdjustNameFont = v);
@@ -131,11 +131,12 @@ internal static class PartyListSection
             }
 
             ImGui.Spacing();
-            changed |= ConfigHelpers.CheckboxProp("Adjust index##plAdjustIndex", settings.AdjustPartyIndex,
+            changed |= ConfigHelpers.CheckboxProp("Override index##plAdjustIndex", settings.AdjustPartyIndex,
                 v => settings.AdjustPartyIndex = v);
             ConfigHelpers.HelpMarker(
-                "The party slot number drawn before the name. It's a node of its own, so it " +
-                "keeps its size and place when the name changes.");
+                "The party slot number drawn before the name. Off, it takes the name's size " +
+                "change and vertical move, so the two stay on one line. On, it uses the " +
+                "values below instead and the name no longer carries it.");
 
             if (settings.AdjustPartyIndex)
             {
