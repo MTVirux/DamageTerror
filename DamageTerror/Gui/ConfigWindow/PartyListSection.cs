@@ -96,26 +96,20 @@ internal static class PartyListSection
                     settings.BarBehindRowContent, v => settings.BarBehindRowContent = v);
                 ConfigHelpers.HelpMarker(
                     "Puts the fill under the name, gauges and status icons. Off draws it on top.");
+
+                ImGui.Spacing();
+
+                if (ImGui.CollapsingHeader("Colors##plBarColors"))
+                    changed |= DrawBarColors(config, settings);
+
                 ImGui.Unindent();
             }
         }
 
-        if (settings.ShowBar && ImGui.CollapsingHeader("DPS Bar Colors##plBarColors"))
-            changed |= DrawBarColors(config, settings);
-
-        if (ImGui.CollapsingHeader("Name, HP and MP##plRow"))
+        if (ImGui.CollapsingHeader("Name##plName"))
         {
-            changed |= ConfigHelpers.CheckboxProp("Move row content##plShiftRow", settings.ShiftRowContent,
-                v => settings.ShiftRowContent = v);
-
-            if (settings.ShiftRowContent)
-            {
-                ImGui.Indent();
-                changed |= Slider("Vertical offset##plRowY", settings.RowContentShiftY, -30f, 30f,
-                    v => settings.RowContentShiftY = v,
-                    "Negative moves the name, HP and MP up.");
-                ImGui.Unindent();
-            }
+            changed |= DrawRowShift("Move name##plShiftName", settings.NameShift,
+                "Negative moves the player name up. The metrics after it follow.");
 
             ImGui.Spacing();
             changed |= ConfigHelpers.CheckboxProp("Hide level##plHideLevel", settings.HideLevel,
@@ -133,6 +127,34 @@ internal static class PartyListSection
                 changed |= SliderInt("Name font size change##plNameFont", settings.NameFontDelta, -8, 8,
                     v => settings.NameFontDelta = v,
                     "Added to the game's own font size for the player name.");
+                ImGui.Unindent();
+            }
+        }
+
+        if (ImGui.CollapsingHeader("HP and MP##plGauge"))
+        {
+            changed |= DrawRowShift("Move HP bar##plShiftHpBar", settings.HpBarShift,
+                "Moves the HP bar only - its number is moved below.");
+            changed |= DrawRowShift("Move MP bar##plShiftMpBar", settings.MpBarShift,
+                "Moves the MP bar only - its number is moved below.");
+
+            ImGui.Spacing();
+            changed |= DrawGaugeNumbers("Adjust HP numbers##plHpNumbers", settings.HpNumbers);
+            changed |= DrawGaugeNumbers("Adjust MP numbers##plMpNumbers", settings.MpNumbers);
+
+            if (settings.MpNumbers.Enabled)
+            {
+                ImGui.Indent();
+                changed |= SliderInt("Trailing digits size##plTrailFont", settings.MpTrailingFontDelta, -4, 8,
+                    v => settings.MpTrailingFontDelta = v,
+                    "MP's last two digits are a second, smaller text node. " +
+                    "0 keeps the game's smaller size. Raise it to match the leading digits - " +
+                    "they're then re-aligned, since the game's baseline offset only suits the small size.");
+
+                changed |= Slider("Trailing digits X##plTrailX", settings.TrailingDigitsOffsetX, -20f, 20f,
+                    v => settings.TrailingDigitsOffsetX = v, null);
+                changed |= Slider("Trailing digits Y##plTrailY", settings.TrailingDigitsOffsetY, -20f, 20f,
+                    v => settings.TrailingDigitsOffsetY = v, null);
                 ImGui.Unindent();
             }
         }
@@ -328,37 +350,6 @@ internal static class PartyListSection
             }
         }
 
-        if (ImGui.CollapsingHeader("HP / MP Numbers##plGauge"))
-        {
-            changed |= ConfigHelpers.CheckboxProp("Adjust numbers##plAdjustGauge", settings.AdjustGaugeNumbers,
-                v => settings.AdjustGaugeNumbers = v);
-
-            if (settings.AdjustGaugeNumbers)
-            {
-                ImGui.Indent();
-                changed |= SliderInt("Font size change##plGaugeFont", settings.GaugeFontDelta, -8, 8,
-                    v => settings.GaugeFontDelta = v,
-                    "Added to the game's own font size for the HP and MP numbers.");
-                changed |= Slider("Vertical offset##plGaugeY", settings.GaugeNumberOffsetY, -20f, 20f,
-                    v => settings.GaugeNumberOffsetY = v,
-                    "Applied to both the HP and MP numbers.");
-
-                ImGui.Spacing();
-
-                changed |= SliderInt("Trailing digits size##plTrailFont", settings.MpTrailingFontDelta, -4, 8,
-                    v => settings.MpTrailingFontDelta = v,
-                    "MP's last two digits are a second, smaller text node. " +
-                    "0 keeps the game's smaller size. Raise it to match the leading digits - " +
-                    "they're then re-aligned, since the game's baseline offset only suits the small size.");
-
-                changed |= Slider("Trailing digits X##plTrailX", settings.TrailingDigitsOffsetX, -20f, 20f,
-                    v => settings.TrailingDigitsOffsetX = v, null);
-                changed |= Slider("Trailing digits Y##plTrailY", settings.TrailingDigitsOffsetY, -20f, 20f,
-                    v => settings.TrailingDigitsOffsetY = v, null);
-                ImGui.Unindent();
-            }
-        }
-
         if (!enabled)
             ImGui.EndDisabled();
 
@@ -379,6 +370,38 @@ internal static class PartyListSection
         "Party list palette",
         "Single color",
     };
+
+    /// <summary>A row part's move toggle with its offset underneath.</summary>
+    private static bool DrawRowShift(string label, RowShift shift, string tooltip)
+    {
+        var changed = ConfigHelpers.CheckboxProp(label, shift.Enabled, v => shift.Enabled = v);
+
+        if (!shift.Enabled)
+            return changed;
+
+        ImGui.Indent();
+        changed |= Slider($"Vertical offset##{label}Y", shift.OffsetY, -30f, 30f,
+            v => shift.OffsetY = v, tooltip);
+        ImGui.Unindent();
+        return changed;
+    }
+
+    /// <summary>One gauge's numbers - the text nodes inside the HP or MP bar.</summary>
+    private static bool DrawGaugeNumbers(string label, GaugeNumberStyle style)
+    {
+        var changed = ConfigHelpers.CheckboxProp(label, style.Enabled, v => style.Enabled = v);
+
+        if (!style.Enabled)
+            return changed;
+
+        ImGui.Indent();
+        changed |= SliderInt($"Font size change##{label}Font", style.FontDelta, -8, 8,
+            v => style.FontDelta = v, "Added to the game's own font size for these numbers.");
+        changed |= Slider($"Vertical offset##{label}Y", style.OffsetY, -30f, 30f,
+            v => style.OffsetY = v, null);
+        ImGui.Unindent();
+        return changed;
+    }
 
     private static string MetricLabel(NameMetric metric) => metric switch
     {

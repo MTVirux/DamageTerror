@@ -73,8 +73,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>How much smaller the game draws MP's trailing digits than its leading ones.</summary>
     private const int GameMpTrailingFontDelta = -2;
 
-    /// <summary>Name block, HP component, HP bar, MP bar, then cast bar background and fill.</summary>
-    private const int ShiftSlots = 6;
+    /// <summary>Name, HP bar, MP bar, then cast bar background and fill.</summary>
+    private const int ShiftSlots = 5;
 
     /// <summary>
     /// The private-use block the game uses for the level digits it prefixes to the name.
@@ -1147,51 +1147,49 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private readonly record struct IconMetrics(float RightX, float CenterY, float Height);
 
-    /// <summary>The row's own nodes that we shift vertically. Order matters for the ancestor guard.</summary>
+    /// <summary>
+    /// The row's own nodes that we shift vertically. Each one is a leaf as far as the others
+    /// go - the bars are siblings of the name, and the gauge numbers are moved by the gauge
+    /// layout instead - so no target ever drags another along.
+    /// </summary>
     private static AtkResNode* GetShiftTarget(AddonPartyList* addon, int row, int slot)
     {
         var member = addon->PartyMembers[row];
         return slot switch
         {
-            0 => member.NameAndBarsContainer,
-
-            // The component wraps the HP bar *and* its number; the bar alone leaves the
-            // number behind. Listed first so the guard skips the bar when it's nested.
-            1 => member.HPGaugeComponent == null || member.HPGaugeComponent->OwnerNode == null
-                ? null
-                : &member.HPGaugeComponent->OwnerNode->AtkResNode,
-            2 => member.HPGaugeBar == null || member.HPGaugeBar->OwnerNode == null
+            0 => member.Name == null ? null : &member.Name->AtkResNode,
+            1 => member.HPGaugeBar == null || member.HPGaugeBar->OwnerNode == null
                 ? null
                 : &member.HPGaugeBar->OwnerNode->AtkResNode,
-            3 => member.MPGaugeBar == null || member.MPGaugeBar->OwnerNode == null
+            2 => member.MPGaugeBar == null || member.MPGaugeBar->OwnerNode == null
                 ? null
                 : &member.MPGaugeBar->OwnerNode->AtkResNode,
 
-            4 => member.CastingProgressBarBackground == null
+            3 => member.CastingProgressBarBackground == null
                 ? null
                 : &member.CastingProgressBarBackground->AtkResNode,
-            5 => member.CastingProgressBar == null
+            4 => member.CastingProgressBar == null
                 ? null
                 : &member.CastingProgressBar->AtkResNode,
             _ => null,
         };
     }
 
-    /// <summary>Row content moves up, the cast bar moves down - so they can't share a guard group.</summary>
-    private float GetShiftOffset(int slot) => slot <= 3 ? Settings.RowContentShiftY : Settings.CastBarShiftY;
-
-    private static int GetShiftGroup(int slot) => slot <= 3 ? 0 : 1;
-
-    private static bool IsDescendantOf(AtkResNode* node, AtkResNode* ancestor)
+    private bool IsShiftEnabled(int slot) => slot switch
     {
-        for (var parent = node->ParentNode; parent != null; parent = parent->ParentNode)
-        {
-            if (parent == ancestor)
-                return true;
-        }
+        0 => Settings.NameShift.Enabled,
+        1 => Settings.HpBarShift.Enabled,
+        2 => Settings.MpBarShift.Enabled,
+        _ => Settings.AdjustCastBar,
+    };
 
-        return false;
-    }
+    private float GetShiftOffset(int slot) => slot switch
+    {
+        0 => Settings.NameShift.OffsetY,
+        1 => Settings.HpBarShift.OffsetY,
+        2 => Settings.MpBarShift.OffsetY,
+        _ => Settings.CastBarShiftY,
+    };
 
     /// <summary>
     /// Shifts the row's name and gauges vertically. These are the game's nodes, so the
@@ -1204,33 +1202,18 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (addon == null)
             return;
 
-        if (!Settings.ShiftRowContent)
-        {
-            RestoreRowContentShift(addon);
-            return;
-        }
-
         for (var row = 0; row < MaxRows; row++)
         {
             for (var slot = 0; slot < ShiftSlots; slot++)
             {
-                var node = GetShiftTarget(addon, row, slot);
-                if (node == null)
-                    continue;
-
-                // Skip anything nested under a node we already moved by the same offset,
-                // or it shifts twice. Different offset groups are independent.
-                var nested = false;
-                for (var prior = 0; prior < slot && !nested; prior++)
+                if (!IsShiftEnabled(slot))
                 {
-                    if (GetShiftGroup(prior) != GetShiftGroup(slot))
-                        continue;
-
-                    var priorNode = GetShiftTarget(addon, row, prior);
-                    nested = priorNode != null && IsDescendantOf(node, priorNode);
+                    RestoreShiftSlot(addon, row, slot);
+                    continue;
                 }
 
-                if (nested)
+                var node = GetShiftTarget(addon, row, slot);
+                if (node == null)
                     continue;
 
                 if (!shiftApplied[row, slot] || Math.Abs(node->Y - appliedShiftY[row, slot]) > 0.01f)
@@ -1673,12 +1656,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (addon == null)
             return;
 
-        if (!Settings.AdjustGaugeNumbers)
-        {
-            RestoreGaugeNumberLayout(addon);
-            return;
-        }
-
         // Refilled per gauge; hoisted so the allocation doesn't sit inside the loops.
         var texts = stackalloc AtkTextNode*[GaugeTextSlots];
 
@@ -1686,6 +1663,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         {
             for (var gaugeIndex = 0; gaugeIndex < GaugeCount; gaugeIndex++)
             {
+                var style = GaugeStyle(gaugeIndex);
+                if (!style.Enabled)
+                {
+                    RestoreGaugeNumbers(addon, row, gaugeIndex, texts);
+                    continue;
+                }
+
                 var component = GetGaugeComponent(addon, row, gaugeIndex);
                 if (component == null)
                     continue;
@@ -1752,8 +1736,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                     // The trailing size is derived from the leading node, so it stays
                     // controllable no matter what size we last wrote to it.
                     var target = isTrailing
-                        ? (byte)Math.Clamp(leadingFont + Settings.GaugeFontDelta + Settings.MpTrailingFontDelta, 8, 60)
-                        : (byte)Math.Clamp(originalGaugeFont[row, gaugeIndex, slot] + Settings.GaugeFontDelta, 8, 60);
+                        ? (byte)Math.Clamp(leadingFont + style.FontDelta + Settings.MpTrailingFontDelta, 8, 60)
+                        : (byte)Math.Clamp(originalGaugeFont[row, gaugeIndex, slot] + style.FontDelta, 8, 60);
 
                     // The game's baseline nudge only suits its own smaller size, so only
                     // re-align once the trailing digits are set to something else.
@@ -1764,7 +1748,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                     var baseY = resized && !float.IsNaN(referenceY)
                         ? referenceY + Settings.TrailingDigitsOffsetY
                         : originalGaugeY[row, gaugeIndex, slot];
-                    var targetY = baseY + Settings.GaugeNumberOffsetY;
+                    var targetY = baseY + style.OffsetY;
 
                     if (text->FontSize != target)
                         text->FontSize = target;
@@ -1781,33 +1765,41 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         }
     }
 
+    private GaugeNumberStyle GaugeStyle(int gaugeIndex)
+        => gaugeIndex == 0 ? Settings.HpNumbers : Settings.MpNumbers;
+
     private void RestoreGaugeNumberLayout(AddonPartyList* addon)
     {
         var texts = stackalloc AtkTextNode*[GaugeTextSlots];
 
         for (var row = 0; row < MaxRows; row++)
-        {
             for (var gaugeIndex = 0; gaugeIndex < GaugeCount; gaugeIndex++)
-            {
-                var component = addon == null ? null : GetGaugeComponent(addon, row, gaugeIndex);
-                var slotCount = CollectComponentTextNodes(component, texts, GaugeTextSlots, 0, 0);
+                RestoreGaugeNumbers(addon, row, gaugeIndex, texts);
+    }
 
-                for (var slot = 0; slot < slotCount; slot++)
-                {
-                    if (!gaugeTextApplied[row, gaugeIndex, slot])
-                        continue;
+    /// <summary>
+    /// Hands one gauge's numbers back. The caller owns the scratch buffer, so this can sit
+    /// inside the per-gauge loops without a stack allocation on every pass.
+    /// </summary>
+    private void RestoreGaugeNumbers(AddonPartyList* addon, int row, int gaugeIndex, AtkTextNode** texts)
+    {
+        var component = addon == null ? null : GetGaugeComponent(addon, row, gaugeIndex);
+        var slotCount = CollectComponentTextNodes(component, texts, GaugeTextSlots, 0, 0);
 
-                    var text = texts[slot];
-                    text->FontSize = originalGaugeFont[row, gaugeIndex, slot];
-                    text->AtkResNode.SetPositionFloat(
-                        originalGaugeX[row, gaugeIndex, slot],
-                        originalGaugeY[row, gaugeIndex, slot]);
-                }
+        for (var slot = 0; slot < slotCount; slot++)
+        {
+            if (!gaugeTextApplied[row, gaugeIndex, slot])
+                continue;
 
-                for (var s = 0; s < GaugeTextSlots; s++)
-                    gaugeTextApplied[row, gaugeIndex, s] = false;
-            }
+            var text = texts[slot];
+            text->FontSize = originalGaugeFont[row, gaugeIndex, slot];
+            text->AtkResNode.SetPositionFloat(
+                originalGaugeX[row, gaugeIndex, slot],
+                originalGaugeY[row, gaugeIndex, slot]);
         }
+
+        for (var s = 0; s < GaugeTextSlots; s++)
+            gaugeTextApplied[row, gaugeIndex, s] = false;
     }
 
     private void RestoreCastNameLayout(AddonPartyList* addon)
@@ -1858,21 +1850,22 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private void RestoreRowContentShift(AddonPartyList* addon)
     {
         for (var row = 0; row < MaxRows; row++)
-        {
             for (var slot = 0; slot < ShiftSlots; slot++)
-            {
-                if (!shiftApplied[row, slot])
-                    continue;
+                RestoreShiftSlot(addon, row, slot);
+    }
 
-                shiftApplied[row, slot] = false;
+    private void RestoreShiftSlot(AddonPartyList* addon, int row, int slot)
+    {
+        if (!shiftApplied[row, slot])
+            return;
 
-                var node = addon == null ? null : GetShiftTarget(addon, row, slot);
-                if (node == null)
-                    continue;
+        shiftApplied[row, slot] = false;
 
-                node->SetPositionFloat(node->X, originalShiftY[row, slot]);
-            }
-        }
+        var node = addon == null ? null : GetShiftTarget(addon, row, slot);
+        if (node == null)
+            return;
+
+        node->SetPositionFloat(node->X, originalShiftY[row, slot]);
     }
 
     /// <summary>

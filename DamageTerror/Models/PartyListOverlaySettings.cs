@@ -57,9 +57,22 @@ public sealed class PartyListOverlaySettings
     /// </summary>
     public bool BarBehindRowContent { get; set; } = true;
 
-    // The row's own name, HP and MP
+    /// <summary>
+    /// The row-wide shift, from before each part was moved on its own node. Kept only to
+    /// seed the per-part values below for configs written back then.
+    /// </summary>
     public bool ShiftRowContent { get; set; } = true;
     public float RowContentShiftY { get; set; } = -5f;
+
+    [JsonProperty("NameShift")] private RowShift? nameShift;
+    [JsonProperty("HpBarShift")] private RowShift? hpBarShift;
+    [JsonProperty("MpBarShift")] private RowShift? mpBarShift;
+
+    [JsonIgnore] public RowShift NameShift => nameShift ??= LegacyShift();
+    [JsonIgnore] public RowShift HpBarShift => hpBarShift ??= LegacyShift();
+    [JsonIgnore] public RowShift MpBarShift => mpBarShift ??= LegacyShift();
+
+    private RowShift LegacyShift() => new() { Enabled = ShiftRowContent, OffsetY = RowContentShiftY };
 
     // Player name font. Delta rather than absolute, so it tracks the game's own size
     // across UI scale settings.
@@ -221,7 +234,10 @@ public sealed class PartyListOverlaySettings
     public float CastNameOffsetY { get; set; } = -1f;
     public int CastNameFontDelta { get; set; } = -3;
 
-    // HP/MP numbers
+    /// <summary>
+    /// The settings both gauges' numbers shared before they were split. Kept only to seed
+    /// <see cref="HpNumbers"/> and <see cref="MpNumbers"/> for configs written back then.
+    /// </summary>
     public bool AdjustGaugeNumbers { get; set; } = false;
     public int GaugeFontDelta { get; set; } = 0;
 
@@ -235,4 +251,22 @@ public sealed class PartyListOverlaySettings
     public float GaugeNumberOffsetY { get; set; } = -1f;
     public float TrailingDigitsOffsetX { get; set; } = 0f;
     public float TrailingDigitsOffsetY { get; set; } = 0f;
+
+    [JsonProperty("HpNumbers")] private GaugeNumberStyle? hpNumbers;
+    [JsonProperty("MpNumbers")] private GaugeNumberStyle? mpNumbers;
+
+    [JsonIgnore] public GaugeNumberStyle HpNumbers => hpNumbers ??= LegacyGaugeNumbers();
+    [JsonIgnore] public GaugeNumberStyle MpNumbers => mpNumbers ??= LegacyGaugeNumbers();
+
+    /// <summary>
+    /// The numbers used to ride along with the row shift, since the wrapper that was moved
+    /// held them as well as the bar. They are moved on their own now, so the shift is folded
+    /// into their offset and the two together land where the pair used to.
+    /// </summary>
+    private GaugeNumberStyle LegacyGaugeNumbers() => new()
+    {
+        Enabled = AdjustGaugeNumbers || ShiftRowContent,
+        FontDelta = AdjustGaugeNumbers ? GaugeFontDelta : 0,
+        OffsetY = (AdjustGaugeNumbers ? GaugeNumberOffsetY : 0f) + (ShiftRowContent ? RowContentShiftY : 0f),
+    };
 }
