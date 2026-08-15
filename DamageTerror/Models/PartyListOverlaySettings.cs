@@ -8,8 +8,8 @@ namespace DamageTerror.Models;
 public sealed class PartyListOverlaySettings
 {
     /// <summary>
-    /// Hides everything derived from parse data - the fill bars, the number, the name
-    /// metrics and the header totals - once an encounter has been over for
+    /// Hides everything derived from parse data - the fill bars, the name metrics and the
+    /// header totals - once an encounter has been over for
     /// <see cref="HideOutOfCombatDelay"/> seconds. The restyle stays applied either way, so
     /// the rows don't jump layout on pull. Separate from the meter window's own setting.
     /// </summary>
@@ -44,13 +44,6 @@ public sealed class PartyListOverlaySettings
     /// Off leaves it on top of the row.
     /// </summary>
     public bool BarBehindRowContent { get; set; } = true;
-
-    // DPS number
-    public bool ShowText { get; set; } = false;
-    public float TextWidth { get; set; } = 53f;
-    public float TextHeight { get; set; } = 18f;
-    public float TextRightMargin { get; set; } = 0f;
-    public int TextFontSize { get; set; } = 20;
 
     // The row's own name, HP and MP
     public bool ShiftRowContent { get; set; } = true;

@@ -43,7 +43,7 @@ public sealed class PartyListConfigWindow : Window, IDisposable
 
         changed |= ConfigHelpers.CheckboxProp("Hide metrics when out of combat##plHideOoc",
             settings.HideOutOfCombat, v => settings.HideOutOfCombat = v);
-        ImGui.TextDisabled("The bar, number, name metrics and totals only. The restyle stays.");
+        ImGui.TextDisabled("The bar, name metrics and totals only. The restyle stays.");
 
         ImGui.Indent();
 
@@ -96,20 +96,6 @@ public sealed class PartyListConfigWindow : Window, IDisposable
                 settings.BarBehindRowContent, v => settings.BarBehindRowContent = v);
             ConfigHelpers.HelpMarker(
                 "Puts the fill under the name, gauges and status icons. Off draws it on top.");
-        }
-
-        if (ImGui.CollapsingHeader("DPS Number##plText", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            changed |= ConfigHelpers.CheckboxProp("Show number##plShowText", settings.ShowText,
-                v => settings.ShowText = v);
-            changed |= Slider("Width##plTextW", settings.TextWidth, 10f, 200f,
-                v => settings.TextWidth = v, null);
-            changed |= Slider("Height##plTextH", settings.TextHeight, 8f, 60f,
-                v => settings.TextHeight = v, null);
-            changed |= Slider("Right margin##plTextMargin", settings.TextRightMargin, -40f, 80f,
-                v => settings.TextRightMargin = v, null);
-            changed |= SliderInt("Font size##plTextFont", settings.TextFontSize, 6, 40,
-                v => settings.TextFontSize = v, null);
         }
 
         if (ImGui.CollapsingHeader("Name, HP and MP##plRow"))

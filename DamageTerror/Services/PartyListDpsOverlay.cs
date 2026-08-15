@@ -13,8 +13,8 @@ namespace DamageTerror.Services;
 /// <summary>
 /// Draws encounter DPS into the game's native party list, and restyles the row to make
 /// room for it. Each row gets a job-coloured fill bar sized to the player's share of the
-/// top DPS, plus a text node with the number; both hang off the row component so they
-/// inherit the party list's visibility, position and scale.
+/// top DPS, which hangs off the row component so it inherits the party list's visibility,
+/// position and scale.
 /// <para>
 /// It also adjusts nodes the game owns - the name, gauges, cast bar and spell name. Every
 /// such change captures the original value before its first write and restores it on
@@ -33,7 +33,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private const int MaxRows = 8;
 
     /// <summary>Private node id ranges, so we can never collide with the game or another plugin.</summary>
-    private const uint TextNodeIdBase = 0x44540000;
     private const uint BarNodeIdBase = 0x44540100;
     private const uint MetricNodeIdBase = 0x44540200;
     private const uint OverlayRootNodeId = 0x44540300;
@@ -85,7 +84,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly DataService dataService;
     private readonly Configuration config;
     private readonly AddonController<AddonPartyList> controller;
-    private readonly TextNode?[] textNodes = new TextNode?[MaxRows];
     /// <remarks>
     /// A nine-grid over a texture we generate and own. Borrowing the game's parts list also
     /// produced rounded ends, but that pointer belongs to the addon's ULD - leaving the
@@ -211,8 +209,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly TextNode?[] metricNodes = new TextNode?[MaxRows];
     private readonly string[] lastMetricText = new string[MaxRows];
 
-    /// <summary>The source node's 9-slice insets, as left, right, top, bottom.</summary>
-    private readonly string[] lastText = new string[MaxRows];
     private readonly float[] lastBarWidth = new float[MaxRows];
     private readonly float[] lastBarHeight = new float[MaxRows];
     private readonly Vector2[] lastBarPos = new Vector2[MaxRows];
@@ -308,8 +304,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private DateTime lastEncounterActive = DateTime.MinValue;
 
     /// <summary>
-    /// Whether the parts derived from parse data - the bars, the number, the name metrics
-    /// and the header totals - should draw. The restyle is deliberately not gated, so the
+    /// Whether the parts derived from parse data - the bars, the name metrics and the
+    /// header totals - should draw. The restyle is deliberately not gated, so the
     /// rows keep their layout between pulls instead of jumping on every boundary.
     /// </summary>
     private bool MetricsVisible
@@ -328,7 +324,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var i = 0; i < MaxRows; i++)
         {
-            lastText[i] = string.Empty;
             lastMetricText[i] = string.Empty;
             lastBarWidth[i] = -1f;
             lastBarHeight[i] = -1f;
@@ -592,26 +587,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
             EnsureBarNode(addon, i);
 
-            if (textNodes[i] == null)
-            {
-                var text = new TextNode
-                {
-                    NodeId = TextNodeIdBase + (uint)i,
-                    Size = new Vector2(Settings.TextWidth, Settings.TextHeight),
-                    FontSize = (uint)Math.Clamp(Settings.TextFontSize, 6, 60),
-                    AlignmentType = AlignmentType.Right,
-                    TextColor = new Vector4(1f, 1f, 1f, 1f),
-                    TextOutlineColor = new Vector4(0f, 0f, 0f, 1f),
-                    TextFlags = TextFlags.Edge,
-                    IsVisible = true,
-                };
-
-                MakeNonInteractive(text);
-                text.AttachNode(overlayRoot, NodePosition.AsLastChild);
-                textNodes[i] = text;
-                lastText[i] = string.Empty;
-            }
-
             if (metricNodes[i] == null)
             {
                 var metrics = new TextNode
@@ -692,14 +667,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var i = 0; i < MaxRows; i++)
         {
-            textNodes[i]?.Dispose();
-            textNodes[i] = null;
             barNodes[i]?.Dispose();
             barNodes[i] = null;
             metricNodes[i]?.Dispose();
             metricNodes[i] = null;
 
-            lastText[i] = string.Empty;
             lastMetricText[i] = string.Empty;
             lastBarWidth[i] = -1f;
             lastBarHeight[i] = -1f;
@@ -775,7 +747,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var count = agent == null ? 0 : Math.Min(agent->PartyMemberCount, members.Length);
 
         // Out of combat every row is treated as unmatched, which is already the path that
-        // blanks the text, hides the metrics node and zero-widths the bar.
+        // hides the metrics node and zero-widths the bar.
         var showMetrics = MetricsVisible;
 
         var gate = $"{showMetrics}|{encounterActive}|{count}|{statsByName.Count > 0}";
@@ -800,28 +772,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 matched = !string.IsNullOrEmpty(name) && statsByName.TryGetValue(name, out stats);
             }
 
-            UpdateText(i, matched ? stats : null);
             UpdateBar(addon, i, matched ? stats : null);
             UpdateMetrics(addon, i, matched ? stats : null);
         }
-    }
-
-    private void UpdateText(int row, RowStats? stats)
-    {
-        var node = textNodes[row];
-        if (node == null)
-            return;
-
-        var text = stats.HasValue && Settings.ShowText
-            ? ValueFormatter.Format(stats.Value.Dps, config)
-            : string.Empty;
-
-        // Assigning String allocates a native string, so only write on change.
-        if (lastText[row] == text)
-            return;
-
-        lastText[row] = text;
-        node.String = text;
     }
 
     /// <summary>
@@ -1095,27 +1048,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         for (var i = 0; i < MaxRows; i++)
         {
-            var owner = GetRowNode(addon, i);
-            if (owner == null)
+            if (GetRowNode(addon, i) == null)
                 continue;
-
-            var rowWidth = owner->AtkResNode.Width;
-            var rowHeight = owner->AtkResNode.Height;
 
             // Force the next update to rewrite geometry against the new row size.
             lastBarWidth[i] = -1f;
             lastBarHeight[i] = -1f;
             lastBarPos[i] = new Vector2(float.NaN, float.NaN);
-
-            var text = textNodes[i];
-            if (text != null)
-            {
-                var nameNode = addon->PartyMembers[i].Name;
-                var nameY = nameNode == null ? 0f : nameNode->Y;
-
-                text.Size = new Vector2(Settings.TextWidth, Settings.TextHeight);
-                text.Position = new Vector2(rowWidth - Settings.TextWidth - Settings.TextRightMargin, nameY);
-            }
         }
     }
 
