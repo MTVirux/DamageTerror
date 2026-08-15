@@ -35,6 +35,10 @@ internal static class PartyListSection
                 settings.HideOutOfCombatDelay, 0f, 30f, "%.1f",
                 v => settings.HideOutOfCombatDelay = v, 150);
 
+        changed |= ConfigHelpers.CheckboxProp("Hide \"Solo\" / \"Party\" label##plHidePartyType",
+            settings.HidePartyTypeLabel, v => settings.HidePartyTypeLabel = v);
+        ConfigHelpers.HelpMarker("Blanks the game's header text. Restored when turned off.");
+
         if (!settings.ShowEncounterTotals)
             ImGui.BeginDisabled();
 
@@ -245,10 +249,6 @@ internal static class PartyListSection
 
         if (ImGui.CollapsingHeader("Encounter Totals##plTotals"))
         {
-            changed |= ConfigHelpers.CheckboxProp("Hide \"Solo\" / \"Party\" label##plHidePartyType",
-                settings.HidePartyTypeLabel, v => settings.HidePartyTypeLabel = v);
-            ConfigHelpers.HelpMarker("Blanks the game's header text. Restored when turned off.");
-
             changed |= ConfigHelpers.CheckboxProp("Show on party list header##plShowTotals", settings.ShowEncounterTotals,
                 v => settings.ShowEncounterTotals = v);
             ConfigHelpers.HelpMarker("Appended to the \"Party\" / \"Light Party\" label above the list.");
