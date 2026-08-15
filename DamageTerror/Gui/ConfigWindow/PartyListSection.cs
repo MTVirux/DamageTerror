@@ -42,12 +42,14 @@ internal static class PartyListSection
 
         if (settings.HidePartyTypeLabel)
         {
+            ImGui.Indent();
+
             if (!settings.ShowEncounterTotals)
                 ImGui.BeginDisabled();
 
             var hiddenText = settings.TotalsHiddenText;
             ImGui.SetNextItemWidth(200);
-            if (ImGui.InputText("Header text when hidden##plTotalsHidden", ref hiddenText, 128))
+            if (ImGui.InputText("##plTotalsHidden", ref hiddenText, 128))
             {
                 settings.TotalsHiddenText = hiddenText;
                 changed = true;
@@ -58,6 +60,8 @@ internal static class PartyListSection
 
             if (!settings.ShowEncounterTotals)
                 ImGui.EndDisabled();
+
+            ImGui.Unindent();
         }
 
         ImGui.Unindent();
