@@ -35,28 +35,32 @@ internal static class PartyListSection
                 settings.HideOutOfCombatDelay, 0f, 30f, "%.1f",
                 v => settings.HideOutOfCombatDelay = v, 150);
 
-        changed |= ConfigHelpers.CheckboxProp("Hide \"Solo\" / \"Party\" label##plHidePartyType",
+        changed |= ConfigHelpers.CheckboxProp("Override \"Solo\" / \"Party\" label##plHidePartyType",
             settings.HidePartyTypeLabel, v => settings.HidePartyTypeLabel = v);
-        ConfigHelpers.HelpMarker("Blanks the game's header text. Restored when turned off.");
+        ConfigHelpers.HelpMarker("Drops the game's header text and puts the encounter totals or " +
+            "the text below in its place. Restored when turned off.");
 
-        if (!settings.ShowEncounterTotals)
-            ImGui.BeginDisabled();
-
-        var hiddenText = settings.TotalsHiddenText;
-        ImGui.SetNextItemWidth(200);
-        if (ImGui.InputText("Header text when hidden##plTotalsHidden", ref hiddenText, 128))
+        if (settings.HidePartyTypeLabel)
         {
-            settings.TotalsHiddenText = hiddenText;
-            changed = true;
+            if (!settings.ShowEncounterTotals)
+                ImGui.BeginDisabled();
+
+            var hiddenText = settings.TotalsHiddenText;
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.InputText("Header text when hidden##plTotalsHidden", ref hiddenText, 128))
+            {
+                settings.TotalsHiddenText = hiddenText;
+                changed = true;
+            }
+
+            ConfigHelpers.HelpMarker("Shown on the party list header in place of the encounter " +
+                "totals, out of combat and between encounters. Leave empty for a blank header.");
+
+            if (!settings.ShowEncounterTotals)
+                ImGui.EndDisabled();
         }
 
-        ConfigHelpers.HelpMarker("Shown on the party list header in place of the encounter " +
-            "totals, out of combat and between encounters. Leave empty for a blank header.");
-
         ImGui.Unindent();
-
-        if (!settings.ShowEncounterTotals)
-            ImGui.EndDisabled();
 
         ImGui.Separator();
 
