@@ -12,6 +12,9 @@ public sealed class NameMetricStyle
     /// <summary>Space before this metric - from the name's text, or from the previous metric.</summary>
     public float Gap { get; set; } = 7f;
 
+    /// <summary>Lifts this metric off the name's line without moving the ones after it.</summary>
+    public float OffsetY { get; set; } = 0f;
+
     /// <summary>Off follows the name's own colour, which is what the game gives the row.</summary>
     public bool UseCustomColor { get; set; } = false;
     public Vector4 Color { get; set; } = new(1f, 1f, 1f, 1f);

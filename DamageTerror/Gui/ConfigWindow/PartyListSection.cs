@@ -115,11 +115,9 @@ internal static class PartyListSection
                 "so this rewrites the name text. Turning it back off restores the game's string.");
 
             ImGui.Spacing();
-            changed |= DrawRowShift("Move name##plShiftName", settings.NameShift,
-                "Negative moves the player name up. The metrics after it follow.");
-
             changed |= ConfigHelpers.CheckboxProp("Resize player name##plAdjustNameFont", settings.AdjustNameFont,
                 v => settings.AdjustNameFont = v);
+            ConfigHelpers.HelpMarker("A text node's size is its font, so the name is sized here rather than scaled.");
 
             if (settings.AdjustNameFont)
             {
@@ -130,13 +128,16 @@ internal static class PartyListSection
                 ImGui.Unindent();
             }
 
+            changed |= DrawRowPart("Move name##plShiftName", settings.NameShift,
+                "Negative moves the player name up. The metrics after it follow.", false);
+
             ImGui.Spacing();
             changed |= ConfigHelpers.CheckboxProp("Override index##plAdjustIndex", settings.AdjustPartyIndex,
                 v => settings.AdjustPartyIndex = v);
             ConfigHelpers.HelpMarker(
                 "The party slot number drawn before the name. Off, it takes the name's size " +
-                "change and vertical move, so the two stay on one line. On, it uses the " +
-                "values below instead and the name no longer carries it.");
+                "change, move and colour, so the two stay on one line and match. On, it uses " +
+                "the values below instead and the name no longer carries it.");
 
             if (settings.AdjustPartyIndex)
             {
@@ -148,19 +149,22 @@ internal static class PartyListSection
                     v => settings.PartyIndexOffsetX = v, null);
                 changed |= Slider("Index vertical offset##plIndexY", settings.PartyIndexOffsetY, -30f, 30f,
                     v => settings.PartyIndexOffsetY = v, null);
+                changed |= DrawCustomColor("plIndex", settings.PartyIndexUseCustomColor, settings.PartyIndexColor,
+                    v => settings.PartyIndexUseCustomColor = v, v => settings.PartyIndexColor = v,
+                    "Off leaves the colour the game gives the slot number.");
                 ImGui.Unindent();
             }
         }
 
         if (ImGui.CollapsingHeader("HP and MP##plGauge"))
         {
-            changed |= DrawRowShift("Move HP bar##plShiftHpBar", settings.HpBarShift,
-                "Moves the HP bar only - its number is moved below.");
+            changed |= DrawRowPart("Adjust HP bar##plShiftHpBar", settings.HpBarShift,
+                "Moves the HP bar only - its number is moved below.", true);
             changed |= DrawGaugeNumbers("Adjust HP numbers##plHpNumbers", settings.HpNumbers);
 
             ImGui.Spacing();
-            changed |= DrawRowShift("Move MP bar##plShiftMpBar", settings.MpBarShift,
-                "Moves the MP bar only - its number is moved below.");
+            changed |= DrawRowPart("Adjust MP bar##plShiftMpBar", settings.MpBarShift,
+                "Moves the MP bar only - its number is moved below.", true);
             changed |= DrawGaugeNumbers("Adjust MP numbers##plMpNumbers", settings.MpNumbers);
 
             if (settings.MpNumbers.Enabled)
@@ -220,6 +224,7 @@ internal static class PartyListSection
                     v => settings.StatusScale = v,
                     "Scales the whole list from its top-left, so icon spacing scales with the icons.",
                     "%.2f");
+                changed |= DrawTint("Tint##plStatusTint", settings.StatusTint, v => settings.StatusTint = v);
                 ImGui.Unindent();
             }
 
@@ -239,6 +244,9 @@ internal static class PartyListSection
                     v => settings.StatusTimerOffsetX = v, null);
                 changed |= Slider("Timer vertical offset##plTimerY", settings.StatusTimerOffsetY, -30f, 30f,
                     v => settings.StatusTimerOffsetY = v, null);
+                changed |= DrawCustomColor("plTimer", settings.StatusTimerUseCustomColor, settings.StatusTimerColor,
+                    v => settings.StatusTimerUseCustomColor = v, v => settings.StatusTimerColor = v,
+                    "Off leaves the game's own colour, which turns as the status runs out.");
                 ImGui.Unindent();
             }
         }
@@ -332,6 +340,28 @@ internal static class PartyListSection
                     v => settings.TotalsShowDeaths = v);
                 ImGui.Unindent();
             }
+
+            ImGui.Spacing();
+            changed |= ConfigHelpers.CheckboxProp("Adjust header text##plAdjustTotals", settings.AdjustTotalsText,
+                v => settings.AdjustTotalsText = v);
+            ConfigHelpers.HelpMarker(
+                "The header's own text node, whether the totals are written to it or not.");
+
+            if (settings.AdjustTotalsText)
+            {
+                ImGui.Indent();
+                changed |= SliderInt("Font size change##plTotalsFont", settings.TotalsFontDelta, -8, 12,
+                    v => settings.TotalsFontDelta = v,
+                    "Added to the game's own font size for the header.");
+                changed |= Slider("Horizontal offset##plTotalsX", settings.TotalsOffsetX, -200f, 200f,
+                    v => settings.TotalsOffsetX = v, null);
+                changed |= Slider("Vertical offset##plTotalsY", settings.TotalsOffsetY, -60f, 60f,
+                    v => settings.TotalsOffsetY = v, null);
+                changed |= DrawCustomColor("plTotals", settings.TotalsUseCustomColor, settings.TotalsColor,
+                    v => settings.TotalsUseCustomColor = v, v => settings.TotalsColor = v,
+                    "Off leaves the colour the game gives the header.");
+                ImGui.Unindent();
+            }
         }
 
         if (ImGui.CollapsingHeader("Cast Bar##plCastBar"))
@@ -347,6 +377,11 @@ internal static class PartyListSection
                     "Moves the left edge right and narrows the bar by the same amount.");
                 changed |= Slider("Vertical offset##plCastBarY", settings.CastBarShiftY, -30f, 30f,
                     v => settings.CastBarShiftY = v, null);
+                changed |= Slider("Height##plCastBarScaleY", settings.CastBarScaleY, 0.3f, 3f,
+                    v => settings.CastBarScaleY = v,
+                    "Grown from the bar's top edge, so the vertical offset still lands where it says.",
+                    "%.2f");
+                changed |= DrawTint("Tint##plCastBarTint", settings.CastBarTint, v => settings.CastBarTint = v);
                 ImGui.Unindent();
             }
         }
@@ -367,6 +402,9 @@ internal static class PartyListSection
                 changed |= SliderInt("Font size change##plCastNameFont", settings.CastNameFontDelta, -12, 12,
                     v => settings.CastNameFontDelta = v,
                     "Added to the game's own font size for the spell name.");
+                changed |= DrawCustomColor("plCastName", settings.CastNameUseCustomColor, settings.CastNameColor,
+                    v => settings.CastNameUseCustomColor = v, v => settings.CastNameColor = v,
+                    "Off leaves the colour the game gives the spell name.");
                 ImGui.Unindent();
             }
         }
@@ -392,18 +430,65 @@ internal static class PartyListSection
         "Single color",
     };
 
-    /// <summary>A row part's move toggle with its offset underneath.</summary>
-    private static bool DrawRowShift(string label, RowShift shift, string tooltip)
+    /// <summary>
+    /// A row part's move toggle with its offsets underneath, then its colour. Colour sits
+    /// outside the toggle so a part can be recoloured where the game already puts it.
+    /// <paramref name="withScale"/> is for the parts whose size is a scale rather than a
+    /// font - the gauge bars.
+    /// </summary>
+    private static bool DrawRowPart(string label, RowPartStyle style, string tooltip, bool withScale)
     {
-        var changed = ConfigHelpers.CheckboxProp(label, shift.Enabled, v => shift.Enabled = v);
+        var changed = ConfigHelpers.CheckboxProp(label, style.Enabled, v => style.Enabled = v);
 
-        if (!shift.Enabled)
+        if (style.Enabled)
+        {
+            ImGui.Indent();
+            changed |= Slider($"Horizontal offset##{label}X", style.OffsetX, -80f, 80f,
+                v => style.OffsetX = v, null);
+            changed |= Slider($"Vertical offset##{label}Y", style.OffsetY, -30f, 30f,
+                v => style.OffsetY = v, tooltip);
+
+            if (withScale)
+                changed |= Slider($"Scale##{label}Scale", style.Scale, 0.3f, 2.5f,
+                    v => style.Scale = v, null, "%.2f");
+
+            ImGui.Unindent();
+        }
+
+        changed |= DrawCustomColor($"{label}Color", style.UseCustomColor, style.Color,
+            v => style.UseCustomColor = v, v => style.Color = v,
+            withScale
+                ? "Off leaves the game's own artwork. On tints it - a texture can be shaded, not repainted."
+                : "Off leaves the colour the game gives the row.");
+
+        return changed;
+    }
+
+    /// <summary>A custom-colour toggle with its picker underneath, indented.</summary>
+    private static bool DrawCustomColor(string id, bool useCustom, Vector4 color,
+        Action<bool> setUseCustom, Action<Vector4> setColor, string? tooltip)
+    {
+        var changed = ConfigHelpers.CheckboxProp($"Custom color##{id}Use", useCustom, setUseCustom);
+
+        if (tooltip != null)
+            ConfigHelpers.HelpMarker(tooltip);
+
+        if (!useCustom)
             return changed;
 
         ImGui.Indent();
-        changed |= Slider($"Vertical offset##{label}Y", shift.OffsetY, -30f, 30f,
-            v => shift.OffsetY = v, tooltip);
+        changed |= ConfigHelpers.ColorEditProp($"Color##{id}", color, setColor,
+            ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
         ImGui.Unindent();
+        return changed;
+    }
+
+    /// <summary>A colour multiply over game artwork, where white is "leave it alone".</summary>
+    private static bool DrawTint(string label, Vector4 tint, Action<Vector4> setter)
+    {
+        var changed = ConfigHelpers.ColorEditProp(label, tint, setter,
+            ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+        ConfigHelpers.HelpMarker("Multiplied over the game's own artwork, so white leaves it unchanged.");
         return changed;
     }
 
@@ -418,8 +503,13 @@ internal static class PartyListSection
         ImGui.Indent();
         changed |= SliderInt($"Font size change##{label}Font", style.FontDelta, -8, 8,
             v => style.FontDelta = v, "Added to the game's own font size for these numbers.");
+        changed |= Slider($"Horizontal offset##{label}X", style.OffsetX, -60f, 60f,
+            v => style.OffsetX = v, null);
         changed |= Slider($"Vertical offset##{label}Y", style.OffsetY, -30f, 30f,
             v => style.OffsetY = v, null);
+        changed |= DrawCustomColor($"{label}Color", style.UseCustomColor, style.Color,
+            v => style.UseCustomColor = v, v => style.Color = v,
+            "Off keeps the game's own colour, which reddens as the gauge empties.");
         ImGui.Unindent();
         return changed;
     }
@@ -463,18 +553,13 @@ internal static class PartyListSection
                 v => style.Gap = v,
                 "Space before this metric - measured from where the name's text ends, or from " +
                 "the metric before it.");
+            changed |= Slider("Vertical offset", style.OffsetY, -30f, 30f,
+                v => style.OffsetY = v,
+                "Lifts this metric off the name's line. The metrics after it stay where they were.");
 
-            changed |= ConfigHelpers.CheckboxProp("Custom color", style.UseCustomColor,
-                v => style.UseCustomColor = v);
-            ConfigHelpers.HelpMarker("Off follows the name's own colour, the way the game draws it.");
-
-            if (style.UseCustomColor)
-            {
-                ImGui.Indent();
-                changed |= ConfigHelpers.ColorEditProp("Color", style.Color, v => style.Color = v,
-                    ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
-                ImGui.Unindent();
-            }
+            changed |= DrawCustomColor("plMetric", style.UseCustomColor, style.Color,
+                v => style.UseCustomColor = v, v => style.Color = v,
+                "Off follows the name's own colour, the way the game draws it.");
 
             ImGui.Unindent();
         }

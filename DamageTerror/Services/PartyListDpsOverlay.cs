@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Controllers;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
+using ByteColor = FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor;
 
 namespace DamageTerror.Services;
 
@@ -75,6 +76,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     /// <summary>Name, HP bar, MP bar, then cast bar background and fill.</summary>
     private const int ShiftSlots = 5;
+
+    /// <summary>
+    /// The leading shift slots that are row parts with a style of their own - name, HP bar,
+    /// MP bar. The cast bar slots after them take only the vertical shift; their horizontal
+    /// position and width belong to the cast bar layout instead.
+    /// </summary>
+    private const int RowPartSlots = 3;
 
     /// <summary>
     /// The private-use block the game uses for the level digits it prefixes to the name.
@@ -217,7 +225,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly Vector2[] lastBarPos = new Vector2[MaxRows];
     private readonly float[,] originalShiftY = new float[MaxRows, ShiftSlots];
     private readonly float[,] appliedShiftY = new float[MaxRows, ShiftSlots];
+    private readonly float[,] originalShiftX = new float[MaxRows, RowPartSlots];
+    private readonly float[,] appliedShiftX = new float[MaxRows, RowPartSlots];
+    private readonly float[,] originalPartScale = new float[MaxRows, RowPartSlots];
+    private readonly float[,] appliedPartScale = new float[MaxRows, RowPartSlots];
+    private readonly float[,] originalPartOriginX = new float[MaxRows, RowPartSlots];
+    private readonly float[,] originalPartOriginY = new float[MaxRows, RowPartSlots];
     private readonly bool[,] shiftApplied = new bool[MaxRows, ShiftSlots];
+    private readonly NodeTintState[,] partTint = new NodeTintState[MaxRows, RowPartSlots];
     private readonly float[] originalCastNameX = new float[MaxRows];
     private readonly float[] originalCastNameY = new float[MaxRows];
     private readonly ushort[] originalCastNameHeight = new ushort[MaxRows];
@@ -232,7 +247,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[,] originalCastBarScaleX = new float[MaxRows, CastBarSlots];
     private readonly float[,] appliedCastBarScaleX = new float[MaxRows, CastBarSlots];
     private readonly float[,] originalCastBarOriginX = new float[MaxRows, CastBarSlots];
+    private readonly float[,] originalCastBarScaleY = new float[MaxRows, CastBarSlots];
+    private readonly float[,] appliedCastBarScaleY = new float[MaxRows, CastBarSlots];
+    private readonly float[,] originalCastBarOriginY = new float[MaxRows, CastBarSlots];
     private readonly bool[,] castBarApplied = new bool[MaxRows, CastBarSlots];
+    private readonly NodeTintState[,] castBarTint = new NodeTintState[MaxRows, CastBarSlots];
+    private readonly TextColorState[] castNameColor = new TextColorState[MaxRows];
     private readonly float[,] originalStatusX = new float[MaxRows, StatusIconSlots];
     private readonly float[,] originalStatusY = new float[MaxRows, StatusIconSlots];
     private readonly float[,] originalStatusScale = new float[MaxRows, StatusIconSlots];
@@ -242,6 +262,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[,] appliedStatusY = new float[MaxRows, StatusIconSlots];
     private readonly float[,] appliedStatusScale = new float[MaxRows, StatusIconSlots];
     private readonly bool[,] statusApplied = new bool[MaxRows, StatusIconSlots];
+    private readonly NodeTintState[,] statusTint = new NodeTintState[MaxRows, StatusIconSlots];
+    private readonly TextColorState[,] timerColor = new TextColorState[MaxRows, StatusIconSlots];
     private readonly float[,] originalGlowX = new float[MaxRows, GlowGroups];
     private readonly float[,] originalGlowY = new float[MaxRows, GlowGroups];
     private readonly float[,] originalGlowScale = new float[MaxRows, GlowGroups];
@@ -268,6 +290,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly byte[] originalNameFont = new byte[MaxRows];
     private readonly byte[] appliedNameFont = new byte[MaxRows];
     private readonly bool[] nameFontApplied = new bool[MaxRows];
+    private readonly TextColorState[] nameColor = new TextColorState[MaxRows];
     private readonly byte[] originalIndexFont = new byte[MaxRows];
     private readonly byte[] appliedIndexFont = new byte[MaxRows];
     private readonly float[] originalIndexX = new float[MaxRows];
@@ -275,6 +298,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[] appliedIndexX = new float[MaxRows];
     private readonly float[] appliedIndexY = new float[MaxRows];
     private readonly bool[] indexApplied = new bool[MaxRows];
+    private readonly TextColorState[] indexColor = new TextColorState[MaxRows];
     private readonly string[] originalNameText = new string[MaxRows];
     private readonly string[] appliedNameText = new string[MaxRows];
     private readonly string[] appliedNameExtra = new string[MaxRows];
@@ -286,6 +310,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[,,] originalGaugeY = new float[MaxRows, GaugeCount, GaugeTextSlots];
     private readonly float[,,] appliedGaugeY = new float[MaxRows, GaugeCount, GaugeTextSlots];
     private readonly bool[,,] gaugeTextApplied = new bool[MaxRows, GaugeCount, GaugeTextSlots];
+    private readonly TextColorState[,,] gaugeTextColor = new TextColorState[MaxRows, GaugeCount, GaugeTextSlots];
     private readonly Vector4[] lastBarColor = new Vector4[MaxRows];
 
     /// <summary>
@@ -305,6 +330,15 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private string appliedTotalsText = string.Empty;
     private string appliedTotalsExtra = string.Empty;
     private bool totalsApplied;
+
+    private byte originalTotalsFont;
+    private byte appliedTotalsFont;
+    private float originalTotalsX;
+    private float originalTotalsY;
+    private float appliedTotalsX;
+    private float appliedTotalsY;
+    private bool totalsStyleApplied;
+    private TextColorState totalsColor;
 
 
     private double maxDps;
@@ -630,12 +664,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyCastBarLayout(addon);
         ApplyCastNameLayout(addon);
         ApplyGaugeNumberLayout(addon);
-        ApplyNameFont(addon);
+        ApplyNameStyle(addon);
         ApplyNameText(addon);
         ApplyPartyIndexLayout(addon);
         ApplyStatusIconLayout(addon);
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
+        ApplyTotalsTextStyle(addon);
         ApplyEncounterTotals(addon);
     }
 
@@ -646,12 +681,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyCastBarLayout(addon);
         ApplyCastNameLayout(addon);
         ApplyGaugeNumberLayout(addon);
-        ApplyNameFont(addon);
+        ApplyNameStyle(addon);
         ApplyNameText(addon);
         ApplyPartyIndexLayout(addon);
         ApplyStatusIconLayout(addon);
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
+        ApplyTotalsTextStyle(addon);
         ApplyEncounterTotals(addon);
     }
 
@@ -670,12 +706,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         // Hand the game's own nodes back before ours go away.
         RestoreEncounterTotals(addon);
+        RestoreTotalsTextStyle(addon);
         RestoreSelectionGlowLayout(addon);
         RestoreStatusTimerLayout(addon);
         RestoreStatusIconLayout(addon);
-        RestorePartyIndexLayout(addon);
+        RestorePartyIndexStyle(addon);
         RestoreNameText(addon);
-        RestoreNameFont(addon);
+        RestoreNameStyle(addon);
         RestoreGaugeNumberLayout(addon);
         RestoreCastNameLayout(addon);
         RestoreCastBarLayout(addon);
@@ -755,12 +792,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyCastBarLayout(addon);
         ApplyCastNameLayout(addon);
         ApplyGaugeNumberLayout(addon);
-        ApplyNameFont(addon);
+        ApplyNameStyle(addon);
         ApplyNameText(addon);
         ApplyPartyIndexLayout(addon);
         ApplyStatusIconLayout(addon);
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
+        ApplyTotalsTextStyle(addon);
         ApplyEncounterTotals(addon);
 
         var agent = AgentHUD.Instance();
@@ -846,8 +884,114 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             node.TextOutlineColor = edgeColor;
     }
 
-    private static Vector4 ToVector4(FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor color)
+    private static Vector4 ToVector4(ByteColor color)
         => new(color.R / 255f, color.G / 255f, color.B / 255f, color.A / 255f);
+
+    private static ByteColor ToByteColor(Vector4 color) => new()
+    {
+        R = (byte)Math.Clamp(color.X * 255f, 0f, 255f),
+        G = (byte)Math.Clamp(color.Y * 255f, 0f, 255f),
+        B = (byte)Math.Clamp(color.Z * 255f, 0f, 255f),
+        A = (byte)Math.Clamp(color.W * 255f, 0f, 255f),
+    };
+
+    private static bool SameColor(ByteColor a, ByteColor b)
+        => a.R == b.R && a.G == b.G && a.B == b.B && a.A == b.A;
+
+    /// <summary>
+    /// One game-owned text node's colour, captured before our first write and handed back on
+    /// teardown. Same self-correcting capture as everything else here: a colour that isn't
+    /// the one we last wrote belongs to the game again.
+    /// </summary>
+    private struct TextColorState
+    {
+        public ByteColor Original;
+        public ByteColor Applied;
+        public bool Active;
+    }
+
+    /// <summary>
+    /// Recolours a text node, keeping the game's own alpha so a dimmed or fading row still
+    /// dims. Passing <paramref name="useCustom"/> false hands the colour back.
+    /// </summary>
+    private static void ApplyTextColor(AtkTextNode* text, bool useCustom, Vector4 color, ref TextColorState state)
+    {
+        if (text == null)
+            return;
+
+        if (!useCustom)
+        {
+            RestoreTextColor(text, ref state);
+            return;
+        }
+
+        if (!state.Active || !SameColor(text->TextColor, state.Applied))
+            state.Original = text->TextColor;
+
+        var target = ToByteColor(color);
+        target.A = state.Original.A;
+
+        if (!SameColor(text->TextColor, target))
+            text->TextColor = target;
+
+        state.Applied = target;
+        state.Active = true;
+    }
+
+    private static void RestoreTextColor(AtkTextNode* text, ref TextColorState state)
+    {
+        if (!state.Active)
+            return;
+
+        state.Active = false;
+        if (text != null)
+            text->TextColor = state.Original;
+    }
+
+    /// <summary>
+    /// One game-owned node's colour multiply. Artwork can only be tinted, not recoloured, so
+    /// the setting is applied relative to the game's own multiply - which is 100, not 255 -
+    /// and white therefore leaves the node exactly as it was.
+    /// </summary>
+    private struct NodeTintState
+    {
+        public byte Red;
+        public byte Green;
+        public byte Blue;
+        public bool Active;
+    }
+
+    private static void ApplyNodeTint(AtkResNode* node, Vector4 tint, ref NodeTintState state)
+    {
+        if (node == null)
+            return;
+
+        if (!state.Active)
+        {
+            state.Red = node->MultiplyRed;
+            state.Green = node->MultiplyGreen;
+            state.Blue = node->MultiplyBlue;
+            state.Active = true;
+        }
+
+        node->MultiplyRed = (byte)Math.Clamp(state.Red * tint.X, 0f, 255f);
+        node->MultiplyGreen = (byte)Math.Clamp(state.Green * tint.Y, 0f, 255f);
+        node->MultiplyBlue = (byte)Math.Clamp(state.Blue * tint.Z, 0f, 255f);
+    }
+
+    private static void RestoreNodeTint(AtkResNode* node, ref NodeTintState state)
+    {
+        if (!state.Active)
+            return;
+
+        state.Active = false;
+        if (node == null)
+            return;
+
+        node->MultiplyRed = state.Red;
+        node->MultiplyGreen = state.Green;
+        node->MultiplyBlue = state.Blue;
+    }
 
     private void UpdateMetrics(AddonPartyList* addon, int row, RowStats? stats)
     {
@@ -913,7 +1057,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 node.Size = size;
 
             x += style.Gap;
-            node.Position = new Vector2(x, nameRect.Y);
+
+            // Only this metric moves: the running x is untouched, so the ones after it keep
+            // their place on the name's line.
+            node.Position = new Vector2(x, nameRect.Y + style.OffsetY);
 
             // Measured after the string and font are on the node, so the next metric starts
             // where this one really ends rather than where its box does.
@@ -1186,27 +1333,29 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         };
     }
 
-    private bool IsShiftEnabled(int slot) => slot switch
+    /// <summary>The style behind a row-part slot; the cast bar slots have none of their own.</summary>
+    private RowPartStyle? RowPart(int slot) => slot switch
     {
-        0 => Settings.NameShift.Enabled,
-        1 => Settings.HpBarShift.Enabled,
-        2 => Settings.MpBarShift.Enabled,
-        _ => Settings.AdjustCastBar,
+        0 => Settings.NameShift,
+        1 => Settings.HpBarShift,
+        2 => Settings.MpBarShift,
+        _ => null,
     };
 
-    private float GetShiftOffset(int slot) => slot switch
-    {
-        0 => Settings.NameShift.OffsetY,
-        1 => Settings.HpBarShift.OffsetY,
-        2 => Settings.MpBarShift.OffsetY,
-        _ => Settings.CastBarShiftY,
-    };
+    private bool IsShiftEnabled(int slot) => RowPart(slot)?.Enabled ?? Settings.AdjustCastBar;
+
+    private float GetShiftOffset(int slot) => RowPart(slot)?.OffsetY ?? Settings.CastBarShiftY;
 
     /// <summary>
-    /// Shifts the row's name and gauges vertically. These are the game's nodes, so the
-    /// original Y is captured before the first write and restored on teardown. The capture
-    /// is self-correcting: if a node's Y isn't the value we last wrote, the game or another
-    /// plugin owns it now and the current value becomes the new original.
+    /// Moves, scales and tints the row's name and gauges. These are the game's nodes, so
+    /// every original is captured before its first write and restored on teardown. The
+    /// capture is self-correcting: if a value isn't the one we last wrote, the game or
+    /// another plugin owns it now and the current value becomes the new original.
+    /// <para>
+    /// The name is a text node, so its colour is its text colour and its size is its font -
+    /// both handled with the rest of the name. The gauge bars are artwork, so they take a
+    /// scale and a colour multiply instead.
+    /// </para>
     /// </summary>
     private void ApplyRowContentShift(AddonPartyList* addon)
     {
@@ -1217,6 +1366,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         {
             for (var slot = 0; slot < ShiftSlots; slot++)
             {
+                var part = RowPart(slot);
+
                 if (!IsShiftEnabled(slot))
                 {
                     RestoreShiftSlot(addon, row, slot);
@@ -1227,14 +1378,62 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 if (node == null)
                     continue;
 
-                if (!shiftApplied[row, slot] || Math.Abs(node->Y - appliedShiftY[row, slot]) > 0.01f)
+                var fresh = !shiftApplied[row, slot];
+
+                if (fresh || Math.Abs(node->Y - appliedShiftY[row, slot]) > 0.01f)
                     originalShiftY[row, slot] = node->Y;
 
-                var target = originalShiftY[row, slot] + GetShiftOffset(slot);
-                if (Math.Abs(node->Y - target) > 0.01f)
-                    node->SetPositionFloat(node->X, target);
+                var targetY = originalShiftY[row, slot] + GetShiftOffset(slot);
 
-                appliedShiftY[row, slot] = target;
+                // The cast bar slots own only the vertical shift - their X and width come
+                // from the cast bar layout, which would fight a write from here.
+                if (part == null)
+                {
+                    if (Math.Abs(node->Y - targetY) > 0.01f)
+                        node->SetPositionFloat(node->X, targetY);
+
+                    appliedShiftY[row, slot] = targetY;
+                    shiftApplied[row, slot] = true;
+                    continue;
+                }
+
+                if (fresh || Math.Abs(node->X - appliedShiftX[row, slot]) > 0.01f)
+                    originalShiftX[row, slot] = node->X;
+
+                var targetX = originalShiftX[row, slot] + part.OffsetX;
+
+                if (Math.Abs(node->X - targetX) > 0.01f || Math.Abs(node->Y - targetY) > 0.01f)
+                    node->SetPositionFloat(targetX, targetY);
+
+                // The name takes its size from its font instead, so it is never scaled -
+                // scaling it would leave the metrics measuring a width the node no longer draws.
+                if (slot != 0)
+                {
+                    if (fresh || Math.Abs(node->ScaleX - appliedPartScale[row, slot]) > 0.001f)
+                    {
+                        originalPartScale[row, slot] = node->ScaleX;
+                        originalPartOriginX[row, slot] = node->OriginX;
+                        originalPartOriginY[row, slot] = node->OriginY;
+                    }
+
+                    var targetScale = originalPartScale[row, slot] * Math.Max(0.1f, part.Scale);
+
+                    node->OriginX = 0f;
+                    node->OriginY = 0f;
+                    if (Math.Abs(node->ScaleX - targetScale) > 0.001f
+                        || Math.Abs(node->ScaleY - targetScale) > 0.001f)
+                        node->SetScale(targetScale, targetScale);
+
+                    appliedPartScale[row, slot] = targetScale;
+
+                    if (part.UseCustomColor)
+                        ApplyNodeTint(node, part.Color, ref partTint[row, slot]);
+                    else
+                        RestoreNodeTint(node, ref partTint[row, slot]);
+                }
+
+                appliedShiftX[row, slot] = targetX;
+                appliedShiftY[row, slot] = targetY;
                 shiftApplied[row, slot] = true;
             }
         }
@@ -1296,6 +1495,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             if (member.CastingActionName->FontSize != font)
                 member.CastingActionName->FontSize = font;
 
+            ApplyTextColor(member.CastingActionName, Settings.CastNameUseCustomColor,
+                Settings.CastNameColor, ref castNameColor[row]);
+
             appliedCastNameX[row] = targetX;
             appliedCastNameY[row] = targetY;
             appliedCastNameHeight[row] = height;
@@ -1355,18 +1557,31 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                     originalCastBarOriginX[row, slot] = node->OriginX;
                 }
 
+                if (fresh || Math.Abs(node->ScaleY - appliedCastBarScaleY[row, slot]) > 0.001f)
+                {
+                    originalCastBarScaleY[row, slot] = node->ScaleY;
+                    originalCastBarOriginY[row, slot] = node->OriginY;
+                }
+
                 var targetX = originalCastBarX[row, slot] + Settings.CastBarShiftX;
-                var targetScale = originalCastBarScaleX[row, slot] * factor;
+                var targetScaleX = originalCastBarScaleX[row, slot] * factor;
+                var targetScaleY = originalCastBarScaleY[row, slot] * Math.Max(0.1f, Settings.CastBarScaleY);
 
                 if (Math.Abs(node->X - targetX) > 0.01f)
                     node->SetPositionFloat(targetX, node->Y);
 
+                // Grown from the top-left, so the vertical offset still lands where it says.
                 node->OriginX = 0f;
-                if (Math.Abs(node->ScaleX - targetScale) > 0.001f)
-                    node->SetScaleX(targetScale);
+                node->OriginY = 0f;
+                if (Math.Abs(node->ScaleX - targetScaleX) > 0.001f
+                    || Math.Abs(node->ScaleY - targetScaleY) > 0.001f)
+                    node->SetScale(targetScaleX, targetScaleY);
+
+                ApplyNodeTint(node, Settings.CastBarTint, ref castBarTint[row, slot]);
 
                 appliedCastBarX[row, slot] = targetX;
-                appliedCastBarScaleX[row, slot] = targetScale;
+                appliedCastBarScaleX[row, slot] = targetScaleX;
+                appliedCastBarScaleY[row, slot] = targetScaleY;
                 castBarApplied[row, slot] = true;
             }
         }
@@ -1378,18 +1593,21 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         {
             for (var slot = 0; slot < CastBarSlots; slot++)
             {
+                var node = addon == null ? null : GetCastBarNode(addon, row, slot);
+                RestoreNodeTint(node, ref castBarTint[row, slot]);
+
                 if (!castBarApplied[row, slot])
                     continue;
 
                 castBarApplied[row, slot] = false;
 
-                var node = addon == null ? null : GetCastBarNode(addon, row, slot);
                 if (node == null)
                     continue;
 
                 node->SetPositionFloat(originalCastBarX[row, slot], node->Y);
                 node->OriginX = originalCastBarOriginX[row, slot];
-                node->SetScaleX(originalCastBarScaleX[row, slot]);
+                node->OriginY = originalCastBarOriginY[row, slot];
+                node->SetScale(originalCastBarScaleX[row, slot], originalCastBarScaleY[row, slot]);
             }
         }
     }
@@ -1422,20 +1640,23 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var fontDelta = Settings.PartyIndexFontDelta;
         var offsetX = Settings.PartyIndexOffsetX;
         var offsetY = Settings.PartyIndexOffsetY;
+        var useCustomColor = Settings.PartyIndexUseCustomColor;
+        var color = Settings.PartyIndexColor;
 
         if (!Settings.AdjustPartyIndex)
         {
             fontDelta = Settings.AdjustNameFont ? Settings.NameFontDelta : 0;
-            offsetX = 0f;
+            offsetX = Settings.NameShift.Enabled ? Settings.NameShift.OffsetX : 0f;
             offsetY = Settings.NameShift.Enabled ? Settings.NameShift.OffsetY : 0f;
-
-            // Nothing is being done to the name either, so leave the node alone.
-            if (fontDelta == 0 && offsetY == 0f)
-            {
-                RestorePartyIndexLayout(addon);
-                return;
-            }
+            useCustomColor = Settings.NameShift.UseCustomColor;
+            color = Settings.NameShift.Color;
         }
+
+        // Nothing is being done to the name either, so leave the node's layout alone. Its
+        // colour is still handled below, since that is a separate setting.
+        var adjustLayout = Settings.AdjustPartyIndex || fontDelta != 0 || offsetX != 0f || offsetY != 0f;
+        if (!adjustLayout)
+            RestorePartyIndexLayout(addon);
 
         for (var row = 0; row < MaxRows; row++)
         {
@@ -1443,32 +1664,37 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             if (index == null)
                 continue;
 
-            var res = &index->AtkResNode;
+            if (adjustLayout)
+            {
+                var res = &index->AtkResNode;
 
-            // Each property is captured on its own, so a game-side change to one doesn't
-            // recapture another whose current value is ours.
-            var fresh = !indexApplied[row];
+                // Each property is captured on its own, so a game-side change to one doesn't
+                // recapture another whose current value is ours.
+                var fresh = !indexApplied[row];
 
-            if (fresh || index->FontSize != appliedIndexFont[row])
-                originalIndexFont[row] = index->FontSize;
-            if (fresh || Math.Abs(res->X - appliedIndexX[row]) > 0.01f)
-                originalIndexX[row] = res->X;
-            if (fresh || Math.Abs(res->Y - appliedIndexY[row]) > 0.01f)
-                originalIndexY[row] = res->Y;
+                if (fresh || index->FontSize != appliedIndexFont[row])
+                    originalIndexFont[row] = index->FontSize;
+                if (fresh || Math.Abs(res->X - appliedIndexX[row]) > 0.01f)
+                    originalIndexX[row] = res->X;
+                if (fresh || Math.Abs(res->Y - appliedIndexY[row]) > 0.01f)
+                    originalIndexY[row] = res->Y;
 
-            var font = (byte)Math.Clamp(originalIndexFont[row] + fontDelta, 8, 60);
-            var targetX = originalIndexX[row] + offsetX;
-            var targetY = originalIndexY[row] + offsetY;
+                var font = (byte)Math.Clamp(originalIndexFont[row] + fontDelta, 8, 60);
+                var targetX = originalIndexX[row] + offsetX;
+                var targetY = originalIndexY[row] + offsetY;
 
-            if (index->FontSize != font)
-                index->FontSize = font;
-            if (Math.Abs(res->X - targetX) > 0.01f || Math.Abs(res->Y - targetY) > 0.01f)
-                res->SetPositionFloat(targetX, targetY);
+                if (index->FontSize != font)
+                    index->FontSize = font;
+                if (Math.Abs(res->X - targetX) > 0.01f || Math.Abs(res->Y - targetY) > 0.01f)
+                    res->SetPositionFloat(targetX, targetY);
 
-            appliedIndexFont[row] = font;
-            appliedIndexX[row] = targetX;
-            appliedIndexY[row] = targetY;
-            indexApplied[row] = true;
+                appliedIndexFont[row] = font;
+                appliedIndexX[row] = targetX;
+                appliedIndexY[row] = targetY;
+                indexApplied[row] = true;
+            }
+
+            ApplyTextColor(index, useCustomColor, color, ref indexColor[row]);
         }
     }
 
@@ -1490,16 +1716,23 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         }
     }
 
-    private void ApplyNameFont(AddonPartyList* addon)
+    private void RestorePartyIndexStyle(AddonPartyList* addon)
+    {
+        RestorePartyIndexLayout(addon);
+
+        for (var row = 0; row < MaxRows; row++)
+            RestoreTextColor(addon == null ? null : addon->PartyMembers[row].GroupSlotIndicator, ref indexColor[row]);
+    }
+
+    /// <summary>
+    /// The name's own size and colour. A text node's size is its font, so the name is never
+    /// scaled - the metrics measure the width it draws to, and a scale would leave them
+    /// placed against a width the node no longer renders at.
+    /// </summary>
+    private void ApplyNameStyle(AddonPartyList* addon)
     {
         if (addon == null)
             return;
-
-        if (!Settings.AdjustNameFont)
-        {
-            RestoreNameFont(addon);
-            return;
-        }
 
         for (var row = 0; row < MaxRows; row++)
         {
@@ -1507,15 +1740,26 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             if (name == null)
                 continue;
 
-            if (!nameFontApplied[row] || name->FontSize != appliedNameFont[row])
-                originalNameFont[row] = name->FontSize;
+            if (Settings.AdjustNameFont)
+            {
+                if (!nameFontApplied[row] || name->FontSize != appliedNameFont[row])
+                    originalNameFont[row] = name->FontSize;
 
-            var font = (byte)Math.Clamp(originalNameFont[row] + Settings.NameFontDelta, 8, 60);
-            if (name->FontSize != font)
-                name->FontSize = font;
+                var font = (byte)Math.Clamp(originalNameFont[row] + Settings.NameFontDelta, 8, 60);
+                if (name->FontSize != font)
+                    name->FontSize = font;
 
-            appliedNameFont[row] = font;
-            nameFontApplied[row] = true;
+                appliedNameFont[row] = font;
+                nameFontApplied[row] = true;
+            }
+            else if (nameFontApplied[row])
+            {
+                nameFontApplied[row] = false;
+                name->FontSize = originalNameFont[row];
+            }
+
+            var style = Settings.NameShift;
+            ApplyTextColor(name, style.UseCustomColor, style.Color, ref nameColor[row]);
         }
     }
 
@@ -1689,18 +1933,20 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         return value[index..];
     }
 
-    private void RestoreNameFont(AddonPartyList* addon)
+    private void RestoreNameStyle(AddonPartyList* addon)
     {
         for (var row = 0; row < MaxRows; row++)
         {
-            if (!nameFontApplied[row])
-                continue;
-
-            nameFontApplied[row] = false;
-
             var name = addon == null ? null : addon->PartyMembers[row].Name;
-            if (name != null)
-                name->FontSize = originalNameFont[row];
+
+            if (nameFontApplied[row])
+            {
+                nameFontApplied[row] = false;
+                if (name != null)
+                    name->FontSize = originalNameFont[row];
+            }
+
+            RestoreTextColor(name, ref nameColor[row]);
         }
     }
 
@@ -1836,6 +2082,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                     var resized = isTrailing && Settings.MpTrailingFontDelta != GameMpTrailingFontDelta;
 
                     var targetX = originalGaugeX[row, gaugeIndex, slot]
+                                  + style.OffsetX
                                   + (resized ? Settings.TrailingDigitsOffsetX : 0f);
                     var baseY = resized && !float.IsNaN(referenceY)
                         ? referenceY + Settings.TrailingDigitsOffsetY
@@ -1847,6 +2094,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                     if (Math.Abs(text->AtkResNode.X - targetX) > 0.01f
                         || Math.Abs(text->AtkResNode.Y - targetY) > 0.01f)
                         text->AtkResNode.SetPositionFloat(targetX, targetY);
+
+                    ApplyTextColor(text, style.UseCustomColor, style.Color,
+                        ref gaugeTextColor[row, gaugeIndex, slot]);
 
                     appliedGaugeFont[row, gaugeIndex, slot] = target;
                     appliedGaugeX[row, gaugeIndex, slot] = targetX;
@@ -1880,6 +2130,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var slot = 0; slot < slotCount; slot++)
         {
+            RestoreTextColor(texts[slot], ref gaugeTextColor[row, gaugeIndex, slot]);
+
             if (!gaugeTextApplied[row, gaugeIndex, slot])
                 continue;
 
@@ -1898,12 +2150,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         for (var row = 0; row < MaxRows; row++)
         {
+            var text = addon == null ? null : addon->PartyMembers[row].CastingActionName;
+            RestoreTextColor(text, ref castNameColor[row]);
+
             if (!castNameApplied[row])
                 continue;
 
             castNameApplied[row] = false;
 
-            var text = addon == null ? null : addon->PartyMembers[row].CastingActionName;
             if (text == null)
                 continue;
 
@@ -1957,7 +2211,21 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (node == null)
             return;
 
-        node->SetPositionFloat(node->X, originalShiftY[row, slot]);
+        if (slot >= RowPartSlots)
+        {
+            node->SetPositionFloat(node->X, originalShiftY[row, slot]);
+            return;
+        }
+
+        node->SetPositionFloat(originalShiftX[row, slot], originalShiftY[row, slot]);
+
+        if (slot == 0)
+            return;
+
+        node->OriginX = originalPartOriginX[row, slot];
+        node->OriginY = originalPartOriginY[row, slot];
+        node->SetScale(originalPartScale[row, slot], originalPartScale[row, slot]);
+        RestoreNodeTint(node, ref partTint[row, slot]);
     }
 
     /// <summary>
@@ -2078,6 +2346,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 if (Math.Abs(node->ScaleX - targetScale) > 0.001f || Math.Abs(node->ScaleY - targetScale) > 0.001f)
                     node->SetScale(targetScale, targetScale);
 
+                ApplyNodeTint(node, Settings.StatusTint, ref statusTint[row, i]);
+
                 appliedStatusX[row, i] = targetX;
                 appliedStatusY[row, i] = targetY;
                 appliedStatusScale[row, i] = targetScale;
@@ -2129,7 +2399,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (Settings.ShowEncounterTotals && extra.Length == 0 && Settings.TotalsHiddenText.Length > 0)
             extra = TotalsSeparator + Settings.TotalsHiddenText;
 
-        var target = (body + extra).TrimStart();
+        // With the game's label gone the separator has nothing to separate, so drop just that -
+        // trimming the whole start would also eat any spaces the user put in front of their text.
+        if (body.Length == 0 && extra.StartsWith(TotalsSeparator, StringComparison.Ordinal))
+            extra = extra[TotalsSeparator.Length..];
+
+        var target = body + extra;
 
         if (current != target)
             node->SetText(target);
@@ -2137,6 +2412,70 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         appliedTotalsText = target;
         appliedTotalsExtra = extra;
         totalsApplied = true;
+    }
+
+    /// <summary>
+    /// The header text node itself - size, position and colour - as opposed to the string
+    /// written into it. Independent of the totals, so the game's own label can be restyled
+    /// with nothing appended to it.
+    /// </summary>
+    private void ApplyTotalsTextStyle(AddonPartyList* addon)
+    {
+        if (addon == null)
+            return;
+
+        var node = addon->PartyTypeTextNode;
+        if (node == null)
+            return;
+
+        if (!Settings.AdjustTotalsText)
+        {
+            RestoreTotalsTextStyle(addon);
+            return;
+        }
+
+        var res = &node->AtkResNode;
+        var fresh = !totalsStyleApplied;
+
+        if (fresh || node->FontSize != appliedTotalsFont)
+            originalTotalsFont = node->FontSize;
+        if (fresh || Math.Abs(res->X - appliedTotalsX) > 0.01f)
+            originalTotalsX = res->X;
+        if (fresh || Math.Abs(res->Y - appliedTotalsY) > 0.01f)
+            originalTotalsY = res->Y;
+
+        var font = (byte)Math.Clamp(originalTotalsFont + Settings.TotalsFontDelta, 8, 60);
+        var targetX = originalTotalsX + Settings.TotalsOffsetX;
+        var targetY = originalTotalsY + Settings.TotalsOffsetY;
+
+        if (node->FontSize != font)
+            node->FontSize = font;
+        if (Math.Abs(res->X - targetX) > 0.01f || Math.Abs(res->Y - targetY) > 0.01f)
+            res->SetPositionFloat(targetX, targetY);
+
+        ApplyTextColor(node, Settings.TotalsUseCustomColor, Settings.TotalsColor, ref totalsColor);
+
+        appliedTotalsFont = font;
+        appliedTotalsX = targetX;
+        appliedTotalsY = targetY;
+        totalsStyleApplied = true;
+    }
+
+    private void RestoreTotalsTextStyle(AddonPartyList* addon)
+    {
+        var node = addon == null ? null : addon->PartyTypeTextNode;
+        RestoreTextColor(node, ref totalsColor);
+
+        if (!totalsStyleApplied)
+            return;
+
+        totalsStyleApplied = false;
+
+        if (node == null)
+            return;
+
+        node->FontSize = originalTotalsFont;
+        node->AtkResNode.SetPositionFloat(originalTotalsX, originalTotalsY);
     }
 
     private void RestoreEncounterTotals(AddonPartyList* addon)
@@ -2534,6 +2873,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                     || Math.Abs(text->AtkResNode.Y - targetY) > 0.01f)
                     text->AtkResNode.SetPositionFloat(targetX, targetY);
 
+                ApplyTextColor(text, Settings.StatusTimerUseCustomColor, Settings.StatusTimerColor,
+                    ref timerColor[row, i]);
+
                 appliedTimerFont[row, i] = font;
                 appliedTimerX[row, i] = targetX;
                 appliedTimerY[row, i] = targetY;
@@ -2550,16 +2892,21 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         {
             for (var i = 0; i < StatusIconSlots; i++)
             {
+                var component = addon == null ? null : GetStatusIconComponent(addon, row, i);
+                var text = component != null && CollectComponentTextNodes(component, texts, 1, 0, 0) > 0
+                    ? texts[0]
+                    : null;
+
+                RestoreTextColor(text, ref timerColor[row, i]);
+
                 if (!timerApplied[row, i])
                     continue;
 
                 timerApplied[row, i] = false;
 
-                var component = addon == null ? null : GetStatusIconComponent(addon, row, i);
-                if (component == null || CollectComponentTextNodes(component, texts, 1, 0, 0) == 0)
+                if (text == null)
                     continue;
 
-                var text = texts[0];
                 text->FontSize = originalTimerFont[row, i];
                 text->AtkResNode.SetPositionFloat(originalTimerX[row, i], originalTimerY[row, i]);
             }
@@ -2572,12 +2919,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         {
             for (var i = 0; i < StatusIconSlots; i++)
             {
+                var node = addon == null ? null : GetStatusIconNode(addon, row, i);
+                RestoreNodeTint(node, ref statusTint[row, i]);
+
                 if (!statusApplied[row, i])
                     continue;
 
                 statusApplied[row, i] = false;
 
-                var node = addon == null ? null : GetStatusIconNode(addon, row, i);
                 if (node == null)
                     continue;
 

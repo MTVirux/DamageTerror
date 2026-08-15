@@ -64,26 +64,30 @@ public sealed class PartyListOverlaySettings
     public bool ShiftRowContent { get; set; } = true;
     public float RowContentShiftY { get; set; } = -5f;
 
-    [JsonProperty("NameShift")] private RowShift? nameShift;
-    [JsonProperty("HpBarShift")] private RowShift? hpBarShift;
-    [JsonProperty("MpBarShift")] private RowShift? mpBarShift;
+    [JsonProperty("NameShift")] private RowPartStyle? nameShift;
+    [JsonProperty("HpBarShift")] private RowPartStyle? hpBarShift;
+    [JsonProperty("MpBarShift")] private RowPartStyle? mpBarShift;
 
     /// <summary>
     /// Off by default: the container the row shift moved holds the gauges but not the name,
     /// so the name stayed put before it could be moved on its own.
     /// </summary>
-    [JsonIgnore] public RowShift NameShift => nameShift ??= new RowShift { Enabled = false, OffsetY = RowContentShiftY };
+    [JsonIgnore] public RowPartStyle NameShift => nameShift ??= new RowPartStyle { Enabled = false, OffsetY = RowContentShiftY };
 
-    [JsonIgnore] public RowShift HpBarShift => hpBarShift ??= LegacyShift();
-    [JsonIgnore] public RowShift MpBarShift => mpBarShift ??= LegacyShift();
+    [JsonIgnore] public RowPartStyle HpBarShift => hpBarShift ??= LegacyShift();
+    [JsonIgnore] public RowPartStyle MpBarShift => mpBarShift ??= LegacyShift();
 
-    private RowShift LegacyShift() => new() { Enabled = ShiftRowContent, OffsetY = RowContentShiftY };
+    private RowPartStyle LegacyShift() => new() { Enabled = ShiftRowContent, OffsetY = RowContentShiftY };
 
     /// <summary>The slot number drawn before each name, which is a node of its own.</summary>
     public bool AdjustPartyIndex { get; set; } = false;
     public int PartyIndexFontDelta { get; set; } = 0;
     public float PartyIndexOffsetX { get; set; } = 0f;
     public float PartyIndexOffsetY { get; set; } = 0f;
+
+    /// <summary>Off, the slot number follows whatever colour the name is given.</summary>
+    public bool PartyIndexUseCustomColor { get; set; } = false;
+    public Vector4 PartyIndexColor { get; set; } = new(1f, 1f, 1f, 1f);
 
     // Player name font. Delta rather than absolute, so it tracks the game's own size
     // across UI scale settings.
@@ -171,12 +175,20 @@ public sealed class PartyListOverlaySettings
     public float StatusOffsetY { get; set; } = 8f;
     public float StatusScale { get; set; } = 1.01f;
 
+    /// <summary>
+    /// A colour multiply over the icon artwork, so white leaves it as the game draws it.
+    /// Icons are textures rather than flat fills, so they can only be tinted, not recoloured.
+    /// </summary>
+    public Vector4 StatusTint { get; set; } = new(1f, 1f, 1f, 1f);
+
     // The timer text inside each status icon. It's a child of the icon, so it already
     // inherits the icon scale - these are on top of that.
     public bool AdjustStatusTimers { get; set; } = false;
     public int StatusTimerFontDelta { get; set; } = 1;
     public float StatusTimerOffsetX { get; set; } = 0f;
     public float StatusTimerOffsetY { get; set; } = -11f;
+    public bool StatusTimerUseCustomColor { get; set; } = false;
+    public Vector4 StatusTimerColor { get; set; } = new(1f, 1f, 1f, 1f);
 
     // The glows behind a row. Hover and selection each draw more than one node, and the
     // game fades them in on a timeline, so tint is a colour multiply only - writing alpha
@@ -234,16 +246,32 @@ public sealed class PartyListOverlaySettings
     /// </summary>
     public string TotalsHiddenText { get; set; } = string.Empty;
 
+    // The header text node itself, which the totals are written to.
+    public bool AdjustTotalsText { get; set; } = false;
+    public int TotalsFontDelta { get; set; } = 0;
+    public float TotalsOffsetX { get; set; } = 0f;
+    public float TotalsOffsetY { get; set; } = 0f;
+    public bool TotalsUseCustomColor { get; set; } = false;
+    public Vector4 TotalsColor { get; set; } = new(1f, 1f, 1f, 1f);
+
     // Cast bar
     public bool AdjustCastBar { get; set; } = true;
     public float CastBarShiftX { get; set; } = 11f;
     public float CastBarShiftY { get; set; } = 5f;
+
+    /// <summary>Height multiplier, taken from the bar's top edge so the shift still lands.</summary>
+    public float CastBarScaleY { get; set; } = 1f;
+
+    /// <summary>A colour multiply over the bar artwork; white leaves the game's own look.</summary>
+    public Vector4 CastBarTint { get; set; } = new(1f, 1f, 1f, 1f);
 
     // Casting spell name
     public bool AdjustCastName { get; set; } = true;
     public float CastNameOffsetX { get; set; } = -5f;
     public float CastNameOffsetY { get; set; } = -1f;
     public int CastNameFontDelta { get; set; } = -3;
+    public bool CastNameUseCustomColor { get; set; } = false;
+    public Vector4 CastNameColor { get; set; } = new(1f, 1f, 1f, 1f);
 
     /// <summary>
     /// The settings both gauges' numbers shared before they were split. Kept only to seed
