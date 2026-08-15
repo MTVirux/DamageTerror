@@ -123,4 +123,7 @@ Then search for **Damage Terror** in the plugin installer.
 |---|---|
 | `/dt` | Toggle the meter window and all popout windows |
 | `/dt config` | Toggle the configuration window |
+| `/dt tab <name\|index\|next\|prev>` | Switch the meter window to another tab (index is 1-based, `next`/`prev` skip hidden tabs and wrap) |
 | `/dt toggle <group>` | Toggle visibility of all popout windows in a tab group |
+| `/dt partylist` | Toggle the party list page of the configuration window |
+| `/dt partylist enable` / `/dt partylist disable` | Turn the party list DPS display on or off |

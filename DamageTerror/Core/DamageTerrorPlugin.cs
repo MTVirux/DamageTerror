@@ -198,7 +198,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         this.commandManager.AddHandler(CommandName, new CommandInfo(this.OnCommand)
         {
-            HelpMessage = "Toggle the meter window. Subcommands: config, toggle <group>, partylist, partylist enable, partylist disable",
+            HelpMessage = "Toggle the meter window. Subcommands: config, tab <name|index|next|prev>, toggle <group>, partylist, partylist enable, partylist disable",
         });
 
         this.mainWindow.IsOpen = this.Config.ShowOnStart;
@@ -411,6 +411,74 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             if (groupName.Length > 0)
                 TogglePopoutGroup(groupName);
         }
+        else if (args.StartsWith("tab ", StringComparison.OrdinalIgnoreCase))
+        {
+            var target = args[4..].Trim();
+            if (target.Length > 0)
+                SelectMeterTab(target);
+        }
+    }
+
+    private void SelectMeterTab(string target)
+    {
+        var tabs = this.Config.MeterTabs;
+        if (tabs.Count == 0)
+        {
+            Svc.Chat.Print("[Damage Terror] No meter tabs are configured.");
+            return;
+        }
+
+        var forward = target.Equals("next", StringComparison.OrdinalIgnoreCase);
+        if (forward || target.Equals("prev", StringComparison.OrdinalIgnoreCase))
+        {
+            var step = forward ? 1 : -1;
+            var current = Math.Clamp(this.Config.SelectedMeterTab, 0, tabs.Count - 1);
+            for (var i = 1; i <= tabs.Count; i++)
+            {
+                var index = ((current + step * i) % tabs.Count + tabs.Count) % tabs.Count;
+                if (!tabs[index].IsHidden)
+                {
+                    this.mainWindow.SelectTab(index);
+                    return;
+                }
+            }
+
+            Svc.Chat.Print("[Damage Terror] No visible meter tabs to switch to.");
+            return;
+        }
+
+        if (int.TryParse(target, out var oneBased))
+        {
+            if (oneBased < 1 || oneBased > tabs.Count)
+            {
+                Svc.Chat.Print($"[Damage Terror] Tab {oneBased} does not exist (1-{tabs.Count}).");
+                return;
+            }
+
+            SelectMeterTabAt(oneBased - 1);
+            return;
+        }
+
+        var named = tabs.FindIndex(t => t.Name.Equals(target, StringComparison.OrdinalIgnoreCase));
+        if (named < 0)
+        {
+            Svc.Chat.Print($"[Damage Terror] No meter tab named '{target}'.");
+            return;
+        }
+
+        SelectMeterTabAt(named);
+    }
+
+    private void SelectMeterTabAt(int index)
+    {
+        var tab = this.Config.MeterTabs[index];
+        if (tab.IsHidden)
+        {
+            Svc.Chat.Print($"[Damage Terror] Tab '{tab.Name}' is hidden.");
+            return;
+        }
+
+        this.mainWindow.SelectTab(index);
     }
 
     private void SetPartyListDps(bool value)
