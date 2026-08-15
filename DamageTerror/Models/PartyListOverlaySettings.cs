@@ -79,12 +79,62 @@ public sealed class PartyListOverlaySettings
     [JsonProperty("PrefixDamagePercent")] public bool MetricDamagePercent { get; set; } = false;
 
     /// <summary>
-    /// The metrics live in their own text node - a single Atk text node only has one font
-    /// size, which is why the game splits its own MP value across two nodes. The node
-    /// copies the name's font so the two read as one line; this is an offset from it.
+    /// The font size and gap every metric used before they were given a node each. Kept only
+    /// to seed <see cref="Style"/> for configs written back then, so those keep their look.
     /// </summary>
     public int MetricsFontDelta { get; set; } = -2;
     public float MetricsGap { get; set; } = 7f;
+
+    /// <summary>
+    /// Per-metric font size, gap and colour. Filled in on demand rather than up front, so a
+    /// metric that has never been touched still reads the values above.
+    /// </summary>
+    public Dictionary<NameMetric, NameMetricStyle> MetricStyles { get; set; } = new();
+
+    /// <summary>Draw order, which is also the order they are listed in the config.</summary>
+    public static readonly NameMetric[] MetricOrder =
+    {
+        NameMetric.Dps,
+        NameMetric.Damage,
+        NameMetric.Crit,
+        NameMetric.DirectHit,
+        NameMetric.CritDirectHit,
+        NameMetric.DamagePercent,
+    };
+
+    public NameMetricStyle Style(NameMetric metric)
+    {
+        if (MetricStyles.TryGetValue(metric, out var style))
+            return style;
+
+        style = new NameMetricStyle { FontDelta = MetricsFontDelta, Gap = MetricsGap };
+        MetricStyles[metric] = style;
+        return style;
+    }
+
+    public bool MetricEnabled(NameMetric metric) => metric switch
+    {
+        NameMetric.Dps => MetricDps,
+        NameMetric.Damage => MetricDamage,
+        NameMetric.Crit => MetricCrit,
+        NameMetric.DirectHit => MetricDirectHit,
+        NameMetric.CritDirectHit => MetricCritDirectHit,
+        NameMetric.DamagePercent => MetricDamagePercent,
+        _ => false,
+    };
+
+    public void SetMetricEnabled(NameMetric metric, bool value)
+    {
+        switch (metric)
+        {
+            case NameMetric.Dps: MetricDps = value; break;
+            case NameMetric.Damage: MetricDamage = value; break;
+            case NameMetric.Crit: MetricCrit = value; break;
+            case NameMetric.DirectHit: MetricDirectHit = value; break;
+            case NameMetric.CritDirectHit: MetricCritDirectHit = value; break;
+            case NameMetric.DamagePercent: MetricDamagePercent = value; break;
+        }
+    }
 
     [JsonIgnore]
     public bool AnyNameMetric

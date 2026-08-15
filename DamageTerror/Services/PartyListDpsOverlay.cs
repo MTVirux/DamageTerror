@@ -38,6 +38,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private const uint OverlayRootNodeId = 0x44540300;
     private const uint BarRootNodeId = 0x44540301;
 
+    /// <summary>One text node per metric per row - a text node has one font size and one colour.</summary>
+    private const int MetricSlots = 6;
+
     /// <summary>Cast bar background and fill.</summary>
     private const int CastBarSlots = 2;
 
@@ -206,8 +209,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             }
         });
     }
-    private readonly TextNode?[] metricNodes = new TextNode?[MaxRows];
-    private readonly string[] lastMetricText = new string[MaxRows];
+    private readonly TextNode?[,] metricNodes = new TextNode?[MaxRows, MetricSlots];
+    private readonly string[,] lastMetricText = new string[MaxRows, MetricSlots];
 
     private readonly float[] lastBarWidth = new float[MaxRows];
     private readonly float[] lastBarHeight = new float[MaxRows];
@@ -324,7 +327,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var i = 0; i < MaxRows; i++)
         {
-            lastMetricText[i] = string.Empty;
+            ClearMetricText(i);
             lastBarWidth[i] = -1f;
             lastBarHeight[i] = -1f;
             lastBarPos[i] = new Vector2(float.NaN, float.NaN);
@@ -587,11 +590,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
             EnsureBarNode(addon, i);
 
-            if (metricNodes[i] == null)
+            for (var slot = 0; slot < MetricSlots; slot++)
             {
+                if (metricNodes[i, slot] != null)
+                    continue;
+
                 var metrics = new TextNode
                 {
-                    NodeId = MetricNodeIdBase + (uint)i,
+                    NodeId = MetricNodeIdBase + (uint)(i * MetricSlots + slot),
                     Size = new Vector2(160f, 20f),
                     // Overwritten each frame from the name node's font.
                     FontSize = 14,
@@ -604,8 +610,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
                 MakeNonInteractive(metrics);
                 metrics.AttachNode(overlayRoot, NodePosition.AsLastChild);
-                metricNodes[i] = metrics;
-                lastMetricText[i] = string.Empty;
+                metricNodes[i, slot] = metrics;
+                lastMetricText[i, slot] = string.Empty;
             }
         }
 
@@ -669,10 +675,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         {
             barNodes[i]?.Dispose();
             barNodes[i] = null;
-            metricNodes[i]?.Dispose();
-            metricNodes[i] = null;
 
-            lastMetricText[i] = string.Empty;
+            for (var slot = 0; slot < MetricSlots; slot++)
+            {
+                metricNodes[i, slot]?.Dispose();
+                metricNodes[i, slot] = null;
+            }
+
+            ClearMetricText(i);
             lastBarWidth[i] = -1f;
             lastBarHeight[i] = -1f;
             lastBarPos[i] = new Vector2(float.NaN, float.NaN);
@@ -785,12 +795,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// </summary>
     /// <summary>
     /// Copies every property that decides how the name is drawn, so the metrics read as a
-    /// continuation of it rather than as a second label. Size is the only thing that can
-    /// differ, and only by the amount the user asks for.
+    /// continuation of it rather than as a second label. Size and colour are the only things
+    /// that can differ, and only by what the metric's own style asks for.
     /// </summary>
-    private void CopyNameFont(TextNode node, AtkTextNode* name)
+    private void CopyNameFont(TextNode node, AtkTextNode* name, NameMetricStyle style)
     {
-        var font = (uint)Math.Clamp(name->FontSize + Settings.MetricsFontDelta, 6, 60);
+        var font = (uint)Math.Clamp(name->FontSize + style.FontDelta, 6, 60);
         if (node.FontSize != font)
             node.FontSize = font;
 
@@ -814,7 +824,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (raw->SheetType != name->SheetType)
             raw->SheetType = name->SheetType;
 
-        var textColor = ToVector4(name->TextColor);
+        var textColor = style.UseCustomColor
+            ? new Vector4(style.Color.X, style.Color.Y, style.Color.Z, 1f)
+            : ToVector4(name->TextColor);
         if (node.TextColor != textColor)
             node.TextColor = textColor;
 
@@ -828,23 +840,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void UpdateMetrics(AddonPartyList* addon, int row, RowStats? stats)
     {
-        var node = metricNodes[row];
-        if (node == null)
-            return;
-
         var member = addon->PartyMembers[row];
         var nameNode = member.Name;
         var owner = GetRowNode(addon, row);
-
-        var text = stats.HasValue && Settings.AnyNameMetric
-            ? BuildNameMetrics(stats.Value)
-            : string.Empty;
-
-        if (lastMetricText[row] != text)
-        {
-            lastMetricText[row] = text;
-            node.String = text;
-        }
 
         // Follow the name: the row swaps it out for the spell name while casting, and the
         // metrics belong with the name rather than the cast. Checked both ways because the
@@ -853,32 +851,72 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var casting = IsNodeVisible(member.CastingProgressBar == null ? null : &member.CastingProgressBar->AtkResNode)
                       || IsNodeVisible(member.CastingActionName == null ? null : &member.CastingActionName->AtkResNode);
 
-        var visible = text.Length > 0 && nameVisible && !casting;
-        if (node.IsVisible != visible)
-            node.IsVisible = visible;
-
-        if (!visible || nameNode == null || owner == null || overlayRoot == null)
-            return;
-
-        CopyNameFont(node, nameNode);
-
         // Projected into our own container, not the row's, since that is the space our
         // position is read in. This also makes the metrics follow the name wherever the
         // row content offset puts it.
-        if (!TryProjectRect(addon, &nameNode->AtkResNode, (AtkResNode*)overlayRoot, out var nameRect))
-            return;
+        Bounds nameRect = default;
+        var placeable = stats.HasValue && nameVisible && !casting && owner != null && overlayRoot != null
+                        && TryProjectRect(addon, &nameNode->AtkResNode, (AtkResNode*)overlayRoot, out nameRect);
 
-        ushort drawnWidth;
-        ushort drawnHeight;
-        nameNode->GetTextDrawSize(&drawnWidth, &drawnHeight);
+        // The chain starts where the name's text actually ends, measured rather than assumed.
+        var x = nameRect.X;
+        if (placeable)
+        {
+            ushort nameWidth;
+            ushort nameHeight;
+            nameNode->GetTextDrawSize(&nameWidth, &nameHeight);
+            x += nameWidth;
+        }
 
-        // Same box height and the same vertical alignment band as the name, so both sit on
-        // one line whether the game centres its text in the box or hangs it from the top.
-        var size = new Vector2(node.Size.X, Math.Max(1f, nameRect.Height));
-        if (node.Size != size)
-            node.Size = size;
+        for (var slot = 0; slot < MetricSlots; slot++)
+        {
+            var node = metricNodes[row, slot];
+            if (node == null)
+                continue;
 
-        node.Position = new Vector2(nameRect.X + drawnWidth + Settings.MetricsGap, nameRect.Y);
+            var metric = PartyListOverlaySettings.MetricOrder[slot];
+            var text = placeable && stats.HasValue && Settings.MetricEnabled(metric)
+                ? FormatMetric(metric, stats.Value)
+                : string.Empty;
+
+            if (lastMetricText[row, slot] != text)
+            {
+                lastMetricText[row, slot] = text;
+                node.String = text;
+            }
+
+            var visible = text.Length > 0;
+            if (node.IsVisible != visible)
+                node.IsVisible = visible;
+
+            if (!visible)
+                continue;
+
+            var style = Settings.Style(metric);
+            CopyNameFont(node, nameNode, style);
+
+            // Same box height and the same vertical alignment band as the name, so both sit
+            // on one line whether the game centres its text in the box or hangs it from the top.
+            var size = new Vector2(node.Size.X, Math.Max(1f, nameRect.Height));
+            if (node.Size != size)
+                node.Size = size;
+
+            x += style.Gap;
+            node.Position = new Vector2(x, nameRect.Y);
+
+            // Measured after the string and font are on the node, so the next metric starts
+            // where this one really ends rather than where its box does.
+            ushort drawnWidth;
+            ushort drawnHeight;
+            ((AtkTextNode*)node)->GetTextDrawSize(&drawnWidth, &drawnHeight);
+            x += drawnWidth;
+        }
+    }
+
+    private void ClearMetricText(int row)
+    {
+        for (var slot = 0; slot < MetricSlots; slot++)
+            lastMetricText[row, slot] = string.Empty;
     }
 
     /// <summary>
@@ -1459,28 +1497,20 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             nameTextApplied[row] = false;
     }
 
-    private string BuildNameMetrics(RowStats stats)
+    /// <summary>
+    /// One metric's text. Each one is its own node, so the spacing between them comes from
+    /// the metric's gap rather than from separators in the string.
+    /// </summary>
+    private string FormatMetric(NameMetric metric, RowStats stats) => metric switch
     {
-        if (!Settings.AnyNameMetric)
-            return string.Empty;
-
-        var parts = new List<string>(6);
-
-        if (Settings.MetricDps)
-            parts.Add(ValueFormatter.Format(stats.Dps, config));
-        if (Settings.MetricDamage)
-            parts.Add(ValueFormatter.Format(stats.Damage, config));
-        if (Settings.MetricCrit)
-            parts.Add(ValueFormatter.FormatPercent(stats.CritPct, config.PercentDecimalPlaces));
-        if (Settings.MetricDirectHit)
-            parts.Add(ValueFormatter.FormatPercent(stats.DirectHitPct, config.PercentDecimalPlaces));
-        if (Settings.MetricCritDirectHit)
-            parts.Add(ValueFormatter.FormatPercent(stats.CritDirectHitPct, config.PercentDecimalPlaces));
-        if (Settings.MetricDamagePercent && !string.IsNullOrEmpty(stats.DamagePercent))
-            parts.Add(stats.DamagePercent);
-
-        return parts.Count == 0 ? string.Empty : " " + string.Join(' ', parts);
-    }
+        NameMetric.Dps => ValueFormatter.Format(stats.Dps, config),
+        NameMetric.Damage => ValueFormatter.Format(stats.Damage, config),
+        NameMetric.Crit => ValueFormatter.FormatPercent(stats.CritPct, config.PercentDecimalPlaces),
+        NameMetric.DirectHit => ValueFormatter.FormatPercent(stats.DirectHitPct, config.PercentDecimalPlaces),
+        NameMetric.CritDirectHit => ValueFormatter.FormatPercent(stats.CritDirectHitPct, config.PercentDecimalPlaces),
+        NameMetric.DamagePercent => string.IsNullOrEmpty(stats.DamagePercent) ? string.Empty : stats.DamagePercent,
+        _ => string.Empty,
+    };
 
     /// <summary>Resolves a party list row to its combatant via the slot-aligned agent list.</summary>
     private bool TryGetRowStats(int row, out RowStats stats)

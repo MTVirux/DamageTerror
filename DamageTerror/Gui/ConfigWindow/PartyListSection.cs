@@ -139,32 +139,8 @@ internal static class PartyListSection
 
         if (ImGui.CollapsingHeader("Metrics After Name##plMetrics"))
         {
-            changed |= ConfigHelpers.CheckboxProp("DPS##plMetricDps", settings.MetricDps,
-                v => settings.MetricDps = v);
-            ConfigHelpers.HelpMarker("Drawn after the name, in the order listed. Values and " +
-                "formatting match the meter window.");
-            changed |= ConfigHelpers.CheckboxProp("Damage##plMetricDamage", settings.MetricDamage,
-                v => settings.MetricDamage = v);
-            changed |= ConfigHelpers.CheckboxProp("Crit %##plMetricCrit", settings.MetricCrit,
-                v => settings.MetricCrit = v);
-            changed |= ConfigHelpers.CheckboxProp("Direct Hit %##plMetricDh", settings.MetricDirectHit,
-                v => settings.MetricDirectHit = v);
-            changed |= ConfigHelpers.CheckboxProp("Crit Direct Hit %##plMetricCdh", settings.MetricCritDirectHit,
-                v => settings.MetricCritDirectHit = v);
-            changed |= ConfigHelpers.CheckboxProp("Damage %##plMetricDamagePct", settings.MetricDamagePercent,
-                v => settings.MetricDamagePercent = v);
-
-            if (settings.AnyNameMetric)
-            {
-                ImGui.Indent();
-                changed |= SliderInt("Font size change##plMetricsFont", settings.MetricsFontDelta, -8, 8,
-                    v => settings.MetricsFontDelta = v,
-                    "Offset from the name's font, which the metrics otherwise copy exactly.");
-                changed |= Slider("Gap after name##plMetricsGap", settings.MetricsGap, -20f, 60f,
-                    v => settings.MetricsGap = v,
-                    "Measured from where the name's text actually ends.");
-                ImGui.Unindent();
-            }
+            foreach (var metric in PartyListOverlaySettings.MetricOrder)
+                changed |= DrawNameMetric(settings, metric);
 
             ImGui.Spacing();
 
@@ -403,6 +379,65 @@ internal static class PartyListSection
         "Party list palette",
         "Single color",
     };
+
+    private static string MetricLabel(NameMetric metric) => metric switch
+    {
+        NameMetric.Dps => "DPS",
+        NameMetric.Damage => "Damage",
+        NameMetric.Crit => "Crit %",
+        NameMetric.DirectHit => "Direct Hit %",
+        NameMetric.CritDirectHit => "Crit Direct Hit %",
+        NameMetric.DamagePercent => "Damage %",
+        _ => metric.ToString(),
+    };
+
+    /// <summary>
+    /// One metric's toggle, with its own font, gap and colour once it is on. Each metric is
+    /// drawn by a node of its own, so all three can differ between them.
+    /// </summary>
+    private static bool DrawNameMetric(PartyListOverlaySettings settings, NameMetric metric)
+    {
+        ImGui.PushID((int)metric);
+
+        var enabled = settings.MetricEnabled(metric);
+        var changed = ConfigHelpers.CheckboxProp(MetricLabel(metric), enabled,
+            v => settings.SetMetricEnabled(metric, v));
+
+        if (metric == NameMetric.Dps)
+            ConfigHelpers.HelpMarker("Drawn after the name, in the order listed. Values and " +
+                "formatting match the meter window.");
+
+        if (enabled)
+        {
+            var style = settings.Style(metric);
+
+            ImGui.Indent();
+            changed |= SliderInt("Font size change", style.FontDelta, -8, 8,
+                v => style.FontDelta = v,
+                "Offset from the name's font, which the metric otherwise copies exactly.");
+            changed |= Slider("Gap before", style.Gap, -20f, 60f,
+                v => style.Gap = v,
+                "Space before this metric - measured from where the name's text ends, or from " +
+                "the metric before it.");
+
+            changed |= ConfigHelpers.CheckboxProp("Custom color", style.UseCustomColor,
+                v => style.UseCustomColor = v);
+            ConfigHelpers.HelpMarker("Off follows the name's own colour, the way the game draws it.");
+
+            if (style.UseCustomColor)
+            {
+                ImGui.Indent();
+                changed |= ConfigHelpers.ColorEditProp("Color", style.Color, v => style.Color = v,
+                    ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+                ImGui.Unindent();
+            }
+
+            ImGui.Unindent();
+        }
+
+        ImGui.PopID();
+        return changed;
+    }
 
     /// <summary>
     /// The bar's own colours. Everything here is scoped under one id, so the palette can reuse
