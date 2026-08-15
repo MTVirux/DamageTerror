@@ -19,21 +19,24 @@ internal static class PartyListSection
             changed = true;
         }
 
-        ImGui.TextDisabled("Turning this off restores every node the game owns.");
+        ConfigHelpers.HelpMarker("Turning this off restores every node the game owns.");
 
         if (!enabled)
             ImGui.BeginDisabled();
 
         changed |= ConfigHelpers.CheckboxProp("Hide metrics when out of combat##plHideOoc",
             settings.HideOutOfCombat, v => settings.HideOutOfCombat = v);
-        ImGui.TextDisabled("The bar, name metrics and totals only. The restyle stays.");
-
-        ImGui.Indent();
+        ConfigHelpers.HelpMarker("The bar, name metrics and totals only. The restyle stays.");
 
         if (settings.HideOutOfCombat)
-            changed |= ConfigHelpers.SliderFloatProp("Hide delay (seconds)##plHideOocDelay",
+        {
+            ImGui.Indent();
+            changed |= ConfigHelpers.SliderFloatProp("##plHideOocDelay",
                 settings.HideOutOfCombatDelay, 0f, 30f, "%.1f",
                 v => settings.HideOutOfCombatDelay = v, 150);
+            ConfigHelpers.HelpMarker("Seconds after combat ends before the metrics are hidden.");
+            ImGui.Unindent();
+        }
 
         changed |= ConfigHelpers.CheckboxProp("Override \"Solo\" / \"Party\" label##plHidePartyType",
             settings.HidePartyTypeLabel, v => settings.HidePartyTypeLabel = v);
@@ -63,8 +66,6 @@ internal static class PartyListSection
 
             ImGui.Unindent();
         }
-
-        ImGui.Unindent();
 
         ImGui.Separator();
 
@@ -120,9 +121,6 @@ internal static class PartyListSection
 
         if (ImGui.CollapsingHeader("Metrics After Name##plMetrics"))
         {
-            ImGui.TextDisabled("Drawn after the name, in the order listed.");
-            ImGui.Spacing();
-
             changed |= SliderInt("Font size change##plMetricsFont", settings.MetricsFontDelta, -8, 8,
                 v => settings.MetricsFontDelta = v,
                 "Offset from the name's font, which the metrics otherwise copy exactly.");
@@ -133,6 +131,8 @@ internal static class PartyListSection
 
             changed |= ConfigHelpers.CheckboxProp("DPS##plMetricDps", settings.MetricDps,
                 v => settings.MetricDps = v);
+            ConfigHelpers.HelpMarker("Drawn after the name, in the order listed. Values and " +
+                "formatting match the meter window.");
             changed |= ConfigHelpers.CheckboxProp("Damage##plMetricDamage", settings.MetricDamage,
                 v => settings.MetricDamage = v);
             changed |= ConfigHelpers.CheckboxProp("Crit %##plMetricCrit", settings.MetricCrit,
@@ -161,9 +161,6 @@ internal static class PartyListSection
             ConfigHelpers.HelpMarker(
                 "Clears every metric and re-reads each name from the game, dropping anything " +
                 "an earlier session left on it.");
-
-            ImGui.Spacing();
-            ImGui.TextDisabled("Values and formatting match the meter window.");
         }
 
         if (ImGui.CollapsingHeader("Buffs and Debuffs##plStatus"))
@@ -310,10 +307,10 @@ internal static class PartyListSection
                 "Applied to both the HP and MP numbers.");
 
             ImGui.Spacing();
-            ImGui.TextDisabled("MP's last two digits are a second, smaller text node.");
 
             changed |= SliderInt("Trailing digits size##plTrailFont", settings.MpTrailingFontDelta, -4, 8,
                 v => settings.MpTrailingFontDelta = v,
+                "MP's last two digits are a second, smaller text node. " +
                 "0 keeps the game's smaller size. Raise it to match the leading digits - " +
                 "they're then re-aligned, since the game's baseline offset only suits the small size.");
 
@@ -358,7 +355,8 @@ internal static class PartyListSection
         ConfigHelpers.HelpMarker(
             "Match meter window: the same job colours the meter draws its bars with, dimmed the " +
             "same way. Party list palette: colours kept for the party list alone. " +
-            "Single color: one colour for every row.");
+            "Single color: one colour for every row. " +
+            "Opacity comes from the bar's own setting, not from these.");
 
         ImGui.Spacing();
 
@@ -391,9 +389,6 @@ internal static class PartyListSection
                 changed |= ConfigHelpers.DrawJobColorPalette(settings.BarColors);
                 break;
         }
-
-        ImGui.Spacing();
-        ImGui.TextDisabled("Opacity comes from the bar's own setting, not from these.");
 
         ImGui.PopID();
         return changed;
