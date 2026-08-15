@@ -16,6 +16,19 @@ public sealed class PartyListOverlaySettings
     public bool HideOutOfCombat { get; set; } = true;
     public float HideOutOfCombatDelay { get; set; } = 5f;
 
+    /// <summary>
+    /// Matches the outline the game draws around every glyph to whatever colour the text was
+    /// given. Off leaves the game's own edge, which stays dark under a recoloured name.
+    /// Applies to every party list text with a custom colour.
+    /// </summary>
+    public bool TintTextOutline { get; set; } = true;
+
+    /// <summary>
+    /// How far the outline is darkened away from the text colour. 0 matches the text exactly,
+    /// which reads as a fatter glyph rather than an edge; 1 is black.
+    /// </summary>
+    public float TextOutlineDarkness { get; set; } = 0.65f;
+
     // DPS fill bar
     public bool ShowBar { get; set; } = true;
     public float IconUnderlap { get; set; } = 7f;

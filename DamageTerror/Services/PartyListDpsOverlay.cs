@@ -880,6 +880,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             node.TextColor = textColor;
 
         var edgeColor = ToVector4(name->EdgeColor);
+        if (style.UseCustomColor && Settings.TintTextOutline)
+        {
+            var tinted = OutlineColor(textColor);
+            edgeColor = new Vector4(tinted.X, tinted.Y, tinted.Z, edgeColor.W);
+        }
+
         if (node.TextOutlineColor != edgeColor)
             node.TextOutlineColor = edgeColor;
     }
@@ -908,13 +914,16 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         public ByteColor Original;
         public ByteColor Applied;
         public bool Active;
+        public ByteColor OriginalEdge;
+        public ByteColor AppliedEdge;
+        public bool EdgeActive;
     }
 
     /// <summary>
     /// Recolours a text node, keeping the game's own alpha so a dimmed or fading row still
     /// dims. Passing <paramref name="useCustom"/> false hands the colour back.
     /// </summary>
-    private static void ApplyTextColor(AtkTextNode* text, bool useCustom, Vector4 color, ref TextColorState state)
+    private void ApplyTextColor(AtkTextNode* text, bool useCustom, Vector4 color, ref TextColorState state)
     {
         if (text == null)
             return;
@@ -936,16 +945,62 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         state.Applied = target;
         state.Active = true;
+
+        ApplyTextOutline(text, color, ref state);
+    }
+
+    /// <summary>
+    /// Matches the glyph outline - the glow around the text - to the colour the text was
+    /// given, darkened so it still reads as an edge. The game's own edge alpha is kept, so
+    /// text the game fades still fades.
+    /// </summary>
+    private void ApplyTextOutline(AtkTextNode* text, Vector4 color, ref TextColorState state)
+    {
+        if (!Settings.TintTextOutline)
+        {
+            RestoreTextOutline(text, ref state);
+            return;
+        }
+
+        if (!state.EdgeActive || !SameColor(text->EdgeColor, state.AppliedEdge))
+            state.OriginalEdge = text->EdgeColor;
+
+        var target = ToByteColor(OutlineColor(color));
+        target.A = state.OriginalEdge.A;
+
+        if (!SameColor(text->EdgeColor, target))
+            text->EdgeColor = target;
+
+        state.AppliedEdge = target;
+        state.EdgeActive = true;
+    }
+
+    private Vector4 OutlineColor(Vector4 color)
+    {
+        var keep = 1f - Math.Clamp(Settings.TextOutlineDarkness, 0f, 1f);
+        return new Vector4(color.X * keep, color.Y * keep, color.Z * keep, color.W);
     }
 
     private static void RestoreTextColor(AtkTextNode* text, ref TextColorState state)
     {
+        RestoreTextOutline(text, ref state);
+
         if (!state.Active)
             return;
 
         state.Active = false;
         if (text != null)
             text->TextColor = state.Original;
+    }
+
+    private static void RestoreTextOutline(AtkTextNode* text, ref TextColorState state)
+    {
+        if (!state.EdgeActive)
+            return;
+
+        state.EdgeActive = false;
+        if (text != null)
+            text->EdgeColor = state.OriginalEdge;
     }
 
     /// <summary>
