@@ -189,6 +189,12 @@ public sealed class PartyListOverlaySettings
     public float StatusScale { get; set; } = 1.01f;
 
     /// <summary>
+    /// Fills the icon row from its right edge instead of its left, so a member with a few
+    /// buffs shows them flush right rather than hugging the left of the empty row.
+    /// </summary>
+    public bool StatusRightAlign { get; set; } = false;
+
+    /// <summary>
     /// A colour multiply over the icon artwork, so white leaves it as the game draws it.
     /// Icons are textures rather than flat fills, so they can only be tinted, not recoloured.
     /// </summary>

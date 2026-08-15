@@ -341,6 +341,11 @@ internal static class PartyListSection
         if (settings.AdjustStatusIcons)
         {
             Section("Position");
+            changed |= ConfigHelpers.CheckboxProp("Right align##plStatusRightAlign",
+                settings.StatusRightAlign, v => settings.StatusRightAlign = v);
+            ConfigHelpers.HelpMarker(
+                "Fills the icon row from its right edge, so a member with a few buffs shows " +
+                "them flush right instead of hugging the left.");
             changed |= Slider("Horizontal offset##plStatusX", settings.StatusOffsetX, -120f, 120f,
                 v => settings.StatusOffsetX = v, null);
             changed |= Slider("Vertical offset##plStatusY", settings.StatusOffsetY, -60f, 60f,

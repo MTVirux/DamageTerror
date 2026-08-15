@@ -2330,6 +2330,42 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
+    /// Picks the slot each icon takes its coordinates from. Normally that's its own slot.
+    /// The game fills its icon grid from the left and hides the slots it doesn't need, so a
+    /// member with three buffs leaves the rest of the row empty; right aligning re-seats the
+    /// visible icons on the trailing slots instead. The source slot's Y comes along with its
+    /// X, so a row the game wraps onto a second line still lands where that line sits.
+    /// </summary>
+    private void BuildStatusSlotSource(AddonPartyList* addon, int row, Span<int> source)
+    {
+        for (var i = 0; i < StatusIconSlots; i++)
+            source[i] = i;
+
+        if (!Settings.StatusRightAlign)
+            return;
+
+        Span<int> filled = stackalloc int[StatusIconSlots];
+        Span<int> visible = stackalloc int[StatusIconSlots];
+        var filledCount = 0;
+        var visibleCount = 0;
+
+        for (var i = 0; i < StatusIconSlots; i++)
+        {
+            var node = GetStatusIconNode(addon, row, i);
+            if (node == null)
+                continue;
+
+            filled[filledCount++] = i;
+            if (IsNodeVisible(node))
+                visible[visibleCount++] = i;
+        }
+
+        var shift = filledCount - visibleCount;
+        for (var i = 0; i < visibleCount; i++)
+            source[visible[i]] = filled[shift + i];
+    }
+
+    /// <summary>
     /// Moves and scales the status icons. Each icon is handled individually rather than via
     /// a shared parent, because the icons hang directly off the row. Scaling an icon alone
     /// would change its size but not the gaps between icons, so positions are scaled about
@@ -2347,6 +2383,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         }
 
         var scale = Math.Max(0.1f, Settings.StatusScale);
+        Span<int> slotSource = stackalloc int[StatusIconSlots];
 
         for (var row = 0; row < MaxRows; row++)
         {
@@ -2383,14 +2420,17 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             if (anchorX == float.MaxValue)
                 continue;
 
+            BuildStatusSlotSource(addon, row, slotSource);
+
             for (var i = 0; i < StatusIconSlots; i++)
             {
                 var node = GetStatusIconNode(addon, row, i);
                 if (node == null)
                     continue;
 
-                var targetX = anchorX + ((originalStatusX[row, i] - anchorX) * scale) + Settings.StatusOffsetX;
-                var targetY = anchorY + ((originalStatusY[row, i] - anchorY) * scale) + Settings.StatusOffsetY;
+                var source = slotSource[i];
+                var targetX = anchorX + ((originalStatusX[row, source] - anchorX) * scale) + Settings.StatusOffsetX;
+                var targetY = anchorY + ((originalStatusY[row, source] - anchorY) * scale) + Settings.StatusOffsetY;
                 var targetScale = originalStatusScale[row, i] * scale;
 
                 if (Math.Abs(node->X - targetX) > 0.01f || Math.Abs(node->Y - targetY) > 0.01f)
