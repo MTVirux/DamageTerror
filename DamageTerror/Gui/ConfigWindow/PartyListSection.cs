@@ -321,27 +321,28 @@ internal static class PartyListSection
 
         ImGui.Spacing();
 
-        for (var i = 0; i < settings.MetricOrder.Count; i++)
-            changed |= DrawNameMetric(settings, i);
+        ImGui.TextDisabled("Drawn after the name, in the order listed.");
+        ConfigHelpers.HelpMarker(
+            "Any metric the meter window can show.\nUse the arrows to reorder them, and the " +
+            "tabs below to add more.\nValues and formatting match the meter.");
+
+        if (settings.Metrics.Count > PartyListOverlaySettings.MaxMetrics)
+            ImGui.TextColored(new Vector4(1f, 0.8f, 0.3f, 1f),
+                $"Only the first {PartyListOverlaySettings.MaxMetrics} are drawn.");
+
+        changed |= MetricPicker.Draw(
+            "plMetrics",
+            settings.Metrics,
+            MetricPicker.GetBarColumnLabel,
+            MetricPicker.PartyListMetricCategories,
+            metric => DrawNameMetricStyle(settings, metric),
+            metric => MetricPicker.BarColumnDescriptions.GetValueOrDefault(metric));
 
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset order##plMetricOrderReset"))
-        {
-            settings.MetricOrder = new List<NameMetric>(PartyListOverlaySettings.DefaultMetricOrder);
-            changed = true;
-        }
-
-        ImGui.SameLine();
-
         if (ImGui.Button("Reset to name only##plMetricReset"))
         {
-            settings.MetricDps = false;
-            settings.MetricDamage = false;
-            settings.MetricCrit = false;
-            settings.MetricDirectHit = false;
-            settings.MetricCritDirectHit = false;
-            settings.MetricDamagePercent = false;
+            settings.Metrics.Clear();
             plugin.ResyncPartyListNames();
             changed = true;
         }
@@ -782,73 +783,41 @@ internal static class PartyListSection
         return changed;
     }
 
-    private static string MetricLabel(NameMetric metric) => metric switch
-    {
-        NameMetric.Dps => "DPS",
-        NameMetric.Damage => "Damage",
-        NameMetric.Crit => "Crit %",
-        NameMetric.DirectHit => "Direct Hit %",
-        NameMetric.CritDirectHit => "Crit Direct Hit %",
-        NameMetric.DamagePercent => "Damage %",
-        _ => metric.ToString(),
-    };
-
     /// <summary>
-    /// One metric's arrows and toggle, with its own position, size and colour once it is on.
-    /// Each metric is drawn by a node of its own, so all three can differ between them. The
-    /// toggle is the group heading here - a separate one would only repeat the metric's name.
+    /// One enabled metric's position, size and colour, hung off its entry in the picker.
+    /// Each metric is drawn by a node of its own, so all three can differ between them.
     /// </summary>
-    private static bool DrawNameMetric(PartyListOverlaySettings settings, int index)
+    private static bool DrawNameMetricStyle(PartyListOverlaySettings settings, BarColumn metric)
     {
-        var metric = settings.MetricOrder[index];
+        var style = settings.Style(metric);
+        var changed = false;
 
-        // Scoped by row rather than by metric: an arrow swaps two entries mid-loop, so the
-        // moved one is drawn twice in that frame and a metric-keyed id would collide.
-        ImGui.PushID(index);
+        ImGui.Indent();
 
-        var changed = ConfigHelpers.ReorderArrows(settings.MetricOrder, index);
+        Section("Position");
+        changed |= Slider("Gap before", style.Gap, -20f, 60f,
+            v => style.Gap = v,
+            "Space before this metric - measured from where the name's text ends, or from " +
+            "the metric before it.");
+        changed |= Slider("Vertical offset", style.OffsetY, -30f, 30f,
+            v => style.OffsetY = v,
+            "Lifts this metric off the name's line.\nThe metrics after it stay where they were.");
+        EndSection();
 
-        var label = MetricLabel(metric);
-        var enabled = settings.MetricEnabled(metric);
-        changed |= ConfigHelpers.CheckboxProp(label, enabled,
-            v => settings.SetMetricEnabled(metric, v));
+        Section("Size");
+        changed |= SliderInt("Font size change", style.FontDelta, -8, 8,
+            v => style.FontDelta = v,
+            "Offset from the name's font, which the metric otherwise copies exactly.");
+        EndSection();
 
-        if (index == 0)
-            ConfigHelpers.HelpMarker("Drawn after the name, in the order listed.\nUse the arrows " +
-                "to reorder them.\nValues and formatting match the meter window.");
+        Section("Color");
+        changed |= DrawCustomColor("plMetric", MetricPicker.GetBarColumnLabel(metric),
+            style.UseCustomColor, style.Color,
+            v => style.UseCustomColor = v, v => style.Color = v,
+            "Off follows the name's own colour, the way the game draws it.");
+        EndSection();
 
-        if (enabled)
-        {
-            var style = settings.Style(metric);
-
-            ImGui.Indent();
-
-            Section("Position");
-            changed |= Slider("Gap before", style.Gap, -20f, 60f,
-                v => style.Gap = v,
-                "Space before this metric - measured from where the name's text ends, or from " +
-                "the metric before it.");
-            changed |= Slider("Vertical offset", style.OffsetY, -30f, 30f,
-                v => style.OffsetY = v,
-                "Lifts this metric off the name's line.\nThe metrics after it stay where they were.");
-            EndSection();
-
-            Section("Size");
-            changed |= SliderInt("Font size change", style.FontDelta, -8, 8,
-                v => style.FontDelta = v,
-                "Offset from the name's font, which the metric otherwise copies exactly.");
-            EndSection();
-
-            Section("Color");
-            changed |= DrawCustomColor("plMetric", label, style.UseCustomColor, style.Color,
-                v => style.UseCustomColor = v, v => style.Color = v,
-                "Off follows the name's own colour, the way the game draws it.");
-            EndSection();
-
-            ImGui.Unindent();
-        }
-
-        ImGui.PopID();
+        ImGui.Unindent();
         return changed;
     }
 

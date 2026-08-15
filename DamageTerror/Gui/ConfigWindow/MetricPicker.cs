@@ -16,6 +16,19 @@ public static class MetricPicker
 #endif
     };
 
+    /// <summary>
+    /// The columns the party list can draw after a name. The group ones are left out: they
+    /// are aggregated over a meter tab's filters, and the party list has no tab to filter by.
+    /// That leaves the two ranks in the Group category, which is renamed to suit.
+    /// </summary>
+    public static readonly (string Name, BarColumn[] Items)[] PartyListMetricCategories =
+        BarColumnCategories
+            .Select(c => (
+                Name: c.Name == "Group" ? "Ranking" : c.Name,
+                Items: c.Items.Where(i => !CombatantBarComponent.IsGroupColumn(i)).ToArray()))
+            .Where(c => c.Items.Length > 0)
+            .ToArray();
+
     public static readonly (string Name, TooltipField[] Items)[] TooltipFieldCategories =
     {
         ("Damage", new[] { TooltipField.Dps, TooltipField.InstantDps, TooltipField.PeakDps, TooltipField.Damage, TooltipField.DamagePercent, TooltipField.MaxHit, TooltipField.MaxHitValue, TooltipField.DamageShield, TooltipField.EncDps, TooltipField.TopDamageSkills }),

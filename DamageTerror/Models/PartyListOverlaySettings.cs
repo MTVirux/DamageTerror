@@ -1,3 +1,5 @@
+using System.Runtime.Serialization;
+
 namespace DamageTerror.Models;
 
 /// <summary>
@@ -110,14 +112,25 @@ public sealed class PartyListOverlaySettings
     /// <summary>Strips the level glyphs the game prefixes to the name text.</summary>
     public bool HideLevel { get; set; } = false;
 
-    // Metrics appended to the name. Any combination; they appear in this order.
-    // JSON names are pinned to the originals so existing configs keep their selection.
-    [JsonProperty("PrefixDps")] public bool MetricDps { get; set; } = false;
-    [JsonProperty("PrefixDamage")] public bool MetricDamage { get; set; } = false;
-    [JsonProperty("PrefixCrit")] public bool MetricCrit { get; set; } = false;
-    [JsonProperty("PrefixDirectHit")] public bool MetricDirectHit { get; set; } = false;
-    [JsonProperty("PrefixCritDirectHit")] public bool MetricCritDirectHit { get; set; } = false;
-    [JsonProperty("PrefixDamagePercent")] public bool MetricDamagePercent { get; set; } = false;
+    /// <summary>
+    /// How many metrics the overlay has a text node for per row. Anything past this can be
+    /// configured but is not drawn.
+    /// </summary>
+    public const int MaxMetrics = 12;
+
+    private List<BarColumn>? metrics;
+
+    /// <summary>
+    /// The metrics drawn after the name, in the order they appear. These are the meter's own
+    /// columns, so each one reads and formats exactly as it does in the meter window.
+    /// </summary>
+    [JsonProperty("NameMetrics", ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumConverter))]
+    public List<BarColumn> Metrics
+    {
+        get => metrics ??= new List<BarColumn>();
+        set => metrics = value;
+    }
 
     /// <summary>
     /// Drawn before every metric, so it lands between the name and the first one and between
@@ -137,50 +150,11 @@ public sealed class PartyListOverlaySettings
     /// Per-metric font size, gap and colour. Filled in on demand rather than up front, so a
     /// metric that has never been touched still reads the values above.
     /// </summary>
-    public Dictionary<NameMetric, NameMetricStyle> MetricStyles { get; set; } = new();
+    [JsonProperty("MetricColumnStyles", ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumConverter))]
+    public Dictionary<BarColumn, NameMetricStyle> MetricStyles { get; set; } = new();
 
-    /// <summary>The order a config that has never been reordered draws them in.</summary>
-    public static readonly NameMetric[] DefaultMetricOrder =
-    {
-        NameMetric.Dps,
-        NameMetric.Damage,
-        NameMetric.Crit,
-        NameMetric.DirectHit,
-        NameMetric.CritDirectHit,
-        NameMetric.DamagePercent,
-    };
-
-    private List<NameMetric>? metricOrder;
-
-    /// <summary>
-    /// Draw order, which is also the order they are listed in the config. Put through
-    /// <see cref="Normalise"/> on load, so a config written before a metric existed - or with
-    /// one listed twice - still gives every metric exactly one place.
-    /// </summary>
-    [JsonProperty("MetricOrder")]
-    public List<NameMetric> MetricOrder
-    {
-        get => metricOrder ??= new List<NameMetric>(DefaultMetricOrder);
-        set => metricOrder = Normalise(value);
-    }
-
-    private static List<NameMetric> Normalise(IEnumerable<NameMetric>? saved)
-    {
-        var order = new List<NameMetric>(DefaultMetricOrder.Length);
-
-        if (saved != null)
-            foreach (var metric in saved)
-                if (Array.IndexOf(DefaultMetricOrder, metric) >= 0 && !order.Contains(metric))
-                    order.Add(metric);
-
-        foreach (var metric in DefaultMetricOrder)
-            if (!order.Contains(metric))
-                order.Add(metric);
-
-        return order;
-    }
-
-    public NameMetricStyle Style(NameMetric metric)
+    public NameMetricStyle Style(BarColumn metric)
     {
         if (MetricStyles.TryGetValue(metric, out var style))
             return style;
@@ -190,34 +164,91 @@ public sealed class PartyListOverlaySettings
         return style;
     }
 
-    public bool MetricEnabled(NameMetric metric) => metric switch
+    // Metrics used to be a fixed set of six, each with a bool of its own, drawn in an order
+    // of their own and styled through a dictionary keyed the same way. All of it is read
+    // once on load and folded into the column list, so a config written back then keeps
+    // both its selection and its per-metric look.
+    [JsonProperty("PrefixDps")] private bool legacyDps;
+    [JsonProperty("PrefixDamage")] private bool legacyDamage;
+    [JsonProperty("PrefixCrit")] private bool legacyCrit;
+    [JsonProperty("PrefixDirectHit")] private bool legacyDirectHit;
+    [JsonProperty("PrefixCritDirectHit")] private bool legacyCritDirectHit;
+    [JsonProperty("PrefixDamagePercent")] private bool legacyDamagePercent;
+
+    [JsonProperty("MetricOrder")]
+    [JsonConverter(typeof(TolerantEnumConverter))]
+    private List<NameMetric>? legacyOrder;
+
+    [JsonProperty("MetricStyles")]
+    [JsonConverter(typeof(TolerantEnumConverter))]
+    private Dictionary<NameMetric, NameMetricStyle>? legacyStyles;
+
+    private static readonly NameMetric[] LegacyMetricOrder =
     {
-        NameMetric.Dps => MetricDps,
-        NameMetric.Damage => MetricDamage,
-        NameMetric.Crit => MetricCrit,
-        NameMetric.DirectHit => MetricDirectHit,
-        NameMetric.CritDirectHit => MetricCritDirectHit,
-        NameMetric.DamagePercent => MetricDamagePercent,
-        _ => false,
+        NameMetric.Dps,
+        NameMetric.Damage,
+        NameMetric.Crit,
+        NameMetric.DirectHit,
+        NameMetric.CritDirectHit,
+        NameMetric.DamagePercent,
     };
 
-    public void SetMetricEnabled(NameMetric metric, bool value)
+    /// <summary>
+    /// Runs only when the config has no column list of its own, so a deliberately empty
+    /// selection is never re-filled from the old flags left beside it.
+    /// </summary>
+    [OnDeserialized]
+    internal void MigrateLegacyMetrics(StreamingContext context)
     {
-        switch (metric)
+        if (metrics != null)
+            return;
+
+        var order = new List<NameMetric>(legacyOrder ?? Enumerable.Empty<NameMetric>());
+        foreach (var metric in LegacyMetricOrder)
+            if (!order.Contains(metric))
+                order.Add(metric);
+
+        var migrated = new List<BarColumn>();
+        foreach (var metric in order)
         {
-            case NameMetric.Dps: MetricDps = value; break;
-            case NameMetric.Damage: MetricDamage = value; break;
-            case NameMetric.Crit: MetricCrit = value; break;
-            case NameMetric.DirectHit: MetricDirectHit = value; break;
-            case NameMetric.CritDirectHit: MetricCritDirectHit = value; break;
-            case NameMetric.DamagePercent: MetricDamagePercent = value; break;
+            var column = LegacyColumn(metric);
+            if (LegacyEnabled(metric) && !migrated.Contains(column))
+                migrated.Add(column);
         }
+
+        // Kept for every metric rather than only the enabled ones, so one that was styled
+        // and then switched off still comes back looking the way it was left.
+        if (legacyStyles != null)
+            foreach (var (metric, style) in legacyStyles)
+                MetricStyles[LegacyColumn(metric)] = style;
+
+        metrics = migrated;
+        legacyOrder = null;
+        legacyStyles = null;
+        legacyDps = legacyDamage = legacyCrit = false;
+        legacyDirectHit = legacyCritDirectHit = legacyDamagePercent = false;
     }
 
-    [JsonIgnore]
-    public bool AnyNameMetric
-        => MetricDps || MetricDamage || MetricCrit || MetricDirectHit
-           || MetricCritDirectHit || MetricDamagePercent;
+    private static BarColumn LegacyColumn(NameMetric metric) => metric switch
+    {
+        NameMetric.Damage => BarColumn.Damage,
+        NameMetric.Crit => BarColumn.Crit,
+        NameMetric.DirectHit => BarColumn.DirectHit,
+        NameMetric.CritDirectHit => BarColumn.CritDirectHit,
+        NameMetric.DamagePercent => BarColumn.DamagePercent,
+        _ => BarColumn.Dps,
+    };
+
+    private bool LegacyEnabled(NameMetric metric) => metric switch
+    {
+        NameMetric.Dps => legacyDps,
+        NameMetric.Damage => legacyDamage,
+        NameMetric.Crit => legacyCrit,
+        NameMetric.DirectHit => legacyDirectHit,
+        NameMetric.CritDirectHit => legacyCritDirectHit,
+        NameMetric.DamagePercent => legacyDamagePercent,
+        _ => false,
+    };
 
     // Buff / debuff icons
     public bool AdjustStatusIcons { get; set; } = false;

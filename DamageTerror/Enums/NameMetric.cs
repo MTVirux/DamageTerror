@@ -1,6 +1,9 @@
 namespace DamageTerror.Enums;
 
-/// <summary>The stats that can be drawn after a party list name, in the order they appear.</summary>
+/// <summary>
+/// The fixed set of stats a party list name could be given before it took the meter's own
+/// columns. Read only to migrate configs written back then.
+/// </summary>
 [JsonConverter(typeof(StringEnumConverter))]
 public enum NameMetric
 {

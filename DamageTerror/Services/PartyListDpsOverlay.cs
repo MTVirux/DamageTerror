@@ -40,7 +40,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private const uint BarRootNodeId = 0x44540301;
 
     /// <summary>One text node per metric per row - a text node has one font size and one colour.</summary>
-    private static readonly int MetricSlots = PartyListOverlaySettings.DefaultMetricOrder.Length;
+    private const int MetricSlots = PartyListOverlaySettings.MaxMetrics;
 
     /// <summary>Cast bar background and fill.</summary>
     private const int CastBarSlots = 2;
@@ -324,7 +324,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>Last line <see cref="LogBarState"/> emitted per row, so it only logs on change.</summary>
     private readonly string[] lastBarTrace = new string[MaxRows];
     private string lastGateTrace = string.Empty;
-    private readonly Dictionary<string, RowStats> statsByName = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, CombatantEntry> statsByName = new(StringComparer.OrdinalIgnoreCase);
 
     private string originalTotalsText = string.Empty;
     private string appliedTotalsText = string.Empty;
@@ -822,17 +822,17 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var i = 0; i < MaxRows; i++)
         {
-            var matched = false;
-            var stats = default(RowStats);
+            CombatantEntry? stats = null;
 
             if (showMetrics && i < count)
             {
                 var name = members[i].Name.ToString();
-                matched = !string.IsNullOrEmpty(name) && statsByName.TryGetValue(name, out stats);
+                if (!string.IsNullOrEmpty(name))
+                    statsByName.TryGetValue(name, out stats);
             }
 
-            UpdateBar(addon, i, matched ? stats : null);
-            UpdateMetrics(addon, i, matched ? stats : null);
+            UpdateBar(addon, i, stats);
+            UpdateMetrics(addon, i, stats);
         }
     }
 
@@ -1048,7 +1048,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         node->MultiplyBlue = state.Blue;
     }
 
-    private void UpdateMetrics(AddonPartyList* addon, int row, RowStats? stats)
+    private void UpdateMetrics(AddonPartyList* addon, int row, CombatantEntry? stats)
     {
         var member = addon->PartyMembers[row];
         var nameNode = member.Name;
@@ -1065,7 +1065,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // position is read in. This also makes the metrics follow the name wherever the
         // row content offset puts it.
         Bounds nameRect = default;
-        var placeable = stats.HasValue && nameVisible && !casting && owner != null && overlayRoot != null
+        var placeable = stats != null && nameVisible && !casting && owner != null && overlayRoot != null
                         && TryProjectRect(addon, &nameNode->AtkResNode, (AtkResNode*)overlayRoot, out nameRect);
 
         // The chain starts where the name's text actually ends, measured rather than assumed.
@@ -1078,15 +1078,18 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             x += nameWidth;
         }
 
+        var metrics = Settings.Metrics;
+
         for (var slot = 0; slot < MetricSlots; slot++)
         {
             var node = metricNodes[row, slot];
             if (node == null)
                 continue;
 
-            var metric = Settings.MetricOrder[slot];
-            var value = placeable && stats.HasValue && Settings.MetricEnabled(metric)
-                ? FormatMetric(metric, stats.Value)
+            // Formatted through the meter's own column value, so a metric reads here exactly
+            // as it does in the meter window. No tab to take overrides from, hence null.
+            var value = placeable && stats != null && slot < metrics.Count
+                ? CombatantBarComponent.GetColumnDisplayValue(stats, metrics[slot], config, null)
                 : string.Empty;
 
             // Carried on the metric rather than drawn on its own node, so a metric that has
@@ -1106,7 +1109,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             if (!visible)
                 continue;
 
-            var style = Settings.Style(metric);
+            var style = Settings.Style(metrics[slot]);
             CopyNameFont(node, nameNode, style);
 
             // Same box height and the same vertical alignment band as the name, so both sit
@@ -1146,7 +1149,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// then loading our own image - crashed the game on party or duty teardown, so the fill
     /// is drawn as a plain rectangle and its shape is not configurable.
     /// </summary>
-    private void UpdateBar(AddonPartyList* addon, int row, RowStats? stats)
+    private void UpdateBar(AddonPartyList* addon, int row, CombatantEntry? stats)
     {
         var bar = barNodes[row];
         if (bar == null)
@@ -1169,8 +1172,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             return;
         }
 
-        var fraction = stats.HasValue && Settings.ShowBar && maxDps > 0
-            ? Math.Clamp(stats.Value.Dps / maxDps, 0d, 1d)
+        var fraction = stats != null && Settings.ShowBar && maxDps > 0
+            ? Math.Clamp(stats.EncDps / maxDps, 0d, 1d)
             : 0d;
 
         // Geometry is derived from the row's own name/bars block, so the fill lines up
@@ -1218,11 +1221,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var width = available * (float)fraction;
 
 
-        if (stats.HasValue)
+        if (stats != null)
         {
             // Compared by colour rather than by job - keyed on the job, changing the
             // opacity or the job palette never reached the node.
-            var color = ResolveBarColor(stats.Value.Job);
+            var color = ResolveBarColor(stats.Job);
             if (lastBarColor[row] != color)
             {
                 lastBarColor[row] = color;
@@ -1264,7 +1267,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// what we meant to write, so a skipped write shows up as a mismatch. Emits only when the
     /// row's state changes, so a stuck row logs once instead of every frame.
     /// </summary>
-    private void LogBarState(int row, ImGuiImageNode bar, RowStats? stats, string note)
+    private void LogBarState(int row, ImGuiImageNode bar, CombatantEntry? stats, string note)
     {
         var node = (AtkResNode*)bar;
         var attached = node != null && node->ParentNode != null;
@@ -1279,7 +1282,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             barOnBarRoot[row],
             attached,
             barTextureApplied[row],
-            stats.HasValue,
+            stats != null,
             bar.Width >= 1f,
             bar.IsVisible,
             color.W > 0.001f,
@@ -1302,8 +1305,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             barTextureApplied[row] ? 1 : 0,
             pendingBarTexture[row] != null ? 1 : 0,
             barTextureRequested[row] ? 1 : 0,
-            stats.HasValue
-                ? string.Format(CultureInfo.InvariantCulture, "{0}/{1:F0}dps", stats.Value.Job, stats.Value.Dps)
+            stats != null
+                ? string.Format(CultureInfo.InvariantCulture, "{0}/{1:F0}dps", stats.Job, stats.EncDps)
                 : "none",
             maxDps,
             bar.Width,
@@ -1873,34 +1876,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         for (var row = 0; row < MaxRows; row++)
             nameTextApplied[row] = false;
-    }
-
-    /// <summary>
-    /// One metric's value on its own, without the separator the caller prefixes. Each metric
-    /// is its own node, so the spacing between them comes from the metric's gap.
-    /// </summary>
-    private string FormatMetric(NameMetric metric, RowStats stats) => metric switch
-    {
-        NameMetric.Dps => ValueFormatter.Format(stats.Dps, config),
-        NameMetric.Damage => ValueFormatter.Format(stats.Damage, config),
-        NameMetric.Crit => ValueFormatter.FormatPercent(stats.CritPct, config.PercentDecimalPlaces),
-        NameMetric.DirectHit => ValueFormatter.FormatPercent(stats.DirectHitPct, config.PercentDecimalPlaces),
-        NameMetric.CritDirectHit => ValueFormatter.FormatPercent(stats.CritDirectHitPct, config.PercentDecimalPlaces),
-        NameMetric.DamagePercent => string.IsNullOrEmpty(stats.DamagePercent) ? string.Empty : stats.DamagePercent,
-        _ => string.Empty,
-    };
-
-    /// <summary>Resolves a party list row to its combatant via the slot-aligned agent list.</summary>
-    private bool TryGetRowStats(int row, out RowStats stats)
-    {
-        stats = default;
-
-        var agent = AgentHUD.Instance();
-        if (agent == null || row >= agent->PartyMemberCount || row >= agent->PartyMembers.Length)
-            return false;
-
-        var name = agent->PartyMembers[row].Name.ToString();
-        return !string.IsNullOrEmpty(name) && statsByName.TryGetValue(name, out stats);
     }
 
     private void RestoreNameText(AddonPartyList* addon)
@@ -3089,20 +3064,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 if (string.IsNullOrEmpty(combatant.Name))
                     continue;
 
-                var stats = new RowStats(
-                    combatant.EncDps,
-                    combatant.Job ?? string.Empty,
-                    combatant.Damage,
-                    combatant.CritPct,
-                    combatant.DirectHitPct,
-                    combatant.CritDirectHitPct,
-                    combatant.DamagePercent ?? string.Empty);
-                statsByName[combatant.Name] = stats;
+                statsByName[combatant.Name] = combatant;
 
                 // AgentHUD reports bare names, the parser may report "Name@World".
                 var at = combatant.Name.IndexOf('@');
                 if (at > 0)
-                    statsByName[combatant.Name[..at]] = stats;
+                    statsByName[combatant.Name[..at]] = combatant;
 
                 if (combatant.EncDps > maxDps)
                     maxDps = combatant.EncDps;
@@ -3114,13 +3081,4 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             ServiceManager.LogDebug(LogChannel.PartyMembership, $"Party list DPS cache refresh failed: {ex.Message}");
         }
     }
-
-    private readonly record struct RowStats(
-        double Dps,
-        string Job,
-        long Damage,
-        double CritPct,
-        double DirectHitPct,
-        double CritDirectHitPct,
-        string DamagePercent);
 }
