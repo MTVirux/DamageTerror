@@ -68,11 +68,22 @@ public sealed class PartyListOverlaySettings
     [JsonProperty("HpBarShift")] private RowShift? hpBarShift;
     [JsonProperty("MpBarShift")] private RowShift? mpBarShift;
 
-    [JsonIgnore] public RowShift NameShift => nameShift ??= LegacyShift();
+    /// <summary>
+    /// Off by default: the container the row shift moved holds the gauges but not the name,
+    /// so the name stayed put before it could be moved on its own.
+    /// </summary>
+    [JsonIgnore] public RowShift NameShift => nameShift ??= new RowShift { Enabled = false, OffsetY = RowContentShiftY };
+
     [JsonIgnore] public RowShift HpBarShift => hpBarShift ??= LegacyShift();
     [JsonIgnore] public RowShift MpBarShift => mpBarShift ??= LegacyShift();
 
     private RowShift LegacyShift() => new() { Enabled = ShiftRowContent, OffsetY = RowContentShiftY };
+
+    /// <summary>The slot number drawn before each name, which is a node of its own.</summary>
+    public bool AdjustPartyIndex { get; set; } = false;
+    public int PartyIndexFontDelta { get; set; } = 0;
+    public float PartyIndexOffsetX { get; set; } = 0f;
+    public float PartyIndexOffsetY { get; set; } = 0f;
 
     // Player name font. Delta rather than absolute, so it tracks the game's own size
     // across UI scale settings.

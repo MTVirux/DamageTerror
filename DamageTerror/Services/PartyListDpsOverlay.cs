@@ -268,6 +268,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly byte[] originalNameFont = new byte[MaxRows];
     private readonly byte[] appliedNameFont = new byte[MaxRows];
     private readonly bool[] nameFontApplied = new bool[MaxRows];
+    private readonly byte[] originalIndexFont = new byte[MaxRows];
+    private readonly byte[] appliedIndexFont = new byte[MaxRows];
+    private readonly float[] originalIndexX = new float[MaxRows];
+    private readonly float[] originalIndexY = new float[MaxRows];
+    private readonly float[] appliedIndexX = new float[MaxRows];
+    private readonly float[] appliedIndexY = new float[MaxRows];
+    private readonly bool[] indexApplied = new bool[MaxRows];
     private readonly string[] originalNameText = new string[MaxRows];
     private readonly string[] appliedNameText = new string[MaxRows];
     private readonly string[] appliedNameExtra = new string[MaxRows];
@@ -625,6 +632,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyGaugeNumberLayout(addon);
         ApplyNameFont(addon);
         ApplyNameText(addon);
+        ApplyPartyIndexLayout(addon);
         ApplyStatusIconLayout(addon);
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
@@ -640,6 +648,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyGaugeNumberLayout(addon);
         ApplyNameFont(addon);
         ApplyNameText(addon);
+        ApplyPartyIndexLayout(addon);
         ApplyStatusIconLayout(addon);
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
@@ -664,6 +673,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         RestoreSelectionGlowLayout(addon);
         RestoreStatusTimerLayout(addon);
         RestoreStatusIconLayout(addon);
+        RestorePartyIndexLayout(addon);
         RestoreNameText(addon);
         RestoreNameFont(addon);
         RestoreGaugeNumberLayout(addon);
@@ -747,6 +757,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyGaugeNumberLayout(addon);
         ApplyNameFont(addon);
         ApplyNameText(addon);
+        ApplyPartyIndexLayout(addon);
         ApplyStatusIconLayout(addon);
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
@@ -1396,6 +1407,74 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 : &member.CastingProgressBar->AtkResNode,
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// The slot number before each name. It has its own text node, so its size and position
+    /// are independent of the name's.
+    /// </summary>
+    private void ApplyPartyIndexLayout(AddonPartyList* addon)
+    {
+        if (addon == null)
+            return;
+
+        if (!Settings.AdjustPartyIndex)
+        {
+            RestorePartyIndexLayout(addon);
+            return;
+        }
+
+        for (var row = 0; row < MaxRows; row++)
+        {
+            var index = addon->PartyMembers[row].GroupSlotIndicator;
+            if (index == null)
+                continue;
+
+            var res = &index->AtkResNode;
+
+            // Each property is captured on its own, so a game-side change to one doesn't
+            // recapture another whose current value is ours.
+            var fresh = !indexApplied[row];
+
+            if (fresh || index->FontSize != appliedIndexFont[row])
+                originalIndexFont[row] = index->FontSize;
+            if (fresh || Math.Abs(res->X - appliedIndexX[row]) > 0.01f)
+                originalIndexX[row] = res->X;
+            if (fresh || Math.Abs(res->Y - appliedIndexY[row]) > 0.01f)
+                originalIndexY[row] = res->Y;
+
+            var font = (byte)Math.Clamp(originalIndexFont[row] + Settings.PartyIndexFontDelta, 8, 60);
+            var targetX = originalIndexX[row] + Settings.PartyIndexOffsetX;
+            var targetY = originalIndexY[row] + Settings.PartyIndexOffsetY;
+
+            if (index->FontSize != font)
+                index->FontSize = font;
+            if (Math.Abs(res->X - targetX) > 0.01f || Math.Abs(res->Y - targetY) > 0.01f)
+                res->SetPositionFloat(targetX, targetY);
+
+            appliedIndexFont[row] = font;
+            appliedIndexX[row] = targetX;
+            appliedIndexY[row] = targetY;
+            indexApplied[row] = true;
+        }
+    }
+
+    private void RestorePartyIndexLayout(AddonPartyList* addon)
+    {
+        for (var row = 0; row < MaxRows; row++)
+        {
+            if (!indexApplied[row])
+                continue;
+
+            indexApplied[row] = false;
+
+            var index = addon == null ? null : addon->PartyMembers[row].GroupSlotIndicator;
+            if (index == null)
+                continue;
+
+            index->FontSize = originalIndexFont[row];
+            index->AtkResNode.SetPositionFloat(originalIndexX[row], originalIndexY[row]);
+        }
     }
 
     private void ApplyNameFont(AddonPartyList* addon)

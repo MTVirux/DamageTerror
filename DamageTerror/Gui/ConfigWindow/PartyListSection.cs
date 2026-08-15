@@ -129,6 +129,26 @@ internal static class PartyListSection
                     "Added to the game's own font size for the player name.");
                 ImGui.Unindent();
             }
+
+            ImGui.Spacing();
+            changed |= ConfigHelpers.CheckboxProp("Adjust index##plAdjustIndex", settings.AdjustPartyIndex,
+                v => settings.AdjustPartyIndex = v);
+            ConfigHelpers.HelpMarker(
+                "The party slot number drawn before the name. It's a node of its own, so it " +
+                "keeps its size and place when the name changes.");
+
+            if (settings.AdjustPartyIndex)
+            {
+                ImGui.Indent();
+                changed |= SliderInt("Index font size change##plIndexFont", settings.PartyIndexFontDelta, -8, 8,
+                    v => settings.PartyIndexFontDelta = v,
+                    "Added to the game's own font size for the slot number.");
+                changed |= Slider("Index horizontal offset##plIndexX", settings.PartyIndexOffsetX, -40f, 40f,
+                    v => settings.PartyIndexOffsetX = v, null);
+                changed |= Slider("Index vertical offset##plIndexY", settings.PartyIndexOffsetY, -30f, 30f,
+                    v => settings.PartyIndexOffsetY = v, null);
+                ImGui.Unindent();
+            }
         }
 
         if (ImGui.CollapsingHeader("HP and MP##plGauge"))
