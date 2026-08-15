@@ -84,8 +84,13 @@ public sealed class ConfigWindow : Window, IDisposable
         var config = plugin.Config;
         var changed = false;
 
-        var sidebarWidth = 170f * ImGui.GetIO().FontGlobalScale;
+        var scale = ImGui.GetIO().FontGlobalScale;
         var avail = ImGui.GetContentRegionAvail();
+
+        var splitterWidth = MathF.Max(ImGui.GetStyle().ItemSpacing.X, 6f * scale);
+        var minWidth = 90f * scale;
+        var maxWidth = MathF.Max(minWidth, avail.X - splitterWidth - 200f * scale);
+        var sidebarWidth = Math.Clamp(config.ConfigSidebarWidth * scale, minWidth, maxWidth);
 
         if (ImGui.BeginChild("##sidebar", new Vector2(sidebarWidth, avail.Y), true))
         {
@@ -93,7 +98,9 @@ public sealed class ConfigWindow : Window, IDisposable
         }
         ImGui.EndChild();
 
-        ImGui.SameLine();
+        ImGui.SameLine(0, 0);
+        changed |= DrawSidebarSplitter(config, new Vector2(splitterWidth, avail.Y), scale, minWidth, maxWidth);
+        ImGui.SameLine(0, 0);
 
         if (ImGui.BeginChild("##content", new Vector2(0, avail.Y), true))
         {
@@ -107,6 +114,34 @@ public sealed class ConfigWindow : Window, IDisposable
         }
 
         AppearanceTab.FileDialogManager.Draw();
+    }
+
+    /// <summary>Drag handle between the section list and the section content. Saves only once the drag ends.</summary>
+    private static bool DrawSidebarSplitter(Configuration config, Vector2 size, float scale, float minWidth, float maxWidth)
+    {
+        ImGui.InvisibleButton("##sidebarSplitter", size);
+
+        var hovered = ImGui.IsItemHovered();
+        var active = ImGui.IsItemActive();
+
+        if (hovered || active)
+        {
+            ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEw);
+
+            var rectMin = ImGui.GetItemRectMin();
+            var rectMax = ImGui.GetItemRectMax();
+            var centre = (rectMin.X + rectMax.X) * 0.5f;
+            var colour = ImGui.GetColorU32(active ? ImGuiCol.SeparatorActive : ImGuiCol.SeparatorHovered);
+            ImGui.GetWindowDrawList().AddRectFilled(new Vector2(centre - 1f, rectMin.Y), new Vector2(centre + 1f, rectMax.Y), colour);
+        }
+
+        if (active)
+        {
+            var dragged = Math.Clamp(config.ConfigSidebarWidth * scale + ImGui.GetIO().MouseDelta.X, minWidth, maxWidth);
+            config.ConfigSidebarWidth = dragged / scale;
+        }
+
+        return ImGui.IsItemDeactivated();
     }
 
     private void DrawSidebar()

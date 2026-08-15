@@ -439,6 +439,7 @@ public sealed class Configuration : IPluginConfiguration
     public bool PinConfigWindow { get; set; } = false;
     public Vector2 ConfigWindowPos { get; set; } = new Vector2(100, 100);
     public Vector2 ConfigWindowSize { get; set; } = new Vector2(400, 350);
+    public float ConfigSidebarWidth { get; set; } = 170f;
 
     [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumConverter))]
