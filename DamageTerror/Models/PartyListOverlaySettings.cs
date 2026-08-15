@@ -120,6 +120,13 @@ public sealed class PartyListOverlaySettings
     [JsonProperty("PrefixDamagePercent")] public bool MetricDamagePercent { get; set; } = false;
 
     /// <summary>
+    /// Drawn before every metric, so it lands between the name and the first one and between
+    /// each pair after that. Part of the metric's own text, so it takes that metric's font
+    /// and colour. Empty for none.
+    /// </summary>
+    public string MetricSeparator { get; set; } = string.Empty;
+
+    /// <summary>
     /// The font size and gap every metric used before they were given a node each. Kept only
     /// to seed <see cref="Style"/> for configs written back then, so those keep their look.
     /// </summary>

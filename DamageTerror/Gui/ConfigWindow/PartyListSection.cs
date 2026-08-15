@@ -305,6 +305,22 @@ internal static class PartyListSection
 
         var changed = false;
 
+        var separator = settings.MetricSeparator;
+        ImGui.SetNextItemWidth(120);
+        if (ImGui.InputText("Separator##plMetricSep", ref separator, 16))
+        {
+            settings.MetricSeparator = separator;
+            changed = true;
+        }
+
+        ConfigHelpers.HelpMarker(
+            "Drawn before each metric, so it sits between the name and the first one and " +
+            "between every pair after that.\n" +
+            "Takes the font and colour of the metric it belongs to.\n" +
+            "Leave empty for none.");
+
+        ImGui.Spacing();
+
         foreach (var metric in PartyListOverlaySettings.MetricOrder)
             changed |= DrawNameMetric(settings, metric);
 

@@ -1085,9 +1085,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 continue;
 
             var metric = PartyListOverlaySettings.MetricOrder[slot];
-            var text = placeable && stats.HasValue && Settings.MetricEnabled(metric)
+            var value = placeable && stats.HasValue && Settings.MetricEnabled(metric)
                 ? FormatMetric(metric, stats.Value)
                 : string.Empty;
+
+            // Carried on the metric rather than drawn on its own node, so a metric that has
+            // nothing to show takes its separator with it instead of leaving one stranded.
+            var text = value.Length > 0 ? Settings.MetricSeparator + value : string.Empty;
 
             if (lastMetricText[row, slot] != text)
             {
@@ -1872,8 +1876,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// One metric's text. Each one is its own node, so the spacing between them comes from
-    /// the metric's gap rather than from separators in the string.
+    /// One metric's value on its own, without the separator the caller prefixes. Each metric
+    /// is its own node, so the spacing between them comes from the metric's gap.
     /// </summary>
     private string FormatMetric(NameMetric metric, RowStats stats) => metric switch
     {
