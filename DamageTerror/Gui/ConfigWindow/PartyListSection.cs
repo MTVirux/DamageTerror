@@ -321,10 +321,18 @@ internal static class PartyListSection
 
         ImGui.Spacing();
 
-        foreach (var metric in PartyListOverlaySettings.MetricOrder)
-            changed |= DrawNameMetric(settings, metric);
+        for (var i = 0; i < settings.MetricOrder.Count; i++)
+            changed |= DrawNameMetric(settings, i);
 
         ImGui.Spacing();
+
+        if (ImGui.Button("Reset order##plMetricOrderReset"))
+        {
+            settings.MetricOrder = new List<NameMetric>(PartyListOverlaySettings.DefaultMetricOrder);
+            changed = true;
+        }
+
+        ImGui.SameLine();
 
         if (ImGui.Button("Reset to name only##plMetricReset"))
         {
@@ -786,22 +794,28 @@ internal static class PartyListSection
     };
 
     /// <summary>
-    /// One metric's toggle, with its own position, size and colour once it is on. Each metric
-    /// is drawn by a node of its own, so all three can differ between them. The toggle is the
-    /// group heading here - a separate one would only repeat the metric's name.
+    /// One metric's arrows and toggle, with its own position, size and colour once it is on.
+    /// Each metric is drawn by a node of its own, so all three can differ between them. The
+    /// toggle is the group heading here - a separate one would only repeat the metric's name.
     /// </summary>
-    private static bool DrawNameMetric(PartyListOverlaySettings settings, NameMetric metric)
+    private static bool DrawNameMetric(PartyListOverlaySettings settings, int index)
     {
-        ImGui.PushID((int)metric);
+        var metric = settings.MetricOrder[index];
+
+        // Scoped by row rather than by metric: an arrow swaps two entries mid-loop, so the
+        // moved one is drawn twice in that frame and a metric-keyed id would collide.
+        ImGui.PushID(index);
+
+        var changed = ConfigHelpers.ReorderArrows(settings.MetricOrder, index);
 
         var label = MetricLabel(metric);
         var enabled = settings.MetricEnabled(metric);
-        var changed = ConfigHelpers.CheckboxProp(label, enabled,
+        changed |= ConfigHelpers.CheckboxProp(label, enabled,
             v => settings.SetMetricEnabled(metric, v));
 
-        if (metric == NameMetric.Dps)
-            ConfigHelpers.HelpMarker("Drawn after the name, in the order listed.\nValues and " +
-                "formatting match the meter window.");
+        if (index == 0)
+            ConfigHelpers.HelpMarker("Drawn after the name, in the order listed.\nUse the arrows " +
+                "to reorder them.\nValues and formatting match the meter window.");
 
         if (enabled)
         {

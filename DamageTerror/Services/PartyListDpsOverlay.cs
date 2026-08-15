@@ -40,7 +40,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private const uint BarRootNodeId = 0x44540301;
 
     /// <summary>One text node per metric per row - a text node has one font size and one colour.</summary>
-    private const int MetricSlots = 6;
+    private static readonly int MetricSlots = PartyListOverlaySettings.DefaultMetricOrder.Length;
 
     /// <summary>Cast bar background and fill.</summary>
     private const int CastBarSlots = 2;
@@ -1084,7 +1084,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             if (node == null)
                 continue;
 
-            var metric = PartyListOverlaySettings.MetricOrder[slot];
+            var metric = Settings.MetricOrder[slot];
             var value = placeable && stats.HasValue && Settings.MetricEnabled(metric)
                 ? FormatMetric(metric, stats.Value)
                 : string.Empty;

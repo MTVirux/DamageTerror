@@ -139,8 +139,8 @@ public sealed class PartyListOverlaySettings
     /// </summary>
     public Dictionary<NameMetric, NameMetricStyle> MetricStyles { get; set; } = new();
 
-    /// <summary>Draw order, which is also the order they are listed in the config.</summary>
-    public static readonly NameMetric[] MetricOrder =
+    /// <summary>The order a config that has never been reordered draws them in.</summary>
+    public static readonly NameMetric[] DefaultMetricOrder =
     {
         NameMetric.Dps,
         NameMetric.Damage,
@@ -149,6 +149,36 @@ public sealed class PartyListOverlaySettings
         NameMetric.CritDirectHit,
         NameMetric.DamagePercent,
     };
+
+    private List<NameMetric>? metricOrder;
+
+    /// <summary>
+    /// Draw order, which is also the order they are listed in the config. Put through
+    /// <see cref="Normalise"/> on load, so a config written before a metric existed - or with
+    /// one listed twice - still gives every metric exactly one place.
+    /// </summary>
+    [JsonProperty("MetricOrder")]
+    public List<NameMetric> MetricOrder
+    {
+        get => metricOrder ??= new List<NameMetric>(DefaultMetricOrder);
+        set => metricOrder = Normalise(value);
+    }
+
+    private static List<NameMetric> Normalise(IEnumerable<NameMetric>? saved)
+    {
+        var order = new List<NameMetric>(DefaultMetricOrder.Length);
+
+        if (saved != null)
+            foreach (var metric in saved)
+                if (Array.IndexOf(DefaultMetricOrder, metric) >= 0 && !order.Contains(metric))
+                    order.Add(metric);
+
+        foreach (var metric in DefaultMetricOrder)
+            if (!order.Contains(metric))
+                order.Add(metric);
+
+        return order;
+    }
 
     public NameMetricStyle Style(NameMetric metric)
     {
