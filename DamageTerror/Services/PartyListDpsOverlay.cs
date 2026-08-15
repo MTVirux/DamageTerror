@@ -84,6 +84,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// </summary>
     private const int RowPartSlots = 3;
 
+    /// <summary>MP's row-part slot - its tint is the one that cannot go on the owner node.</summary>
+    private const int MpBarSlot = 2;
+
+    /// <summary>The MP bar's artwork - the backdrop, the fill, and its two transition layers.</summary>
+    private const int MpBarArtSlots = 4;
+
     /// <summary>
     /// The private-use block the game uses for the level digits it prefixes to the name.
     /// </summary>
@@ -233,6 +239,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[,] originalPartOriginY = new float[MaxRows, RowPartSlots];
     private readonly bool[,] shiftApplied = new bool[MaxRows, ShiftSlots];
     private readonly NodeTintState[,] partTint = new NodeTintState[MaxRows, RowPartSlots];
+    private readonly NodeTintState[,] mpBarTint = new NodeTintState[MaxRows, MpBarArtSlots];
     private readonly float[] originalCastNameX = new float[MaxRows];
     private readonly float[] originalCastNameY = new float[MaxRows];
     private readonly ushort[] originalCastNameHeight = new ushort[MaxRows];
@@ -1048,6 +1055,46 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         node->MultiplyBlue = state.Blue;
     }
 
+    /// <summary>
+    /// One piece of the MP bar's artwork. HP keeps its number on a wrapper component above the
+    /// bar, but MP has no such wrapper - its digits are children of the bar component itself,
+    /// so a tint on the bar's owner node multiplies down onto them. Tinting the art nodes
+    /// individually colours the bar and leaves the digits alone.
+    /// </summary>
+    private static AtkResNode* GetMpBarArtNode(AddonPartyList* addon, int row, int art)
+    {
+        var bar = addon->PartyMembers[row].MPGaugeBar;
+        if (bar == null)
+            return null;
+
+        return art switch
+        {
+            0 => bar->BackdropImageNode == null ? null : &bar->BackdropImageNode->AtkResNode,
+            1 => bar->PrimaryFill.MainFillNode == null ? null : &bar->PrimaryFill.MainFillNode->AtkResNode,
+            2 => bar->PrimaryFill.IncreaseFillNode == null ? null : &bar->PrimaryFill.IncreaseFillNode->AtkResNode,
+            3 => bar->PrimaryFill.DecreaseFillNode == null ? null : &bar->PrimaryFill.DecreaseFillNode->AtkResNode,
+            _ => null,
+        };
+    }
+
+    private void ApplyMpBarTint(AddonPartyList* addon, int row, RowPartStyle part)
+    {
+        for (var art = 0; art < MpBarArtSlots; art++)
+        {
+            var node = GetMpBarArtNode(addon, row, art);
+            if (part.UseCustomColor)
+                ApplyNodeTint(node, part.Color, ref mpBarTint[row, art]);
+            else
+                RestoreNodeTint(node, ref mpBarTint[row, art]);
+        }
+    }
+
+    private void RestoreMpBarTint(AddonPartyList* addon, int row)
+    {
+        for (var art = 0; art < MpBarArtSlots; art++)
+            RestoreNodeTint(addon == null ? null : GetMpBarArtNode(addon, row, art), ref mpBarTint[row, art]);
+    }
+
     private void UpdateMetrics(AddonPartyList* addon, int row, CombatantEntry? stats)
     {
         var member = addon->PartyMembers[row];
@@ -1488,7 +1535,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
                     appliedPartScale[row, slot] = targetScale;
 
-                    if (part.UseCustomColor)
+                    if (slot == MpBarSlot)
+                        ApplyMpBarTint(addon, row, part);
+                    else if (part.UseCustomColor)
                         ApplyNodeTint(node, part.Color, ref partTint[row, slot]);
                     else
                         RestoreNodeTint(node, ref partTint[row, slot]);
@@ -2240,6 +2289,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             return;
 
         shiftApplied[row, slot] = false;
+
+        if (slot == MpBarSlot)
+            RestoreMpBarTint(addon, row);
 
         var node = addon == null ? null : GetShiftTarget(addon, row, slot);
         if (node == null)
