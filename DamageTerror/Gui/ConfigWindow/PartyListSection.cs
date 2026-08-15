@@ -155,11 +155,11 @@ internal static class PartyListSection
         {
             changed |= DrawRowShift("Move HP bar##plShiftHpBar", settings.HpBarShift,
                 "Moves the HP bar only - its number is moved below.");
-            changed |= DrawRowShift("Move MP bar##plShiftMpBar", settings.MpBarShift,
-                "Moves the MP bar only - its number is moved below.");
+            changed |= DrawGaugeNumbers("Adjust HP numbers##plHpNumbers", settings.HpNumbers);
 
             ImGui.Spacing();
-            changed |= DrawGaugeNumbers("Adjust HP numbers##plHpNumbers", settings.HpNumbers);
+            changed |= DrawRowShift("Move MP bar##plShiftMpBar", settings.MpBarShift,
+                "Moves the MP bar only - its number is moved below.");
             changed |= DrawGaugeNumbers("Adjust MP numbers##plMpNumbers", settings.MpNumbers);
 
             if (settings.MpNumbers.Enabled)
