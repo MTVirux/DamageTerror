@@ -61,14 +61,15 @@ public static class ConfigHelpers
         return false;
     }
 
-    public static bool DrawPerJobColorGroup(string groupLabel, string[] jobs, Configuration config)
+    public static bool DrawPerJobColorGroup(string groupLabel, string[] jobs, Dictionary<string, Vector4> jobColors,
+        ImGuiColorEditFlags flags = ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar)
     {
         var changed = false;
         if (ImGui.TreeNodeEx(groupLabel, ImGuiTreeNodeFlags.None))
         {
             foreach (var job in jobs)
             {
-                var current = config.JobColors.TryGetValue(job, out var custom)
+                var current = jobColors.TryGetValue(job, out var custom)
                     ? custom
                     : JobRegistry.GetDefaultColor(job);
 
@@ -76,15 +77,55 @@ public static class ConfigHelpers
                 var label = $"{fullName} ({job})";
 
                 var c = current;
-                if (ImGui.ColorEdit4(label, ref c, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar))
+                if (ImGui.ColorEdit4(label, ref c, flags))
                 {
-                    config.JobColors[job] = c;
+                    jobColors[job] = c;
                     changed = true;
                 }
             }
 
             ImGui.TreePop();
         }
+
+        return changed;
+    }
+
+    /// <summary>
+    /// The role or per-job colour block for a palette that isn't the meter's own. Alpha is
+    /// left out of the pickers - a palette's owner decides opacity separately.
+    /// </summary>
+    public static bool DrawJobColorPalette(JobColorPalette palette)
+    {
+        const ImGuiColorEditFlags flags = ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha;
+
+        var changed = CheckboxProp("Use per-job colors", palette.UsePerJobColors,
+            v => palette.UsePerJobColors = v);
+        HelpMarker("Off: one color per role. On: one color per job.");
+
+        ImGui.Spacing();
+
+        if (!palette.UsePerJobColors)
+        {
+            changed |= ColorEditProp("Tank", palette.TankColor, v => palette.TankColor = v, flags);
+            changed |= ColorEditProp("Healer", palette.HealerColor, v => palette.HealerColor = v, flags);
+            changed |= ColorEditProp("Melee DPS", palette.MeleeDpsColor, v => palette.MeleeDpsColor = v, flags);
+            changed |= ColorEditProp("Phys Ranged DPS", palette.RangedDpsColor, v => palette.RangedDpsColor = v, flags);
+            changed |= ColorEditProp("Caster DPS", palette.CasterDpsColor, v => palette.CasterDpsColor = v, flags);
+            changed |= ColorEditProp("DoH/DoL", palette.DoHLColor, v => palette.DoHLColor = v, flags);
+        }
+        else
+        {
+            changed |= DrawPerJobColorGroup("Tanks", JobRegistry.TankJobs, palette.JobColors, flags);
+            changed |= DrawPerJobColorGroup("Healers", JobRegistry.HealerJobs, palette.JobColors, flags);
+            changed |= DrawPerJobColorGroup("Melee DPS", JobRegistry.MeleeDpsJobs, palette.JobColors, flags);
+            changed |= DrawPerJobColorGroup("Phys Ranged DPS", JobRegistry.RangedDpsJobs, palette.JobColors, flags);
+            changed |= DrawPerJobColorGroup("Caster DPS", JobRegistry.CasterDpsJobs, palette.JobColors, flags);
+            changed |= DrawPerJobColorGroup("DoH/DoL", JobRegistry.DoHLJobs, palette.JobColors, flags);
+            changed |= DrawPerJobColorGroup("Base Classes", JobRegistry.BaseClassJobs, palette.JobColors, flags);
+        }
+
+        changed |= ColorEditProp("Limit Break", palette.LimitBreakColor, v => palette.LimitBreakColor = v, flags);
+        changed |= ColorEditProp("Unknown/Other", palette.DefaultJobColor, v => palette.DefaultJobColor = v, flags);
 
         return changed;
     }

@@ -30,6 +30,18 @@ public sealed class PartyListOverlaySettings
     public float BarOpacity { get; set; } = 0.75f;
 
     /// <summary>
+    /// Where a row's fill colour comes from. The meter window's palette by default, so the
+    /// two agree until the party list is deliberately given colours of its own.
+    /// </summary>
+    public PartyListBarColorMode BarColorMode { get; set; } = PartyListBarColorMode.MatchMeter;
+
+    /// <summary>The party list's own job and role colours, used by <see cref="PartyListBarColorMode.OwnPalette"/>.</summary>
+    public JobColorPalette BarColors { get; set; } = new();
+
+    /// <summary>One colour for every row, used by <see cref="PartyListBarColorMode.SingleColor"/>.</summary>
+    public Vector4 BarSingleColor { get; set; } = new(0.30f, 0.55f, 0.90f, 1f);
+
+    /// <summary>
     /// Caps the width a 100% bar draws to. Everything scales inside it, so the bars stay
     /// proportional to each other instead of the longest one being clipped. 0 uses the
     /// space available in the row.

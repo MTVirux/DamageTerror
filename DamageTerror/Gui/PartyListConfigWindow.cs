@@ -98,6 +98,9 @@ public sealed class PartyListConfigWindow : Window, IDisposable
                 "Puts the fill under the name, gauges and status icons. Off draws it on top.");
         }
 
+        if (ImGui.CollapsingHeader("DPS Bar Colors##plBarColors"))
+            changed |= DrawBarColors(config, settings);
+
         if (ImGui.CollapsingHeader("Name, HP and MP##plRow"))
         {
             changed |= ConfigHelpers.CheckboxProp("Move row content##plShiftRow", settings.ShiftRowContent,
@@ -342,6 +345,68 @@ public sealed class PartyListConfigWindow : Window, IDisposable
 
         if (changed)
             config.Save?.Invoke();
+    }
+
+    private static readonly string[] BarColorModeLabels =
+    {
+        "Match meter window",
+        "Party list palette",
+        "Single color",
+    };
+
+    /// <summary>
+    /// The bar's own colours. Everything here is scoped under one id, so the palette can reuse
+    /// the meter's colour widgets without their labels colliding with this window's.
+    /// </summary>
+    private static bool DrawBarColors(Configuration config, PartyListOverlaySettings settings)
+    {
+        ImGui.PushID("plBarColors");
+
+        var changed = ConfigHelpers.ComboProp("Color source", (int)settings.BarColorMode,
+            BarColorModeLabels, v => settings.BarColorMode = (PartyListBarColorMode)v, 180f);
+
+        ConfigHelpers.HelpMarker(
+            "Match meter window: the same job colours the meter draws its bars with, dimmed the " +
+            "same way. Party list palette: colours kept for the party list alone. " +
+            "Single color: one colour for every row.");
+
+        ImGui.Spacing();
+
+        switch (settings.BarColorMode)
+        {
+            case PartyListBarColorMode.SingleColor:
+                changed |= ConfigHelpers.ColorEditProp("Bar color", settings.BarSingleColor,
+                    v => settings.BarSingleColor = v,
+                    ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+                break;
+
+            case PartyListBarColorMode.OwnPalette:
+                if (ImGui.Button("Copy from meter"))
+                {
+                    settings.BarColors.CopyFrom(config);
+                    changed = true;
+                }
+
+                ConfigHelpers.HelpMarker("Fills this palette with the meter window's current colours.");
+
+                ImGui.SameLine();
+
+                if (ConfigHelpers.ShiftResetButton("Reset colors"))
+                {
+                    settings.BarColors = new JobColorPalette();
+                    changed = true;
+                }
+
+                ImGui.Spacing();
+                changed |= ConfigHelpers.DrawJobColorPalette(settings.BarColors);
+                break;
+        }
+
+        ImGui.Spacing();
+        ImGui.TextDisabled("Opacity comes from the bar's own setting, not from these.");
+
+        ImGui.PopID();
+        return changed;
     }
 
     private static bool Slider(string label, float value, float min, float max, Action<float> setter,

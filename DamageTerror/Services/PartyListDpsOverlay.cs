@@ -967,7 +967,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         {
             // Compared by colour rather than by job - keyed on the job, changing the
             // opacity or the job palette never reached the node.
-            var color = JobColorHelper.GetBarColor(stats.Value.Job, Settings.BarOpacity, config);
+            var color = ResolveBarColor(stats.Value.Job);
             if (lastBarColor[row] != color)
             {
                 lastBarColor[row] = color;
@@ -984,6 +984,24 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         }
 
         LogBarState(row, bar, stats, "ok");
+    }
+
+    /// <summary>
+    /// A row's fill colour under the current mode. Alpha always comes from the bar's own
+    /// opacity, so the pickers only decide hue. Only the meter mode dims the colour, which
+    /// is what the meter does to its own bars - the other two are used as picked.
+    /// </summary>
+    private Vector4 ResolveBarColor(string job)
+    {
+        var alpha = Settings.BarOpacity;
+
+        return Settings.BarColorMode switch
+        {
+            PartyListBarColorMode.SingleColor => JobColorHelper.WithAlpha(Settings.BarSingleColor, alpha),
+            PartyListBarColorMode.OwnPalette => JobColorHelper.WithAlpha(
+                JobColorHelper.GetEffectiveJobColor(job, Settings.BarColors), alpha),
+            _ => JobColorHelper.GetBarColor(job, alpha, config),
+        };
     }
 
     /// <summary>
