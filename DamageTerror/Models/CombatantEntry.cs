@@ -92,9 +92,18 @@ public sealed class CombatantEntry
     /// <summary>
     /// Resets all combat-state fields (live numbers) on this combatant to
     /// zero / default for replay. Preserves metadata (name, job, recorded
-    /// skills, recorded statuses) — only zeros numeric live-stats fields.
+    /// skills, recorded statuses) - only zeros numeric live-stats fields.
     /// </summary>
     public void ResetCombatStateForReplay()
+    {
+        ResetStats();
+        Skills = new List<SkillEntry>();
+        HealingSkills = new List<SkillEntry>();
+    }
+
+    /// <summary>Zeros every live stat but keeps the skill lists, so a simulator
+    /// can accumulate into the existing entries.</summary>
+    public void ResetStats()
     {
         Damage = 0;
         Healed = 0;
@@ -125,6 +134,8 @@ public sealed class CombatantEntry
         CritDirectHitPct = 0;
         Deaths = 0;
         Kills = 0;
+        BlockPct = 0;
+        ParryPct = 0;
         OverhealAmount = 0;
         OverhealPct = 0;
         HealsTaken = 0;
@@ -142,7 +153,6 @@ public sealed class CombatantEntry
         DamageShield = 0;
         MaxHealWardName = string.Empty;
         MaxHealWardAmount = 0;
-        Skills = new List<SkillEntry>();
-        HealingSkills = new List<SkillEntry>();
+        CombatantDuration = "00:00";
     }
 }

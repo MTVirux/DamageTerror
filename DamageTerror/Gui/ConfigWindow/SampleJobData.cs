@@ -166,6 +166,26 @@ internal static class SampleJobData
             NoDebuffs),
     };
 
+    public static readonly string[] BossSkills =
+    {
+        "Akh Morn", "Megaflare", "Exaflare", "Diamond Dust", "Earthen Fury",
+        "Hellfire", "Judgment Bolt", "Tidal Wave", "Aerial Blast", "Cauterize",
+        "Tera Slash", "Giga Slash", "Wave Cannon", "Ion Efflux", "Atomic Ray",
+    };
+
+    public static readonly string[] Items =
+    {
+        "Grade 8 Tincture of Strength", "Grade 8 Tincture of Dexterity",
+        "Grade 8 Tincture of Intelligence", "Grade 8 Tincture of Mind",
+        "Hi-Elixir", "Super-Potion", "Baked Eggplant", "Vermillion Cloak",
+    };
+
+    public static readonly string[] Worlds =
+    {
+        "Spriggan", "Twintania", "Alpha", "Raiden", "Lich", "Odin", "Phoenix", "Shiva",
+        "Zodiark", "Cerberus", "Louisoix", "Moogle", "Omega", "Ragnarok", "Sagittarius",
+    };
+
     public static string GetMaxHitSkill(string job) =>
         Table.TryGetValue(job, out var e) ? e.MaxHitSkill : DefaultMaxHitSkill;
 

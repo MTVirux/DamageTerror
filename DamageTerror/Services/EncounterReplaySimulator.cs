@@ -158,11 +158,13 @@ public sealed class EncounterReplaySimulator
 
         simulatedTime = t;
 
-        long totalDmg = 0, totalHeal = 0;
+        long totalDmg = 0, totalHeal = 0, totalTaken = 0;
         foreach (var c in working.Combatants)
         {
             totalDmg += c.Damage;
             totalHeal += c.Healed;
+            totalTaken += c.DamageTaken;
+            c.CombatantDuration = SimulatorHelpers.FormatDuration(t);
             c.EncDps = t > 0 ? c.Damage / t : 0;
             c.EncHps = t > 0 ? c.Healed / t : 0;
 
@@ -188,6 +190,9 @@ public sealed class EncounterReplaySimulator
         {
             c.DamagePercent = SimulatorHelpers.FormatPercent(c.Damage, totalDmg);
             c.HealedPercent = SimulatorHelpers.FormatPercent(c.Healed, totalHeal);
+            c.DamageTakenPercent = SimulatorHelpers.FormatPercent(c.DamageTaken, totalTaken);
+            c.RaidDps = working.Encounter.EncDps;
+            c.RaidHps = working.Encounter.EncHps;
         }
 
         working.Encounter.Duration = SimulatorHelpers.FormatDuration(t);

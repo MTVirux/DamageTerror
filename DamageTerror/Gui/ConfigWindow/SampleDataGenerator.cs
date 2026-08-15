@@ -168,10 +168,13 @@ internal static class SampleDataGenerator
 
     public static (EncounterSnapshot Snapshot, Func<CombatantEntry?> Factory) CreateStressTest()
     {
+        const string stressDuration = "05:00";
+        var durationSec = DurationHelper.ParseDuration(stressDuration, 60f);
+
         // Create the first combatant immediately
         var first = MakeCombatant($"{FirstNames[0]} {LastNames[0]}", AllJobs[0], 15000, 0, isLocal: true);
         var initial = new List<CombatantEntry> { first };
-        var snapshot = BuildSnapshot(initial, "Stress Test (9999 Players)", "Mor Dhona", "05:00");
+        var snapshot = BuildSnapshot(initial, "Stress Test (9999 Players)", "Mor Dhona", stressDuration);
 
         // Lazy factory generates one combatant per call, no upfront cost
         var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { first.Name };
@@ -186,7 +189,11 @@ internal static class SampleDataGenerator
             generated++;
             var job = AllJobs[Rng.Next(AllJobs.Length)];
             var (dps, hps) = RollStats(job);
-            return MakeCombatant(name, job, dps, hps);
+            var entry = MakeCombatant(name, job, dps, hps);
+            entry.Damage = (long)(dps * durationSec);
+            entry.Healed = (long)(hps * durationSec);
+            FinalizeCombatant(entry, durationSec);
+            return entry;
         };
 
         return (snapshot, factory);
@@ -227,28 +234,34 @@ internal static class SampleDataGenerator
         var durationSec = DurationHelper.ParseDuration(duration, 60f);
         long totalDamage = 0;
         long totalHealed = 0;
+        long totalDamageTaken = 0;
         int totalDeaths = 0;
+        int totalKills = 0;
 
         foreach (var c in combatants)
         {
             c.Damage = (long)(c.EncDps * durationSec);
             c.Healed = (long)(c.EncHps * durationSec);
+            FinalizeCombatant(c, durationSec);
             totalDamage += c.Damage;
             totalHealed += c.Healed;
+            totalDamageTaken += c.DamageTaken;
             totalDeaths += c.Deaths;
+            totalKills += c.Kills;
         }
 
         var totalDps = durationSec > 0 ? totalDamage / durationSec : 0;
         var totalHps = durationSec > 0 ? totalHealed / durationSec : 0;
 
+        DistributeHealsTaken(combatants, totalHealed);
+
         foreach (var c in combatants)
         {
-            c.DamagePercent = totalDamage > 0
-                ? $"{(double)c.Damage / totalDamage * 100:F1}%"
-                : "0%";
-            c.HealedPercent = totalHealed > 0
-                ? $"{(double)c.Healed / totalHealed * 100:F1}%"
-                : "0%";
+            c.DamagePercent = SimulatorHelpers.FormatPercent(c.Damage, totalDamage);
+            c.HealedPercent = SimulatorHelpers.FormatPercent(c.Healed, totalHealed);
+            c.DamageTakenPercent = SimulatorHelpers.FormatPercent(c.DamageTaken, totalDamageTaken);
+            c.RaidDps = totalDps;
+            c.RaidHps = totalHps;
         }
 
         var snapshot = new EncounterSnapshot
@@ -262,6 +275,7 @@ internal static class SampleDataGenerator
                 EncHps = totalHps,
                 TotalDamage = totalDamage,
                 TotalHealed = totalHealed,
+                Kills = totalKills,
                 Deaths = totalDeaths,
                 IsActive = false,
             },
@@ -304,6 +318,15 @@ internal static class SampleDataGenerator
         snapshot.StatusHistory = statusHistory;
         snapshot.StatusesReceived = statusesReceived;
 
+        foreach (var c in combatants)
+        {
+            snapshot.DamageTakenEvents[c.Name] = GenerateDamageTakenEvents(c, durationSec);
+            snapshot.ItemEvents[c.Name] = GenerateItemEvents(durationSec);
+        }
+
+        // Fills SkillEvents from the per-combatant skill lists so graph markers have data.
+        snapshot.ValidateAndRepair();
+
         return snapshot;
     }
 
@@ -312,8 +335,6 @@ internal static class SampleDataGenerator
     {
         var critPct = 15.0 + Rng.NextDouble() * 20.0;
         var dhPct = 20.0 + Rng.NextDouble() * 20.0;
-        var cdhPct = Math.Min(critPct, dhPct) * 0.4 + Rng.NextDouble() * 5.0;
-        var deaths = Rng.NextDouble() < 0.15 ? Rng.Next(1, 3) : 0;
         var overhealPct = hps > 0 ? 10.0 + Rng.NextDouble() * 30.0 : 0;
 
         var entry = new CombatantEntry
@@ -324,26 +345,14 @@ internal static class SampleDataGenerator
             EncHps = hps,
             CritPct = Math.Round(critPct, 1),
             DirectHitPct = Math.Round(dhPct, 1),
-            CritDirectHitPct = Math.Round(cdhPct, 1),
-            Deaths = deaths,
-            DamageTaken = Rng.Next(50000, 250000),
+            Deaths = Rng.NextDouble() < 0.15 ? Rng.Next(1, 3) : 0,
             OverhealPct = Math.Round(overhealPct, 1),
-            MaxHit = GenerateMaxHit(job),
-            MaxHitDamage = Rng.Next(30000, 120000),
             IsLocalPlayer = isLocal,
             PeakDps = dps * (1.1 + Rng.NextDouble() * 0.3),
-            Swings = Rng.Next(200, 600),
-            Hits = Rng.Next(180, 580),
-            CritHitCount = Rng.Next(40, 120),
-            DirectHitCount = Rng.Next(50, 150),
-            CritDirectHitCount = Rng.Next(10, 40),
             InstantDps = dps * (0.85 + Rng.NextDouble() * 0.3),
             InstantHps = hps * (0.85 + Rng.NextDouble() * 0.3),
+            HomeWorld = SampleJobData.Worlds[Rng.Next(SampleJobData.Worlds.Length)],
         };
-
-        entry.HitRate = entry.Swings > 0 ? (double)entry.Hits / entry.Swings * 100.0 : 0;
-        entry.Misses = entry.Swings - entry.Hits;
-        entry.DamageTakenPercent = $"{Rng.Next(8, 16)}%";
 
         entry.Skills = GenerateSkills(job, isDamage: true);
         entry.HealingSkills = hps > 0 ? GenerateSkills(job, isDamage: false) : new();
@@ -351,10 +360,207 @@ internal static class SampleDataGenerator
         return entry;
     }
 
-    private static string GenerateMaxHit(string job)
+    /// <summary>Fills in every counter that depends on the encounter length, deriving them
+    /// from each other so the numbers add up (swings = hits + misses, skill totals sum to
+    /// damage, crit counts match crit percentages, ...).</summary>
+    private static void FinalizeCombatant(CombatantEntry c, float durationSec)
     {
-        var skills = SampleJobData.GetMaxHitSkill(job);
-        return $"{skills}-{Rng.Next(30000, 120000)}";
+        var role = JobRegistry.GetRole(c.Job);
+        var isTank = role == JobRole.Tank;
+        var isHealer = role == JobRole.Healer;
+        var isMelee = role is JobRole.MeleeDps or JobRole.Tank;
+        var isCaster = role is JobRole.CasterDps or JobRole.Healer;
+
+        c.CombatantDuration = SimulatorHelpers.FormatDuration(durationSec);
+
+        c.Swings = Math.Max(1, (int)(durationSec / 2.4f * (0.85 + Rng.NextDouble() * 0.3)));
+        c.Misses = (int)(c.Swings * (0.01 + Rng.NextDouble() * 0.04));
+        c.Hits = c.Swings - c.Misses;
+        c.HitRate = SimulatorHelpers.Percent(c.Hits, c.Swings);
+
+        c.CritHitCount = (int)(c.Hits * c.CritPct / 100.0);
+        c.DirectHitCount = (int)(c.Hits * c.DirectHitPct / 100.0);
+        c.CritDirectHitCount = (int)(Math.Min(c.CritHitCount, c.DirectHitCount) * (0.3 + Rng.NextDouble() * 0.2));
+        c.CritPct = SimulatorHelpers.Percent(c.CritHitCount, c.Hits);
+        c.DirectHitPct = SimulatorHelpers.Percent(c.DirectHitCount, c.Hits);
+        c.CritDirectHitPct = SimulatorHelpers.Percent(c.CritDirectHitCount, c.Hits);
+
+        if (isMelee)
+        {
+            c.PositionalHits = (int)(c.Hits * 0.3 * (0.7 + Rng.NextDouble() * 0.3));
+            c.PositionalMisses = (int)(c.PositionalHits * Rng.NextDouble() * 0.25);
+            c.Positionals = c.PositionalHits + c.PositionalMisses;
+        }
+
+        c.BlockPct = isTank ? Math.Round(8.0 + Rng.NextDouble() * 18.0, 1) : 0;
+        c.ParryPct = isTank ? Math.Round(12.0 + Rng.NextDouble() * 20.0, 1) : 0;
+
+        c.DamageTaken = (long)(durationSec * (isTank ? Rng.Next(1500, 3200) : Rng.Next(300, 900)));
+        c.Kills = Rng.Next(0, 4);
+        c.Stuns = Rng.Next(0, 3);
+        c.SkillIssue = Rng.NextDouble() < 0.35 ? Rng.Next(1, 4) : 0;
+        c.DamageDown = Rng.NextDouble() < 0.3 ? Rng.Next(1, 3) : 0;
+        c.PowerDrain = isCaster ? (long)(durationSec * Rng.Next(20, 60)) : 0;
+        c.PowerHeal = isCaster ? (long)(durationSec * Rng.Next(10, 40)) : 0;
+
+        ScaleSkills(c.Skills, c.Damage);
+        ScaleSkills(c.HealingSkills, c.Healed);
+
+        c.MaxHitDamage = BiggestAmount(c.Damage, c.Hits);
+        c.MaxHit = SimulatorHelpers.FormatMaxLabel(
+            TopSkillName(c.Skills, SampleJobData.GetMaxHitSkill(c.Job)), c.MaxHitDamage);
+
+        c.HealCount = TotalHits(c.HealingSkills);
+        if (c.Healed > 0)
+        {
+            c.MaxHealAmount = BiggestAmount(c.Healed, c.HealCount);
+            c.MaxHeal = SimulatorHelpers.FormatMaxLabel(TopSkillName(c.HealingSkills, "Cure"), c.MaxHealAmount);
+            c.CritHealPct = Math.Round(10.0 + Rng.NextDouble() * 15.0, 1);
+            c.OverhealAmount = (long)(c.Healed * (c.OverhealPct / Math.Max(1.0, 100.0 - c.OverhealPct)));
+            c.OverhealPct = SimulatorHelpers.OverhealPct(c.Healed, c.OverhealAmount);
+        }
+
+        if (isHealer || isTank)
+        {
+            c.DamageShield = (long)(Math.Max(c.Healed, c.Damage / 20) * (0.15 + Rng.NextDouble() * 0.35));
+            c.AbsorbHeal = (long)(c.DamageShield * (0.5 + Rng.NextDouble() * 0.4));
+            c.MaxHealWardAmount = BiggestAmount(c.DamageShield, Math.Max(1, c.HealCount / 2));
+            c.MaxHealWardName = TopSkillName(c.HealingSkills, "Adloquium");
+        }
+    }
+
+    private static int TotalHits(List<SkillEntry> skills)
+    {
+        var hits = 0;
+        foreach (var s in skills)
+        {
+            hits += s.HitCount;
+            if (s.SubEntries != null)
+                foreach (var sub in s.SubEntries) hits += sub.HitCount;
+        }
+        return hits;
+    }
+
+    private static long BiggestAmount(long total, int hits)
+        => hits > 0 ? (long)(total / (double)hits * (2.5 + Rng.NextDouble() * 2.0)) : 0;
+
+    private static string TopSkillName(List<SkillEntry> skills, string fallback)
+    {
+        var best = fallback;
+        long bestAmount = 0;
+        foreach (var s in skills)
+        {
+            if (s.TotalDamage <= bestAmount) continue;
+            bestAmount = s.TotalDamage;
+            best = s.Name;
+        }
+        return best;
+    }
+
+    /// <summary>Rescales generated skill totals so they sum to exactly the combatant's damage / healing.</summary>
+    private static void ScaleSkills(List<SkillEntry> skills, long target)
+    {
+        if (skills.Count == 0) return;
+
+        if (target <= 0)
+        {
+            skills.Clear();
+            return;
+        }
+
+        long raw = 0;
+        foreach (var s in skills)
+        {
+            raw += s.TotalDamage;
+            if (s.SubEntries != null)
+                foreach (var sub in s.SubEntries) raw += sub.TotalDamage;
+        }
+        if (raw <= 0) return;
+
+        var factor = (double)target / raw;
+        long assigned = 0;
+        foreach (var s in skills)
+        {
+            s.TotalDamage = (long)(s.TotalDamage * factor);
+            assigned += s.TotalDamage;
+            if (s.SubEntries == null) continue;
+            foreach (var sub in s.SubEntries)
+            {
+                sub.TotalDamage = (long)(sub.TotalDamage * factor);
+                assigned += sub.TotalDamage;
+            }
+        }
+
+        skills[0].TotalDamage += target - assigned;
+        SimulatorHelpers.RecomputeSkillPercents(skills);
+    }
+
+    private static void DistributeHealsTaken(List<CombatantEntry> combatants, long totalHealed)
+    {
+        if (combatants.Count == 0 || totalHealed <= 0) return;
+
+        var weights = new double[combatants.Count];
+        var weightSum = 0.0;
+        for (var i = 0; i < weights.Length; i++)
+        {
+            weights[i] = 0.5 + Rng.NextDouble();
+            weightSum += weights[i];
+        }
+
+        long assigned = 0;
+        for (var i = 0; i < combatants.Count; i++)
+        {
+            combatants[i].HealsTaken = (long)(totalHealed * (weights[i] / weightSum));
+            assigned += combatants[i].HealsTaken;
+        }
+        combatants[0].HealsTaken += totalHealed - assigned;
+    }
+
+    private static List<SkillUseEvent> GenerateItemEvents(float durationSec)
+    {
+        var events = new List<SkillUseEvent>();
+        var uses = Rng.Next(1, 4);
+        for (var i = 0; i < uses; i++)
+        {
+            events.Add(new SkillUseEvent
+            {
+                TimeSec = (float)(Rng.NextDouble() * durationSec),
+                SkillName = SampleJobData.Items[Rng.Next(SampleJobData.Items.Length)],
+            });
+        }
+        events.Sort((a, b) => a.TimeSec.CompareTo(b.TimeSec));
+        return events;
+    }
+
+    private static List<SkillUseEvent> GenerateDamageTakenEvents(CombatantEntry c, float durationSec)
+    {
+        var events = new List<SkillUseEvent>();
+        if (c.DamageTaken <= 0) return events;
+
+        var count = Math.Max(1, (int)(durationSec / 8f));
+        var weights = new double[count];
+        var weightSum = 0.0;
+        for (var i = 0; i < count; i++)
+        {
+            weights[i] = 0.4 + Rng.NextDouble();
+            weightSum += weights[i];
+        }
+
+        long assigned = 0;
+        for (var i = 0; i < count; i++)
+        {
+            var amount = (long)(c.DamageTaken * (weights[i] / weightSum));
+            if (i == count - 1) amount = c.DamageTaken - assigned;
+            assigned += amount;
+
+            events.Add(new SkillUseEvent
+            {
+                TimeSec = durationSec * (i + 0.5f) / count,
+                SkillName = SampleJobData.BossSkills[Rng.Next(SampleJobData.BossSkills.Length)],
+                Amount = amount,
+            });
+        }
+        return events;
     }
 
     private static List<SkillEntry> GenerateSkills(string job, bool isDamage)
@@ -390,7 +596,38 @@ internal static class SampleDataGenerator
             });
         }
 
+        AttachTickEntries(skills, job, isDamage);
         return skills;
+    }
+
+    /// <summary>Nests a tick breakdown under any skill that has a matching DoT / HoT status,
+    /// the same way the live skill list does.</summary>
+    private static void AttachTickEntries(List<SkillEntry> skills, string job, bool isDamage)
+    {
+        var label = isDamage ? "DoT" : "HoT";
+        var tickNames = isDamage
+            ? SampleJobData.GetJobDebuffs(job).Where(d => d.IsDot).Select(d => d.Name)
+            : SampleJobData.GetJobBuffs(job).Where(b => b.IsHoT).Select(b => b.Name);
+
+        foreach (var tickName in tickNames)
+        {
+            var parent = skills.Find(s => s.Name == tickName);
+            if (parent == null || parent.HitCount <= 0) continue;
+
+            parent.SubEntries = new List<SkillEntry>
+            {
+                new()
+                {
+                    Name = $"{tickName} ({label})",
+                    TotalDamage = (long)(parent.TotalDamage * (1.5 + Rng.NextDouble())),
+                    HitCount = parent.HitCount * Rng.Next(4, 9),
+                    DamageType = SkillDamageType.Magic,
+                    CritPct = parent.CritPct,
+                    DirectHitPct = parent.DirectHitPct,
+                    CritDirectHitPct = parent.CritDirectHitPct,
+                },
+            };
+        }
     }
 
     private static string[] GetDamageSkillNames(string job) => SampleJobData.GetDamageSkillNames(job);
