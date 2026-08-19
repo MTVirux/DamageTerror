@@ -51,6 +51,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>HP and MP.</summary>
     private const int GaugeCount = 2;
 
+    /// <summary>HP's gauge index - the one whose number has an arrow beside it.</summary>
+    private const int HpGaugeIndex = 0;
+
     /// <summary>Upper bound on status icons tracked per row.</summary>
     private const int StatusIconSlots = 20;
 
@@ -318,6 +321,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[,,] appliedGaugeY = new float[MaxRows, GaugeCount, GaugeTextSlots];
     private readonly bool[,,] gaugeTextApplied = new bool[MaxRows, GaugeCount, GaugeTextSlots];
     private readonly TextColorState[,,] gaugeTextColor = new TextColorState[MaxRows, GaugeCount, GaugeTextSlots];
+    private readonly float[] originalHpArrowX = new float[MaxRows];
+    private readonly float[] originalHpArrowY = new float[MaxRows];
+    private readonly float[] appliedHpArrowX = new float[MaxRows];
+    private readonly float[] appliedHpArrowY = new float[MaxRows];
+    private readonly bool[] hpArrowApplied = new bool[MaxRows];
     private readonly Vector4[] lastBarColor = new Vector4[MaxRows];
 
     /// <summary>
@@ -2121,6 +2129,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 if (component == null)
                     continue;
 
+                if (gaugeIndex == HpGaugeIndex)
+                    ApplyHpArrowLayout(addon, row, style);
+
                 var slotCount = CollectComponentTextNodes(component, texts, GaugeTextSlots, 0, 0);
                 if (slotCount == 0)
                     continue;
@@ -2216,6 +2227,65 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         }
     }
 
+    /// <summary>
+    /// The arrow the game shows beside the HP number while HP is down. It hangs off the same
+    /// wrapper component as the number, next to the bar's component node, and is the only
+    /// plain image there - so it is found by node type rather than by an id that could move.
+    /// </summary>
+    private static AtkResNode* GetHpArrowNode(AddonPartyList* addon, int row)
+    {
+        var component = addon == null ? null : GetGaugeComponent(addon, row, HpGaugeIndex);
+        if (component == null)
+            return null;
+
+        var nodes = component->UldManager.Nodes;
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            var node = nodes[i].Value;
+            if (node != null && node->Type == NodeType.Image)
+                return node;
+        }
+
+        return null;
+    }
+
+    /// <summary>Keeps the arrow with the number by giving it the number's own offset.</summary>
+    private void ApplyHpArrowLayout(AddonPartyList* addon, int row, GaugeNumberStyle style)
+    {
+        var node = GetHpArrowNode(addon, row);
+        if (node == null)
+            return;
+
+        var fresh = !hpArrowApplied[row];
+
+        if (fresh || Math.Abs(node->X - appliedHpArrowX[row]) > 0.01f)
+            originalHpArrowX[row] = node->X;
+        if (fresh || Math.Abs(node->Y - appliedHpArrowY[row]) > 0.01f)
+            originalHpArrowY[row] = node->Y;
+
+        var targetX = originalHpArrowX[row] + style.OffsetX;
+        var targetY = originalHpArrowY[row] + style.OffsetY;
+
+        if (Math.Abs(node->X - targetX) > 0.01f || Math.Abs(node->Y - targetY) > 0.01f)
+            node->SetPositionFloat(targetX, targetY);
+
+        appliedHpArrowX[row] = targetX;
+        appliedHpArrowY[row] = targetY;
+        hpArrowApplied[row] = true;
+    }
+
+    private void RestoreHpArrow(AddonPartyList* addon, int row)
+    {
+        if (!hpArrowApplied[row])
+            return;
+
+        hpArrowApplied[row] = false;
+
+        var node = GetHpArrowNode(addon, row);
+        if (node != null)
+            node->SetPositionFloat(originalHpArrowX[row], originalHpArrowY[row]);
+    }
+
     private GaugeNumberStyle GaugeStyle(int gaugeIndex)
         => gaugeIndex == 0 ? Settings.HpNumbers : Settings.MpNumbers;
 
@@ -2234,6 +2304,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// </summary>
     private void RestoreGaugeNumbers(AddonPartyList* addon, int row, int gaugeIndex, AtkTextNode** texts)
     {
+        if (gaugeIndex == HpGaugeIndex)
+            RestoreHpArrow(addon, row);
+
         var component = addon == null ? null : GetGaugeComponent(addon, row, gaugeIndex);
         var slotCount = CollectComponentTextNodes(component, texts, GaugeTextSlots, 0, 0);
 
