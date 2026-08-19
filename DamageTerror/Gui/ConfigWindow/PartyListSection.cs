@@ -6,7 +6,8 @@
 /// <para>
 /// Inside each collapsible header the settings are bundled per element - the name, the HP
 /// bar, the timers - and each element is split into the same sections: where it sits, how
-/// big it is, what colour it is.
+/// big it is, what colour it is. Both fold away as well, so a window this long can be cut
+/// back to whatever is being worked on.
 /// </para>
 /// </summary>
 internal static class PartyListSection
@@ -138,39 +139,47 @@ internal static class PartyListSection
             return changed;
 
         ImGui.Indent();
+        ImGui.PushID("plBar");
 
-        Section("Position");
-        changed |= Slider("Start under icon##plUnderlap", settings.IconUnderlap, -20f, 40f,
-            v => settings.IconUnderlap = v,
-            "How far the bar's left edge tucks back under the job icon.");
-        changed |= Slider("Horizontal offset##plBarX", settings.BarOffsetX, -80f, 80f,
-            v => settings.BarOffsetX = v, null);
-        changed |= Slider("Vertical offset##plBarY", settings.BarOffsetY, -40f, 40f,
-            v => settings.BarOffsetY = v, null);
-        changed |= ConfigHelpers.CheckboxProp("Draw behind row content##plBarBehind",
-            settings.BarBehindRowContent, v => settings.BarBehindRowContent = v);
-        ConfigHelpers.HelpMarker(
-            "Puts the fill under the name, gauges and status icons.\nOff draws it on top.");
-        EndSection();
+        if (Section("Position"))
+        {
+            changed |= Slider("Start under icon##plUnderlap", settings.IconUnderlap, -20f, 40f,
+                v => settings.IconUnderlap = v,
+                "How far the bar's left edge tucks back under the job icon.");
+            changed |= Slider("Horizontal offset##plBarX", settings.BarOffsetX, -80f, 80f,
+                v => settings.BarOffsetX = v, null);
+            changed |= Slider("Vertical offset##plBarY", settings.BarOffsetY, -40f, 40f,
+                v => settings.BarOffsetY = v, null);
+            changed |= ConfigHelpers.CheckboxProp("Draw behind row content##plBarBehind",
+                settings.BarBehindRowContent, v => settings.BarBehindRowContent = v);
+            ConfigHelpers.HelpMarker(
+                "Puts the fill under the name, gauges and status icons.\nOff draws it on top.");
+            EndSection();
+        }
 
-        Section("Size");
-        changed |= Slider("Height##plBarHeight", settings.BarHeightPixels, 2f, 512f,
-            v => settings.BarHeightPixels = v, "Bar height in pixels, centred on the job icon.");
-        changed |= Slider("Max width##plBarMaxWidth", settings.BarMaxWidth, 0f, 400f,
-            v => settings.BarMaxWidth = v,
-            "Width a 100% bar draws to; 0 uses the whole row.\nBars scale inside this, " +
-            "so they stay proportional rather than the longest being clipped.");
-        EndSection();
+        if (Section("Size"))
+        {
+            changed |= Slider("Height##plBarHeight", settings.BarHeightPixels, 2f, 512f,
+                v => settings.BarHeightPixels = v, "Bar height in pixels, centred on the job icon.");
+            changed |= Slider("Max width##plBarMaxWidth", settings.BarMaxWidth, 0f, 400f,
+                v => settings.BarMaxWidth = v,
+                "Width a 100% bar draws to; 0 uses the whole row.\nBars scale inside this, " +
+                "so they stay proportional rather than the longest being clipped.");
+            EndSection();
+        }
 
-        Section("Color");
-        changed |= Slider("Opacity##plBarAlpha", settings.BarOpacity, 0f, 1f,
-            v => settings.BarOpacity = v, null, "%.2f");
+        if (Section("Color"))
+        {
+            changed |= Slider("Opacity##plBarAlpha", settings.BarOpacity, 0f, 1f,
+                v => settings.BarOpacity = v, null, "%.2f");
 
-        if (ImGui.CollapsingHeader("Colors##plBarColors"))
-            changed |= DrawBarColors(config, settings);
+            if (ImGui.CollapsingHeader("Colors##plBarColors"))
+                changed |= DrawBarColors(config, settings);
 
-        EndSection();
+            EndSection();
+        }
 
+        ImGui.PopID();
         ImGui.Unindent();
         return changed;
     }
@@ -183,89 +192,107 @@ internal static class PartyListSection
         var changed = false;
         var name = settings.NameShift;
 
-        Group("Player name");
-
-        Section("Text");
-        changed |= ConfigHelpers.CheckboxProp("Hide level##plHideLevel", settings.HideLevel,
-            v => settings.HideLevel = v);
-        ConfigHelpers.HelpMarker(
-            "The level isn't a separate node - the game prefixes it to the name as glyphs, " +
-            "so this rewrites the name text.\nTurning it back off restores the game's string.");
-        EndSection();
-
-        Section("Position");
-        changed |= ConfigHelpers.CheckboxProp("Move name##plShiftName", name.Enabled,
-            v => name.Enabled = v);
-
-        if (name.Enabled)
+        if (Group("Player name"))
         {
-            ImGui.Indent();
-            changed |= Slider("Horizontal offset##plNameX", name.OffsetX, -80f, 80f,
-                v => name.OffsetX = v, null);
-            changed |= Slider("Vertical offset##plNameY", name.OffsetY, -30f, 30f,
-                v => name.OffsetY = v,
-                "Negative moves the player name up.\nThe metrics after it follow.");
-            ImGui.Unindent();
+            if (Section("Text"))
+            {
+                changed |= ConfigHelpers.CheckboxProp("Hide level##plHideLevel", settings.HideLevel,
+                    v => settings.HideLevel = v);
+                ConfigHelpers.HelpMarker(
+                    "The level isn't a separate node - the game prefixes it to the name as glyphs, " +
+                    "so this rewrites the name text.\nTurning it back off restores the game's string.");
+                EndSection();
+            }
+
+            if (Section("Position"))
+            {
+                changed |= ConfigHelpers.CheckboxProp("Move name##plShiftName", name.Enabled,
+                    v => name.Enabled = v);
+
+                if (name.Enabled)
+                {
+                    ImGui.Indent();
+                    changed |= Slider("Horizontal offset##plNameX", name.OffsetX, -80f, 80f,
+                        v => name.OffsetX = v, null);
+                    changed |= Slider("Vertical offset##plNameY", name.OffsetY, -30f, 30f,
+                        v => name.OffsetY = v,
+                        "Negative moves the player name up.\nThe metrics after it follow.");
+                    ImGui.Unindent();
+                }
+
+                EndSection();
+            }
+
+            if (Section("Size"))
+            {
+                changed |= ConfigHelpers.CheckboxProp("Resize player name##plAdjustNameFont",
+                    settings.AdjustNameFont, v => settings.AdjustNameFont = v);
+                ConfigHelpers.HelpMarker("A text node's size is its font, so the name is sized here rather than scaled.");
+
+                if (settings.AdjustNameFont)
+                {
+                    ImGui.Indent();
+                    changed |= SliderInt("Name font size change##plNameFont", settings.NameFontDelta, -8, 8,
+                        v => settings.NameFontDelta = v,
+                        "Added to the game's own font size for the player name.");
+                    ImGui.Unindent();
+                }
+
+                EndSection();
+            }
+
+            if (Section("Color"))
+            {
+                changed |= DrawCustomColor("plName", "name", name.UseCustomColor, name.Color,
+                    v => name.UseCustomColor = v, v => name.Color = v,
+                    "Off leaves the colour the game gives the row.");
+                EndSection();
+            }
+
+            EndGroup();
         }
 
-        EndSection();
-
-        Section("Size");
-        changed |= ConfigHelpers.CheckboxProp("Resize player name##plAdjustNameFont",
-            settings.AdjustNameFont, v => settings.AdjustNameFont = v);
-        ConfigHelpers.HelpMarker("A text node's size is its font, so the name is sized here rather than scaled.");
-
-        if (settings.AdjustNameFont)
+        if (Group("Slot number"))
         {
-            ImGui.Indent();
-            changed |= SliderInt("Name font size change##plNameFont", settings.NameFontDelta, -8, 8,
-                v => settings.NameFontDelta = v,
-                "Added to the game's own font size for the player name.");
-            ImGui.Unindent();
+            changed |= ConfigHelpers.CheckboxProp("Override index##plAdjustIndex", settings.AdjustPartyIndex,
+                v => settings.AdjustPartyIndex = v);
+            ConfigHelpers.HelpMarker(
+                "The party slot number drawn before the name.\nOff, it takes the name's size " +
+                "change, move and colour, so the two stay on one line and match.\nOn, it uses " +
+                "the values below instead and the name no longer carries it.");
+
+            if (settings.AdjustPartyIndex)
+            {
+                if (Section("Position"))
+                {
+                    changed |= Slider("Index horizontal offset##plIndexX", settings.PartyIndexOffsetX, -40f, 40f,
+                        v => settings.PartyIndexOffsetX = v, null);
+                    changed |= Slider("Index vertical offset##plIndexY", settings.PartyIndexOffsetY, -30f, 30f,
+                        v => settings.PartyIndexOffsetY = v, null);
+                    EndSection();
+                }
+
+                if (Section("Size"))
+                {
+                    changed |= SliderInt("Index font size change##plIndexFont", settings.PartyIndexFontDelta, -8, 8,
+                        v => settings.PartyIndexFontDelta = v,
+                        "Added to the game's own font size for the slot number.");
+                    EndSection();
+                }
+
+                if (Section("Color"))
+                {
+                    changed |= DrawCustomColor("plIndex", "slot number",
+                        settings.PartyIndexUseCustomColor, settings.PartyIndexColor,
+                        v => settings.PartyIndexUseCustomColor = v, v => settings.PartyIndexColor = v,
+                        "Off leaves the colour the game gives the slot number.");
+                    EndSection();
+                }
+            }
+
+            EndGroup();
         }
 
-        EndSection();
-
-        Section("Color");
-        changed |= DrawCustomColor("plName", "name", name.UseCustomColor, name.Color,
-            v => name.UseCustomColor = v, v => name.Color = v,
-            "Off leaves the colour the game gives the row.");
-        EndSection();
-
-        EndGroup();
-
-        Group("Slot number");
-        changed |= ConfigHelpers.CheckboxProp("Override index##plAdjustIndex", settings.AdjustPartyIndex,
-            v => settings.AdjustPartyIndex = v);
-        ConfigHelpers.HelpMarker(
-            "The party slot number drawn before the name.\nOff, it takes the name's size " +
-            "change, move and colour, so the two stay on one line and match.\nOn, it uses " +
-            "the values below instead and the name no longer carries it.");
-
-        if (settings.AdjustPartyIndex)
-        {
-            Section("Position");
-            changed |= Slider("Index horizontal offset##plIndexX", settings.PartyIndexOffsetX, -40f, 40f,
-                v => settings.PartyIndexOffsetX = v, null);
-            changed |= Slider("Index vertical offset##plIndexY", settings.PartyIndexOffsetY, -30f, 30f,
-                v => settings.PartyIndexOffsetY = v, null);
-            EndSection();
-
-            Section("Size");
-            changed |= SliderInt("Index font size change##plIndexFont", settings.PartyIndexFontDelta, -8, 8,
-                v => settings.PartyIndexFontDelta = v,
-                "Added to the game's own font size for the slot number.");
-            EndSection();
-
-            Section("Color");
-            changed |= DrawCustomColor("plIndex", "slot number",
-                settings.PartyIndexUseCustomColor, settings.PartyIndexColor,
-                v => settings.PartyIndexUseCustomColor = v, v => settings.PartyIndexColor = v,
-                "Off leaves the colour the game gives the slot number.");
-            EndSection();
-        }
-
-        EndGroup();
         return changed;
     }
 
@@ -274,51 +301,68 @@ internal static class PartyListSection
         if (!ImGui.CollapsingHeader("HP and MP##plGauge"))
             return false;
 
-        Group("HP bar");
-        var changed = DrawGaugeBar("plShiftHpBar", "HP bar", settings.HpBarShift,
-            "Moves the HP bar only - its number is moved below.");
-        changed |= DrawGaugeOutline("plHpOutline", settings.HpBarOutline);
-        EndGroup();
+        var changed = false;
 
-        Group("HP numbers");
-        changed |= DrawGaugeNumbers("plHpNumbers", "HP number", settings.HpNumbers);
-        EndGroup();
-
-        Group("Shield");
-        changed |= DrawShield("plShield", "shield", settings.ShieldFill,
-            "Moves the shield only - the HP bar under it stays put.");
-        EndGroup();
-
-        Group("Shield overflow");
-        changed |= DrawShield("plShieldOverflow", "shield overflow", settings.ShieldOverflow,
-            "The second bar shown for the part of a shield too big to fit inside the HP bar.");
-        EndGroup();
-
-        Group("MP bar");
-        changed |= DrawGaugeBar("plShiftMpBar", "MP bar", settings.MpBarShift,
-            "Moves the MP bar only - its number is moved below.");
-        changed |= DrawGaugeOutline("plMpOutline", settings.MpBarOutline);
-        EndGroup();
-
-        Group("MP numbers");
-        changed |= DrawGaugeNumbers("plMpNumbers", "MP number", settings.MpNumbers);
-
-        if (settings.MpNumbers.Enabled)
+        if (Group("HP bar"))
         {
-            Section("Trailing digits");
-            changed |= SliderInt("Trailing digits size##plTrailFont", settings.MpTrailingFontDelta, -4, 8,
-                v => settings.MpTrailingFontDelta = v,
-                "MP's last two digits are a second, smaller text node.\n" +
-                "0 keeps the game's smaller size.\nRaise it to match the leading digits - " +
-                "they're then re-aligned, since the game's baseline offset only suits the small size.");
-            changed |= Slider("Trailing digits X##plTrailX", settings.TrailingDigitsOffsetX, -20f, 20f,
-                v => settings.TrailingDigitsOffsetX = v, null);
-            changed |= Slider("Trailing digits Y##plTrailY", settings.TrailingDigitsOffsetY, -20f, 20f,
-                v => settings.TrailingDigitsOffsetY = v, null);
-            EndSection();
+            changed |= DrawGaugeBar("plShiftHpBar", "HP bar", settings.HpBarShift,
+                "Moves the HP bar only - its number is moved below.");
+            changed |= DrawGaugeOutline("plHpOutline", settings.HpBarOutline);
+            EndGroup();
         }
 
-        EndGroup();
+        if (Group("HP numbers"))
+        {
+            changed |= DrawGaugeNumbers("plHpNumbers", "HP number", settings.HpNumbers);
+            EndGroup();
+        }
+
+        if (Group("Shield"))
+        {
+            changed |= DrawShield("plShield", "shield", settings.ShieldFill,
+                "Moves the shield only - the HP bar under it stays put.");
+            EndGroup();
+        }
+
+        if (Group("Shield overflow"))
+        {
+            changed |= DrawShield("plShieldOverflow", "shield overflow", settings.ShieldOverflow,
+                "The second bar shown for the part of a shield too big to fit inside the HP bar.");
+            EndGroup();
+        }
+
+        if (Group("MP bar"))
+        {
+            changed |= DrawGaugeBar("plShiftMpBar", "MP bar", settings.MpBarShift,
+                "Moves the MP bar only - its number is moved below.");
+            changed |= DrawGaugeOutline("plMpOutline", settings.MpBarOutline);
+            EndGroup();
+        }
+
+        if (Group("MP numbers"))
+        {
+            changed |= DrawGaugeNumbers("plMpNumbers", "MP number", settings.MpNumbers);
+
+            if (settings.MpNumbers.Enabled)
+            {
+                if (Section("Trailing digits"))
+                {
+                    changed |= SliderInt("Trailing digits size##plTrailFont", settings.MpTrailingFontDelta, -4, 8,
+                        v => settings.MpTrailingFontDelta = v,
+                        "MP's last two digits are a second, smaller text node.\n" +
+                        "0 keeps the game's smaller size.\nRaise it to match the leading digits - " +
+                        "they're then re-aligned, since the game's baseline offset only suits the small size.");
+                    changed |= Slider("Trailing digits X##plTrailX", settings.TrailingDigitsOffsetX, -20f, 20f,
+                        v => settings.TrailingDigitsOffsetX = v, null);
+                    changed |= Slider("Trailing digits Y##plTrailY", settings.TrailingDigitsOffsetY, -20f, 20f,
+                        v => settings.TrailingDigitsOffsetY = v, null);
+                    EndSection();
+                }
+            }
+
+            EndGroup();
+        }
+
         return changed;
     }
 
@@ -348,7 +392,8 @@ internal static class PartyListSection
         ImGui.TextDisabled("Drawn after the name, in the order listed.");
         ConfigHelpers.HelpMarker(
             "Any metric the meter window can show.\nUse the arrows to reorder them, and the " +
-            "tabs below to add more.\nValues and formatting match the meter.");
+            "tabs below to add more.\nOpen a metric's name for its own position, size and " +
+            "colour.\nValues and formatting match the meter.");
 
         if (settings.Metrics.Count > PartyListOverlaySettings.MaxMetrics)
             ImGui.TextColored(new Vector4(1f, 0.8f, 0.3f, 1f),
@@ -383,69 +428,88 @@ internal static class PartyListSection
         if (!ImGui.CollapsingHeader("Buffs and Debuffs##plStatus"))
             return false;
 
-        Group("Status icons");
-        var changed = ConfigHelpers.CheckboxProp("Adjust status icons##plAdjustStatus",
-            settings.AdjustStatusIcons, v => settings.AdjustStatusIcons = v);
+        var changed = false;
 
-        if (settings.AdjustStatusIcons)
+        if (Group("Status icons"))
         {
-            Section("Position");
-            changed |= ConfigHelpers.CheckboxProp("Right align##plStatusRightAlign",
-                settings.StatusRightAlign, v => settings.StatusRightAlign = v);
+            changed |= ConfigHelpers.CheckboxProp("Adjust status icons##plAdjustStatus",
+                settings.AdjustStatusIcons, v => settings.AdjustStatusIcons = v);
+
+            if (settings.AdjustStatusIcons)
+            {
+                if (Section("Position"))
+                {
+                    changed |= ConfigHelpers.CheckboxProp("Right align##plStatusRightAlign",
+                        settings.StatusRightAlign, v => settings.StatusRightAlign = v);
+                    ConfigHelpers.HelpMarker(
+                        "Fills the icon row from its right edge, so a member with a few buffs shows " +
+                        "them flush right instead of hugging the left.");
+                    changed |= Slider("Horizontal offset##plStatusX", settings.StatusOffsetX, -120f, 120f,
+                        v => settings.StatusOffsetX = v, null);
+                    changed |= Slider("Vertical offset##plStatusY", settings.StatusOffsetY, -60f, 60f,
+                        v => settings.StatusOffsetY = v, null);
+                    EndSection();
+                }
+
+                if (Section("Size"))
+                {
+                    changed |= Slider("Scale##plStatusScale", settings.StatusScale, 0.3f, 2.5f,
+                        v => settings.StatusScale = v,
+                        "Scales the whole list from its top-left, so icon spacing scales with the icons.",
+                        "%.2f");
+                    EndSection();
+                }
+
+                if (Section("Color"))
+                {
+                    changed |= DrawTint("plStatusTint", "status icon", settings.StatusTint,
+                        v => settings.StatusTint = v);
+                    EndSection();
+                }
+            }
+
+            EndGroup();
+        }
+
+        if (Group("Timers"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Adjust timers##plAdjustTimers",
+                settings.AdjustStatusTimers, v => settings.AdjustStatusTimers = v);
             ConfigHelpers.HelpMarker(
-                "Fills the icon row from its right edge, so a member with a few buffs shows " +
-                "them flush right instead of hugging the left.");
-            changed |= Slider("Horizontal offset##plStatusX", settings.StatusOffsetX, -120f, 120f,
-                v => settings.StatusOffsetX = v, null);
-            changed |= Slider("Vertical offset##plStatusY", settings.StatusOffsetY, -60f, 60f,
-                v => settings.StatusOffsetY = v, null);
-            EndSection();
+                "The timer text sits inside each icon, so it already scales with the icon.\n" +
+                "These are on top of that.");
 
-            Section("Size");
-            changed |= Slider("Scale##plStatusScale", settings.StatusScale, 0.3f, 2.5f,
-                v => settings.StatusScale = v,
-                "Scales the whole list from its top-left, so icon spacing scales with the icons.",
-                "%.2f");
-            EndSection();
+            if (settings.AdjustStatusTimers)
+            {
+                if (Section("Position"))
+                {
+                    changed |= Slider("Timer horizontal offset##plTimerX", settings.StatusTimerOffsetX, -30f, 30f,
+                        v => settings.StatusTimerOffsetX = v, null);
+                    changed |= Slider("Timer vertical offset##plTimerY", settings.StatusTimerOffsetY, -30f, 30f,
+                        v => settings.StatusTimerOffsetY = v, null);
+                    EndSection();
+                }
 
-            Section("Color");
-            changed |= DrawTint("plStatusTint", "status icon", settings.StatusTint,
-                v => settings.StatusTint = v);
-            EndSection();
+                if (Section("Size"))
+                {
+                    changed |= SliderInt("Timer font size change##plTimerFont", settings.StatusTimerFontDelta, -8, 8,
+                        v => settings.StatusTimerFontDelta = v, null);
+                    EndSection();
+                }
+
+                if (Section("Color"))
+                {
+                    changed |= DrawCustomColor("plTimer", "timer",
+                        settings.StatusTimerUseCustomColor, settings.StatusTimerColor,
+                        v => settings.StatusTimerUseCustomColor = v, v => settings.StatusTimerColor = v,
+                        "Off leaves the game's own colour, which turns as the status runs out.");
+                    EndSection();
+                }
+            }
+
+            EndGroup();
         }
 
-        EndGroup();
-
-        Group("Timers");
-        changed |= ConfigHelpers.CheckboxProp("Adjust timers##plAdjustTimers",
-            settings.AdjustStatusTimers, v => settings.AdjustStatusTimers = v);
-        ConfigHelpers.HelpMarker(
-            "The timer text sits inside each icon, so it already scales with the icon.\n" +
-            "These are on top of that.");
-
-        if (settings.AdjustStatusTimers)
-        {
-            Section("Position");
-            changed |= Slider("Timer horizontal offset##plTimerX", settings.StatusTimerOffsetX, -30f, 30f,
-                v => settings.StatusTimerOffsetX = v, null);
-            changed |= Slider("Timer vertical offset##plTimerY", settings.StatusTimerOffsetY, -30f, 30f,
-                v => settings.StatusTimerOffsetY = v, null);
-            EndSection();
-
-            Section("Size");
-            changed |= SliderInt("Timer font size change##plTimerFont", settings.StatusTimerFontDelta, -8, 8,
-                v => settings.StatusTimerFontDelta = v, null);
-            EndSection();
-
-            Section("Color");
-            changed |= DrawCustomColor("plTimer", "timer",
-                settings.StatusTimerUseCustomColor, settings.StatusTimerColor,
-                v => settings.StatusTimerUseCustomColor = v, v => settings.StatusTimerColor = v,
-                "Off leaves the game's own colour, which turns as the status runs out.");
-            EndSection();
-        }
-
-        EndGroup();
         return changed;
     }
 
@@ -466,44 +530,52 @@ internal static class PartyListSection
         if (!settings.AdjustSelectionGlow)
             return changed;
 
-        Group("Animation");
-        changed |= ConfigHelpers.CheckboxProp("Freeze glow animation##plFreezeGlow",
-            settings.FreezeGlowTransform, v => settings.FreezeGlowTransform = v);
-        ConfigHelpers.HelpMarker(
-            "The game animates the glow's position, scale and tint as it appears, which " +
-            "overwrites these settings while it plays.\nThis stops the timeline driving " +
-            "those, leaving the fade animated.\nTurn it off to keep the pop-in movement, " +
-            "at the cost of the settings below not holding until the animation ends.");
+        if (Group("Animation"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Freeze glow animation##plFreezeGlow",
+                settings.FreezeGlowTransform, v => settings.FreezeGlowTransform = v);
+            ConfigHelpers.HelpMarker(
+                "The game animates the glow's position, scale and tint as it appears, which " +
+                "overwrites these settings while it plays.\nThis stops the timeline driving " +
+                "those, leaving the fade animated.\nTurn it off to keep the pop-in movement, " +
+                "at the cost of the settings below not holding until the animation ends.");
 
-        changed |= ConfigHelpers.CheckboxProp("Selection wins over hover##plGlowPrecedence",
-            settings.SelectionOverridesHover, v => settings.SelectionOverridesHover = v);
-        ConfigHelpers.HelpMarker(
-            "The game draws one node for both states - selection is marked by also showing " +
-            "the job icon glow, not by a second highlight - so a row that is hovered and " +
-            "selected can only use one of the two.\nOn, a selected row keeps its selection " +
-            "look while you hover it; off, hovering switches it to the hover look.");
-        EndGroup();
+            changed |= ConfigHelpers.CheckboxProp("Selection wins over hover##plGlowPrecedence",
+                settings.SelectionOverridesHover, v => settings.SelectionOverridesHover = v);
+            ConfigHelpers.HelpMarker(
+                "The game draws one node for both states - selection is marked by also showing " +
+                "the job icon glow, not by a second highlight - so a row that is hovered and " +
+                "selected can only use one of the two.\nOn, a selected row keeps its selection " +
+                "look while you hover it; off, hovering switches it to the hover look.");
+            EndGroup();
+        }
 
-        Group("Hover");
-        changed |= DrawGlow("plHover", "Hover", settings.HoverOffsetX, settings.HoverOffsetY,
-            settings.HoverScale, settings.HoverTint,
-            v => settings.HoverOffsetX = v, v => settings.HoverOffsetY = v,
-            v => settings.HoverScale = v, v => settings.HoverTint = v);
-        EndGroup();
+        if (Group("Hover"))
+        {
+            changed |= DrawGlow("plHover", "Hover", settings.HoverOffsetX, settings.HoverOffsetY,
+                settings.HoverScale, settings.HoverTint,
+                v => settings.HoverOffsetX = v, v => settings.HoverOffsetY = v,
+                v => settings.HoverScale = v, v => settings.HoverTint = v);
+            EndGroup();
+        }
 
-        Group("Selection");
-        changed |= DrawGlow("plSel", "Selection", settings.SelectionOffsetX, settings.SelectionOffsetY,
-            settings.SelectionScale, settings.SelectionTint,
-            v => settings.SelectionOffsetX = v, v => settings.SelectionOffsetY = v,
-            v => settings.SelectionScale = v, v => settings.SelectionTint = v);
-        EndGroup();
+        if (Group("Selection"))
+        {
+            changed |= DrawGlow("plSel", "Selection", settings.SelectionOffsetX, settings.SelectionOffsetY,
+                settings.SelectionScale, settings.SelectionTint,
+                v => settings.SelectionOffsetX = v, v => settings.SelectionOffsetY = v,
+                v => settings.SelectionScale = v, v => settings.SelectionTint = v);
+            EndGroup();
+        }
 
-        Group("Job icon glow");
-        changed |= DrawGlow("plIconGlow", "Job icon glow", settings.IconGlowOffsetX, settings.IconGlowOffsetY,
-            settings.IconGlowScale, settings.IconGlowTint,
-            v => settings.IconGlowOffsetX = v, v => settings.IconGlowOffsetY = v,
-            v => settings.IconGlowScale = v, v => settings.IconGlowTint = v);
-        EndGroup();
+        if (Group("Job icon glow"))
+        {
+            changed |= DrawGlow("plIconGlow", "Job icon glow", settings.IconGlowOffsetX, settings.IconGlowOffsetY,
+                settings.IconGlowScale, settings.IconGlowTint,
+                v => settings.IconGlowOffsetX = v, v => settings.IconGlowOffsetY = v,
+                v => settings.IconGlowScale = v, v => settings.IconGlowTint = v);
+            EndGroup();
+        }
 
         return changed;
     }
@@ -513,59 +585,72 @@ internal static class PartyListSection
         if (!ImGui.CollapsingHeader("Encounter Totals##plTotals"))
             return false;
 
-        Group("Contents");
-        var changed = ConfigHelpers.CheckboxProp("Show on party list header##plShowTotals",
-            settings.ShowEncounterTotals, v => settings.ShowEncounterTotals = v);
-        ConfigHelpers.HelpMarker("Appended to the \"Party\" / \"Light Party\" label above the list.");
+        var changed = false;
 
-        if (settings.ShowEncounterTotals)
+        if (Group("Contents"))
         {
-            ImGui.Indent();
-            changed |= ConfigHelpers.CheckboxProp("Encounter name##plTotalsTitle", settings.TotalsShowTitle,
-                v => settings.TotalsShowTitle = v);
-            changed |= ConfigHelpers.CheckboxProp("Duration##plTotalsDuration", settings.TotalsShowDuration,
-                v => settings.TotalsShowDuration = v);
-            changed |= ConfigHelpers.CheckboxProp("Raid DPS##plTotalsDps", settings.TotalsShowRaidDps,
-                v => settings.TotalsShowRaidDps = v);
-            changed |= ConfigHelpers.CheckboxProp("Total damage##plTotalsDamage", settings.TotalsShowDamage,
-                v => settings.TotalsShowDamage = v);
-            changed |= ConfigHelpers.CheckboxProp("Deaths##plTotalsDeaths", settings.TotalsShowDeaths,
-                v => settings.TotalsShowDeaths = v);
-            ImGui.Unindent();
+            changed |= ConfigHelpers.CheckboxProp("Show on party list header##plShowTotals",
+                settings.ShowEncounterTotals, v => settings.ShowEncounterTotals = v);
+            ConfigHelpers.HelpMarker("Appended to the \"Party\" / \"Light Party\" label above the list.");
+
+            if (settings.ShowEncounterTotals)
+            {
+                ImGui.Indent();
+                changed |= ConfigHelpers.CheckboxProp("Encounter name##plTotalsTitle", settings.TotalsShowTitle,
+                    v => settings.TotalsShowTitle = v);
+                changed |= ConfigHelpers.CheckboxProp("Duration##plTotalsDuration", settings.TotalsShowDuration,
+                    v => settings.TotalsShowDuration = v);
+                changed |= ConfigHelpers.CheckboxProp("Raid DPS##plTotalsDps", settings.TotalsShowRaidDps,
+                    v => settings.TotalsShowRaidDps = v);
+                changed |= ConfigHelpers.CheckboxProp("Total damage##plTotalsDamage", settings.TotalsShowDamage,
+                    v => settings.TotalsShowDamage = v);
+                changed |= ConfigHelpers.CheckboxProp("Deaths##plTotalsDeaths", settings.TotalsShowDeaths,
+                    v => settings.TotalsShowDeaths = v);
+                ImGui.Unindent();
+            }
+
+            EndGroup();
         }
 
-        EndGroup();
-
-        Group("Header text");
-        changed |= ConfigHelpers.CheckboxProp("Adjust header text##plAdjustTotals", settings.AdjustTotalsText,
-            v => settings.AdjustTotalsText = v);
-        ConfigHelpers.HelpMarker(
-            "The header's own text node, whether the totals are written to it or not.");
-
-        if (settings.AdjustTotalsText)
+        if (Group("Header text"))
         {
-            Section("Position");
-            changed |= Slider("Horizontal offset##plTotalsX", settings.TotalsOffsetX, -200f, 200f,
-                v => settings.TotalsOffsetX = v, null);
-            changed |= Slider("Vertical offset##plTotalsY", settings.TotalsOffsetY, -60f, 60f,
-                v => settings.TotalsOffsetY = v, null);
-            EndSection();
+            changed |= ConfigHelpers.CheckboxProp("Adjust header text##plAdjustTotals", settings.AdjustTotalsText,
+                v => settings.AdjustTotalsText = v);
+            ConfigHelpers.HelpMarker(
+                "The header's own text node, whether the totals are written to it or not.");
 
-            Section("Size");
-            changed |= SliderInt("Font size change##plTotalsFont", settings.TotalsFontDelta, -8, 12,
-                v => settings.TotalsFontDelta = v,
-                "Added to the game's own font size for the header.");
-            EndSection();
+            if (settings.AdjustTotalsText)
+            {
+                if (Section("Position"))
+                {
+                    changed |= Slider("Horizontal offset##plTotalsX", settings.TotalsOffsetX, -200f, 200f,
+                        v => settings.TotalsOffsetX = v, null);
+                    changed |= Slider("Vertical offset##plTotalsY", settings.TotalsOffsetY, -60f, 60f,
+                        v => settings.TotalsOffsetY = v, null);
+                    EndSection();
+                }
 
-            Section("Color");
-            changed |= DrawCustomColor("plTotals", "header text",
-                settings.TotalsUseCustomColor, settings.TotalsColor,
-                v => settings.TotalsUseCustomColor = v, v => settings.TotalsColor = v,
-                "Off leaves the colour the game gives the header.");
-            EndSection();
+                if (Section("Size"))
+                {
+                    changed |= SliderInt("Font size change##plTotalsFont", settings.TotalsFontDelta, -8, 12,
+                        v => settings.TotalsFontDelta = v,
+                        "Added to the game's own font size for the header.");
+                    EndSection();
+                }
+
+                if (Section("Color"))
+                {
+                    changed |= DrawCustomColor("plTotals", "header text",
+                        settings.TotalsUseCustomColor, settings.TotalsColor,
+                        v => settings.TotalsUseCustomColor = v, v => settings.TotalsColor = v,
+                        "Off leaves the colour the game gives the header.");
+                    EndSection();
+                }
+            }
+
+            EndGroup();
         }
 
-        EndGroup();
         return changed;
     }
 
@@ -581,27 +666,35 @@ internal static class PartyListSection
             return changed;
 
         ImGui.Indent();
+        ImGui.PushID("plCastBar");
 
-        Section("Position");
-        changed |= Slider("Left inset##plCastBarX", settings.CastBarShiftX, 0f, 80f,
-            v => settings.CastBarShiftX = v,
-            "Moves the left edge right and narrows the bar by the same amount.");
-        changed |= Slider("Vertical offset##plCastBarY", settings.CastBarShiftY, -30f, 30f,
-            v => settings.CastBarShiftY = v, null);
-        EndSection();
+        if (Section("Position"))
+        {
+            changed |= Slider("Left inset##plCastBarX", settings.CastBarShiftX, 0f, 80f,
+                v => settings.CastBarShiftX = v,
+                "Moves the left edge right and narrows the bar by the same amount.");
+            changed |= Slider("Vertical offset##plCastBarY", settings.CastBarShiftY, -30f, 30f,
+                v => settings.CastBarShiftY = v, null);
+            EndSection();
+        }
 
-        Section("Size");
-        changed |= Slider("Height##plCastBarScaleY", settings.CastBarScaleY, 0.3f, 3f,
-            v => settings.CastBarScaleY = v,
-            "Grown from the bar's top edge, so the vertical offset still lands where it says.",
-            "%.2f");
-        EndSection();
+        if (Section("Size"))
+        {
+            changed |= Slider("Height##plCastBarScaleY", settings.CastBarScaleY, 0.3f, 3f,
+                v => settings.CastBarScaleY = v,
+                "Grown from the bar's top edge, so the vertical offset still lands where it says.",
+                "%.2f");
+            EndSection();
+        }
 
-        Section("Color");
-        changed |= DrawTint("plCastBarTint", "cast bar", settings.CastBarTint,
-            v => settings.CastBarTint = v);
-        EndSection();
+        if (Section("Color"))
+        {
+            changed |= DrawTint("plCastBarTint", "cast bar", settings.CastBarTint,
+                v => settings.CastBarTint = v);
+            EndSection();
+        }
 
+        ImGui.PopID();
         ImGui.Unindent();
         return changed;
     }
@@ -618,28 +711,36 @@ internal static class PartyListSection
             return changed;
 
         ImGui.Indent();
+        ImGui.PushID("plCastName");
 
-        Section("Position");
-        changed |= Slider("Horizontal offset##plCastNameX", settings.CastNameOffsetX, -40f, 40f,
-            v => settings.CastNameOffsetX = v, null);
-        changed |= Slider("Vertical offset##plCastNameY", settings.CastNameOffsetY, -30f, 30f,
-            v => settings.CastNameOffsetY = v,
-            "Measured from the cast bar's centre line.");
-        EndSection();
+        if (Section("Position"))
+        {
+            changed |= Slider("Horizontal offset##plCastNameX", settings.CastNameOffsetX, -40f, 40f,
+                v => settings.CastNameOffsetX = v, null);
+            changed |= Slider("Vertical offset##plCastNameY", settings.CastNameOffsetY, -30f, 30f,
+                v => settings.CastNameOffsetY = v,
+                "Measured from the cast bar's centre line.");
+            EndSection();
+        }
 
-        Section("Size");
-        changed |= SliderInt("Font size change##plCastNameFont", settings.CastNameFontDelta, -12, 12,
-            v => settings.CastNameFontDelta = v,
-            "Added to the game's own font size for the spell name.");
-        EndSection();
+        if (Section("Size"))
+        {
+            changed |= SliderInt("Font size change##plCastNameFont", settings.CastNameFontDelta, -12, 12,
+                v => settings.CastNameFontDelta = v,
+                "Added to the game's own font size for the spell name.");
+            EndSection();
+        }
 
-        Section("Color");
-        changed |= DrawCustomColor("plCastName", "spell name",
-            settings.CastNameUseCustomColor, settings.CastNameColor,
-            v => settings.CastNameUseCustomColor = v, v => settings.CastNameColor = v,
-            "Off leaves the colour the game gives the spell name.");
-        EndSection();
+        if (Section("Color"))
+        {
+            changed |= DrawCustomColor("plCastName", "spell name",
+                settings.CastNameUseCustomColor, settings.CastNameColor,
+                v => settings.CastNameUseCustomColor = v, v => settings.CastNameColor = v,
+                "Off leaves the colour the game gives the spell name.");
+            EndSection();
+        }
 
+        ImGui.PopID();
         ImGui.Unindent();
         return changed;
     }
@@ -647,32 +748,39 @@ internal static class PartyListSection
     /// <summary>Heading colour for an element group, dim enough not to fight the headers.</summary>
     private static readonly Vector4 GroupColor = new(0.55f, 0.75f, 1f, 1f);
 
-    /// <summary>
-    /// One element inside a collapsible header - the name, the HP bar, the timers. Opens an
-    /// indented block that <see cref="EndGroup"/> closes.
-    /// </summary>
-    private static void Group(string label)
-    {
-        ImGui.Spacing();
-        ImGui.TextColored(GroupColor, label);
-        ImGui.Separator();
-        ImGui.Indent();
-    }
-
-    private static void EndGroup() => ImGui.Unindent();
+    private const ImGuiTreeNodeFlags SubHeaderFlags =
+        ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.DefaultOpen;
 
     /// <summary>
-    /// One aspect of an element - where it sits, how big it is, what colour it is. Opens an
-    /// indented block that <see cref="EndSection"/> closes.
+    /// One element inside a collapsible header - the name, the HP bar, the timers. When it
+    /// returns true it has opened an indented block that <see cref="EndGroup"/> closes.
     /// </summary>
-    private static void Section(string label)
+    private static bool Group(string label) => SubHeader(label, GroupColor);
+
+    private static void EndGroup() => ImGui.TreePop();
+
+    /// <summary>
+    /// One aspect of an element - where it sits, how big it is, what colour it is. When it
+    /// returns true it has opened an indented block that <see cref="EndSection"/> closes.
+    /// </summary>
+    private static bool Section(string label)
+        => SubHeader(label, ImGui.GetStyle().Colors[(int)ImGuiCol.TextDisabled]);
+
+    private static void EndSection() => ImGui.TreePop();
+
+    /// <summary>
+    /// A collapsible heading below the window's own headers. Tree nodes are used rather than
+    /// nested collapsing headers so the arrows read as a hierarchy, and ImGui keeps each
+    /// one's open state between sessions.
+    /// </summary>
+    private static bool SubHeader(string label, Vector4 color)
     {
         ImGui.Spacing();
-        ImGui.TextDisabled(label);
-        ImGui.Indent();
+        ImGui.PushStyleColor(ImGuiCol.Text, color);
+        var open = ImGui.TreeNodeEx(label, SubHeaderFlags);
+        ImGui.PopStyleColor();
+        return open;
     }
-
-    private static void EndSection() => ImGui.Unindent();
 
     private static readonly string[] OutlineThicknessLabels =
     {
@@ -707,24 +815,30 @@ internal static class PartyListSection
 
         if (style.Enabled)
         {
-            Section("Position");
-            changed |= Slider($"Horizontal offset##{id}X", style.OffsetX, -80f, 80f,
-                v => style.OffsetX = v, null);
-            changed |= Slider($"Vertical offset##{id}Y", style.OffsetY, -30f, 30f,
-                v => style.OffsetY = v, tooltip);
-            EndSection();
+            if (Section("Position"))
+            {
+                changed |= Slider($"Horizontal offset##{id}X", style.OffsetX, -80f, 80f,
+                    v => style.OffsetX = v, null);
+                changed |= Slider($"Vertical offset##{id}Y", style.OffsetY, -30f, 30f,
+                    v => style.OffsetY = v, tooltip);
+                EndSection();
+            }
 
-            Section("Size");
-            changed |= Slider($"Scale##{id}Scale", style.Scale, 0.3f, 2.5f,
-                v => style.Scale = v, null, "%.2f");
-            EndSection();
+            if (Section("Size"))
+            {
+                changed |= Slider($"Scale##{id}Scale", style.Scale, 0.3f, 2.5f,
+                    v => style.Scale = v, null, "%.2f");
+                EndSection();
+            }
         }
 
-        Section("Color");
-        changed |= DrawCustomColor($"{id}Color", part, style.UseCustomColor, style.Color,
-            v => style.UseCustomColor = v, v => style.Color = v,
-            "Off leaves the game's own artwork.\nOn tints it - a texture can be shaded, not repainted.");
-        EndSection();
+        if (Section("Color"))
+        {
+            changed |= DrawCustomColor($"{id}Color", part, style.UseCustomColor, style.Color,
+                v => style.UseCustomColor = v, v => style.Color = v,
+                "Off leaves the game's own artwork.\nOn tints it - a texture can be shaded, not repainted.");
+            EndSection();
+        }
 
         return changed;
     }
@@ -736,39 +850,40 @@ internal static class PartyListSection
     /// </summary>
     private static bool DrawGaugeOutline(string id, GaugeOutlineStyle style)
     {
-        Section("Outline");
+        var changed = false;
 
-        var changed = ConfigHelpers.CheckboxProp($"Hide outline##{id}Hide", style.Hidden,
-            v => style.Hidden = v);
-        ConfigHelpers.HelpMarker("The empty bar behind the fill. Its outline and the groove " +
-            "inside it are one piece of artwork, so they go together.");
-
-        if (style.Hidden)
+        if (Section("Outline"))
         {
+            changed |= ConfigHelpers.CheckboxProp($"Hide outline##{id}Hide", style.Hidden,
+                v => style.Hidden = v);
+            ConfigHelpers.HelpMarker("The empty bar behind the fill. Its outline and the groove " +
+                "inside it are one piece of artwork, so they go together.");
+
+            if (!style.Hidden)
+            {
+                changed |= ConfigHelpers.ComboProp($"Outline color##{id}Mode", (int)style.ColorMode,
+                    GaugeOutlineColorModeLabels, v => style.ColorMode = (GaugeOutlineColorMode)v, 180f);
+                ConfigHelpers.HelpMarker("Matching the bar gives the outline whatever colour the bar " +
+                    "itself is tinted with.\nArtwork can be shaded, not repainted, so a custom colour " +
+                    "tints it rather than replacing it.");
+
+                if (style.ColorMode == GaugeOutlineColorMode.Custom)
+                {
+                    ImGui.Indent();
+                    changed |= ConfigHelpers.ColorEditProp($"Outline tint##{id}Color", style.Color,
+                        v => style.Color = v, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+                    ImGui.Unindent();
+                }
+
+                changed |= Slider($"Outline opacity##{id}Opacity", style.Opacity, 0f, 1f,
+                    v => style.Opacity = v,
+                    "Multiplied over the alpha the game gives the artwork, so 1 leaves it alone.",
+                    "%.2f");
+            }
+
             EndSection();
-            return changed;
         }
 
-        changed |= ConfigHelpers.ComboProp($"Outline color##{id}Mode", (int)style.ColorMode,
-            GaugeOutlineColorModeLabels, v => style.ColorMode = (GaugeOutlineColorMode)v, 180f);
-        ConfigHelpers.HelpMarker("Matching the bar gives the outline whatever colour the bar " +
-            "itself is tinted with.\nArtwork can be shaded, not repainted, so a custom colour " +
-            "tints it rather than replacing it.");
-
-        if (style.ColorMode == GaugeOutlineColorMode.Custom)
-        {
-            ImGui.Indent();
-            changed |= ConfigHelpers.ColorEditProp($"Outline tint##{id}Color", style.Color,
-                v => style.Color = v, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
-            ImGui.Unindent();
-        }
-
-        changed |= Slider($"Outline opacity##{id}Opacity", style.Opacity, 0f, 1f,
-            v => style.Opacity = v,
-            "Multiplied over the alpha the game gives the artwork, so 1 leaves it alone.",
-            "%.2f");
-
-        EndSection();
         return changed;
     }
 
@@ -787,12 +902,14 @@ internal static class PartyListSection
 
         changed |= DrawGaugeBar(id, part, style, tooltip);
 
-        Section("Opacity");
-        changed |= Slider($"Opacity##{id}Opacity", style.Opacity, 0f, 1f,
-            v => style.Opacity = v,
-            "Multiplied over the alpha the game gives the artwork, so 1 leaves it alone.",
-            "%.2f");
-        EndSection();
+        if (Section("Opacity"))
+        {
+            changed |= Slider($"Opacity##{id}Opacity", style.Opacity, 0f, 1f,
+                v => style.Opacity = v,
+                "Multiplied over the alpha the game gives the artwork, so 1 leaves it alone.",
+                "%.2f");
+            EndSection();
+        }
 
         return changed;
     }
@@ -806,23 +923,29 @@ internal static class PartyListSection
         if (!style.Enabled)
             return changed;
 
-        Section("Position");
-        changed |= Slider($"Horizontal offset##{id}X", style.OffsetX, -60f, 60f,
-            v => style.OffsetX = v, null);
-        changed |= Slider($"Vertical offset##{id}Y", style.OffsetY, -30f, 30f,
-            v => style.OffsetY = v, null);
-        EndSection();
+        if (Section("Position"))
+        {
+            changed |= Slider($"Horizontal offset##{id}X", style.OffsetX, -60f, 60f,
+                v => style.OffsetX = v, null);
+            changed |= Slider($"Vertical offset##{id}Y", style.OffsetY, -30f, 30f,
+                v => style.OffsetY = v, null);
+            EndSection();
+        }
 
-        Section("Size");
-        changed |= SliderInt($"Font size change##{id}Font", style.FontDelta, -8, 8,
-            v => style.FontDelta = v, "Added to the game's own font size for these numbers.");
-        EndSection();
+        if (Section("Size"))
+        {
+            changed |= SliderInt($"Font size change##{id}Font", style.FontDelta, -8, 8,
+                v => style.FontDelta = v, "Added to the game's own font size for these numbers.");
+            EndSection();
+        }
 
-        Section("Color");
-        changed |= DrawCustomColor($"{id}Color", part, style.UseCustomColor, style.Color,
-            v => style.UseCustomColor = v, v => style.Color = v,
-            "Off keeps the game's own colour, which reddens as the gauge empties.");
-        EndSection();
+        if (Section("Color"))
+        {
+            changed |= DrawCustomColor($"{id}Color", part, style.UseCustomColor, style.Color,
+                v => style.UseCustomColor = v, v => style.Color = v,
+                "Off keeps the game's own colour, which reddens as the gauge empties.");
+            EndSection();
+        }
 
         return changed;
     }
@@ -832,20 +955,28 @@ internal static class PartyListSection
         Vector4 tint, Action<float> setOffsetX, Action<float> setOffsetY, Action<float> setScale,
         Action<Vector4> setTint)
     {
-        Section("Position");
-        var changed = Slider($"Horizontal offset##{id}X", offsetX, -60f, 60f, setOffsetX, null);
-        changed |= Slider($"Vertical offset##{id}Y", offsetY, -40f, 40f, setOffsetY, null);
-        EndSection();
+        var changed = false;
 
-        Section("Size");
-        changed |= Slider($"Scale##{id}Scale", scale, 0.3f, 2.5f, setScale, null, "%.2f");
-        EndSection();
+        if (Section("Position"))
+        {
+            changed |= Slider($"Horizontal offset##{id}X", offsetX, -60f, 60f, setOffsetX, null);
+            changed |= Slider($"Vertical offset##{id}Y", offsetY, -40f, 40f, setOffsetY, null);
+            EndSection();
+        }
 
-        Section("Color");
-        changed |= ConfigHelpers.ColorEditProp($"{part} tint##{id}Tint", tint, setTint,
-            ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
-        ConfigHelpers.HelpMarker("A colour multiply, so white leaves the glow as the game draws it.");
-        EndSection();
+        if (Section("Size"))
+        {
+            changed |= Slider($"Scale##{id}Scale", scale, 0.3f, 2.5f, setScale, null, "%.2f");
+            EndSection();
+        }
+
+        if (Section("Color"))
+        {
+            changed |= ConfigHelpers.ColorEditProp($"{part} tint##{id}Tint", tint, setTint,
+                ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+            ConfigHelpers.HelpMarker("A colour multiply, so white leaves the glow as the game draws it.");
+            EndSection();
+        }
 
         return changed;
     }
@@ -892,38 +1023,42 @@ internal static class PartyListSection
     /// <summary>
     /// One enabled metric's position, size and colour, hung off its entry in the picker.
     /// Each metric is drawn by a node of its own, so all three can differ between them.
+    /// The picker collapses this under the metric's name, which does the indenting.
     /// </summary>
     private static bool DrawNameMetricStyle(PartyListOverlaySettings settings, BarColumn metric)
     {
         var style = settings.Style(metric);
         var changed = false;
 
-        ImGui.Indent();
+        if (Section("Position"))
+        {
+            changed |= Slider("Gap before", style.Gap, -20f, 60f,
+                v => style.Gap = v,
+                "Space before this metric - measured from where the name's text ends, or from " +
+                "the metric before it.");
+            changed |= Slider("Vertical offset", style.OffsetY, -30f, 30f,
+                v => style.OffsetY = v,
+                "Lifts this metric off the name's line.\nThe metrics after it stay where they were.");
+            EndSection();
+        }
 
-        Section("Position");
-        changed |= Slider("Gap before", style.Gap, -20f, 60f,
-            v => style.Gap = v,
-            "Space before this metric - measured from where the name's text ends, or from " +
-            "the metric before it.");
-        changed |= Slider("Vertical offset", style.OffsetY, -30f, 30f,
-            v => style.OffsetY = v,
-            "Lifts this metric off the name's line.\nThe metrics after it stay where they were.");
-        EndSection();
+        if (Section("Size"))
+        {
+            changed |= SliderInt("Font size change", style.FontDelta, -8, 8,
+                v => style.FontDelta = v,
+                "Offset from the name's font, which the metric otherwise copies exactly.");
+            EndSection();
+        }
 
-        Section("Size");
-        changed |= SliderInt("Font size change", style.FontDelta, -8, 8,
-            v => style.FontDelta = v,
-            "Offset from the name's font, which the metric otherwise copies exactly.");
-        EndSection();
+        if (Section("Color"))
+        {
+            changed |= DrawCustomColor("plMetric", MetricPicker.GetBarColumnLabel(metric),
+                style.UseCustomColor, style.Color,
+                v => style.UseCustomColor = v, v => style.Color = v,
+                "Off follows the name's own colour, the way the game draws it.");
+            EndSection();
+        }
 
-        Section("Color");
-        changed |= DrawCustomColor("plMetric", MetricPicker.GetBarColumnLabel(metric),
-            style.UseCustomColor, style.Color,
-            v => style.UseCustomColor = v, v => style.Color = v,
-            "Off follows the name's own colour, the way the game draws it.");
-        EndSection();
-
-        ImGui.Unindent();
         return changed;
     }
 
