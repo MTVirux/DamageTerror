@@ -188,6 +188,10 @@ public static class MetricPicker
     /// <summary>
     /// Draws a metric picker with an ordered enabled list (with reorder arrows) at the top,
     /// and disabled items organized in categorized tabs below.
+    /// <para>
+    /// With <paramref name="collapsibleExtras"/> the per-item extras are tucked into a tree
+    /// node headed by the item's name, so a long list of them stays readable.
+    /// </para>
     /// </summary>
     public static bool Draw<T>(
         string id,
@@ -195,9 +199,11 @@ public static class MetricPicker
         Func<T, string> getLabel,
         (string Name, T[] Items)[] categories,
         Func<T, bool>? drawItemExtras = null,
-        Func<T, string?>? getDescription = null) where T : struct, Enum
+        Func<T, string?>? getDescription = null,
+        bool collapsibleExtras = false) where T : struct, Enum
     {
         var changed = false;
+        var collapse = collapsibleExtras && drawItemExtras != null;
 
         var enabledSet = new HashSet<T>(enabledItems);
 
@@ -205,13 +211,15 @@ public static class MetricPicker
         {
             var item = enabledItems[i];
             var label = getLabel(item);
+            var desc = getDescription?.Invoke(item);
 
-            ImGui.PushID($"{id}_e_{i}");
+            // Keyed by the item so an open node stays with its metric when the list is reordered.
+            ImGui.PushID($"{id}_e_{item}");
 
             changed |= ConfigHelpers.ReorderArrows(enabledItems, i);
 
             var enabled = true;
-            if (ImGui.Checkbox(label, ref enabled))
+            if (ImGui.Checkbox(collapse ? "##on" : label, ref enabled))
             {
                 enabledItems.RemoveAt(i);
                 enabledSet.Remove(item);
@@ -221,15 +229,27 @@ public static class MetricPicker
                 continue;
             }
 
-            if (getDescription != null)
+            if (desc != null && ImGui.IsItemHovered())
+                ImGui.SetTooltip(desc);
+
+            if (collapse)
             {
-                var desc = getDescription(item);
+                ImGui.SameLine();
+                var open = ImGui.TreeNodeEx(label, ImGuiTreeNodeFlags.SpanAvailWidth);
+
                 if (desc != null && ImGui.IsItemHovered())
                     ImGui.SetTooltip(desc);
-            }
 
-            if (drawItemExtras != null)
+                if (open)
+                {
+                    changed |= drawItemExtras!(item);
+                    ImGui.TreePop();
+                }
+            }
+            else if (drawItemExtras != null)
+            {
                 changed |= drawItemExtras(item);
+            }
 
             ImGui.PopID();
         }

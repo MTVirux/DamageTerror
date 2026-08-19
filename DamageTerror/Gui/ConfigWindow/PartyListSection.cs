@@ -405,7 +405,8 @@ internal static class PartyListSection
             MetricPicker.GetBarColumnLabel,
             MetricPicker.PartyListMetricCategories,
             metric => DrawNameMetricStyle(settings, metric),
-            metric => MetricPicker.BarColumnDescriptions.GetValueOrDefault(metric));
+            metric => MetricPicker.BarColumnDescriptions.GetValueOrDefault(metric),
+            collapsibleExtras: true);
 
         ImGui.Spacing();
 
