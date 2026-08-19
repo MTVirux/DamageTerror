@@ -110,6 +110,16 @@ public sealed class PartyListOverlaySettings
     private RowPartStyle LegacyShift() => new() { Enabled = ShiftRowContent, OffsetY = RowContentShiftY };
 
     /// <summary>
+    /// The outline around each gauge - the game's empty-bar artwork, which the fill is drawn
+    /// over. It is part of the bar's own texture rather than a node of its own, so it takes a
+    /// tint and a fade instead of a width. Both follow their bar out of the box, which is
+    /// what the backdrop did before it was styled on its own.
+    /// </summary>
+    public GaugeOutlineStyle HpBarOutline { get; set; } = new();
+
+    public GaugeOutlineStyle MpBarOutline { get; set; } = new();
+
+    /// <summary>
     /// The shield the game draws over the HP bar. It lives inside the HP gauge, so before
     /// these it silently took the HP bar's move, scale and tint.
     /// </summary>

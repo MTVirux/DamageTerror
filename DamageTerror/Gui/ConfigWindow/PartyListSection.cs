@@ -277,6 +277,7 @@ internal static class PartyListSection
         Group("HP bar");
         var changed = DrawGaugeBar("plShiftHpBar", "HP bar", settings.HpBarShift,
             "Moves the HP bar only - its number is moved below.");
+        changed |= DrawGaugeOutline("plHpOutline", settings.HpBarOutline);
         EndGroup();
 
         Group("HP numbers");
@@ -296,6 +297,7 @@ internal static class PartyListSection
         Group("MP bar");
         changed |= DrawGaugeBar("plShiftMpBar", "MP bar", settings.MpBarShift,
             "Moves the MP bar only - its number is moved below.");
+        changed |= DrawGaugeOutline("plMpOutline", settings.MpBarOutline);
         EndGroup();
 
         Group("MP numbers");
@@ -679,6 +681,13 @@ internal static class PartyListSection
         "Thick",
     };
 
+    private static readonly string[] GaugeOutlineColorModeLabels =
+    {
+        "Match the bar",
+        "Game's own",
+        "Custom",
+    };
+
     private static readonly string[] BarColorModeLabels =
     {
         "Match meter window",
@@ -717,6 +726,49 @@ internal static class PartyListSection
             "Off leaves the game's own artwork.\nOn tints it - a texture can be shaded, not repainted.");
         EndSection();
 
+        return changed;
+    }
+
+    /// <summary>
+    /// A gauge's outline - the empty bar the fill is drawn over. The game paints it into the
+    /// bar's own texture rather than giving it a node, so it takes a colour and a fade but
+    /// has no width to set.
+    /// </summary>
+    private static bool DrawGaugeOutline(string id, GaugeOutlineStyle style)
+    {
+        Section("Outline");
+
+        var changed = ConfigHelpers.CheckboxProp($"Hide outline##{id}Hide", style.Hidden,
+            v => style.Hidden = v);
+        ConfigHelpers.HelpMarker("The empty bar behind the fill. Its outline and the groove " +
+            "inside it are one piece of artwork, so they go together.");
+
+        if (style.Hidden)
+        {
+            EndSection();
+            return changed;
+        }
+
+        changed |= ConfigHelpers.ComboProp($"Outline color##{id}Mode", (int)style.ColorMode,
+            GaugeOutlineColorModeLabels, v => style.ColorMode = (GaugeOutlineColorMode)v, 180f);
+        ConfigHelpers.HelpMarker("Matching the bar gives the outline whatever colour the bar " +
+            "itself is tinted with.\nArtwork can be shaded, not repainted, so a custom colour " +
+            "tints it rather than replacing it.");
+
+        if (style.ColorMode == GaugeOutlineColorMode.Custom)
+        {
+            ImGui.Indent();
+            changed |= ConfigHelpers.ColorEditProp($"Outline tint##{id}Color", style.Color,
+                v => style.Color = v, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+            ImGui.Unindent();
+        }
+
+        changed |= Slider($"Outline opacity##{id}Opacity", style.Opacity, 0f, 1f,
+            v => style.Opacity = v,
+            "Multiplied over the alpha the game gives the artwork, so 1 leaves it alone.",
+            "%.2f");
+
+        EndSection();
         return changed;
     }
 

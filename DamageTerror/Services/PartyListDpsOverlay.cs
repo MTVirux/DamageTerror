@@ -106,6 +106,15 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>A gauge bar's artwork - the backdrop, the fill, and its two transition layers.</summary>
     private const int GaugeArtSlots = 4;
 
+    /// <summary>
+    /// The backdrop's slot in that artwork. It is the empty bar - the outline and the groove
+    /// inside it - so it is styled on its own rather than along with the fill drawn over it.
+    /// </summary>
+    private const int GaugeOutlineArt = 0;
+
+    /// <summary>The fill and its transition layers, which take the bar's own colour.</summary>
+    private const int GaugeFillArtFirst = GaugeOutlineArt + 1;
+
     /// <summary>The shield pieces: the fill inside the HP bar, then the overflow bar above it.</summary>
     private const int ShieldGroups = 2;
     private const int ShieldFillGroup = 0;
@@ -273,6 +282,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private ushort appliedBackdropHeight;
     private bool backdropHeightApplied;
     private readonly NodeTintState[,,] gaugeArtTint = new NodeTintState[MaxRows, RowPartSlots, GaugeArtSlots];
+    private readonly NodeAlphaState[,] gaugeOutlineAlpha = new NodeAlphaState[MaxRows, RowPartSlots];
     private readonly ShieldNodeState[,,] shieldState = new ShieldNodeState[MaxRows, ShieldGroups, ShieldNodeSlots];
     private readonly float[] originalCastNameX = new float[MaxRows];
     private readonly float[] originalCastNameY = new float[MaxRows];
@@ -712,6 +722,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyRowSpacing(addon);
         ApplyRowContentShift(addon);
         ApplyShieldStyles(addon);
+        ApplyGaugeOutlines(addon);
         ApplyCastBarLayout(addon);
         ApplyCastNameLayout(addon);
         ApplyGaugeNumberLayout(addon);
@@ -731,6 +742,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyRowSpacing(addon);
         ApplyRowContentShift(addon);
         ApplyShieldStyles(addon);
+        ApplyGaugeOutlines(addon);
         ApplyCastBarLayout(addon);
         ApplyCastNameLayout(addon);
         ApplyGaugeNumberLayout(addon);
@@ -769,6 +781,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         RestoreGaugeNumberLayout(addon);
         RestoreCastNameLayout(addon);
         RestoreCastBarLayout(addon);
+        RestoreGaugeOutlines(addon);
         RestoreShieldStyles(addon);
         RestoreRowContentShift(addon);
         RestoreRowSpacing(addon);
@@ -846,6 +859,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyRowSpacing(addon);
         ApplyRowContentShift(addon);
         ApplyShieldStyles(addon);
+        ApplyGaugeOutlines(addon);
         ApplyCastBarLayout(addon);
         ApplyCastNameLayout(addon);
         ApplyGaugeNumberLayout(addon);
@@ -1135,6 +1149,45 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
+    /// One game-owned node's alpha as the game left it, captured before our first write.
+    /// Self-correcting: the game fades the artwork itself as a row comes and goes, so
+    /// anything that isn't the value we last wrote becomes the new original.
+    /// </summary>
+    private struct NodeAlphaState
+    {
+        public bool Active;
+        public byte Original;
+        public byte Applied;
+    }
+
+    /// <summary>
+    /// Fades a node relative to the alpha the game gave it, so one that is animating in still
+    /// fades in - it just tops out lower.
+    /// </summary>
+    private static void ApplyNodeAlpha(AtkResNode* node, float opacity, ref NodeAlphaState state)
+    {
+        if (!state.Active || node->Color.A != state.Applied)
+        {
+            state.Original = node->Color.A;
+            state.Active = true;
+        }
+
+        var target = (byte)Math.Clamp(state.Original * opacity, 0f, 255f);
+        node->Color.A = target;
+        state.Applied = target;
+    }
+
+    private static void RestoreNodeAlpha(AtkResNode* node, ref NodeAlphaState state)
+    {
+        if (!state.Active)
+            return;
+
+        state.Active = false;
+        if (node != null)
+            node->Color.A = state.Original;
+    }
+
+    /// <summary>
     /// One piece of a gauge bar's own artwork. A tint on the bar's owner node would multiply
     /// down onto everything inside it - MP's digits, which are children of the bar component,
     /// and HP's shield, which is styled separately. Tinting the art nodes individually
@@ -1159,7 +1212,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void ApplyGaugeBarTint(AddonPartyList* addon, int row, int slot, RowPartStyle part)
     {
-        for (var art = 0; art < GaugeArtSlots; art++)
+        for (var art = GaugeFillArtFirst; art < GaugeArtSlots; art++)
         {
             var node = GetGaugeArtNode(addon, row, slot, art);
             if (part.UseCustomColor)
@@ -1171,9 +1224,95 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void RestoreGaugeBarTint(AddonPartyList* addon, int row, int slot)
     {
-        for (var art = 0; art < GaugeArtSlots; art++)
+        for (var art = GaugeFillArtFirst; art < GaugeArtSlots; art++)
             RestoreNodeTint(addon == null ? null : GetGaugeArtNode(addon, row, slot, art),
                 ref gaugeArtTint[row, slot, art]);
+    }
+
+    private GaugeOutlineStyle OutlinePart(int slot)
+        => slot == HpBarSlot ? Settings.HpBarOutline : Settings.MpBarOutline;
+
+    /// <summary>
+    /// Tints and fades the empty-bar artwork behind each gauge - what reads as the bar's
+    /// outline. It is part of the bar's own texture rather than a node of its own, so there
+    /// is no width to set. Kept out of the fill's pass so the outline can be styled whether
+    /// or not the bar itself is being adjusted.
+    /// </summary>
+    private void ApplyGaugeOutlines(AddonPartyList* addon)
+    {
+        if (addon == null)
+            return;
+
+        for (var row = 0; row < MaxRows; row++)
+        {
+            ApplyGaugeOutline(addon, row, HpBarSlot);
+            ApplyGaugeOutline(addon, row, MpBarSlot);
+        }
+    }
+
+    private void ApplyGaugeOutline(AddonPartyList* addon, int row, int slot)
+    {
+        var style = OutlinePart(slot);
+        var node = GetGaugeArtNode(addon, row, slot, GaugeOutlineArt);
+        if (node == null)
+            return;
+
+        ref var tint = ref gaugeArtTint[row, slot, GaugeOutlineArt];
+        if (TryGetOutlineTint(slot, style, out var color))
+            ApplyNodeTint(node, color, ref tint);
+        else
+            RestoreNodeTint(node, ref tint);
+
+        var opacity = style.Hidden ? 0f : Math.Clamp(style.Opacity, 0f, 1f);
+        if (opacity < 1f)
+            ApplyNodeAlpha(node, opacity, ref gaugeOutlineAlpha[row, slot]);
+        else
+            RestoreNodeAlpha(node, ref gaugeOutlineAlpha[row, slot]);
+    }
+
+    /// <summary>
+    /// The colour the outline is tinted with, if any. Following the bar means exactly what
+    /// the backdrop did before it was split out - the bar's colour, and only where the bar
+    /// is tinting its fill with it.
+    /// </summary>
+    private bool TryGetOutlineTint(int slot, GaugeOutlineStyle style, out Vector4 tint)
+    {
+        switch (style.ColorMode)
+        {
+            case GaugeOutlineColorMode.Custom:
+                tint = style.Color;
+                return true;
+
+            case GaugeOutlineColorMode.FollowBar:
+                var bar = RowPart(slot);
+                tint = bar?.Color ?? default;
+                return bar is { Enabled: true, UseCustomColor: true };
+
+            default:
+                tint = default;
+                return false;
+        }
+    }
+
+    private void RestoreGaugeOutlines(AddonPartyList* addon)
+    {
+        for (var row = 0; row < MaxRows; row++)
+        {
+            RestoreGaugeOutline(addon, row, HpBarSlot);
+            RestoreGaugeOutline(addon, row, MpBarSlot);
+        }
+    }
+
+    private void RestoreGaugeOutline(AddonPartyList* addon, int row, int slot)
+    {
+        ref var alpha = ref gaugeOutlineAlpha[row, slot];
+        ref var tint = ref gaugeArtTint[row, slot, GaugeOutlineArt];
+        if (!alpha.Active && !tint.Active)
+            return;
+
+        var node = addon == null ? null : GetGaugeArtNode(addon, row, slot, GaugeOutlineArt);
+        RestoreNodeAlpha(node, ref alpha);
+        RestoreNodeTint(node, ref tint);
     }
 
     /// <summary>
@@ -1193,10 +1332,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         public float OriginalOriginX;
         public float OriginalOriginY;
 
-        public bool AlphaActive;
-        public byte OriginalAlpha;
-        public byte AppliedAlpha;
-
+        public NodeAlphaState Alpha;
         public NodeTintState Tint;
     }
 
@@ -1278,9 +1414,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 RestoreNodeTint(node, ref state.Tint);
 
             if (fades)
-                ApplyShieldAlpha(node, opacity, ref state);
+                ApplyNodeAlpha(node, opacity, ref state.Alpha);
             else
-                RestoreShieldAlpha(node, ref state);
+                RestoreNodeAlpha(node, ref state.Alpha);
         }
     }
 
@@ -1334,33 +1470,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         node->SetScale(state.OriginalScale, state.OriginalScale);
     }
 
-    /// <summary>
-    /// Fades a shield layer relative to the alpha the game gave it, so one that is animating
-    /// in still fades in - it just tops out lower.
-    /// </summary>
-    private static void ApplyShieldAlpha(AtkResNode* node, float opacity, ref ShieldNodeState state)
-    {
-        if (!state.AlphaActive || node->Color.A != state.AppliedAlpha)
-        {
-            state.OriginalAlpha = node->Color.A;
-            state.AlphaActive = true;
-        }
-
-        var target = (byte)Math.Clamp(state.OriginalAlpha * opacity, 0f, 255f);
-        node->Color.A = target;
-        state.AppliedAlpha = target;
-    }
-
-    private static void RestoreShieldAlpha(AtkResNode* node, ref ShieldNodeState state)
-    {
-        if (!state.AlphaActive)
-            return;
-
-        state.AlphaActive = false;
-        if (node != null)
-            node->Color.A = state.OriginalAlpha;
-    }
-
     private void RestoreShieldStyles(AddonPartyList* addon)
     {
         for (var row = 0; row < MaxRows; row++)
@@ -1373,12 +1482,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         for (var index = 0; index < ShieldNodeSlots; index++)
         {
             ref var state = ref shieldState[row, group, index];
-            if (!state.TransformActive && !state.AlphaActive && !state.Tint.Active)
+            if (!state.TransformActive && !state.Alpha.Active && !state.Tint.Active)
                 continue;
 
             var node = addon == null ? null : GetShieldNode(addon, row, group, index);
             RestoreShieldTransform(node, ref state);
-            RestoreShieldAlpha(node, ref state);
+            RestoreNodeAlpha(node, ref state.Alpha);
             RestoreNodeTint(node, ref state.Tint);
         }
     }
