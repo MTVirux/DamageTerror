@@ -263,6 +263,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly TextNode?[,] metricNodes = new TextNode?[MaxRows, MetricSlots];
     private readonly string[,] lastMetricText = new string[MaxRows, MetricSlots];
 
+    /// <summary>The row component each row's metrics hang off. A row changes owner whenever
+    /// the party or trust count shifts which array it resolves to, so the nodes are rebuilt.</summary>
+    private readonly nint[] metricOwner = new nint[MaxRows];
+
     private readonly float[] lastBarWidth = new float[MaxRows];
     private readonly float[] lastBarHeight = new float[MaxRows];
     private readonly Vector2[] lastBarPos = new Vector2[MaxRows];
@@ -648,6 +652,57 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         lastBarColor[row] = NoColor;
     }
 
+    /// <summary>
+    /// Creates a row's metric text nodes inside the row itself, so they travel with it and
+    /// are drawn in its space rather than tracked across the addon. The parent is fixed at
+    /// attach time, so a row that resolves to a different component - which happens as the
+    /// party and trust counts move rows between the two arrays - rebuilds under the new one.
+    /// </summary>
+    private void EnsureMetricNodes(AddonPartyList* addon, int row)
+    {
+        var owner = GetRowNode(addon, row);
+        if (owner == null)
+            return;
+
+        if (metricOwner[row] != (nint)owner)
+        {
+            for (var slot = 0; slot < MetricSlots; slot++)
+            {
+                metricNodes[row, slot]?.Dispose();
+                metricNodes[row, slot] = null;
+            }
+
+            ClearMetricText(row);
+            metricOwner[row] = (nint)owner;
+        }
+
+        for (var slot = 0; slot < MetricSlots; slot++)
+        {
+            if (metricNodes[row, slot] != null)
+                continue;
+
+            var metrics = new TextNode
+            {
+                NodeId = MetricNodeIdBase + (uint)(row * MetricSlots + slot),
+                Size = new Vector2(160f, 20f),
+                // Overwritten each frame from the name node's font.
+                FontSize = 14,
+                AlignmentType = AlignmentType.Left,
+                TextColor = new Vector4(1f, 1f, 1f, 1f),
+                TextOutlineColor = new Vector4(0f, 0f, 0f, 1f),
+                TextFlags = TextFlags.Edge,
+                IsVisible = false,
+            };
+
+            // Appended, never prepended: inserting at the front shifts every pre-existing
+            // node in the row and the game misaddresses its own.
+            MakeNonInteractive(metrics);
+            metrics.AttachNode((AtkResNode*)owner, NodePosition.AsLastChild);
+            metricNodes[row, slot] = metrics;
+            lastMetricText[row, slot] = string.Empty;
+        }
+    }
+
     private void HandleSetup(AddonPartyList* addon)
     {
         var root = addon->RootNode;
@@ -667,6 +722,23 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         {
             SweepOrphanedNodes(addon->PartyMembers[i].TargetGlowContainer);
             SweepOrphanedNodes(addon->TrustMembers[i].TargetGlowContainer);
+            SweepOrphanedNodes(RowComponentNode(addon->PartyMembers[i].PartyMemberComponent));
+            SweepOrphanedNodes(RowComponentNode(addon->TrustMembers[i].PartyMemberComponent));
+        }
+
+        // A live overlayRoot means the rows the metrics hang off have been freed without us
+        // hearing about it. Unlinking from a freed parent would write into it, so those
+        // wrappers are dropped rather than disposed and each row builds fresh ones.
+        if (overlayRoot != null)
+        {
+            for (var i = 0; i < MaxRows; i++)
+            {
+                for (var slot = 0; slot < MetricSlots; slot++)
+                    metricNodes[i, slot] = null;
+
+                ClearMetricText(i);
+                metricOwner[i] = 0;
+            }
         }
 
         if (overlayRoot == null)
@@ -685,35 +757,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var i = 0; i < MaxRows; i++)
         {
-            var owner = GetRowNode(addon, i);
-            if (owner == null)
+            if (GetRowNode(addon, i) == null)
                 continue;
 
             EnsureBarNode(addon, i);
-
-            for (var slot = 0; slot < MetricSlots; slot++)
-            {
-                if (metricNodes[i, slot] != null)
-                    continue;
-
-                var metrics = new TextNode
-                {
-                    NodeId = MetricNodeIdBase + (uint)(i * MetricSlots + slot),
-                    Size = new Vector2(160f, 20f),
-                    // Overwritten each frame from the name node's font.
-                    FontSize = 14,
-                    AlignmentType = AlignmentType.Left,
-                    TextColor = new Vector4(1f, 1f, 1f, 1f),
-                    TextOutlineColor = new Vector4(0f, 0f, 0f, 1f),
-                    TextFlags = TextFlags.Edge,
-                    IsVisible = false,
-                };
-
-                MakeNonInteractive(metrics);
-                metrics.AttachNode(overlayRoot, NodePosition.AsLastChild);
-                metricNodes[i, slot] = metrics;
-                lastMetricText[i, slot] = string.Empty;
-            }
+            EnsureMetricNodes(addon, i);
         }
 
         // Rebuild so the list matches the tree we just changed.
@@ -799,6 +847,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             }
 
             ClearMetricText(i);
+            metricOwner[i] = 0;
             lastBarWidth[i] = -1f;
             lastBarHeight[i] = -1f;
             lastBarPos[i] = new Vector2(float.NaN, float.NaN);
@@ -1499,22 +1548,17 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (member == null)
             return;
 
+        EnsureMetricNodes(addon, row);
+
         var nameNode = member->Name;
         var owner = GetRowNode(addon, row);
 
-        // Follow the name: the row swaps it out for the spell name while casting, and the
-        // metrics belong with the name rather than the cast. Checked both ways because the
-        // swap could be either the name hiding or the cast bar covering it.
-        var nameVisible = nameNode != null && (nameNode->AtkResNode.NodeFlags & NodeFlags.Visible) != 0;
-        var casting = IsNodeVisible(member->CastingProgressBar == null ? null : &member->CastingProgressBar->AtkResNode)
-                      || IsNodeVisible(member->CastingActionName == null ? null : &member->CastingActionName->AtkResNode);
-
-        // Projected into our own container, not the row's, since that is the space our
-        // position is read in. This also makes the metrics follow the name wherever the
-        // row content offset puts it.
+        // Read in the row's own space, which is where the nodes now live. The name keeps its
+        // text and position while the cast bar hides it, so the metrics hold their place
+        // through a cast instead of going with the name.
         Bounds nameRect = default;
-        var placeable = stats != null && nameVisible && !casting && owner != null && overlayRoot != null
-                        && TryProjectRect(addon, &nameNode->AtkResNode, (AtkResNode*)overlayRoot, out nameRect);
+        var placeable = stats != null && nameNode != null && owner != null
+                        && TryProjectRect(addon, &nameNode->AtkResNode, (AtkResNode*)owner, out nameRect);
 
         // The chain starts where the name's text actually ends, measured rather than assumed.
         var x = nameRect.X;
@@ -2286,8 +2330,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>
     /// Rewrites the name text: strips the level (which the game prefixes to the name as
     /// glyphs in the private-use block U+E060..U+E06F rather than drawing it as its own
-    /// node) and prepends any selected metrics. The game's own string is kept and written
-    /// back when every option here is switched off.
+    /// node). The game's own string is kept and written back when the option is switched off.
     /// </summary>
     private void ApplyNameText(AddonPartyList* addon)
     {
@@ -3796,6 +3839,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var component = member == null ? null : member->PartyMemberComponent;
         return component == null ? null : component->OwnerNode;
     }
+
+    private static AtkResNode* RowComponentNode(AtkComponentBase* component)
+        => component == null ? null : (AtkResNode*)component->OwnerNode;
 
     private void RefreshCacheIfStale()
     {
