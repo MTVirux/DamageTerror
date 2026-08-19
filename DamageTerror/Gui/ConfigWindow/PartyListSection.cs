@@ -88,6 +88,11 @@ internal static class PartyListSection
             ImGui.Unindent();
         }
 
+        changed |= Slider("Extra space between rows##plRowSpacing", settings.RowSpacing,
+            0f, 40f, v => settings.RowSpacing = v,
+            "Pixels added between each party member.\nThe backdrop grows to match, and the " +
+            "chocobo and pet rows move down with the rest.");
+
         ImGui.Separator();
 
         changed |= DrawBarHeader(config, settings);

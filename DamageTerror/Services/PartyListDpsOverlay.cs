@@ -81,6 +81,18 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private const int ShiftSlots = 5;
 
     /// <summary>
+    /// The rows the extra spacing moves. Slotted by which array the game keeps a row in -
+    /// party members, then duty support / trust NPCs, then the chocobo and pet - rather than
+    /// by where it lands on screen: a screen row flips between a party node and a trust one
+    /// as the party's makeup changes, and a slot that changed node underneath the capture
+    /// would re-base on our own offset and compound it.
+    /// </summary>
+    private const int SpacingSlots = MaxRows * 2 + 2;
+    private const int TrustSpacingSlot = MaxRows;
+    private const int ChocoboSpacingSlot = MaxRows * 2;
+    private const int PetSpacingSlot = MaxRows * 2 + 1;
+
+    /// <summary>
     /// The leading shift slots that are row parts with a style of their own - name, HP bar,
     /// MP bar. The cast bar slots after them take only the vertical shift; their horizontal
     /// position and width belong to the cast bar layout instead.
@@ -254,6 +266,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[,] originalPartOriginX = new float[MaxRows, RowPartSlots];
     private readonly float[,] originalPartOriginY = new float[MaxRows, RowPartSlots];
     private readonly bool[,] shiftApplied = new bool[MaxRows, ShiftSlots];
+    private readonly float[] originalSpacingY = new float[SpacingSlots];
+    private readonly float[] appliedSpacingY = new float[SpacingSlots];
+    private readonly bool[] spacingApplied = new bool[SpacingSlots];
+    private ushort originalBackdropHeight;
+    private ushort appliedBackdropHeight;
+    private bool backdropHeightApplied;
     private readonly NodeTintState[,,] gaugeArtTint = new NodeTintState[MaxRows, RowPartSlots, GaugeArtSlots];
     private readonly ShieldNodeState[,,] shieldState = new ShieldNodeState[MaxRows, ShieldGroups, ShieldNodeSlots];
     private readonly float[] originalCastNameX = new float[MaxRows];
@@ -691,6 +709,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         addon->UpdateCollisionNodeList(false);
 
         PositionNodes(addon);
+        ApplyRowSpacing(addon);
         ApplyRowContentShift(addon);
         ApplyShieldStyles(addon);
         ApplyCastBarLayout(addon);
@@ -709,6 +728,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private void HandleRefresh(AddonPartyList* addon)
     {
         PositionNodes(addon);
+        ApplyRowSpacing(addon);
         ApplyRowContentShift(addon);
         ApplyShieldStyles(addon);
         ApplyCastBarLayout(addon);
@@ -751,6 +771,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         RestoreCastBarLayout(addon);
         RestoreShieldStyles(addon);
         RestoreRowContentShift(addon);
+        RestoreRowSpacing(addon);
 
         for (var i = 0; i < MaxRows; i++)
         {
@@ -822,6 +843,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 if (GetRowNode(addon, i) != null)
                     EnsureBarNode(addon, i);
 
+        ApplyRowSpacing(addon);
         ApplyRowContentShift(addon);
         ApplyShieldStyles(addon);
         ApplyCastBarLayout(addon);
@@ -2594,6 +2616,140 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             source->Width,
             source->Height);
         return true;
+    }
+
+    /// <summary>
+    /// Spreads the rows out by pushing each one down by its index times the configured gap.
+    /// Everything in a row hangs off the node moved here - the game's own name, gauges, glows
+    /// and cast bar as children of it, our fill and metrics through the bounds we measure off
+    /// it - so the whole row travels with it. The chocobo and pet rows sit below the party,
+    /// so they take the full stack rather than a slot's worth.
+    /// </summary>
+    private void ApplyRowSpacing(AddonPartyList* addon)
+    {
+        if (addon == null)
+            return;
+
+        var spacing = Settings.RowSpacing;
+        if (spacing <= 0f)
+        {
+            RestoreRowSpacing(addon);
+            return;
+        }
+
+        // Trust rows are drawn where the party's own end, so the two arrays together make one
+        // stack and each slot is offset by its place in it.
+        var party = Math.Clamp(addon->MemberCount, 0, MaxRows);
+
+        for (var slot = 0; slot < MaxRows; slot++)
+        {
+            ShiftBySpacing(addon, slot, slot * spacing);
+            ShiftBySpacing(addon, TrustSpacingSlot + slot, (party + slot) * spacing);
+        }
+
+        var below = RowsInUse(addon) * spacing;
+        ShiftBySpacing(addon, ChocoboSpacingSlot, below);
+        ShiftBySpacing(addon, PetSpacingSlot, below);
+
+        // How far the bottom row moved is how much taller the list has become. A chocobo or
+        // pet row sits one slot below the party, so its presence adds a row's worth.
+        var hasCompanion = addon->ChocoboCount > 0 || addon->PetCount > 0;
+        ApplyBackdropHeight(addon, hasCompanion ? below : Math.Max(0f, below - spacing));
+    }
+
+    /// <summary>Rows the game is drawing for party members and duty support / trust NPCs.</summary>
+    private static int RowsInUse(AddonPartyList* addon)
+        => Math.Clamp(addon->MemberCount + addon->TrustCount, 0, MaxRows);
+
+    private void ShiftBySpacing(AddonPartyList* addon, int slot, float offset)
+    {
+        var node = SpacingTarget(addon, slot);
+        if (node == null)
+            return;
+
+        if (!spacingApplied[slot] || Math.Abs(node->Y - appliedSpacingY[slot]) > 0.01f)
+            originalSpacingY[slot] = node->Y;
+
+        var targetY = originalSpacingY[slot] + offset;
+        if (Math.Abs(node->Y - targetY) > 0.01f)
+            node->SetPositionFloat(node->X, targetY);
+
+        appliedSpacingY[slot] = targetY;
+        spacingApplied[slot] = true;
+    }
+
+    /// <summary>
+    /// Grows the party list's backdrop by however far the bottom row was pushed down, so it
+    /// still covers the rows once they are spread out.
+    /// </summary>
+    private void ApplyBackdropHeight(AddonPartyList* addon, float extra)
+    {
+        var backdrop = addon->BackgroundNineGridNode;
+        if (backdrop == null)
+            return;
+
+        var node = &backdrop->AtkResNode;
+
+        if (!backdropHeightApplied || node->Height != appliedBackdropHeight)
+            originalBackdropHeight = node->Height;
+
+        var target = (ushort)Math.Clamp(originalBackdropHeight + (int)MathF.Round(extra), 0, ushort.MaxValue);
+        if (node->Height != target)
+            node->SetHeight(target);
+
+        appliedBackdropHeight = target;
+        backdropHeightApplied = true;
+    }
+
+    /// <summary>The member behind a spacing slot, read straight from the array that slot names.</summary>
+    private static AddonPartyList.PartyListMemberStruct* SpacingMember(AddonPartyList* addon, int slot)
+    {
+        if (slot == ChocoboSpacingSlot)
+            return &addon->Chocobo;
+
+        if (slot == PetSpacingSlot)
+            return &addon->Pet;
+
+        if (slot >= TrustSpacingSlot)
+        {
+            fixed (AddonPartyList.PartyListMemberStruct* members = addon->TrustMembers)
+                return members + (slot - TrustSpacingSlot);
+        }
+
+        fixed (AddonPartyList.PartyListMemberStruct* members = addon->PartyMembers)
+            return members + slot;
+    }
+
+    private static AtkResNode* SpacingTarget(AddonPartyList* addon, int slot)
+    {
+        var member = SpacingMember(addon, slot);
+        var component = member == null ? null : member->PartyMemberComponent;
+        var owner = component == null ? null : component->OwnerNode;
+        return owner == null ? null : &owner->AtkResNode;
+    }
+
+    private void RestoreRowSpacing(AddonPartyList* addon)
+    {
+        for (var slot = 0; slot < SpacingSlots; slot++)
+        {
+            if (!spacingApplied[slot])
+                continue;
+
+            spacingApplied[slot] = false;
+
+            var node = addon == null ? null : SpacingTarget(addon, slot);
+            if (node != null)
+                node->SetPositionFloat(node->X, originalSpacingY[slot]);
+        }
+
+        if (!backdropHeightApplied)
+            return;
+
+        backdropHeightApplied = false;
+
+        var backdrop = addon == null ? null : addon->BackgroundNineGridNode;
+        if (backdrop != null)
+            backdrop->AtkResNode.SetHeight(originalBackdropHeight);
     }
 
     private void RestoreRowContentShift(AddonPartyList* addon)

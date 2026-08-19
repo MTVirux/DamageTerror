@@ -31,6 +31,13 @@ public sealed class PartyListOverlaySettings
     /// </summary>
     public float TextOutlineDarkness { get; set; } = 1f;
 
+    /// <summary>
+    /// Extra pixels of gap between rows, on top of the spacing the game uses. Each row is
+    /// pushed down by its index times this, the chocobo and pet rows below the party by the
+    /// whole stack, and the backdrop is grown to match so it still covers them.
+    /// </summary>
+    public float RowSpacing { get; set; } = 0f;
+
     // DPS fill bar
     public bool ShowBar { get; set; } = true;
     public float IconUnderlap { get; set; } = 7f;
