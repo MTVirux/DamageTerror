@@ -614,7 +614,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // Anything already carrying our ids is a leftover from a previous instance.
         SweepOrphanedNodes(root);
         for (var i = 0; i < MaxRows; i++)
+        {
             SweepOrphanedNodes(addon->PartyMembers[i].TargetGlowContainer);
+            SweepOrphanedNodes(addon->TrustMembers[i].TargetGlowContainer);
+        }
 
         if (overlayRoot == null)
         {
@@ -816,7 +819,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // hides the metrics node and zero-widths the bar.
         var showMetrics = MetricsVisible;
 
-        var gate = $"{showMetrics}|{encounterActive}|{count}|{statsByName.Count > 0}";
+        var gate = $"{showMetrics}|{encounterActive}|{count}|{addon->MemberCount}|{addon->TrustCount}|{statsByName.Count > 0}";
         if (lastGateTrace != gate)
         {
             lastGateTrace = gate;
@@ -824,7 +827,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 LogChannel.PartyMembership,
                 $"[PartyList] gate showMetrics={showMetrics} encounterActive={encounterActive} " +
                 $"hideOutOfCombat={Settings.HideOutOfCombat} showBar={Settings.ShowBar} " +
-                $"rows={count} parsedNames={statsByName.Count} maxDps={maxDps:F0}");
+                $"rows={count} party={addon->MemberCount} trust={addon->TrustCount} " +
+                $"parsedNames={statsByName.Count} maxDps={maxDps:F0}");
         }
 
         for (var i = 0; i < MaxRows; i++)
@@ -1063,7 +1067,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// </summary>
     private static AtkResNode* GetMpBarArtNode(AddonPartyList* addon, int row, int art)
     {
-        var bar = addon->PartyMembers[row].MPGaugeBar;
+        var member = RowMember(addon, row);
+        var bar = member == null ? null : member->MPGaugeBar;
         if (bar == null)
             return null;
 
@@ -1097,16 +1102,19 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void UpdateMetrics(AddonPartyList* addon, int row, CombatantEntry? stats)
     {
-        var member = addon->PartyMembers[row];
-        var nameNode = member.Name;
+        var member = RowMember(addon, row);
+        if (member == null)
+            return;
+
+        var nameNode = member->Name;
         var owner = GetRowNode(addon, row);
 
         // Follow the name: the row swaps it out for the spell name while casting, and the
         // metrics belong with the name rather than the cast. Checked both ways because the
         // swap could be either the name hiding or the cast bar covering it.
         var nameVisible = nameNode != null && (nameNode->AtkResNode.NodeFlags & NodeFlags.Visible) != 0;
-        var casting = IsNodeVisible(member.CastingProgressBar == null ? null : &member.CastingProgressBar->AtkResNode)
-                      || IsNodeVisible(member.CastingActionName == null ? null : &member.CastingActionName->AtkResNode);
+        var casting = IsNodeVisible(member->CastingProgressBar == null ? null : &member->CastingProgressBar->AtkResNode)
+                      || IsNodeVisible(member->CastingActionName == null ? null : &member->CastingActionName->AtkResNode);
 
         // Projected into our own container, not the row's, since that is the space our
         // position is read in. This also makes the metrics follow the name wherever the
@@ -1392,7 +1400,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         metrics = default;
 
-        var icon = addon->PartyMembers[row].ClassJobIcon;
+        var member = RowMember(addon, row);
+        var icon = member == null ? null : member->ClassJobIcon;
         if (icon == null || icon->Height <= 0)
             return false;
 
@@ -1421,23 +1430,26 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// </summary>
     private static AtkResNode* GetShiftTarget(AddonPartyList* addon, int row, int slot)
     {
-        var member = addon->PartyMembers[row];
+        var member = RowMember(addon, row);
+        if (member == null)
+            return null;
+
         return slot switch
         {
-            0 => member.Name == null ? null : &member.Name->AtkResNode,
-            1 => member.HPGaugeBar == null || member.HPGaugeBar->OwnerNode == null
+            0 => member->Name == null ? null : &member->Name->AtkResNode,
+            1 => member->HPGaugeBar == null || member->HPGaugeBar->OwnerNode == null
                 ? null
-                : &member.HPGaugeBar->OwnerNode->AtkResNode,
-            2 => member.MPGaugeBar == null || member.MPGaugeBar->OwnerNode == null
+                : &member->HPGaugeBar->OwnerNode->AtkResNode,
+            2 => member->MPGaugeBar == null || member->MPGaugeBar->OwnerNode == null
                 ? null
-                : &member.MPGaugeBar->OwnerNode->AtkResNode,
+                : &member->MPGaugeBar->OwnerNode->AtkResNode,
 
-            3 => member.CastingProgressBarBackground == null
+            3 => member->CastingProgressBarBackground == null
                 ? null
-                : &member.CastingProgressBarBackground->AtkResNode,
-            4 => member.CastingProgressBar == null
+                : &member->CastingProgressBarBackground->AtkResNode,
+            4 => member->CastingProgressBar == null
                 ? null
-                : &member.CastingProgressBar->AtkResNode,
+                : &member->CastingProgressBar->AtkResNode,
             _ => null,
         };
     }
@@ -1569,12 +1581,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var row = 0; row < MaxRows; row++)
         {
-            var member = addon->PartyMembers[row];
-            if (member.CastingActionName == null || member.CastingProgressBarBackground == null)
+            var member = RowMember(addon, row);
+            if (member == null || member->CastingActionName == null || member->CastingProgressBarBackground == null)
                 continue;
 
-            var textRes = &member.CastingActionName->AtkResNode;
-            var barRes = &member.CastingProgressBarBackground->AtkResNode;
+            var textRes = &member->CastingActionName->AtkResNode;
+            var barRes = &member->CastingProgressBarBackground->AtkResNode;
 
             // Each property is captured independently: a game-side change to one must not
             // recapture another whose current value is ours, or teardown restores garbage.
@@ -1586,8 +1598,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 originalCastNameY[row] = textRes->Y;
             if (fresh || textRes->Height != appliedCastNameHeight[row])
                 originalCastNameHeight[row] = textRes->Height;
-            if (fresh || member.CastingActionName->FontSize != appliedCastNameFont[row])
-                originalCastNameFont[row] = member.CastingActionName->FontSize;
+            if (fresh || member->CastingActionName->FontSize != appliedCastNameFont[row])
+                originalCastNameFont[row] = member->CastingActionName->FontSize;
 
             if (!TryProjectRect(addon, barRes, textRes->ParentNode, out var target))
                 continue;
@@ -1603,10 +1615,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 textRes->SetPositionFloat(targetX, targetY);
             if (textRes->Height != height)
                 textRes->SetHeight(height);
-            if (member.CastingActionName->FontSize != font)
-                member.CastingActionName->FontSize = font;
+            if (member->CastingActionName->FontSize != font)
+                member->CastingActionName->FontSize = font;
 
-            ApplyTextColor(member.CastingActionName, Settings.CastNameUseCustomColor,
+            ApplyTextColor(member->CastingActionName, Settings.CastNameUseCustomColor,
                 Settings.CastNameColor, ref castNameColor[row]);
 
             appliedCastNameX[row] = targetX;
@@ -1641,8 +1653,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var row = 0; row < MaxRows; row++)
         {
-            var member = addon->PartyMembers[row];
-            var background = member.CastingProgressBarBackground;
+            var member = RowMember(addon, row);
+            var background = member == null ? null : member->CastingProgressBarBackground;
             if (background == null)
                 continue;
 
@@ -1725,15 +1737,18 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private static AtkResNode* GetCastBarNode(AddonPartyList* addon, int row, int slot)
     {
-        var member = addon->PartyMembers[row];
+        var member = RowMember(addon, row);
+        if (member == null)
+            return null;
+
         return slot switch
         {
-            0 => member.CastingProgressBarBackground == null
+            0 => member->CastingProgressBarBackground == null
                 ? null
-                : &member.CastingProgressBarBackground->AtkResNode,
-            1 => member.CastingProgressBar == null
+                : &member->CastingProgressBarBackground->AtkResNode,
+            1 => member->CastingProgressBar == null
                 ? null
-                : &member.CastingProgressBar->AtkResNode,
+                : &member->CastingProgressBar->AtkResNode,
             _ => null,
         };
     }
@@ -1771,7 +1786,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var row = 0; row < MaxRows; row++)
         {
-            var index = addon->PartyMembers[row].GroupSlotIndicator;
+            var member = RowMember(addon, row);
+            var index = member == null ? null : member->GroupSlotIndicator;
             if (index == null)
                 continue;
 
@@ -1818,7 +1834,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
             indexApplied[row] = false;
 
-            var index = addon == null ? null : addon->PartyMembers[row].GroupSlotIndicator;
+            var member = RowMember(addon, row);
+            var index = member == null ? null : member->GroupSlotIndicator;
             if (index == null)
                 continue;
 
@@ -1832,7 +1849,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         RestorePartyIndexLayout(addon);
 
         for (var row = 0; row < MaxRows; row++)
-            RestoreTextColor(addon == null ? null : addon->PartyMembers[row].GroupSlotIndicator, ref indexColor[row]);
+        {
+            var member = RowMember(addon, row);
+            RestoreTextColor(member == null ? null : member->GroupSlotIndicator, ref indexColor[row]);
+        }
     }
 
     /// <summary>
@@ -1847,7 +1867,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var row = 0; row < MaxRows; row++)
         {
-            var name = addon->PartyMembers[row].Name;
+            var member = RowMember(addon, row);
+            var name = member == null ? null : member->Name;
             if (name == null)
                 continue;
 
@@ -1887,7 +1908,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var row = 0; row < MaxRows; row++)
         {
-            var name = addon->PartyMembers[row].Name;
+            var member = RowMember(addon, row);
+            var name = member == null ? null : member->Name;
             if (name == null)
                 continue;
 
@@ -1936,7 +1958,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
             nameTextApplied[row] = false;
 
-            var name = addon == null ? null : addon->PartyMembers[row].Name;
+            var member = RowMember(addon, row);
+            var name = member == null ? null : member->Name;
             if (name == null || string.IsNullOrEmpty(originalNameText[row]))
                 continue;
 
@@ -2020,7 +2043,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         for (var row = 0; row < MaxRows; row++)
         {
-            var name = addon == null ? null : addon->PartyMembers[row].Name;
+            var member = RowMember(addon, row);
+            var name = member == null ? null : member->Name;
 
             if (nameFontApplied[row])
             {
@@ -2035,12 +2059,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private static AtkComponentBase* GetGaugeComponent(AddonPartyList* addon, int row, int gauge)
     {
-        var member = addon->PartyMembers[row];
+        var member = RowMember(addon, row);
+        if (member == null)
+            return null;
 
         if (gauge == 0)
-            return member.HPGaugeComponent;
+            return member->HPGaugeComponent;
 
-        return member.MPGaugeBar == null ? null : &member.MPGaugeBar->AtkComponentBase;
+        return member->MPGaugeBar == null ? null : &member->MPGaugeBar->AtkComponentBase;
     }
 
     /// <summary>Gathers a component's text nodes, descending into nested components.</summary>
@@ -2233,7 +2259,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         for (var row = 0; row < MaxRows; row++)
         {
-            var text = addon == null ? null : addon->PartyMembers[row].CastingActionName;
+            var member = RowMember(addon, row);
+            var text = member == null ? null : member->CastingActionName;
             RestoreTextColor(text, ref castNameColor[row]);
 
             if (!castNameApplied[row])
@@ -2352,7 +2379,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private static AtkResNode* GetStatusIconNode(AddonPartyList* addon, int row, int index)
     {
-        var icons = addon->PartyMembers[row].StatusIcons;
+        var member = RowMember(addon, row);
+        if (member == null)
+            return null;
+
+        var icons = member->StatusIcons;
         if (index >= icons.Length)
             return null;
 
@@ -2681,7 +2712,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// </summary>
     private static AtkResNode* GetGlowNode(AddonPartyList* addon, int row, int slot)
     {
-        var container = addon->PartyMembers[row].TargetGlowContainer;
+        var member = RowMember(addon, row);
+        var container = member == null ? null : member->TargetGlowContainer;
         if (container == null)
             return null;
 
@@ -2848,8 +2880,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
             // The row glow's own node still carries its tint. Position and scale can't live
             // here - the game rewrites those during the fade - but colour survives.
-            var rowMember = addon->PartyMembers[row];
-            var glowNode = rowMember.TargetGlow == null ? null : &rowMember.TargetGlow->AtkResNode;
+            var rowMember = RowMember(addon, row);
+            var glowNode = rowMember == null || rowMember->TargetGlow == null
+                ? null
+                : &rowMember->TargetGlow->AtkResNode;
             if (glowNode != null)
             {
                 if (!rowGlowTintApplied[row])
@@ -2920,9 +2954,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             {
                 rowGlowTintApplied[row] = false;
 
-                var glowNode = addon == null || addon->PartyMembers[row].TargetGlow == null
+                var rowMember = RowMember(addon, row);
+                var glowNode = rowMember == null || rowMember->TargetGlow == null
                     ? null
-                    : &addon->PartyMembers[row].TargetGlow->AtkResNode;
+                    : &rowMember->TargetGlow->AtkResNode;
 
                 if (glowNode != null)
                 {
@@ -2939,7 +2974,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private static AtkComponentBase* GetStatusIconComponent(AddonPartyList* addon, int row, int index)
     {
-        var icons = addon->PartyMembers[row].StatusIcons;
+        var member = RowMember(addon, row);
+        if (member == null)
+            return null;
+
+        var icons = member->StatusIcons;
         if (index >= icons.Length)
             return null;
 
@@ -3077,12 +3116,35 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         return overlayRoot == null ? null : (AtkResNode*)overlayRoot;
     }
 
+    /// <summary>
+    /// The member data behind a row. Duty support and trust NPCs are not party members -
+    /// the addon draws them from a second array of its own, below the real party rows - so
+    /// a row past the party's count resolves there and a row index always means the same
+    /// row on screen whatever the content is.
+    /// </summary>
+    private static AddonPartyList.PartyListMemberStruct* RowMember(AddonPartyList* addon, int row)
+    {
+        if (addon == null || row < 0 || row >= MaxRows)
+            return null;
+
+        var trust = row - Math.Clamp(addon->MemberCount, 0, MaxRows);
+        if (trust >= 0 && trust < addon->TrustCount)
+        {
+            fixed (AddonPartyList.PartyListMemberStruct* members = addon->TrustMembers)
+                return members + trust;
+        }
+
+        fixed (AddonPartyList.PartyListMemberStruct* members = addon->PartyMembers)
+            return members + row;
+    }
+
     private static AtkComponentNode* GetRowNode(AddonPartyList* addon, int index)
     {
         if (addon == null)
             return null;
 
-        var component = addon->PartyMembers[index].PartyMemberComponent;
+        var member = RowMember(addon, index);
+        var component = member == null ? null : member->PartyMemberComponent;
         return component == null ? null : component->OwnerNode;
     }
 
@@ -3122,6 +3184,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 var at = combatant.Name.IndexOf('@');
                 if (at > 0)
                     statsByName[combatant.Name[..at]] = combatant;
+
+                // Duty support NPCs are reported against whoever brought them - the parser
+                // names them "Alisaie (YOU)" where the party list row says just "Alisaie".
+                // Added without displacing a combatant that owns the bare name outright.
+                var owner = combatant.Name.LastIndexOf(" (", StringComparison.Ordinal);
+                if (owner > 0 && combatant.Name.EndsWith(')'))
+                    statsByName.TryAdd(combatant.Name[..owner], combatant);
 
                 if (combatant.EncDps > maxDps)
                     maxDps = combatant.EncDps;
