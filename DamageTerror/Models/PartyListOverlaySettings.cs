@@ -19,25 +19,21 @@ public sealed class PartyListOverlaySettings
     public float HideOutOfCombatDelay { get; set; } = 5f;
 
     /// <summary>
-    /// Matches the outline the game draws around every glyph to whatever colour the text was
-    /// given. Off leaves the game's own edge, which stays dark under a recoloured name.
-    /// Applies to every party list text with a custom colour.
+    /// Takes over the outline the game draws around every glyph, giving it
+    /// <see cref="TextOutlineTint"/> and <see cref="TextOutlineThickness"/>. Off leaves the
+    /// game's own edge, which stays dark under a recoloured name. Applies to every party
+    /// list text with a custom colour.
     /// </summary>
     public bool TintTextOutline { get; set; } = true;
 
     /// <summary>
-    /// How far the outline is pulled away from the text colour towards
-    /// <see cref="TextOutlineTint"/>. 0 matches the text exactly, which reads as a fatter
-    /// glyph rather than an edge; 1 is the tint itself.
-    /// </summary>
-    public float TextOutlineDarkness { get; set; } = 1f;
-
-    /// <summary>
-    /// The colour the outline is blended towards. Black is the game's own look; a lighter
-    /// tint gives the text a glow instead of an edge. Alpha is unused - the game's own edge
-    /// alpha is kept so fading text still fades.
+    /// The outline colour. Black is the game's own look; a lighter one reads as a glow.
+    /// Alpha is unused - the game's own edge alpha is kept so fading text still fades.
     /// </summary>
     public Vector4 TextOutlineTint { get; set; } = new(0f, 0f, 0f, 1f);
+
+    /// <summary>How heavy the outline is drawn.</summary>
+    public PartyListOutlineThickness TextOutlineThickness { get; set; } = PartyListOutlineThickness.Thin;
 
     /// <summary>
     /// Extra pixels of gap between rows, on top of the spacing the game uses. Each row is

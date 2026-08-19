@@ -72,24 +72,26 @@ internal static class PartyListSection
             ImGui.Unindent();
         }
 
-        changed |= ConfigHelpers.CheckboxProp("Tint text outline##plTintOutline",
+        changed |= ConfigHelpers.CheckboxProp("Restyle text outline##plTintOutline",
             settings.TintTextOutline, v => settings.TintTextOutline = v);
-        ConfigHelpers.HelpMarker("The glow around each glyph follows whatever colour the text " +
-            "is given below.\nOff leaves the game's own outline, which stays dark under a " +
-            "recoloured name.");
+        ConfigHelpers.HelpMarker("Gives the outline around each glyph the colour and weight " +
+            "below.\nOff leaves the game's own outline, which stays dark under a recoloured " +
+            "name.");
 
         if (settings.TintTextOutline)
         {
             ImGui.Indent();
-            changed |= Slider("Outline strength##plOutlineDarkness", settings.TextOutlineDarkness,
-                0f, 1f, v => settings.TextOutlineDarkness = v,
-                "0 matches the text exactly, which reads as thicker glyphs rather than an edge; " +
-                "1 is the tint colour below.", "%.2f");
-            changed |= ConfigHelpers.ColorEditProp("Outline tint##plOutlineTint",
+            changed |= ConfigHelpers.ColorEditProp("Outline color##plOutlineTint",
                 settings.TextOutlineTint, v => settings.TextOutlineTint = v,
                 ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
-            ConfigHelpers.HelpMarker("The colour the outline is blended towards. Black is the " +
-                "game's own look; a lighter tint reads as a glow.");
+            ConfigHelpers.HelpMarker("Black is the game's own look; a lighter colour reads as " +
+                "a glow around the text.");
+            changed |= ConfigHelpers.ComboProp("Outline thickness##plOutlineThickness",
+                (int)settings.TextOutlineThickness, OutlineThicknessLabels,
+                v => settings.TextOutlineThickness = (PartyListOutlineThickness)v, 180f);
+            ConfigHelpers.HelpMarker("The game has no outline width, only two passes: thin is " +
+                "its usual edge, thick adds the wider glare pass on top.\nNone drops the " +
+                "outline entirely.");
             ImGui.Unindent();
         }
 
@@ -669,6 +671,13 @@ internal static class PartyListSection
     }
 
     private static void EndSection() => ImGui.Unindent();
+
+    private static readonly string[] OutlineThicknessLabels =
+    {
+        "None",
+        "Thin",
+        "Thick",
+    };
 
     private static readonly string[] BarColorModeLabels =
     {

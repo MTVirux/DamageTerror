@@ -920,8 +920,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (node.AlignmentType != alignment)
             node.AlignmentType = alignment;
 
-        if (node.TextFlags != name->TextFlags)
-            node.TextFlags = name->TextFlags;
+        var flags = style.UseCustomColor && Settings.TintTextOutline
+            ? OutlineFlags(name->TextFlags)
+            : name->TextFlags;
+        if (node.TextFlags != flags)
+            node.TextFlags = flags;
         if (node.LineSpacing != name->LineSpacing)
             node.LineSpacing = name->LineSpacing;
         if (node.CharSpacing != name->CharSpacing)
@@ -940,8 +943,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var edgeColor = ToVector4(name->EdgeColor);
         if (style.UseCustomColor && Settings.TintTextOutline)
         {
-            var tinted = OutlineColor(textColor);
-            edgeColor = new Vector4(tinted.X, tinted.Y, tinted.Z, edgeColor.W);
+            var tint = Settings.TextOutlineTint;
+            edgeColor = new Vector4(tint.X, tint.Y, tint.Z, edgeColor.W);
         }
 
         if (node.TextOutlineColor != edgeColor)
@@ -975,6 +978,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         public ByteColor OriginalEdge;
         public ByteColor AppliedEdge;
         public bool EdgeActive;
+        public TextFlags OriginalFlags;
+        public TextFlags AppliedFlags;
+        public bool FlagsActive;
     }
 
     /// <summary>
@@ -1004,15 +1010,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         state.Applied = target;
         state.Active = true;
 
-        ApplyTextOutline(text, color, ref state);
+        ApplyTextOutline(text, ref state);
     }
 
     /// <summary>
-    /// Matches the glyph outline - the glow around the text - to the colour the text was
-    /// given, pulled towards the tint colour so it still reads as an edge. The game's own
-    /// edge alpha is kept, so text the game fades still fades.
+    /// Gives the glyph outline - the edge around the text - the configured colour and weight.
+    /// The game's own edge alpha is kept, so text the game fades still fades.
     /// </summary>
-    private void ApplyTextOutline(AtkTextNode* text, Vector4 color, ref TextColorState state)
+    private void ApplyTextOutline(AtkTextNode* text, ref TextColorState state)
     {
         if (!Settings.TintTextOutline)
         {
@@ -1023,7 +1028,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (!state.EdgeActive || !SameColor(text->EdgeColor, state.AppliedEdge))
             state.OriginalEdge = text->EdgeColor;
 
-        var target = ToByteColor(OutlineColor(color));
+        var target = ToByteColor(Settings.TextOutlineTint);
         target.A = state.OriginalEdge.A;
 
         if (!SameColor(text->EdgeColor, target))
@@ -1031,18 +1036,29 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         state.AppliedEdge = target;
         state.EdgeActive = true;
+
+        if (!state.FlagsActive || text->TextFlags != state.AppliedFlags)
+            state.OriginalFlags = text->TextFlags;
+
+        var flags = OutlineFlags(state.OriginalFlags);
+        if (text->TextFlags != flags)
+            text->TextFlags = flags;
+
+        state.AppliedFlags = flags;
+        state.FlagsActive = true;
     }
 
-    private Vector4 OutlineColor(Vector4 color)
+    /// <summary>
+    /// The game has no outline width - it has an edge pass and a wider glare pass, both drawn
+    /// in the edge colour - so thickness is which of the two the text is drawn with. The rest
+    /// of the text's flags are left alone.
+    /// </summary>
+    private TextFlags OutlineFlags(TextFlags flags) => Settings.TextOutlineThickness switch
     {
-        var blend = Math.Clamp(Settings.TextOutlineDarkness, 0f, 1f);
-        var tint = Settings.TextOutlineTint;
-        return new Vector4(
-            float.Lerp(color.X, tint.X, blend),
-            float.Lerp(color.Y, tint.Y, blend),
-            float.Lerp(color.Z, tint.Z, blend),
-            color.W);
-    }
+        PartyListOutlineThickness.None => flags & ~(TextFlags.Edge | TextFlags.Glare),
+        PartyListOutlineThickness.Thick => flags | TextFlags.Edge | TextFlags.Glare,
+        _ => (flags | TextFlags.Edge) & ~TextFlags.Glare,
+    };
 
     private static void RestoreTextColor(AtkTextNode* text, ref TextColorState state)
     {
@@ -1058,6 +1074,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private static void RestoreTextOutline(AtkTextNode* text, ref TextColorState state)
     {
+        if (state.FlagsActive)
+        {
+            state.FlagsActive = false;
+            if (text != null)
+                text->TextFlags = state.OriginalFlags;
+        }
+
         if (!state.EdgeActive)
             return;
 
