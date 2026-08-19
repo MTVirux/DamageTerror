@@ -984,7 +984,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (node.AlignmentType != alignment)
             node.AlignmentType = alignment;
 
-        var flags = style.UseCustomColor && Settings.TintTextOutline
+        var flags = Settings.TintTextOutline
             ? OutlineFlags(name->TextFlags)
             : name->TextFlags;
         if (node.TextFlags != flags)
@@ -1005,7 +1005,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             node.TextColor = textColor;
 
         var edgeColor = ToVector4(name->EdgeColor);
-        if (style.UseCustomColor && Settings.TintTextOutline)
+        if (Settings.TintTextOutline)
         {
             var tint = Settings.TextOutlineTint;
             edgeColor = new Vector4(tint.X, tint.Y, tint.Z, edgeColor.W);
@@ -1049,30 +1049,33 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     /// <summary>
     /// Recolours a text node, keeping the game's own alpha so a dimmed or fading row still
-    /// dims. Passing <paramref name="useCustom"/> false hands the colour back.
+    /// dims. Passing <paramref name="useCustom"/> false hands the colour back. The outline is
+    /// styled either way - it is a party list wide setting, not part of the colour override.
     /// </summary>
     private void ApplyTextColor(AtkTextNode* text, bool useCustom, Vector4 color, ref TextColorState state)
     {
         if (text == null)
             return;
 
-        if (!useCustom)
+        if (useCustom)
         {
-            RestoreTextColor(text, ref state);
-            return;
+            if (!state.Active || !SameColor(text->TextColor, state.Applied))
+                state.Original = text->TextColor;
+
+            var target = ToByteColor(color);
+            target.A = state.Original.A;
+
+            if (!SameColor(text->TextColor, target))
+                text->TextColor = target;
+
+            state.Applied = target;
+            state.Active = true;
         }
-
-        if (!state.Active || !SameColor(text->TextColor, state.Applied))
-            state.Original = text->TextColor;
-
-        var target = ToByteColor(color);
-        target.A = state.Original.A;
-
-        if (!SameColor(text->TextColor, target))
-            text->TextColor = target;
-
-        state.Applied = target;
-        state.Active = true;
+        else if (state.Active)
+        {
+            state.Active = false;
+            text->TextColor = state.Original;
+        }
 
         ApplyTextOutline(text, ref state);
     }

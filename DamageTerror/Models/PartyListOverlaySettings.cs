@@ -22,7 +22,7 @@ public sealed class PartyListOverlaySettings
     /// Takes over the outline the game draws around every glyph, giving it
     /// <see cref="TextOutlineTint"/> and <see cref="TextOutlineThickness"/>. Off leaves the
     /// game's own edge, which stays dark under a recoloured name. Applies to every party
-    /// list text with a custom colour.
+    /// list text the overlay styles, whether or not that text has a colour of its own.
     /// </summary>
     public bool TintTextOutline { get; set; } = true;
 
