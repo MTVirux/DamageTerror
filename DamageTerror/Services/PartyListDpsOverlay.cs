@@ -1009,8 +1009,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     /// <summary>
     /// Matches the glyph outline - the glow around the text - to the colour the text was
-    /// given, darkened so it still reads as an edge. The game's own edge alpha is kept, so
-    /// text the game fades still fades.
+    /// given, pulled towards the tint colour so it still reads as an edge. The game's own
+    /// edge alpha is kept, so text the game fades still fades.
     /// </summary>
     private void ApplyTextOutline(AtkTextNode* text, Vector4 color, ref TextColorState state)
     {
@@ -1035,8 +1035,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private Vector4 OutlineColor(Vector4 color)
     {
-        var keep = 1f - Math.Clamp(Settings.TextOutlineDarkness, 0f, 1f);
-        return new Vector4(color.X * keep, color.Y * keep, color.Z * keep, color.W);
+        var blend = Math.Clamp(Settings.TextOutlineDarkness, 0f, 1f);
+        var tint = Settings.TextOutlineTint;
+        return new Vector4(
+            float.Lerp(color.X, tint.X, blend),
+            float.Lerp(color.Y, tint.Y, blend),
+            float.Lerp(color.Z, tint.Z, blend),
+            color.W);
     }
 
     private static void RestoreTextColor(AtkTextNode* text, ref TextColorState state)

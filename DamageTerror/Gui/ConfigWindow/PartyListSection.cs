@@ -1,4 +1,4 @@
-namespace DamageTerror.Gui.ConfigWindow;
+﻿namespace DamageTerror.Gui.ConfigWindow;
 
 /// <summary>
 /// Live editor for the native party list integration. Every value is read by the overlay
@@ -81,10 +81,15 @@ internal static class PartyListSection
         if (settings.TintTextOutline)
         {
             ImGui.Indent();
-            changed |= Slider("Outline darkness##plOutlineDarkness", settings.TextOutlineDarkness,
+            changed |= Slider("Outline strength##plOutlineDarkness", settings.TextOutlineDarkness,
                 0f, 1f, v => settings.TextOutlineDarkness = v,
                 "0 matches the text exactly, which reads as thicker glyphs rather than an edge; " +
-                "1 is black.", "%.2f");
+                "1 is the tint colour below.", "%.2f");
+            changed |= ConfigHelpers.ColorEditProp("Outline tint##plOutlineTint",
+                settings.TextOutlineTint, v => settings.TextOutlineTint = v,
+                ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+            ConfigHelpers.HelpMarker("The colour the outline is blended towards. Black is the " +
+                "game's own look; a lighter tint reads as a glow.");
             ImGui.Unindent();
         }
 
