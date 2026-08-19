@@ -278,6 +278,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[] originalSpacingY = new float[SpacingSlots];
     private readonly float[] appliedSpacingY = new float[SpacingSlots];
     private readonly bool[] spacingApplied = new bool[SpacingSlots];
+    private readonly float[] spacingRowY = new float[SpacingSlots];
     private ushort originalBackdropHeight;
     private ushort appliedBackdropHeight;
     private bool backdropHeightApplied;
@@ -2756,11 +2757,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// Spreads the rows out by pushing each one down by its index times the configured gap.
-    /// Everything in a row hangs off the node moved here - the game's own name, gauges, glows
-    /// and cast bar as children of it, our fill and metrics through the bounds we measure off
-    /// it - so the whole row travels with it. The chocobo and pet rows sit below the party,
-    /// so they take the full stack rather than a slot's worth.
+    /// Spreads the rows out by pushing each one down by a gap for every row above it. A row's
+    /// index in the array it comes from is not where the list draws it - the local player
+    /// heads the party array wherever they sit in the list - so the order is taken from the
+    /// positions the game itself gave the rows. Everything in a row hangs off the node moved
+    /// here - the game's own name, gauges, glows and cast bar as children of it, our fill and
+    /// metrics through the bounds we measure off it - so the whole row travels with it. The
+    /// chocobo and pet rows sit below the party, so they take the full stack rather than a
+    /// slot's worth.
     /// </summary>
     private void ApplyRowSpacing(AddonPartyList* addon)
     {
@@ -2774,17 +2778,32 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             return;
         }
 
-        // Trust rows are drawn where the party's own end, so the two arrays together make one
-        // stack and each slot is offset by its place in it.
         var party = Math.Clamp(addon->MemberCount, 0, MaxRows);
+        var drawn = RowsInUse(addon);
 
-        for (var slot = 0; slot < MaxRows; slot++)
+        // Every row's starting position has to be read before any of them moves, or a row
+        // already pushed down would be taken as the baseline for the ones after it.
+        var rows = 0;
+        for (var i = 0; i < drawn; i++)
         {
-            ShiftBySpacing(addon, slot, slot * spacing);
-            ShiftBySpacing(addon, TrustSpacingSlot + slot, (party + slot) * spacing);
+            var slot = DrawnSlot(i, party);
+            var node = SpacingTarget(addon, slot);
+            if (node == null)
+                continue;
+
+            CaptureSpacing(slot, node);
+            rows = AddRowY(originalSpacingY[slot], rows);
         }
 
-        var below = RowsInUse(addon) * spacing;
+        for (var i = 0; i < drawn; i++)
+        {
+            var slot = DrawnSlot(i, party);
+            var node = SpacingTarget(addon, slot);
+            if (node != null)
+                MoveSpacing(slot, node, RowsAbove(originalSpacingY[slot], rows) * spacing);
+        }
+
+        var below = drawn * spacing;
         ShiftBySpacing(addon, ChocoboSpacingSlot, below);
         ShiftBySpacing(addon, PetSpacingSlot, below);
 
@@ -2798,15 +2817,60 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private static int RowsInUse(AddonPartyList* addon)
         => Math.Clamp(addon->MemberCount + addon->TrustCount, 0, MaxRows);
 
+    /// <summary>Duty support and trust rows are drawn where the party's own rows end.</summary>
+    private static int DrawnSlot(int index, int party)
+        => index < party ? index : TrustSpacingSlot + index - party;
+
+    /// <summary>
+    /// Adds a row's starting position to the sorted list of them. Two slots that share a node
+    /// - the party array keeps pointing at rows the trust array also names - land on the same
+    /// entry, so they get the same place in the stack rather than one each.
+    /// </summary>
+    private int AddRowY(float y, int count)
+    {
+        var at = 0;
+        while (at < count && spacingRowY[at] < y - 0.01f)
+            at++;
+
+        if (at < count && Math.Abs(spacingRowY[at] - y) <= 0.01f)
+            return count;
+
+        for (var i = count; i > at; i--)
+            spacingRowY[i] = spacingRowY[i - 1];
+
+        spacingRowY[at] = y;
+        return count + 1;
+    }
+
+    /// <summary>How many rows the game drew above the one starting at this position.</summary>
+    private int RowsAbove(float y, int count)
+    {
+        var above = 0;
+        while (above < count && spacingRowY[above] < y - 0.01f)
+            above++;
+
+        return above;
+    }
+
     private void ShiftBySpacing(AddonPartyList* addon, int slot, float offset)
     {
         var node = SpacingTarget(addon, slot);
         if (node == null)
             return;
 
+        CaptureSpacing(slot, node);
+        MoveSpacing(slot, node, offset);
+    }
+
+    /// <summary>Re-reads a row's own position whenever the game has moved the row itself.</summary>
+    private void CaptureSpacing(int slot, AtkResNode* node)
+    {
         if (!spacingApplied[slot] || Math.Abs(node->Y - appliedSpacingY[slot]) > 0.01f)
             originalSpacingY[slot] = node->Y;
+    }
 
+    private void MoveSpacing(int slot, AtkResNode* node, float offset)
+    {
         var targetY = originalSpacingY[slot] + offset;
         if (Math.Abs(node->Y - targetY) > 0.01f)
             node->SetPositionFloat(node->X, targetY);
