@@ -105,7 +105,7 @@ internal static class PartyListSection
 
         ImGui.Separator();
 
-        if (ImGui.Button("Reset to defaults##plReset"))
+        if (ConfigHelpers.ShiftResetButton("Reset to defaults##plReset"))
         {
             config.PartyList = new PartyListOverlaySettings();
             changed = true;
@@ -350,7 +350,7 @@ internal static class PartyListSection
 
         ImGui.Spacing();
 
-        if (ImGui.Button("Reset to name only##plMetricReset"))
+        if (ConfigHelpers.ShiftResetButton("Reset to name only##plMetricReset"))
         {
             settings.Metrics.Clear();
             plugin.ResyncPartyListNames();

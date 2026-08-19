@@ -29,7 +29,7 @@ public sealed class PartyListOverlaySettings
     /// How far the outline is darkened away from the text colour. 0 matches the text exactly,
     /// which reads as a fatter glyph rather than an edge; 1 is black.
     /// </summary>
-    public float TextOutlineDarkness { get; set; } = 0.65f;
+    public float TextOutlineDarkness { get; set; } = 1f;
 
     // DPS fill bar
     public bool ShowBar { get; set; } = true;
@@ -45,13 +45,13 @@ public sealed class PartyListOverlaySettings
     public float BarOpacity { get; set; } = 0.75f;
 
     /// <summary>
-    /// Where a row's fill colour comes from. The meter window's palette by default, so the
-    /// two agree until the party list is deliberately given colours of its own.
+    /// Where a row's fill colour comes from - the party list's own palette below, or the
+    /// meter window's, so the two agree without having to be kept in step by hand.
     /// </summary>
-    public PartyListBarColorMode BarColorMode { get; set; } = PartyListBarColorMode.MatchMeter;
+    public PartyListBarColorMode BarColorMode { get; set; } = PartyListBarColorMode.OwnPalette;
 
     /// <summary>The party list's own job and role colours, used by <see cref="PartyListBarColorMode.OwnPalette"/>.</summary>
-    public JobColorPalette BarColors { get; set; } = new();
+    public JobColorPalette BarColors { get; set; } = new() { UsePerJobColors = false };
 
     /// <summary>One colour for every row, used by <see cref="PartyListBarColorMode.SingleColor"/>.</summary>
     public Vector4 BarSingleColor { get; set; } = new(0.30f, 0.55f, 0.90f, 1f);
@@ -79,13 +79,17 @@ public sealed class PartyListOverlaySettings
     public bool ShiftRowContent { get; set; } = true;
     public float RowContentShiftY { get; set; } = -5f;
 
-    [JsonProperty("NameShift")] private RowPartStyle? nameShift;
-    [JsonProperty("HpBarShift")] private RowPartStyle? hpBarShift;
-    [JsonProperty("MpBarShift")] private RowPartStyle? mpBarShift;
+    [JsonProperty("NameShift")] private RowPartStyle? nameShift = new() { UseCustomColor = true };
+
+    [JsonProperty("HpBarShift")] private RowPartStyle? hpBarShift =
+        new() { UseCustomColor = true, Color = new(0.51f, 0.84f, 0.38f, 1f) };
+
+    [JsonProperty("MpBarShift")] private RowPartStyle? mpBarShift =
+        new() { OffsetY = -4f, UseCustomColor = true, Color = new(0.75f, 0.55f, 1f, 1f) };
 
     /// <summary>
-    /// Off by default: the container the row shift moved holds the gauges but not the name,
-    /// so the name stayed put before it could be moved on its own.
+    /// Seeded off by default for a config written before the name could be moved on its own:
+    /// the container the row shift moved held the gauges but not the name, so it stayed put.
     /// </summary>
     [JsonIgnore] public RowPartStyle NameShift => nameShift ??= new RowPartStyle { Enabled = false, OffsetY = RowContentShiftY };
 
@@ -108,9 +112,9 @@ public sealed class PartyListOverlaySettings
 
     /// <summary>The slot number drawn before each name, which is a node of its own.</summary>
     public bool AdjustPartyIndex { get; set; } = false;
-    public int PartyIndexFontDelta { get; set; } = 0;
+    public int PartyIndexFontDelta { get; set; } = -2;
     public float PartyIndexOffsetX { get; set; } = 0f;
-    public float PartyIndexOffsetY { get; set; } = 0f;
+    public float PartyIndexOffsetY { get; set; } = -4f;
 
     /// <summary>Off, the slot number follows whatever colour the name is given.</summary>
     public bool PartyIndexUseCustomColor { get; set; } = false;
@@ -118,11 +122,11 @@ public sealed class PartyListOverlaySettings
 
     // Player name font. Delta rather than absolute, so it tracks the game's own size
     // across UI scale settings.
-    public bool AdjustNameFont { get; set; } = false;
-    public int NameFontDelta { get; set; } = -4;
+    public bool AdjustNameFont { get; set; } = true;
+    public int NameFontDelta { get; set; } = -1;
 
     /// <summary>Strips the level glyphs the game prefixes to the name text.</summary>
-    public bool HideLevel { get; set; } = false;
+    public bool HideLevel { get; set; } = true;
 
     /// <summary>
     /// How many metrics the overlay has a text node for per row. Anything past this can be
@@ -130,7 +134,7 @@ public sealed class PartyListOverlaySettings
     /// </summary>
     public const int MaxMetrics = 12;
 
-    private List<BarColumn>? metrics;
+    private List<BarColumn>? metrics = new() { BarColumn.DamagePercent };
 
     /// <summary>
     /// The metrics drawn after the name, in the order they appear. These are the meter's own
@@ -149,7 +153,7 @@ public sealed class PartyListOverlaySettings
     /// each pair after that. Part of the metric's own text, so it takes that metric's font
     /// and colour. Empty for none.
     /// </summary>
-    public string MetricSeparator { get; set; } = string.Empty;
+    public string MetricSeparator { get; set; } = "@ ";
 
     /// <summary>
     /// The font size and gap every metric used before they were given a node each. Kept only
@@ -164,7 +168,11 @@ public sealed class PartyListOverlaySettings
     /// </summary>
     [JsonProperty("MetricColumnStyles", ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumConverter))]
-    public Dictionary<BarColumn, NameMetricStyle> MetricStyles { get; set; } = new();
+    public Dictionary<BarColumn, NameMetricStyle> MetricStyles { get; set; } = new()
+    {
+        [BarColumn.Dps] = new NameMetricStyle { FontDelta = 0, Gap = 10f, UseCustomColor = true },
+        [BarColumn.DamagePercent] = new NameMetricStyle { FontDelta = 0 },
+    };
 
     public NameMetricStyle Style(BarColumn metric)
     {
@@ -204,6 +212,20 @@ public sealed class PartyListOverlaySettings
         NameMetric.CritDirectHit,
         NameMetric.DamagePercent,
     };
+
+    /// <summary>
+    /// The defaults above are for a config being created, not one being read. Dropping them
+    /// before a load leaves the seeding below to fill in whatever an older config is missing,
+    /// so it keeps the look it was saved with instead of picking up today's defaults.
+    /// </summary>
+    [OnDeserializing]
+    internal void DropCreationDefaults(StreamingContext context)
+    {
+        nameShift = hpBarShift = mpBarShift = null;
+        hpNumbers = mpNumbers = null;
+        metrics = null;
+        MetricStyles.Clear();
+    }
 
     /// <summary>
     /// Runs only when the config has no column list of its own, so a deliberately empty
@@ -263,10 +285,10 @@ public sealed class PartyListOverlaySettings
     };
 
     // Buff / debuff icons
-    public bool AdjustStatusIcons { get; set; } = false;
-    public float StatusOffsetX { get; set; } = 1f;
+    public bool AdjustStatusIcons { get; set; } = true;
+    public float StatusOffsetX { get; set; } = 0f;
     public float StatusOffsetY { get; set; } = 8f;
-    public float StatusScale { get; set; } = 1.01f;
+    public float StatusScale { get; set; } = 1f;
 
     /// <summary>
     /// Fills the icon row from its right edge instead of its left, so a member with a few
@@ -333,9 +355,9 @@ public sealed class PartyListOverlaySettings
 
     // Encounter totals, drawn on the party list's header text
     public bool ShowEncounterTotals { get; set; } = true;
-    public bool TotalsShowTitle { get; set; } = true;
+    public bool TotalsShowTitle { get; set; } = false;
     public bool TotalsShowDuration { get; set; } = true;
-    public bool TotalsShowRaidDps { get; set; } = true;
+    public bool TotalsShowRaidDps { get; set; } = false;
     public bool TotalsShowDamage { get; set; } = false;
     public bool TotalsShowDeaths { get; set; } = true;
 
@@ -343,14 +365,14 @@ public sealed class PartyListOverlaySettings
     /// Drawn in place of the totals whenever there are none to show - out of combat, or with
     /// no encounter active. Empty leaves the header blank, which is the original behaviour.
     /// </summary>
-    public string TotalsHiddenText { get; set; } = string.Empty;
+    public string TotalsHiddenText { get; set; } = "the council";
 
     // The header text node itself, which the totals are written to.
-    public bool AdjustTotalsText { get; set; } = false;
-    public int TotalsFontDelta { get; set; } = 0;
-    public float TotalsOffsetX { get; set; } = 0f;
-    public float TotalsOffsetY { get; set; } = 0f;
-    public bool TotalsUseCustomColor { get; set; } = false;
+    public bool AdjustTotalsText { get; set; } = true;
+    public int TotalsFontDelta { get; set; } = 2;
+    public float TotalsOffsetX { get; set; } = 6f;
+    public float TotalsOffsetY { get; set; } = -1f;
+    public bool TotalsUseCustomColor { get; set; } = true;
     public Vector4 TotalsColor { get; set; } = new(1f, 1f, 1f, 1f);
 
     // Cast bar
@@ -385,13 +407,13 @@ public sealed class PartyListOverlaySettings
     /// the leading digits. Measured against the leading node rather than the trailing
     /// node's own size, which can't be trusted once we've written to it.
     /// </summary>
-    public int MpTrailingFontDelta { get; set; } = 0;
+    public int MpTrailingFontDelta { get; set; } = -1;
     public float GaugeNumberOffsetY { get; set; } = -1f;
     public float TrailingDigitsOffsetX { get; set; } = 0f;
     public float TrailingDigitsOffsetY { get; set; } = 0f;
 
-    [JsonProperty("HpNumbers")] private GaugeNumberStyle? hpNumbers;
-    [JsonProperty("MpNumbers")] private GaugeNumberStyle? mpNumbers;
+    [JsonProperty("HpNumbers")] private GaugeNumberStyle? hpNumbers = new() { Enabled = true, OffsetY = -7f };
+    [JsonProperty("MpNumbers")] private GaugeNumberStyle? mpNumbers = new() { Enabled = true, OffsetY = -2f };
 
     [JsonIgnore] public GaugeNumberStyle HpNumbers => hpNumbers ??= LegacyGaugeNumbers();
     [JsonIgnore] public GaugeNumberStyle MpNumbers => mpNumbers ??= LegacyGaugeNumbers();
