@@ -1,32 +1,32 @@
 [
-{
-  "Author": "MTVirux",
-  "Name": "Damage Terror",
-  "Punchline": "Native ImGui damage meter overlay powered by IINACT",
-  "Description": "DM @mtvirux on discord for assistance or bug reports.",
-  "Tags": [
-    "Damage",
-    "Meter",
-    "DPS",
-    "HPS",
-    "Combat",
-    "IINACT",
-    "Terror"
-  ],
-  "InternalName": "DamageTerror",
-  "AssemblyVersion": "1.2.1.18",
-  "TestingAssemblyVersion": "1.2.1.23",
-  "RepoUrl": "https://github.com/MTVirux/DamageTerror",
-  "ApplicableVersion": "any",
-  "DalamudApiLevel": 15,
-  "TestingDalamudApiLevel": 15,
-  "IsHide": "False",
-  "IsTestingExclusive": "False",
-  "DownloadCount": 0,
-  "LastUpdate": 1787159548,
-  "DownloadLinkInstall": "https://github.com/MTVirux/DamageTerror/releases/download/1.2.1.18/DamageTerror.zip",
-  "DownloadLinkUpdate": "https://github.com/MTVirux/DamageTerror/releases/download/1.2.1.18/DamageTerror.zip",
-  "DownloadLinkTesting": "https://github.com/MTVirux/DamageTerror/releases/download/testing_1.2.1.22/DamageTerror.zip",
-  "IconUrl": "https://raw.githubusercontent.com/MTVirux/DamageTerror/master/images/icon.png"
-}
+  {
+    "Author": "MTVirux",
+    "Name": "Damage Terror",
+    "Punchline": "Native ImGui damage meter overlay powered by IINACT",
+    "Description": "DM @mtvirux on discord for assistance or bug reports.",
+    "Tags": [
+      "Damage",
+      "Meter",
+      "DPS",
+      "HPS",
+      "Combat",
+      "IINACT",
+      "Terror"
+    ],
+    "InternalName": "DamageTerror",
+    "AssemblyVersion": "1.2.1.18",
+    "TestingAssemblyVersion": "1.2.1.23",
+    "RepoUrl": "https://github.com/MTVirux/DamageTerror",
+    "ApplicableVersion": "any",
+    "DalamudApiLevel": 15,
+    "TestingDalamudApiLevel": 15,
+    "IsHide": "False",
+    "IsTestingExclusive": "False",
+    "DownloadCount": 0,
+    "LastUpdate": 1787159654,
+    "DownloadLinkInstall": "https://github.com/MTVirux/DamageTerror/releases/download/1.2.1.18/DamageTerror.zip",
+    "DownloadLinkUpdate": "https://github.com/MTVirux/DamageTerror/releases/download/1.2.1.18/DamageTerror.zip",
+    "DownloadLinkTesting": "https://github.com/MTVirux/DamageTerror/releases/download/testing_1.2.1.23/DamageTerror.zip",
+    "IconUrl": "https://raw.githubusercontent.com/MTVirux/DamageTerror/master/images/icon.png"
+  }
 ]
