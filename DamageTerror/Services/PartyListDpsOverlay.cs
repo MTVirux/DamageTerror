@@ -87,11 +87,24 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// </summary>
     private const int RowPartSlots = 3;
 
-    /// <summary>MP's row-part slot - its tint is the one that cannot go on the owner node.</summary>
+    /// <summary>The gauges' row-part slots - their tints cannot go on the owner node.</summary>
+    private const int HpBarSlot = 1;
     private const int MpBarSlot = 2;
 
-    /// <summary>The MP bar's artwork - the backdrop, the fill, and its two transition layers.</summary>
-    private const int MpBarArtSlots = 4;
+    /// <summary>A gauge bar's artwork - the backdrop, the fill, and its two transition layers.</summary>
+    private const int GaugeArtSlots = 4;
+
+    /// <summary>The shield pieces: the fill inside the HP bar, then the overflow bar above it.</summary>
+    private const int ShieldGroups = 2;
+    private const int ShieldFillGroup = 0;
+    private const int ShieldOverflowGroup = 1;
+
+    /// <summary>
+    /// Nodes per shield piece - three fill layers each, plus the overflow's "too big to draw"
+    /// icon in its fourth slot.
+    /// </summary>
+    private const int ShieldNodeSlots = 4;
+    private const int ShieldMaxIconIndex = 3;
 
     /// <summary>
     /// The private-use block the game uses for the level digits it prefixes to the name.
@@ -241,8 +254,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[,] originalPartOriginX = new float[MaxRows, RowPartSlots];
     private readonly float[,] originalPartOriginY = new float[MaxRows, RowPartSlots];
     private readonly bool[,] shiftApplied = new bool[MaxRows, ShiftSlots];
-    private readonly NodeTintState[,] partTint = new NodeTintState[MaxRows, RowPartSlots];
-    private readonly NodeTintState[,] mpBarTint = new NodeTintState[MaxRows, MpBarArtSlots];
+    private readonly NodeTintState[,,] gaugeArtTint = new NodeTintState[MaxRows, RowPartSlots, GaugeArtSlots];
+    private readonly ShieldNodeState[,,] shieldState = new ShieldNodeState[MaxRows, ShieldGroups, ShieldNodeSlots];
     private readonly float[] originalCastNameX = new float[MaxRows];
     private readonly float[] originalCastNameY = new float[MaxRows];
     private readonly ushort[] originalCastNameHeight = new ushort[MaxRows];
@@ -679,6 +692,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         PositionNodes(addon);
         ApplyRowContentShift(addon);
+        ApplyShieldStyles(addon);
         ApplyCastBarLayout(addon);
         ApplyCastNameLayout(addon);
         ApplyGaugeNumberLayout(addon);
@@ -696,6 +710,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         PositionNodes(addon);
         ApplyRowContentShift(addon);
+        ApplyShieldStyles(addon);
         ApplyCastBarLayout(addon);
         ApplyCastNameLayout(addon);
         ApplyGaugeNumberLayout(addon);
@@ -734,6 +749,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         RestoreGaugeNumberLayout(addon);
         RestoreCastNameLayout(addon);
         RestoreCastBarLayout(addon);
+        RestoreShieldStyles(addon);
         RestoreRowContentShift(addon);
 
         for (var i = 0; i < MaxRows; i++)
@@ -807,6 +823,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                     EnsureBarNode(addon, i);
 
         ApplyRowContentShift(addon);
+        ApplyShieldStyles(addon);
         ApplyCastBarLayout(addon);
         ApplyCastNameLayout(addon);
         ApplyGaugeNumberLayout(addon);
@@ -1068,15 +1085,15 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// One piece of the MP bar's artwork. HP keeps its number on a wrapper component above the
-    /// bar, but MP has no such wrapper - its digits are children of the bar component itself,
-    /// so a tint on the bar's owner node multiplies down onto them. Tinting the art nodes
-    /// individually colours the bar and leaves the digits alone.
+    /// One piece of a gauge bar's own artwork. A tint on the bar's owner node would multiply
+    /// down onto everything inside it - MP's digits, which are children of the bar component,
+    /// and HP's shield, which is styled separately. Tinting the art nodes individually
+    /// colours the bar alone.
     /// </summary>
-    private static AtkResNode* GetMpBarArtNode(AddonPartyList* addon, int row, int art)
+    private static AtkResNode* GetGaugeArtNode(AddonPartyList* addon, int row, int slot, int art)
     {
         var member = RowMember(addon, row);
-        var bar = member == null ? null : member->MPGaugeBar;
+        var bar = member == null ? null : slot == HpBarSlot ? member->HPGaugeBar : member->MPGaugeBar;
         if (bar == null)
             return null;
 
@@ -1090,22 +1107,230 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         };
     }
 
-    private void ApplyMpBarTint(AddonPartyList* addon, int row, RowPartStyle part)
+    private void ApplyGaugeBarTint(AddonPartyList* addon, int row, int slot, RowPartStyle part)
     {
-        for (var art = 0; art < MpBarArtSlots; art++)
+        for (var art = 0; art < GaugeArtSlots; art++)
         {
-            var node = GetMpBarArtNode(addon, row, art);
+            var node = GetGaugeArtNode(addon, row, slot, art);
             if (part.UseCustomColor)
-                ApplyNodeTint(node, part.Color, ref mpBarTint[row, art]);
+                ApplyNodeTint(node, part.Color, ref gaugeArtTint[row, slot, art]);
             else
-                RestoreNodeTint(node, ref mpBarTint[row, art]);
+                RestoreNodeTint(node, ref gaugeArtTint[row, slot, art]);
         }
     }
 
-    private void RestoreMpBarTint(AddonPartyList* addon, int row)
+    private void RestoreGaugeBarTint(AddonPartyList* addon, int row, int slot)
     {
-        for (var art = 0; art < MpBarArtSlots; art++)
-            RestoreNodeTint(addon == null ? null : GetMpBarArtNode(addon, row, art), ref mpBarTint[row, art]);
+        for (var art = 0; art < GaugeArtSlots; art++)
+            RestoreNodeTint(addon == null ? null : GetGaugeArtNode(addon, row, slot, art),
+                ref gaugeArtTint[row, slot, art]);
+    }
+
+    /// <summary>
+    /// One shield node's transform and alpha as the game left them, captured before our first
+    /// write to it. Position and fade are tracked separately because either can be styled
+    /// without the other.
+    /// </summary>
+    private struct ShieldNodeState
+    {
+        public bool TransformActive;
+        public float OriginalX;
+        public float OriginalY;
+        public float AppliedX;
+        public float AppliedY;
+        public float OriginalScale;
+        public float AppliedScale;
+        public float OriginalOriginX;
+        public float OriginalOriginY;
+
+        public bool AlphaActive;
+        public byte OriginalAlpha;
+        public byte AppliedAlpha;
+
+        public NodeTintState Tint;
+    }
+
+    /// <summary>
+    /// One node of a shield piece. The fill inside the HP bar is three layers; the overflow
+    /// bar is the same three plus the icon the game shows when a shield is too big to draw.
+    /// </summary>
+    private static AtkResNode* GetShieldNode(AddonPartyList* addon, int row, int group, int index)
+    {
+        var member = RowMember(addon, row);
+        var bar = member == null ? null : member->HPGaugeBar;
+        if (bar == null)
+            return null;
+
+        if (index == ShieldMaxIconIndex)
+            return group == ShieldOverflowGroup && bar->SecondaryOverflowMaxIcon != null
+                ? &bar->SecondaryOverflowMaxIcon->AtkResNode
+                : null;
+
+        var fill = group == ShieldFillGroup ? bar->SecondaryFill : bar->SecondaryOverflow;
+        var node = index switch
+        {
+            0 => fill.MainFillNode,
+            1 => fill.IncreaseFillNode,
+            2 => fill.DecreaseFillNode,
+            _ => null,
+        };
+
+        return node == null ? null : &node->AtkResNode;
+    }
+
+    private ShieldStyle ShieldPart(int group)
+        => group == ShieldFillGroup ? Settings.ShieldFill : Settings.ShieldOverflow;
+
+    /// <summary>
+    /// Moves, scales, tints and fades the shield drawn over each HP bar. The shield isn't one
+    /// node but a set of sibling layers inside the HP gauge, so every setting is written to
+    /// each layer of the piece. The game rewrites their position and width as HP and the
+    /// shield change, so the capture is self-correcting the same way the row shift's is:
+    /// anything that isn't the value we last wrote becomes the new original.
+    /// </summary>
+    private void ApplyShieldStyles(AddonPartyList* addon)
+    {
+        if (addon == null)
+            return;
+
+        for (var row = 0; row < MaxRows; row++)
+            for (var group = 0; group < ShieldGroups; group++)
+                ApplyShieldGroup(addon, row, group, ShieldPart(group));
+    }
+
+    private void ApplyShieldGroup(AddonPartyList* addon, int row, int group, ShieldStyle part)
+    {
+        var opacity = part.Hidden ? 0f : Math.Clamp(part.Opacity, 0f, 1f);
+        var fades = opacity < 1f;
+
+        if (!part.Enabled && !part.UseCustomColor && !fades)
+        {
+            RestoreShieldGroup(addon, row, group);
+            return;
+        }
+
+        for (var index = 0; index < ShieldNodeSlots; index++)
+        {
+            var node = GetShieldNode(addon, row, group, index);
+            if (node == null)
+                continue;
+
+            ref var state = ref shieldState[row, group, index];
+
+            if (part.Enabled)
+                ApplyShieldTransform(node, part, ref state);
+            else
+                RestoreShieldTransform(node, ref state);
+
+            if (part.UseCustomColor)
+                ApplyNodeTint(node, part.Color, ref state.Tint);
+            else
+                RestoreNodeTint(node, ref state.Tint);
+
+            if (fades)
+                ApplyShieldAlpha(node, opacity, ref state);
+            else
+                RestoreShieldAlpha(node, ref state);
+        }
+    }
+
+    private static void ApplyShieldTransform(AtkResNode* node, ShieldStyle part, ref ShieldNodeState state)
+    {
+        var fresh = !state.TransformActive;
+        state.TransformActive = true;
+
+        if (fresh || Math.Abs(node->X - state.AppliedX) > 0.01f)
+            state.OriginalX = node->X;
+        if (fresh || Math.Abs(node->Y - state.AppliedY) > 0.01f)
+            state.OriginalY = node->Y;
+
+        var targetX = state.OriginalX + part.OffsetX;
+        var targetY = state.OriginalY + part.OffsetY;
+        if (Math.Abs(node->X - targetX) > 0.01f || Math.Abs(node->Y - targetY) > 0.01f)
+            node->SetPositionFloat(targetX, targetY);
+
+        state.AppliedX = targetX;
+        state.AppliedY = targetY;
+
+        if (fresh || Math.Abs(node->ScaleX - state.AppliedScale) > 0.001f)
+        {
+            state.OriginalScale = node->ScaleX;
+            state.OriginalOriginX = node->OriginX;
+            state.OriginalOriginY = node->OriginY;
+        }
+
+        var targetScale = state.OriginalScale * Math.Max(0.1f, part.Scale);
+
+        node->OriginX = 0f;
+        node->OriginY = 0f;
+        if (Math.Abs(node->ScaleX - targetScale) > 0.001f || Math.Abs(node->ScaleY - targetScale) > 0.001f)
+            node->SetScale(targetScale, targetScale);
+
+        state.AppliedScale = targetScale;
+    }
+
+    private static void RestoreShieldTransform(AtkResNode* node, ref ShieldNodeState state)
+    {
+        if (!state.TransformActive)
+            return;
+
+        state.TransformActive = false;
+        if (node == null)
+            return;
+
+        node->SetPositionFloat(state.OriginalX, state.OriginalY);
+        node->OriginX = state.OriginalOriginX;
+        node->OriginY = state.OriginalOriginY;
+        node->SetScale(state.OriginalScale, state.OriginalScale);
+    }
+
+    /// <summary>
+    /// Fades a shield layer relative to the alpha the game gave it, so one that is animating
+    /// in still fades in - it just tops out lower.
+    /// </summary>
+    private static void ApplyShieldAlpha(AtkResNode* node, float opacity, ref ShieldNodeState state)
+    {
+        if (!state.AlphaActive || node->Color.A != state.AppliedAlpha)
+        {
+            state.OriginalAlpha = node->Color.A;
+            state.AlphaActive = true;
+        }
+
+        var target = (byte)Math.Clamp(state.OriginalAlpha * opacity, 0f, 255f);
+        node->Color.A = target;
+        state.AppliedAlpha = target;
+    }
+
+    private static void RestoreShieldAlpha(AtkResNode* node, ref ShieldNodeState state)
+    {
+        if (!state.AlphaActive)
+            return;
+
+        state.AlphaActive = false;
+        if (node != null)
+            node->Color.A = state.OriginalAlpha;
+    }
+
+    private void RestoreShieldStyles(AddonPartyList* addon)
+    {
+        for (var row = 0; row < MaxRows; row++)
+            for (var group = 0; group < ShieldGroups; group++)
+                RestoreShieldGroup(addon, row, group);
+    }
+
+    private void RestoreShieldGroup(AddonPartyList* addon, int row, int group)
+    {
+        for (var index = 0; index < ShieldNodeSlots; index++)
+        {
+            ref var state = ref shieldState[row, group, index];
+            if (!state.TransformActive && !state.AlphaActive && !state.Tint.Active)
+                continue;
+
+            var node = addon == null ? null : GetShieldNode(addon, row, group, index);
+            RestoreShieldTransform(node, ref state);
+            RestoreShieldAlpha(node, ref state);
+            RestoreNodeTint(node, ref state.Tint);
+        }
     }
 
     private void UpdateMetrics(AddonPartyList* addon, int row, CombatantEntry? stats)
@@ -1555,12 +1780,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
                     appliedPartScale[row, slot] = targetScale;
 
-                    if (slot == MpBarSlot)
-                        ApplyMpBarTint(addon, row, part);
-                    else if (part.UseCustomColor)
-                        ApplyNodeTint(node, part.Color, ref partTint[row, slot]);
-                    else
-                        RestoreNodeTint(node, ref partTint[row, slot]);
+                    ApplyGaugeBarTint(addon, row, slot, part);
                 }
 
                 appliedShiftX[row, slot] = targetX;
@@ -2390,8 +2610,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         shiftApplied[row, slot] = false;
 
-        if (slot == MpBarSlot)
-            RestoreMpBarTint(addon, row);
+        if (slot == HpBarSlot || slot == MpBarSlot)
+            RestoreGaugeBarTint(addon, row, slot);
 
         var node = addon == null ? null : GetShiftTarget(addon, row, slot);
         if (node == null)
@@ -2411,7 +2631,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         node->OriginX = originalPartOriginX[row, slot];
         node->OriginY = originalPartOriginY[row, slot];
         node->SetScale(originalPartScale[row, slot], originalPartScale[row, slot]);
-        RestoreNodeTint(node, ref partTint[row, slot]);
     }
 
     /// <summary>

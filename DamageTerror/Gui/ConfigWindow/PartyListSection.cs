@@ -271,6 +271,16 @@ internal static class PartyListSection
         changed |= DrawGaugeNumbers("plHpNumbers", "HP number", settings.HpNumbers);
         EndGroup();
 
+        Group("Shield");
+        changed |= DrawShield("plShield", "shield", settings.ShieldFill,
+            "Moves the shield only - the HP bar under it stays put.");
+        EndGroup();
+
+        Group("Shield overflow");
+        changed |= DrawShield("plShieldOverflow", "shield overflow", settings.ShieldOverflow,
+            "The second bar shown for the part of a shield too big to fit inside the HP bar.");
+        EndGroup();
+
         Group("MP bar");
         changed |= DrawGaugeBar("plShiftMpBar", "MP bar", settings.MpBarShift,
             "Moves the MP bar only - its number is moved below.");
@@ -686,6 +696,31 @@ internal static class PartyListSection
         changed |= DrawCustomColor($"{id}Color", part, style.UseCustomColor, style.Color,
             v => style.UseCustomColor = v, v => style.Color = v,
             "Off leaves the game's own artwork.\nOn tints it - a texture can be shaded, not repainted.");
+        EndSection();
+
+        return changed;
+    }
+
+    /// <summary>
+    /// One piece of the shield over the HP bar. Laid out like a gauge bar, with a hide toggle
+    /// and an opacity slider after it - the shield is artwork the game layers on top, so
+    /// fading it back is as useful as recolouring it.
+    /// </summary>
+    private static bool DrawShield(string id, string part, ShieldStyle style, string tooltip)
+    {
+        var changed = ConfigHelpers.CheckboxProp($"Hide {part}##{id}Hide", style.Hidden,
+            v => style.Hidden = v);
+
+        if (style.Hidden)
+            return changed;
+
+        changed |= DrawGaugeBar(id, part, style, tooltip);
+
+        Section("Opacity");
+        changed |= Slider($"Opacity##{id}Opacity", style.Opacity, 0f, 1f,
+            v => style.Opacity = v,
+            "Multiplied over the alpha the game gives the artwork, so 1 leaves it alone.",
+            "%.2f");
         EndSection();
 
         return changed;

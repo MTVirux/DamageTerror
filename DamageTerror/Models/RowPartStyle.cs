@@ -4,9 +4,9 @@ namespace DamageTerror.Models;
 /// Position, size and colour for one party list row part - the name, the HP bar or the MP
 /// bar. Each part is its own node, so all three can be placed and coloured separately.
 /// The name takes its size from its font instead, so <see cref="Scale"/> is only read for
-/// the gauge bars.
+/// the gauge bars. <see cref="ShieldStyle"/> extends this for the shield over the HP bar.
 /// </summary>
-public sealed class RowPartStyle
+public class RowPartStyle
 {
     public bool Enabled { get; set; } = true;
     public float OffsetX { get; set; } = 0f;

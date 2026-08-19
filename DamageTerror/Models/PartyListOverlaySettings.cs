@@ -94,6 +94,18 @@ public sealed class PartyListOverlaySettings
 
     private RowPartStyle LegacyShift() => new() { Enabled = ShiftRowContent, OffsetY = RowContentShiftY };
 
+    /// <summary>
+    /// The shield the game draws over the HP bar. It lives inside the HP gauge, so before
+    /// these it silently took the HP bar's move, scale and tint.
+    /// </summary>
+    public ShieldStyle ShieldFill { get; set; } = new();
+
+    /// <summary>
+    /// The second bar the game shows above the HP bar for the part of a shield that doesn't
+    /// fit inside it, together with the "too big to draw" icon that appears on it.
+    /// </summary>
+    public ShieldStyle ShieldOverflow { get; set; } = new();
+
     /// <summary>The slot number drawn before each name, which is a node of its own.</summary>
     public bool AdjustPartyIndex { get; set; } = false;
     public int PartyIndexFontDelta { get; set; } = 0;
