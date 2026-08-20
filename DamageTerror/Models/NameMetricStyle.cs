@@ -6,14 +6,29 @@ namespace DamageTerror.Models;
 /// </summary>
 public sealed class NameMetricStyle
 {
+    /// <summary>Where the first metric sits, and how far apart the ones after it are placed
+    /// when they have no position of their own. Past the name box, which the row's own
+    /// artwork puts at x 76 and 184 wide.</summary>
+    public const float DefaultOffsetX = 190f;
+    public const float DefaultOffsetY = 22f;
+    public const float ColumnStep = 55f;
+
+    /// <summary>The nth column's default position, so metrics seeded together don't overlap.</summary>
+    public static float ColumnX(int index) => DefaultOffsetX + (ColumnStep * Math.Max(0, index));
+
     /// <summary>Offset from the name's font size, which the metric otherwise copies.</summary>
     public int FontDelta { get; set; } = -2;
 
-    /// <summary>Space before this metric - from the name's text, or from the previous metric.</summary>
-    public float Gap { get; set; } = 7f;
+    /// <summary>Where the metric sits, measured from the row's top left corner. Nothing about
+    /// the name is read, so a long name no longer moves it.</summary>
+    public float OffsetX { get; set; } = DefaultOffsetX;
+    public float OffsetY { get; set; } = DefaultOffsetY;
 
-    /// <summary>Lifts this metric off the name's line without moving the ones after it.</summary>
-    public float OffsetY { get; set; } = 0f;
+    /// <summary>Metrics used to be chained off the end of the name's text, each with a gap
+    /// before it. A gap says nothing about where the metric sat, so a config carrying one is
+    /// given a column of its own by <see cref="PartyListOverlaySettings"/> instead.</summary>
+    [JsonProperty("Gap", NullValueHandling = NullValueHandling.Ignore)]
+    internal float? LegacyGap;
 
     /// <summary>Off follows the name's own colour, which is what the game gives the row.</summary>
     public bool UseCustomColor { get; set; } = false;

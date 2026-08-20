@@ -177,30 +177,38 @@ public sealed class PartyListOverlaySettings
     public string MetricSeparator { get; set; } = "@ ";
 
     /// <summary>
-    /// The font size and gap every metric used before they were given a node each. Kept only
-    /// to seed <see cref="Style"/> for configs written back then, so those keep their look.
+    /// The font size every metric used before they were given a node each. Kept only to seed
+    /// <see cref="Style"/> for configs written back then, so those keep their look.
     /// </summary>
     public int MetricsFontDelta { get; set; } = -2;
-    public float MetricsGap { get; set; } = 7f;
 
     /// <summary>
-    /// Per-metric font size, gap and colour. Filled in on demand rather than up front, so a
-    /// metric that has never been touched still reads the values above.
+    /// Per-metric position, font size and colour. Filled in on demand rather than up front, so
+    /// a metric that has never been touched still reads the values above.
     /// </summary>
     [JsonProperty("MetricColumnStyles", ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumConverter))]
     public Dictionary<BarColumn, NameMetricStyle> MetricStyles { get; set; } = new()
     {
-        [BarColumn.Dps] = new NameMetricStyle { FontDelta = 0, Gap = 10f, UseCustomColor = true },
         [BarColumn.DamagePercent] = new NameMetricStyle { FontDelta = 0 },
+        [BarColumn.Dps] = new NameMetricStyle { FontDelta = 0, OffsetX = NameMetricStyle.ColumnX(1), UseCustomColor = true },
     };
 
+    /// <summary>
+    /// A metric's style, seeded into its own column the first time it is asked for so two
+    /// metrics added one after the other don't land on top of each other.
+    /// </summary>
     public NameMetricStyle Style(BarColumn metric)
     {
         if (MetricStyles.TryGetValue(metric, out var style))
             return style;
 
-        style = new NameMetricStyle { FontDelta = MetricsFontDelta, Gap = MetricsGap };
+        style = new NameMetricStyle
+        {
+            FontDelta = MetricsFontDelta,
+            OffsetX = NameMetricStyle.ColumnX(Metrics.IndexOf(metric)),
+        };
+
         MetricStyles[metric] = style;
         return style;
     }
@@ -257,7 +265,27 @@ public sealed class PartyListOverlaySettings
     internal void MigrateLegacySettings(StreamingContext context)
     {
         MigrateLegacyMetrics();
+        MigrateLegacyMetricPositions();
         MigrateLegacyTotals();
+    }
+
+    /// <summary>
+    /// A metric used to be placed by a gap chained off the end of the name's text, which says
+    /// nothing about where it actually sat - the name's length decided that. Those configs get
+    /// a column each in list order instead, and their vertical offsets are rebased from the
+    /// name's line onto the row's top edge.
+    /// </summary>
+    private void MigrateLegacyMetricPositions()
+    {
+        foreach (var (column, style) in MetricStyles)
+        {
+            if (style.LegacyGap == null)
+                continue;
+
+            style.OffsetX = NameMetricStyle.ColumnX(Metrics.IndexOf(column));
+            style.OffsetY += NameMetricStyle.DefaultOffsetY;
+            style.LegacyGap = null;
+        }
     }
 
     /// <summary>

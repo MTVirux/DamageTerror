@@ -937,8 +937,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>
     /// The metrics get their own text node so they can be sized independently - a single
     /// Atk text node has one font size, which is why the game itself splits the MP value
-    /// across two nodes. Placed immediately after the name's drawn text, measured rather
-    /// than assumed, so it tracks whatever the name actually renders to.
+    /// across two nodes. Placed by its own offsets from the row's corner, so where a metric
+    /// sits is the user's to decide and nothing about the name moves it.
     /// </summary>
     /// <summary>
     /// Copies every property that decides how the name is drawn, so the metrics read as a
@@ -954,8 +954,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (node.FontType != name->FontType)
             node.FontType = name->FontType;
 
-        // The left-aligned member of whichever vertical band the name uses - the metrics
-        // always start where the name ends, so only the vertical part is worth copying.
+        // The left-aligned member of whichever vertical band the name uses - a metric is
+        // positioned by its own offset, so only the vertical part is worth copying.
         var alignment = (AlignmentType)((int)name->AlignmentType / 3 * 3);
         if (node.AlignmentType != alignment)
             node.AlignmentType = alignment;
@@ -1530,23 +1530,15 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         EnsureMetricNodes(row);
 
         var nameNode = member->Name;
+        var rowNode = GetRowNode(addon, row);
 
-        // Read in our container's space, which is where the nodes live. The name keeps its
-        // text and position while the cast bar hides it, so the metrics hold their place
-        // through a cast instead of going with the name.
-        Bounds nameRect = default;
-        var placeable = stats != null && nameNode != null && overlayRoot != null
-                        && TryProjectRect(addon, &nameNode->AtkResNode, (AtkResNode*)overlayRoot, out nameRect);
-
-        // The chain starts where the name's text actually ends, measured rather than assumed.
-        var x = nameRect.X;
-        if (placeable)
-        {
-            ushort nameWidth;
-            ushort nameHeight;
-            nameNode->GetTextDrawSize(&nameWidth, &nameHeight);
-            x += nameWidth;
-        }
+        // The row's rectangle, read in our container's space where the nodes live. It is the
+        // only thing the offsets are measured from - the name's drawn text is never measured,
+        // so a long name no longer pushes the metrics along, and a cast bar taking the name
+        // over leaves them where they are.
+        Bounds rowRect = default;
+        var placeable = stats != null && nameNode != null && rowNode != null && overlayRoot != null
+                        && TryProjectRect(addon, (AtkResNode*)rowNode, (AtkResNode*)overlayRoot, out rowRect);
 
         var metrics = Settings.Metrics;
 
@@ -1582,24 +1574,15 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             var style = Settings.Style(metrics[slot]);
             CopyNameFont(node, nameNode, style);
 
-            // Same box height and the same vertical alignment band as the name, so both sit
-            // on one line whether the game centres its text in the box or hangs it from the top.
-            var size = new Vector2(node.Size.X, Math.Max(1f, nameRect.Height));
+            // The name's box height and vertical alignment band, so a metric left on the name's
+            // line sits on it whether the game centres its text in the box or hangs it from the top.
+            var size = new Vector2(node.Size.X, Math.Max(1f, nameNode->AtkResNode.Height));
             if (node.Size != size)
                 node.Size = size;
 
-            x += style.Gap;
-
-            // Only this metric moves: the running x is untouched, so the ones after it keep
-            // their place on the name's line.
-            node.Position = new Vector2(x, nameRect.Y + style.OffsetY);
-
-            // Measured after the string and font are on the node, so the next metric starts
-            // where this one really ends rather than where its box does.
-            ushort drawnWidth;
-            ushort drawnHeight;
-            ((AtkTextNode*)node)->GetTextDrawSize(&drawnWidth, &drawnHeight);
-            x += drawnWidth;
+            // Placed outright rather than chained: every metric is positioned from the row's
+            // corner, so moving one leaves the rest exactly where they are.
+            node.Position = new Vector2(rowRect.X + style.OffsetX, rowRect.Y + style.OffsetY);
         }
     }
 

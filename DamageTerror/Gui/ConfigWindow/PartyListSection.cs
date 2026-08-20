@@ -339,7 +339,7 @@ internal static class PartyListSection
 
     private static bool DrawMetricsHeader(PartyListOverlaySettings settings, DamageTerrorPlugin plugin)
     {
-        if (!ImGui.CollapsingHeader("Metrics After Name##plMetrics"))
+        if (!ImGui.CollapsingHeader("Name Metrics##plMetrics"))
             return false;
 
         var changed = false;
@@ -353,18 +353,17 @@ internal static class PartyListSection
         }
 
         ConfigHelpers.HelpMarker(
-            "Drawn before each metric, so it sits between the name and the first one and " +
-            "between every pair after that.\n" +
+            "Drawn before each metric, wherever that metric is placed.\n" +
             "Takes the font and colour of the metric it belongs to.\n" +
             "Leave empty for none.");
 
         ImGui.Spacing();
 
-        ImGui.TextDisabled("Drawn after the name, in the order listed.");
+        ImGui.TextDisabled("Each metric is placed by its own offsets.");
         ConfigHelpers.HelpMarker(
-            "Any metric the meter window can show.\nUse the arrows to reorder them, and the " +
-            "tabs below to add more.\nOpen a metric's name for its own position, size and " +
-            "colour.\nValues and formatting match the meter.");
+            "Any metric the meter window can show.\nUse the tabs below to add more; the order " +
+            "here only decides where a newly added one starts out.\nOpen a metric's name for " +
+            "its own position, size and colour.\nValues and formatting match the meter.");
 
         if (settings.Metrics.Count > PartyListOverlaySettings.MaxMetrics)
             ImGui.TextColored(new Vector4(1f, 0.8f, 0.3f, 1f),
@@ -1052,13 +1051,13 @@ internal static class PartyListSection
 
         if (Section("Position"))
         {
-            changed |= Slider("Gap before", style.Gap, -20f, 60f,
-                v => style.Gap = v,
-                "Space before this metric - measured from where the name's text ends, or from " +
-                "the metric before it.");
-            changed |= Slider("Vertical offset", style.OffsetY, -30f, 30f,
+            changed |= Slider("Horizontal offset", style.OffsetX, -40f, 400f,
+                v => style.OffsetX = v,
+                "Measured from the row's left edge.\nThe name's length has no say in it, so " +
+                "the metric holds the same place on every row.");
+            changed |= Slider("Vertical offset", style.OffsetY, -20f, 80f,
                 v => style.OffsetY = v,
-                "Lifts this metric off the name's line.\nThe metrics after it stay where they were.");
+                "Measured from the row's top edge.\nAround 22 puts the metric on the name's line.");
             EndSection();
         }
 
