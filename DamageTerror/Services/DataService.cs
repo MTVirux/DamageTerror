@@ -109,12 +109,14 @@ public sealed class DataService : IDisposable
     {
         if (disposed) return;
 
+        // Subscribed before any await so the per-frame maintenance in OnFrameworkUpdate
+        // still runs if the data source never comes up.
+        SubscribeFrameworkUpdate();
+
         // Initialize positional data from remote CSV (falls back to cache/embedded)
         await PositionalTable.InitializeAsync().ConfigureAwait(false);
 
         cts = new CancellationTokenSource();
-
-        SubscribeFrameworkUpdate();
 
         if (config.PreferIpc)
         {
@@ -221,10 +223,16 @@ public sealed class DataService : IDisposable
 
     private void OnFrameworkUpdate(IFramework framework)
     {
+        if (disposed) return;
+
+        // Driven from the framework rather than the meter window's Draw, so the party
+        // list overlay sees a ticking sample/replay encounter with the meter closed.
+        CheckStaleness();
+        Store.TickSampleSimulation();
+
         // Once we've fallen back to WebSocket (e.g. IINACT loaded after us),
         // periodically retry IPC so we can upgrade transports without forcing
         // the user to reload the plugin.
-        if (disposed) return;
         if (!config.PreferIpc) return;
         if (ipcProbeInFlight) return;
         if (activeSource is not WebSocketDataSource) return;

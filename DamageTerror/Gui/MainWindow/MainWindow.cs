@@ -190,9 +190,6 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
             plugin.Config.MainWindowSize = ImGui.GetWindowSize();
         }
 
-        plugin.DataService.CheckStaleness();
-        plugin.DataService.Store.TickSampleSimulation();
-
         DrawBackgroundImage();
 
         if (!BeginPaddedContent(honorReplayBarPin: true))
