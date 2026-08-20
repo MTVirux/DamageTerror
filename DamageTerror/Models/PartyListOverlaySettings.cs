@@ -245,15 +245,26 @@ public sealed class PartyListOverlaySettings
         nameShift = hpBarShift = mpBarShift = null;
         hpNumbers = mpNumbers = null;
         metrics = null;
+        totalsMetrics = null;
         MetricStyles.Clear();
+    }
+
+    /// <summary>
+    /// The one deserialization callback the type may have - Newtonsoft rejects a second
+    /// method carrying the same attribute - so every migration is driven from here.
+    /// </summary>
+    [OnDeserialized]
+    internal void MigrateLegacySettings(StreamingContext context)
+    {
+        MigrateLegacyMetrics();
+        MigrateLegacyTotals();
     }
 
     /// <summary>
     /// Runs only when the config has no column list of its own, so a deliberately empty
     /// selection is never re-filled from the old flags left beside it.
     /// </summary>
-    [OnDeserialized]
-    internal void MigrateLegacyMetrics(StreamingContext context)
+    private void MigrateLegacyMetrics()
     {
         if (metrics != null)
             return;
@@ -378,9 +389,35 @@ public sealed class PartyListOverlaySettings
     public bool ShowEncounterTotals { get; set; } = true;
     public bool TotalsShowTitle { get; set; } = false;
     public bool TotalsShowDuration { get; set; } = true;
-    public bool TotalsShowRaidDps { get; set; } = false;
-    public bool TotalsShowDamage { get; set; } = false;
-    public bool TotalsShowDeaths { get; set; } = true;
+
+    private List<BarColumn>? totalsMetrics = new() { BarColumn.GroupDeaths };
+
+    /// <summary>
+    /// The metrics written into the header after the encounter name and duration, in the
+    /// order they appear. The same columns the meter's status bar offers: the group ones
+    /// read as the whole encounter, since the header has no tab to filter by, and every
+    /// other one reads as your own stats.
+    /// </summary>
+    [JsonProperty("HeaderMetrics", ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumConverter))]
+    public List<BarColumn> TotalsMetrics
+    {
+        get => totalsMetrics ??= new List<BarColumn>();
+        set => totalsMetrics = value;
+    }
+
+    /// <summary>Follows each header metric with its label, the way the status bar does.</summary>
+    public bool TotalsShowLabels { get; set; } = false;
+
+    /// <summary>Per-metric label override. Missing or empty falls back to the shared default.</summary>
+    [JsonProperty("HeaderMetricLabels", ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumConverter))]
+    public Dictionary<BarColumn, string> TotalsMetricLabels { get; set; } = new();
+
+    public string TotalsLabel(BarColumn col)
+        => TotalsMetricLabels.TryGetValue(col, out var custom) && custom.Length > 0
+            ? custom
+            : ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
 
     /// <summary>
     /// Drawn in place of the totals whenever there are none to show - out of combat, or with
@@ -395,6 +432,41 @@ public sealed class PartyListOverlaySettings
     public float TotalsOffsetY { get; set; } = -1f;
     public bool TotalsUseCustomColor { get; set; } = true;
     public Vector4 TotalsColor { get; set; } = new(1f, 1f, 1f, 1f);
+
+    // The header used to show a fixed set of encounter stats, each with a bool of its own.
+    // Read once on load into the column list, so a config written back then keeps showing
+    // the same things.
+    [JsonProperty("TotalsShowRaidDps")] private bool legacyTotalsRaidDps;
+    [JsonProperty("TotalsShowDamage")] private bool legacyTotalsDamage;
+    [JsonProperty("TotalsShowDeaths")] private bool legacyTotalsDeaths;
+
+    /// <summary>
+    /// Runs only when the config has no header column list of its own, so a deliberately
+    /// empty header is never re-filled from the old flags left beside it.
+    /// </summary>
+    private void MigrateLegacyTotals()
+    {
+        if (totalsMetrics != null)
+            return;
+
+        var migrated = new List<BarColumn>();
+        if (legacyTotalsRaidDps)
+            migrated.Add(BarColumn.EncDps);
+        if (legacyTotalsDamage)
+            migrated.Add(BarColumn.GroupDamage);
+        if (legacyTotalsDeaths)
+        {
+            migrated.Add(BarColumn.GroupDeaths);
+
+            // Deaths was the one stat that used to carry a word of its own, so the labels
+            // come on with it to keep the header reading the way it was left.
+            TotalsShowLabels = true;
+            TotalsMetricLabels[BarColumn.GroupDeaths] = "deaths";
+        }
+
+        totalsMetrics = migrated;
+        legacyTotalsRaidDps = legacyTotalsDamage = legacyTotalsDeaths = false;
+    }
 
     // Cast bar
     public bool AdjustCastBar { get; set; } = true;

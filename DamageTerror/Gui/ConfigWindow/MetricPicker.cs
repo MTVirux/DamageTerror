@@ -29,6 +29,15 @@ public static class MetricPicker
             .Where(c => c.Items.Length > 0)
             .ToArray();
 
+    /// <summary>
+    /// The columns the party list header can draw. The status bar's set, with the group ones
+    /// renamed: the header has no tab to filter by, so they read as the whole encounter.
+    /// </summary>
+    public static readonly (string Name, BarColumn[] Items)[] HeaderMetricCategories =
+        BarColumnCategories
+            .Select(c => (Name: c.Name == "Group" ? "Encounter" : c.Name, c.Items))
+            .ToArray();
+
     public static readonly (string Name, TooltipField[] Items)[] TooltipFieldCategories =
     {
         ("Damage", new[] { TooltipField.Dps, TooltipField.InstantDps, TooltipField.PeakDps, TooltipField.Damage, TooltipField.DamagePercent, TooltipField.MaxHit, TooltipField.MaxHitValue, TooltipField.DamageShield, TooltipField.EncDps, TooltipField.TopDamageSkills }),

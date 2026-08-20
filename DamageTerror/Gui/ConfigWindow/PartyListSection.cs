@@ -601,12 +601,25 @@ internal static class PartyListSection
                     v => settings.TotalsShowTitle = v);
                 changed |= ConfigHelpers.CheckboxProp("Duration##plTotalsDuration", settings.TotalsShowDuration,
                     v => settings.TotalsShowDuration = v);
-                changed |= ConfigHelpers.CheckboxProp("Raid DPS##plTotalsDps", settings.TotalsShowRaidDps,
-                    v => settings.TotalsShowRaidDps = v);
-                changed |= ConfigHelpers.CheckboxProp("Total damage##plTotalsDamage", settings.TotalsShowDamage,
-                    v => settings.TotalsShowDamage = v);
-                changed |= ConfigHelpers.CheckboxProp("Deaths##plTotalsDeaths", settings.TotalsShowDeaths,
-                    v => settings.TotalsShowDeaths = v);
+                changed |= ConfigHelpers.CheckboxProp("Metric labels##plTotalsLabels", settings.TotalsShowLabels,
+                    v => settings.TotalsShowLabels = v);
+                ConfigHelpers.HelpMarker(
+                    "Writes each metric's label after its value, as the meter's status bar does.\n" +
+                    "Each one can be renamed next to the metric below.");
+
+                ImGui.Spacing();
+                ImGui.TextDisabled("Metrics");
+                ConfigHelpers.HelpMarker(
+                    "Your own stats, except for the Encounter ones, which cover everybody.");
+
+                changed |= MetricPicker.Draw(
+                    "plTotalsMetrics",
+                    settings.TotalsMetrics,
+                    MetricPicker.GetBarColumnLabel,
+                    MetricPicker.HeaderMetricCategories,
+                    metric => DrawTotalsMetricLabel(settings, metric),
+                    metric => MetricPicker.BarColumnDescriptions.GetValueOrDefault(metric),
+                    collapsibleExtras: false);
                 ImGui.Unindent();
             }
 
@@ -654,6 +667,11 @@ internal static class PartyListSection
 
         return changed;
     }
+
+    private static bool DrawTotalsMetricLabel(PartyListOverlaySettings settings, BarColumn col)
+        => MeterTabSectionHelpers.DrawLabelOverride(col, "plTotalsLbl_",
+            ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
+            settings.TotalsMetricLabels, MetricPicker.GetBarColumnLabel(col));
 
     private static bool DrawCastBarHeader(PartyListOverlaySettings settings)
     {

@@ -387,6 +387,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private string lastGateTrace = string.Empty;
     private readonly Dictionary<string, CombatantEntry> statsByName = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Your own row's stats and the encounter-wide sums, for the header metrics.</summary>
+    private CombatantEntry? localPlayerStats;
+    private GroupAggregates? encounterAggregates;
+
     private string originalTotalsText = string.Empty;
     private string appliedTotalsText = string.Empty;
     private string appliedTotalsExtra = string.Empty;
@@ -3370,18 +3374,43 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (encounter == null)
             return string.Empty;
 
-        var parts = new List<string>(5);
+        var metrics = Settings.TotalsMetrics;
+        var parts = new List<string>(metrics.Count + 2);
 
         if (Settings.TotalsShowTitle && !string.IsNullOrEmpty(encounter.Title))
             parts.Add(encounter.Title);
         if (Settings.TotalsShowDuration && !string.IsNullOrEmpty(encounter.Duration))
             parts.Add(encounter.Duration);
-        if (Settings.TotalsShowRaidDps)
-            parts.Add(ValueFormatter.Format(encounter.EncDps, config));
-        if (Settings.TotalsShowDamage)
-            parts.Add(ValueFormatter.Format(encounter.TotalDamage, config));
-        if (Settings.TotalsShowDeaths)
-            parts.Add($"{encounter.Deaths} deaths");
+
+        var local = localPlayerStats;
+        var group = encounterAggregates;
+
+        foreach (var col in metrics)
+        {
+            string value;
+
+            // Formatted through the meter's own column value, so a metric reads here exactly
+            // as it does in the meter window. No tab to take overrides from, hence null.
+            // A metric with nothing behind it is left out rather than shown as a zero, so
+            // the header doesn't fill up before you've hit anything.
+            if (CombatantBarComponent.IsGroupColumn(col))
+            {
+                if (group == null)
+                    continue;
+                value = CombatantBarComponent.GetGroupColumnDisplayValue(col, config, null, group);
+            }
+            else
+            {
+                if (local == null)
+                    continue;
+                value = CombatantBarComponent.GetColumnDisplayValue(local, col, config, null);
+            }
+
+            if (string.IsNullOrEmpty(value))
+                continue;
+
+            parts.Add(Settings.TotalsShowLabels ? $"{value} {Settings.TotalsLabel(col)}" : value);
+        }
 
         return parts.Count == 0 ? string.Empty : TotalsSeparator + string.Join(TotalsSeparator, parts);
     }
@@ -3854,6 +3883,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         lastCacheRefresh = now;
 
         statsByName.Clear();
+        localPlayerStats = null;
+        encounterAggregates = null;
         maxDps = 0;
 
         try
@@ -3878,6 +3909,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
                 statsByName[combatant.Name] = combatant;
 
+                if (combatant.IsLocalPlayer)
+                    localPlayerStats = combatant;
+
                 // AgentHUD reports bare names, the parser may report "Name@World".
                 var at = combatant.Name.IndexOf('@');
                 if (at > 0)
@@ -3893,6 +3927,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 if (combatant.EncDps > maxDps)
                     maxDps = combatant.EncDps;
             }
+
+            // Summed over everyone in the encounter rather than a tab's filtered set, since
+            // the header has no tab. Skipped outright when no header metric asks for it.
+            if (Settings.TotalsMetrics.Any(CombatantBarComponent.IsGroupColumn))
+                encounterAggregates = GroupAggregates.Compute(combatants);
         }
         catch (Exception ex)
         {
