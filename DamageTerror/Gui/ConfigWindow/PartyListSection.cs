@@ -44,35 +44,6 @@ internal static class PartyListSection
             ImGui.Unindent();
         }
 
-        changed |= ConfigHelpers.CheckboxProp("Override \"Solo\" / \"Party\" label##plHidePartyType",
-            settings.HidePartyTypeLabel, v => settings.HidePartyTypeLabel = v);
-        ConfigHelpers.HelpMarker("Drops the game's header text and puts the encounter totals or " +
-            "the text below in its place.\nRestored when turned off.");
-
-        if (settings.HidePartyTypeLabel)
-        {
-            ImGui.Indent();
-
-            if (!settings.ShowEncounterTotals)
-                ImGui.BeginDisabled();
-
-            var hiddenText = settings.TotalsHiddenText;
-            ImGui.SetNextItemWidth(200);
-            if (ImGui.InputText("##plTotalsHidden", ref hiddenText, 128))
-            {
-                settings.TotalsHiddenText = hiddenText;
-                changed = true;
-            }
-
-            ConfigHelpers.HelpMarker("Shown on the party list header in place of the encounter " +
-                "totals, out of combat and between encounters.\nLeave empty for a blank header.");
-
-            if (!settings.ShowEncounterTotals)
-                ImGui.EndDisabled();
-
-            ImGui.Unindent();
-        }
-
         changed |= ConfigHelpers.CheckboxProp("Restyle text outline##plTintOutline",
             settings.TintTextOutline, v => settings.TintTextOutline = v);
         ConfigHelpers.HelpMarker("Gives the outline around each glyph the colour and weight " +
@@ -583,13 +554,43 @@ internal static class PartyListSection
 
     private static bool DrawTotalsHeader(PartyListOverlaySettings settings)
     {
-        if (!ImGui.CollapsingHeader("Encounter Totals##plTotals"))
+        if (!ImGui.CollapsingHeader("Party Header##plTotals"))
             return false;
 
         var changed = false;
 
         if (Group("Contents"))
         {
+            changed |= ConfigHelpers.CheckboxProp("Override \"Solo\" / \"Party\" label##plHidePartyType",
+                settings.HidePartyTypeLabel, v => settings.HidePartyTypeLabel = v);
+            ConfigHelpers.HelpMarker("Drops the game's header text and puts the encounter totals " +
+                "or the text below in its place.\nRestored when turned off.");
+
+            if (settings.HidePartyTypeLabel)
+            {
+                ImGui.Indent();
+
+                if (!settings.ShowEncounterTotals)
+                    ImGui.BeginDisabled();
+
+                var hiddenText = settings.TotalsHiddenText;
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.InputText("##plTotalsHidden", ref hiddenText, 128))
+                {
+                    settings.TotalsHiddenText = hiddenText;
+                    changed = true;
+                }
+
+                ConfigHelpers.HelpMarker("Shown on the party list header in place of the " +
+                    "encounter totals, out of combat and between encounters.\nLeave empty for " +
+                    "a blank header.");
+
+                if (!settings.ShowEncounterTotals)
+                    ImGui.EndDisabled();
+
+                ImGui.Unindent();
+            }
+
             changed |= ConfigHelpers.CheckboxProp("Show on party list header##plShowTotals",
                 settings.ShowEncounterTotals, v => settings.ShowEncounterTotals = v);
             ConfigHelpers.HelpMarker("Appended to the \"Party\" / \"Light Party\" label above the list.");
