@@ -147,9 +147,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     /// <summary>
     /// One container of ours under the addon's root, holding every node we add. Nothing is
-    /// attached to the party member components: the game's OnRequestedUpdate walks their
-    /// node lists to rebuild each row, and our extra nodes made it read what it didn't
-    /// expect - crashing whenever membership changed, on leaving a party or a duty.
+    /// attached to the party member components. Attaching there also registers the node in
+    /// that component's UldManager node list, and the game's UpdateCollisionNodeList walks
+    /// the list calling a virtual on every entry whose type reads as a component - one stale
+    /// entry and the call lands on garbage, which crashed the game whenever membership
+    /// changed, on leaving a party or a duty.
     /// </summary>
     private ResNode? overlayRoot;
 
@@ -262,10 +264,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
     private readonly TextNode?[,] metricNodes = new TextNode?[MaxRows, MetricSlots];
     private readonly string[,] lastMetricText = new string[MaxRows, MetricSlots];
-
-    /// <summary>The row component each row's metrics hang off. A row changes owner whenever
-    /// the party or trust count shifts which array it resolves to, so the nodes are rebuilt.</summary>
-    private readonly nint[] metricOwner = new nint[MaxRows];
 
     private readonly float[] lastBarWidth = new float[MaxRows];
     private readonly float[] lastBarHeight = new float[MaxRows];
@@ -657,28 +655,15 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// Creates a row's metric text nodes inside the row itself, so they travel with it and
-    /// are drawn in its space rather than tracked across the addon. The parent is fixed at
-    /// attach time, so a row that resolves to a different component - which happens as the
-    /// party and trust counts move rows between the two arrays - rebuilds under the new one.
+    /// Creates a row's metric text nodes in our own container. They are placed on the row
+    /// by projecting its rectangle every frame rather than by living inside it, so a row
+    /// changing which component it resolves to costs nothing and the party member
+    /// components keep the node lists the game gave them.
     /// </summary>
-    private void EnsureMetricNodes(AddonPartyList* addon, int row)
+    private void EnsureMetricNodes(int row)
     {
-        var owner = GetRowNode(addon, row);
-        if (owner == null)
+        if (overlayRoot == null)
             return;
-
-        if (metricOwner[row] != (nint)owner)
-        {
-            for (var slot = 0; slot < MetricSlots; slot++)
-            {
-                metricNodes[row, slot]?.Dispose();
-                metricNodes[row, slot] = null;
-            }
-
-            ClearMetricText(row);
-            metricOwner[row] = (nint)owner;
-        }
 
         for (var slot = 0; slot < MetricSlots; slot++)
         {
@@ -698,10 +683,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 IsVisible = false,
             };
 
-            // Appended, never prepended: inserting at the front shifts every pre-existing
-            // node in the row and the game misaddresses its own.
             MakeNonInteractive(metrics);
-            metrics.AttachNode((AtkResNode*)owner, NodePosition.AsLastChild);
+            metrics.AttachNode((AtkResNode*)overlayRoot, NodePosition.AsLastChild);
             metricNodes[row, slot] = metrics;
             lastMetricText[row, slot] = string.Empty;
         }
@@ -730,21 +713,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             SweepOrphanedNodes(RowComponentNode(addon->TrustMembers[i].PartyMemberComponent));
         }
 
-        // A live overlayRoot means the rows the metrics hang off have been freed without us
-        // hearing about it. Unlinking from a freed parent would write into it, so those
-        // wrappers are dropped rather than disposed and each row builds fresh ones.
-        if (overlayRoot != null)
-        {
-            for (var i = 0; i < MaxRows; i++)
-            {
-                for (var slot = 0; slot < MetricSlots; slot++)
-                    metricNodes[i, slot] = null;
-
-                ClearMetricText(i);
-                metricOwner[i] = 0;
-            }
-        }
-
         if (overlayRoot == null)
         {
             overlayRoot = new ResNode
@@ -765,7 +733,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 continue;
 
             EnsureBarNode(addon, i);
-            EnsureMetricNodes(addon, i);
+            EnsureMetricNodes(i);
         }
 
         // Rebuild so the list matches the tree we just changed.
@@ -851,7 +819,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             }
 
             ClearMetricText(i);
-            metricOwner[i] = 0;
             lastBarWidth[i] = -1f;
             lastBarHeight[i] = -1f;
             lastBarPos[i] = new Vector2(float.NaN, float.NaN);
@@ -1555,17 +1522,16 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (member == null)
             return;
 
-        EnsureMetricNodes(addon, row);
+        EnsureMetricNodes(row);
 
         var nameNode = member->Name;
-        var owner = GetRowNode(addon, row);
 
-        // Read in the row's own space, which is where the nodes now live. The name keeps its
+        // Read in our container's space, which is where the nodes live. The name keeps its
         // text and position while the cast bar hides it, so the metrics hold their place
         // through a cast instead of going with the name.
         Bounds nameRect = default;
-        var placeable = stats != null && nameNode != null && owner != null
-                        && TryProjectRect(addon, &nameNode->AtkResNode, (AtkResNode*)owner, out nameRect);
+        var placeable = stats != null && nameNode != null && overlayRoot != null
+                        && TryProjectRect(addon, &nameNode->AtkResNode, (AtkResNode*)overlayRoot, out nameRect);
 
         // The chain starts where the name's text actually ends, measured rather than assumed.
         var x = nameRect.X;
