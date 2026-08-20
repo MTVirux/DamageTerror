@@ -343,12 +343,35 @@ internal static class MeterWindowHelper
     {
         var combatants = MainWindow.GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
         if (stampRanks)
-            MainWindow.StampRanks(combatants);
+            StampRanks(combatants);
         var aggregates = computeAggregates ? GroupAggregates.Compute(combatants) : null;
         var maxVal = combatants.Count > 0
             ? combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy))
             : 0d;
         return (combatants, maxVal, aggregates);
+    }
+
+    /// <summary>
+    /// Writes each combatant's rank within the set it was given, so a rank column reads as
+    /// a position among the combatants its consumer shows rather than the whole encounter.
+    /// </summary>
+    public static void StampRanks(List<CombatantEntry> combatants)
+    {
+        var total = combatants.Count;
+
+        var byDps = combatants.OrderByDescending(c => c.EncDps).ToList();
+        for (var i = 0; i < byDps.Count; i++)
+        {
+            byDps[i].DpsRank = i + 1;
+            byDps[i].DpsRankTotal = total;
+        }
+
+        var byHps = combatants.OrderByDescending(c => c.EncHps).ToList();
+        for (var i = 0; i < byHps.Count; i++)
+        {
+            byHps[i].HpsRank = i + 1;
+            byHps[i].HpsRankTotal = total;
+        }
     }
 
     public static void DrawDisconnectNotice(string idSuffix, Action spawnReconnect, Action dismissDisconnectNotice)

@@ -800,25 +800,6 @@ public sealed class MainWindow : MeterWindowBase, IDisposable
         return combatants;
     }
 
-    internal static void StampRanks(List<CombatantEntry> combatants)
-    {
-        var total = combatants.Count;
-
-        var byDps = combatants.OrderByDescending(c => c.EncDps).ToList();
-        for (var i = 0; i < byDps.Count; i++)
-        {
-            byDps[i].DpsRank = i + 1;
-            byDps[i].DpsRankTotal = total;
-        }
-
-        var byHps = combatants.OrderByDescending(c => c.EncHps).ToList();
-        for (var i = 0; i < byHps.Count; i++)
-        {
-            byHps[i].HpsRank = i + 1;
-            byHps[i].HpsRankTotal = total;
-        }
-    }
-
     private void SpawnReconnect() =>
         Task.Run(async () => await plugin.DataService.ReconnectAsync().ConfigureAwait(false));
 }

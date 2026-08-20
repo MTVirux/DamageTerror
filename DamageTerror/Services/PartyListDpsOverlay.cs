@@ -389,6 +389,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private CombatantEntry? localPlayerStats;
     private GroupAggregates? encounterAggregates;
 
+    /// <summary>Every player in the encounter, in snapshot order, for the rank stamp.</summary>
+    private readonly List<CombatantEntry> rankableCombatants = new();
+    private bool ranksNeeded;
+
     private string originalTotalsText = string.Empty;
     private string appliedTotalsText = string.Empty;
     private string appliedTotalsExtra = string.Empty;
@@ -869,6 +873,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // Ahead of the apply pass, so the header totals and the rows agree on whether an
         // encounter is live this frame rather than one frame apart.
         RefreshCacheIfStale();
+        StampRanks();
 
         SyncOverlayRoot(addon);
 
@@ -3841,6 +3846,30 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private static AtkResNode* RowComponentNode(AtkComponentBase* component)
         => component == null ? null : (AtkResNode*)component->OwnerNode;
 
+    private static bool IsRankColumn(BarColumn col) => col is BarColumn.DpsRank or BarColumn.HpsRank;
+
+    /// <summary>
+    /// Ranks live on the combatant, stamped by whichever meter window last rendered them, so
+    /// with no meter open they keep whatever that last render left behind. Re-stamped every
+    /// update, immediately before the rows read them, rather than on the cache's slower beat
+    /// where an open meter's own stamp would show through in between.
+    /// </summary>
+    private void StampRanks()
+    {
+        if (!ranksNeeded || rankableCombatants.Count == 0)
+            return;
+
+        try
+        {
+            MeterWindowHelper.StampRanks(rankableCombatants);
+        }
+        catch (Exception ex)
+        {
+            // Sorting on values the data thread is still writing can trip the comparer.
+            ServiceManager.LogDebug(LogChannel.PartyMembership, $"Party list rank stamp failed: {ex.Message}");
+        }
+    }
+
     private void RefreshCacheIfStale()
     {
         var now = DateTime.UtcNow;
@@ -3849,9 +3878,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         lastCacheRefresh = now;
 
         statsByName.Clear();
+        rankableCombatants.Clear();
         localPlayerStats = null;
         encounterAggregates = null;
         maxDps = 0;
+        ranksNeeded = Settings.Metrics.Any(IsRankColumn) || Settings.TotalsMetrics.Any(IsRankColumn);
 
         try
         {
@@ -3870,6 +3901,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
             foreach (var combatant in combatants)
             {
+                // The same set the meter ranks over, minus its tab filter - the party list
+                // has no tab, so a rank here reads against every player in the encounter.
+                if (ranksNeeded && JobRegistry.GetRole(combatant.Job) != JobRole.Default)
+                    rankableCombatants.Add(combatant);
+
                 if (string.IsNullOrEmpty(combatant.Name))
                     continue;
 
