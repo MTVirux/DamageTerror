@@ -173,8 +173,9 @@ public sealed class PartyListOverlaySettings
     public bool MetricShowLabels { get; set; } = true;
 
     /// <summary>
-    /// Per-metric label override. Missing or empty falls back to the shared default. A label
-    /// placed in front of its value doubles as the separator metrics used to share.
+    /// Per-metric label override. Missing or empty falls back to the shared default; nothing
+    /// but spaces leaves that one metric unlabelled. A label placed in front of its value
+    /// doubles as the separator metrics used to share.
     /// </summary>
     [JsonProperty("MetricLabels", ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumConverter))]
@@ -330,6 +331,11 @@ public sealed class PartyListOverlaySettings
             return;
 
         TotalsMetrics.Insert(0, BarColumn.GroupDuration);
+
+        // The clock was the one header stat that never carried a word, so it is given a blank
+        // label to keep it that way under a header that has labels switched on.
+        if (TotalsShowLabels)
+            TotalsMetricLabels[BarColumn.GroupDuration] = " ";
     }
 
     /// <summary>
@@ -499,7 +505,10 @@ public sealed class PartyListOverlaySettings
     /// <summary>Follows each header metric with its label, the way the status bar does.</summary>
     public bool TotalsShowLabels { get; set; } = false;
 
-    /// <summary>Per-metric label override. Missing or empty falls back to the shared default.</summary>
+    /// <summary>
+    /// Per-metric label override. Missing or empty falls back to the shared default; nothing
+    /// but spaces leaves that one metric unlabelled.
+    /// </summary>
     [JsonProperty("HeaderMetricLabels", ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumConverter))]
     public Dictionary<BarColumn, string> TotalsMetricLabels { get; set; } = new();

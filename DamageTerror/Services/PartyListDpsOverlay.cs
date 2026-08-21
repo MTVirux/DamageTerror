@@ -1671,10 +1671,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     /// <summary>
     /// A metric's drawn text. The label doubles as the separator metrics used to share, so it
-    /// can be asked to lead rather than follow.
+    /// can be asked to lead rather than follow. A label of nothing but spaces is how a single
+    /// metric opts out of a labelled set.
     /// </summary>
     private static string Compose(string value, string? label, IndividualMetricStyle style)
-        => string.IsNullOrEmpty(label)
+        => string.IsNullOrWhiteSpace(label)
             ? value
             : style.LabelBeforeValue ? $"{label} {value}" : $"{value} {label}";
 
@@ -3265,9 +3266,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// The header's metrics, each on a text node of its own so it can be placed, sized and
-    /// coloured by itself - the same treatment a row's metrics get. The game's own header
-    /// text node is left holding the encounter name and the stand-in text.
+    /// The header metrics that were given a node of their own, so they can be placed, sized
+    /// and coloured by themselves - the same treatment a row's metrics get. The rest are
+    /// written into the game's own header text node by <see cref="BuildHeaderText"/>.
     /// </summary>
     private void UpdateHeaderMetrics(AddonPartyList* addon)
     {
@@ -3291,40 +3292,63 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (placeable && totalsStyleApplied)
             origin -= new Vector2(appliedTotalsX - originalTotalsX, appliedTotalsY - originalTotalsY);
 
-        var metrics = Settings.TotalsMetrics;
+        var slot = 0;
 
-        for (var slot = 0; slot < MetricSlots; slot++)
+        if (placeable && headerNode != null)
+        {
+            foreach (var metric in Settings.TotalsMetrics)
+            {
+                if (slot >= MetricSlots)
+                    break;
+
+                var style = Settings.TotalsStyle(metric);
+                if (!style.Floating)
+                    continue;
+
+                var node = headerMetricNodes[slot];
+                if (node == null)
+                    continue;
+
+                var text = BuildHeaderMetric(metric, style);
+                SetHeaderMetricText(node, slot, text);
+                slot++;
+
+                if (text.Length == 0)
+                    continue;
+
+                headerMetricsShown = true;
+
+                CopyTextStyle(node, headerNode, style, null, null);
+
+                var size = new Vector2(node.Size.X, Math.Max(1f, headerNode->AtkResNode.Height));
+                if (node.Size != size)
+                    node.Size = size;
+
+                node.Position = origin + new Vector2(style.OffsetX, style.OffsetY);
+            }
+        }
+
+        // Whatever is left over - metrics that went inline, or that have been removed since
+        // the last pass - has no node to draw on any more.
+        for (; slot < MetricSlots; slot++)
         {
             var node = headerMetricNodes[slot];
-            if (node == null)
-                continue;
-
-            var style = placeable && slot < metrics.Count ? Settings.TotalsStyle(metrics[slot]) : null;
-            var text = style == null ? string.Empty : BuildHeaderMetric(metrics[slot], style);
-
-            if (lastHeaderMetricText[slot] != text)
-            {
-                lastHeaderMetricText[slot] = text;
-                node.String = text;
-            }
-
-            var visible = text.Length > 0;
-            if (node.IsVisible != visible)
-                node.IsVisible = visible;
-
-            if (!visible || style == null || headerNode == null)
-                continue;
-
-            headerMetricsShown = true;
-
-            CopyTextStyle(node, headerNode, style, null, null);
-
-            var size = new Vector2(node.Size.X, Math.Max(1f, headerNode->AtkResNode.Height));
-            if (node.Size != size)
-                node.Size = size;
-
-            node.Position = origin + new Vector2(style.OffsetX, style.OffsetY);
+            if (node != null)
+                SetHeaderMetricText(node, slot, string.Empty);
         }
+    }
+
+    private void SetHeaderMetricText(TextNode node, int slot, string text)
+    {
+        if (lastHeaderMetricText[slot] != text)
+        {
+            lastHeaderMetricText[slot] = text;
+            node.String = text;
+        }
+
+        var visible = text.Length > 0;
+        if (node.IsVisible != visible)
+            node.IsVisible = visible;
     }
 
     /// <summary>
@@ -3358,7 +3382,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// Appends the encounter name to the party list's header text ("Party", "Light Party"...).
+    /// Appends the encounter name and the inline metrics to the party list's header text
+    /// ("Party", "Light Party"...).
     /// The game's own label is captured and restored, same as the row names.
     /// </summary>
     private void ApplyEncounterTotals(AddonPartyList* addon)
@@ -3393,7 +3418,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // Hiding the label just means dropping the game's own text and keeping whatever we
         // append, so the original is still captured and restored when this is turned off.
         var body = Settings.HidePartyTypeLabel ? string.Empty : originalTotalsText;
-        var extra = Settings.ShowEncounterTotals ? BuildHeaderTitle() : string.Empty;
+        var extra = Settings.ShowEncounterTotals ? BuildHeaderText() : string.Empty;
 
         // Nothing to show either because the metrics are hidden or because no encounter is
         // active - either way the user's own text stands in for them.
@@ -3502,22 +3527,46 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>Separates what we write on the header from the game's own label.</summary>
     private const string TotalsSeparator = "  ";
 
-    private string BuildHeaderTitle()
+    /// <summary>
+    /// What is written onto the game's own header text node: the encounter name, then every
+    /// metric left inline. One text node has one font and one colour, so an inline metric can
+    /// be worded but not styled - floating it is what gives it a node to be styled on.
+    /// </summary>
+    private string BuildHeaderText()
     {
-        if (!MetricsVisible || !Settings.TotalsShowTitle)
+        if (!MetricsVisible)
             return string.Empty;
 
-        CombatEncounter? encounter = null;
-        try
+        var parts = new List<string>(Settings.TotalsMetrics.Count + 1);
+
+        if (Settings.TotalsShowTitle)
         {
-            encounter = dataService.Store.ActiveEncounter?.Encounter;
-        }
-        catch (Exception ex)
-        {
-            ServiceManager.LogDebug(LogChannel.PartyMembership, $"Encounter title read failed: {ex.Message}");
+            CombatEncounter? encounter = null;
+            try
+            {
+                encounter = dataService.Store.ActiveEncounter?.Encounter;
+            }
+            catch (Exception ex)
+            {
+                ServiceManager.LogDebug(LogChannel.PartyMembership, $"Encounter title read failed: {ex.Message}");
+            }
+
+            if (!string.IsNullOrEmpty(encounter?.Title))
+                parts.Add(encounter.Title);
         }
 
-        return string.IsNullOrEmpty(encounter?.Title) ? string.Empty : TotalsSeparator + encounter.Title;
+        foreach (var metric in Settings.TotalsMetrics)
+        {
+            var style = Settings.TotalsStyle(metric);
+            if (style.Floating)
+                continue;
+
+            var text = BuildHeaderMetric(metric, style);
+            if (text.Length > 0)
+                parts.Add(text);
+        }
+
+        return parts.Count == 0 ? string.Empty : TotalsSeparator + string.Join(TotalsSeparator, parts);
     }
 
     /// <summary>

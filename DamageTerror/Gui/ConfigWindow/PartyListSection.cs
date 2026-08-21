@@ -368,7 +368,8 @@ internal static class PartyListSection
             MetricPicker.GetBarColumnLabel,
             MetricPicker.PartyListMetricCategories,
             metric => DrawMetricStyle(metric, settings.Style(metric), "plMetric",
-                settings.MetricLabels, settings.MetricShowLabels, hideWhileCasting: true),
+                settings.MetricLabels, settings.MetricShowLabels,
+                hideWhileCasting: true, canFloat: false),
             metric => MetricPicker.BarColumnDescriptions.GetValueOrDefault(metric),
             collapsibleExtras: true);
 
@@ -603,10 +604,11 @@ internal static class PartyListSection
                     "Each one can be renamed, and put in front of its value to read as a separator.");
 
                 ImGui.Spacing();
-                ImGui.TextDisabled("Each metric is placed by its own offsets.");
+                ImGui.TextDisabled("Written into the header text, in the order below.");
                 ConfigHelpers.HelpMarker(
                     "Your own stats, except for the Encounter ones, which cover everybody.\n" +
-                    "Open a metric's name for its own label, position, size and colour.");
+                    "Open a metric's name to reword it, or to float it onto a node of its own " +
+                    "where it gets its own position, size and colour.");
 
                 changed |= MetricPicker.Draw(
                     "plTotalsMetrics",
@@ -614,7 +616,8 @@ internal static class PartyListSection
                     MetricPicker.GetBarColumnLabel,
                     MetricPicker.HeaderMetricCategories,
                     metric => DrawMetricStyle(metric, settings.TotalsStyle(metric), "plTotals",
-                        settings.TotalsMetricLabels, settings.TotalsShowLabels, hideWhileCasting: false),
+                        settings.TotalsMetricLabels, settings.TotalsShowLabels,
+                        hideWhileCasting: false, canFloat: true),
                     metric => MetricPicker.BarColumnDescriptions.GetValueOrDefault(metric),
                     collapsibleExtras: true);
                 ImGui.Unindent();
@@ -628,9 +631,9 @@ internal static class PartyListSection
             changed |= ConfigHelpers.CheckboxProp("Adjust header text##plAdjustTotals", settings.AdjustTotalsText,
                 v => settings.AdjustTotalsText = v);
             ConfigHelpers.HelpMarker(
-                "The header's own text node, which carries the game's label and the encounter " +
-                "name.\nThe metrics have nodes of their own and are not moved by this - it is " +
-                "only where they start out when first placed.");
+                "The header's own text node, which carries the game's label, the encounter name " +
+                "and every metric left inline.\nA floating metric has a node of its own and is " +
+                "not moved by this - it is only where it starts out when first floated.");
 
             if (settings.AdjustTotalsText)
             {
@@ -1040,25 +1043,43 @@ internal static class PartyListSection
     /// </summary>
     /// <summary>
     /// One metric's own look, shared by the row metrics and the header ones so both offer the
-    /// same settings. Only the cast bar is particular to a row - the header has none over it.
+    /// same settings. Two are particular to where the metric is drawn: only a row has a cast
+    /// bar to step aside for, and only the header has text to be written into instead.
     /// </summary>
     private static bool DrawMetricStyle(BarColumn metric, IndividualMetricStyle style, string idPrefix,
-        Dictionary<BarColumn, string> labels, bool showLabels, bool hideWhileCasting)
+        Dictionary<BarColumn, string> labels, bool showLabels, bool hideWhileCasting, bool canFloat)
     {
         var label = MetricPicker.GetBarColumnLabel(metric);
         var changed = false;
+
+        if (canFloat)
+        {
+            changed |= ConfigHelpers.CheckboxProp("Floating", style.Floating,
+                v => style.Floating = v);
+            ConfigHelpers.HelpMarker(
+                "Gives this metric a text node of its own, which the settings below then apply " +
+                "to.\nOff writes it into the header text beside the game's label, where it shares " +
+                "that text's position, size and colour and can only be worded.");
+        }
 
         if (showLabels && Section("Label"))
         {
             ImGui.TextDisabled("Text");
             changed |= MeterTabSectionHelpers.DrawLabelOverride(metric, idPrefix + "Lbl_",
                 ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(metric, metric.ToString()), labels, label);
+            ConfigHelpers.HelpMarker(
+                "Leave empty for the default shown, or put a single space in it to leave this " +
+                "one metric unlabelled.");
             changed |= ConfigHelpers.CheckboxProp("Before the value", style.LabelBeforeValue,
                 v => style.LabelBeforeValue = v);
             ConfigHelpers.HelpMarker(
                 "Puts the label in front of the value, which is how a label reads as a separator.");
             EndSection();
         }
+
+        // Everything past here needs a node of its own to apply to.
+        if (canFloat && !style.Floating)
+            return changed;
 
         if (hideWhileCasting && Section("Visibility"))
         {

@@ -29,6 +29,14 @@ public sealed class IndividualMetricStyle
     /// what a label has to do to read as a separator.</summary>
     public bool LabelBeforeValue { get; set; } = false;
 
+    /// <summary>
+    /// Gives the metric a text node of its own, which the offsets, font size and colours
+    /// below then apply to. Off writes it into the text beside it instead, where it can
+    /// only be worded - one text node has one font and one colour. Only the party list
+    /// header has anything to write into; a row's metrics always have their own node.
+    /// </summary>
+    public bool Floating { get; set; } = false;
+
     /// <summary>Takes the metric off the row for as long as a cast bar is up. The cast bar covers
     /// the name's line and is drawn under the metrics, so this is for anyone who would rather read
     /// the cast than the number.</summary>
