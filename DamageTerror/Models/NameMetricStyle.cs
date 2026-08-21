@@ -36,13 +36,14 @@ public sealed class NameMetricStyle
     public static readonly Vector4 DefaultColor = new(1f, 1f, 1f, 1f);
     public static readonly Vector4 DefaultOutlineColor = new(49f / 255f, 97f / 255f, 134f / 255f, 1f);
 
-    /// <summary>Off follows the name's own colour, which is what the game gives the row.</summary>
+    /// <summary>Off draws the metric the way the game draws a resting party list name on the
+    /// player's own UI theme. Not the name node's live colour: the game drives that from the row's
+    /// timeline, so it moves as the row changes state - a cast bar taking the name over is the
+    /// usual way to see it, and the metrics used to be dragged along with it.</summary>
     public bool UseCustomColor { get; set; } = false;
     public Vector4 Color { get; set; } = DefaultColor;
 
-    /// <summary>Off follows the name's own outline. The game drives that outline from the row's
-    /// timeline, so it shifts between two blues as the row changes state - a cast bar taking the
-    /// name over is the usual way to see it. On pins the outline and the metric stops following.</summary>
+    /// <summary>The outline's half of the same thing.</summary>
     public bool UseCustomOutlineColor { get; set; } = false;
     public Vector4 OutlineColor { get; set; } = DefaultOutlineColor;
 }

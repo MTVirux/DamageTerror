@@ -265,6 +265,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly TextNode?[,] metricNodes = new TextNode?[MaxRows, MetricSlots];
     private readonly string[,] lastMetricText = new string[MaxRows, MetricSlots];
 
+    /// <summary>How the game paints a resting party list name on the player's UI theme, which is
+    /// what a metric with no colour of its own follows. Null while the palette can't be read.</summary>
+    private Vector4? paletteNameColor;
+    private Vector4? paletteNameOutline;
+
     private readonly float[] lastBarWidth = new float[MaxRows];
     private readonly float[] lastBarHeight = new float[MaxRows];
     private readonly Vector2[] lastBarPos = new Vector2[MaxRows];
@@ -875,6 +880,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         RefreshCacheIfStale();
         StampRanks();
 
+        // Read once a frame rather than once a metric - it is a sheet lookup and a game setting,
+        // and every row wants the same answer.
+        paletteNameColor = GameUiColors.PartyListName;
+        paletteNameOutline = GameUiColors.PartyListNameOutline;
+
         SyncOverlayRoot(addon);
 
         if (overlayRoot != null)
@@ -974,18 +984,20 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (raw->SheetType != name->SheetType)
             raw->SheetType = name->SheetType;
 
+        // Inheriting means the colour the game paints a resting name with on this player's UI
+        // theme, not whatever the name node holds this frame: the row's timeline moves that
+        // colour as the row changes state, which is what dragged the metrics along when a cast
+        // bar took the name over. The node is still the fallback if the palette can't be read.
         var textColor = style.UseCustomColor
             ? new Vector4(style.Color.X, style.Color.Y, style.Color.Z, 1f)
-            : ToVector4(name->TextColor);
+            : paletteNameColor ?? ToVector4(name->TextColor);
         if (node.TextColor != textColor)
             node.TextColor = textColor;
 
-        // The metric's own outline wins over the party list wide tint - it is the narrower
-        // setting - and neither reads the name, which is the only way the outline stops
-        // following the row's state.
+        // The metric's own outline wins over the party list wide tint, being the narrower setting.
         var edgeColor = style.UseCustomOutlineColor
             ? new Vector4(style.OutlineColor.X, style.OutlineColor.Y, style.OutlineColor.Z, 1f)
-            : ToVector4(name->EdgeColor);
+            : paletteNameOutline ?? ToVector4(name->EdgeColor);
         if (!style.UseCustomOutlineColor && Settings.TintTextOutline)
         {
             var tint = Settings.TextOutlineTint;

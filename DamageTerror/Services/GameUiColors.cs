@@ -34,6 +34,7 @@ public static class GameUiColors
                 return null;
 
             // The sheet's columns are the themes in the order the game's own list offers them.
+            // The last two are Clear Pink and Clear Grey, which Lumina has not named yet.
             var packed = Theme() switch
             {
                 1 => color.Value.Light,
@@ -41,6 +42,8 @@ public static class GameUiColors
                 3 => color.Value.ClearBlue,
                 4 => color.Value.ClearWhite,
                 5 => color.Value.ClearGreen,
+                6 => color.Value.Unknown2,
+                7 => color.Value.Unknown3,
                 _ => color.Value.Dark,
             };
 

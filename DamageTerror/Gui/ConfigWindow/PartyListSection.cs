@@ -1078,13 +1078,13 @@ internal static class PartyListSection
             changed |= DrawCustomColor("plMetric", label,
                 style.UseCustomColor, style.Color,
                 v => style.UseCustomColor = v, v => style.Color = v,
-                "Off follows the name's own colour, the way the game draws it.");
+                "Off draws the metric in the colour the game gives a party list name on your " +
+                "UI theme, and follows you to another theme.");
             changed |= DrawCustomColor("plMetricOutline", $"{label} outline",
                 style.UseCustomOutlineColor, style.OutlineColor,
                 v => style.UseCustomOutlineColor = v, v => style.OutlineColor = v,
-                "Off follows the name's own outline. The game paints that outline from the " +
-                "row's timeline, so it moves between two blues as the row changes state - a " +
-                "cast bar taking the name over is where it shows. On pins it.");
+                "Off uses the outline the game gives a party list name on your UI theme, and " +
+                "follows you to another theme.");
 
             // Switching a metric to a custom colour starts it on the game's own name colours for
             // this player's UI theme, so pinning one changes nothing until they pick something.
