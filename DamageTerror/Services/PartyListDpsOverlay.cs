@@ -416,7 +416,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private DateTime lastEncounterActive = DateTime.MinValue;
 
     /// <summary>
-    /// Whether the parts derived from parse data - the bars, the name metrics and the
+    /// Whether the parts derived from parse data - the bars, the individual metrics and the
     /// header totals - should draw. The restyle is deliberately not gated, so the
     /// rows keep their layout between pulls instead of jumping on every boundary.
     /// </summary>
@@ -950,7 +950,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// continuation of it rather than as a second label. Size and colour are the only things
     /// that can differ, and only by what the metric's own style asks for.
     /// </summary>
-    private void CopyNameFont(TextNode node, AtkTextNode* name, NameMetricStyle style)
+    private void CopyNameFont(TextNode node, AtkTextNode* name, IndividualMetricStyle style)
     {
         var font = (uint)Math.Clamp(name->FontSize + style.FontDelta, 6, 60);
         if (node.FontSize != font)

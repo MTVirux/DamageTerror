@@ -10,7 +10,7 @@ namespace DamageTerror.Models;
 public sealed class PartyListOverlaySettings
 {
     /// <summary>
-    /// Hides everything derived from parse data - the fill bars, the name metrics and the
+    /// Hides everything derived from parse data - the fill bars, the individual metrics and the
     /// header totals - once an encounter has been over for
     /// <see cref="HideOutOfCombatDelay"/> seconds. The restyle stays applied either way, so
     /// the rows don't jump layout on pull. Separate from the meter window's own setting.
@@ -188,25 +188,25 @@ public sealed class PartyListOverlaySettings
     /// </summary>
     [JsonProperty("MetricColumnStyles", ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumConverter))]
-    public Dictionary<BarColumn, NameMetricStyle> MetricStyles { get; set; } = new()
+    public Dictionary<BarColumn, IndividualMetricStyle> MetricStyles { get; set; } = new()
     {
-        [BarColumn.DamagePercent] = new NameMetricStyle { FontDelta = 0 },
-        [BarColumn.Dps] = new NameMetricStyle { FontDelta = 0, OffsetX = NameMetricStyle.ColumnX(1), UseCustomColor = true },
+        [BarColumn.DamagePercent] = new IndividualMetricStyle { FontDelta = 0 },
+        [BarColumn.Dps] = new IndividualMetricStyle { FontDelta = 0, OffsetX = IndividualMetricStyle.ColumnX(1), UseCustomColor = true },
     };
 
     /// <summary>
     /// A metric's style, seeded into its own column the first time it is asked for so two
     /// metrics added one after the other don't land on top of each other.
     /// </summary>
-    public NameMetricStyle Style(BarColumn metric)
+    public IndividualMetricStyle Style(BarColumn metric)
     {
         if (MetricStyles.TryGetValue(metric, out var style))
             return style;
 
-        style = new NameMetricStyle
+        style = new IndividualMetricStyle
         {
             FontDelta = MetricsFontDelta,
-            OffsetX = NameMetricStyle.ColumnX(Metrics.IndexOf(metric)),
+            OffsetX = IndividualMetricStyle.ColumnX(Metrics.IndexOf(metric)),
         };
 
         MetricStyles[metric] = style;
@@ -230,7 +230,7 @@ public sealed class PartyListOverlaySettings
 
     [JsonProperty("MetricStyles")]
     [JsonConverter(typeof(TolerantEnumConverter))]
-    private Dictionary<NameMetric, NameMetricStyle>? legacyStyles;
+    private Dictionary<NameMetric, IndividualMetricStyle>? legacyStyles;
 
     private static readonly NameMetric[] LegacyMetricOrder =
     {
@@ -282,8 +282,8 @@ public sealed class PartyListOverlaySettings
             if (style.LegacyGap == null)
                 continue;
 
-            style.OffsetX = NameMetricStyle.ColumnX(Metrics.IndexOf(column));
-            style.OffsetY += NameMetricStyle.DefaultOffsetY;
+            style.OffsetX = IndividualMetricStyle.ColumnX(Metrics.IndexOf(column));
+            style.OffsetY += IndividualMetricStyle.DefaultOffsetY;
             style.LegacyGap = null;
         }
     }

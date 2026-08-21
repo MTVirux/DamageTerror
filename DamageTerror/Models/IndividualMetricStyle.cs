@@ -1,10 +1,10 @@
 namespace DamageTerror.Models;
 
 /// <summary>
-/// How one name metric is drawn. Each metric owns a text node, since a single Atk text node
+/// How one individual metric is drawn. Each metric owns a text node, since a single Atk text node
 /// has one font size and one colour, so every metric can be styled on its own.
 /// </summary>
-public sealed class NameMetricStyle
+public sealed class IndividualMetricStyle
 {
     /// <summary>Where the first metric sits, and how far apart the ones after it are placed
     /// when they have no position of their own. Past the name box, which the row's own

@@ -32,7 +32,7 @@ internal static class PartyListSection
 
         changed |= ConfigHelpers.CheckboxProp("Hide metrics when out of combat##plHideOoc",
             settings.HideOutOfCombat, v => settings.HideOutOfCombat = v);
-        ConfigHelpers.HelpMarker("The bar, name metrics and totals only.\nThe restyle stays.");
+        ConfigHelpers.HelpMarker("The bar, individual metrics and totals only.\nThe restyle stays.");
 
         if (settings.HideOutOfCombat)
         {
@@ -339,7 +339,7 @@ internal static class PartyListSection
 
     private static bool DrawMetricsHeader(PartyListOverlaySettings settings, DamageTerrorPlugin plugin)
     {
-        if (!ImGui.CollapsingHeader("Name Metrics##plMetrics"))
+        if (!ImGui.CollapsingHeader("Individual Metrics##plMetrics"))
             return false;
 
         var changed = false;
@@ -374,7 +374,7 @@ internal static class PartyListSection
             settings.Metrics,
             MetricPicker.GetBarColumnLabel,
             MetricPicker.PartyListMetricCategories,
-            metric => DrawNameMetricStyle(settings, metric),
+            metric => DrawIndividualMetricStyle(settings, metric),
             metric => MetricPicker.BarColumnDescriptions.GetValueOrDefault(metric),
             collapsibleExtras: true);
 
@@ -1044,7 +1044,7 @@ internal static class PartyListSection
     /// Each metric is drawn by a node of its own, so all three can differ between them.
     /// The picker collapses this under the metric's name, which does the indenting.
     /// </summary>
-    private static bool DrawNameMetricStyle(PartyListOverlaySettings settings, BarColumn metric)
+    private static bool DrawIndividualMetricStyle(PartyListOverlaySettings settings, BarColumn metric)
     {
         var style = settings.Style(metric);
         var changed = false;
@@ -1097,12 +1097,12 @@ internal static class PartyListSection
             // Switching a metric to a custom colour starts it on the game's own name colours, so
             // pinning one changes nothing until they pick something. Only a metric still carrying
             // the untouched default is seeded.
-            if (!hadColor && style.UseCustomColor && style.Color == NameMetricStyle.DefaultColor
+            if (!hadColor && style.UseCustomColor && style.Color == IndividualMetricStyle.DefaultColor
                 && GameUiColors.PartyListName is { } nameColor)
                 style.Color = nameColor;
 
             if (!hadOutline && style.UseCustomOutlineColor
-                && style.OutlineColor == NameMetricStyle.DefaultOutlineColor
+                && style.OutlineColor == IndividualMetricStyle.DefaultOutlineColor
                 && GameUiColors.PartyListNameOutline is { } outlineColor)
                 style.OutlineColor = outlineColor;
 
