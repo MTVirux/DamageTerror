@@ -2236,7 +2236,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>
     /// The slot number before each name. It has its own text node, so by default it is given
     /// the same size change and vertical shift as the name to keep the two reading as one
-    /// line; the override replaces that with values of its own.
+    /// line; the override replaces that with values of its own. Colour is never inherited -
+    /// the number keeps the game's own unless the override gives it one.
     /// </summary>
     private void ApplyPartyIndexLayout(AddonPartyList* addon)
     {
@@ -2246,7 +2247,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var fontDelta = Settings.PartyIndexFontDelta;
         var offsetX = Settings.PartyIndexOffsetX;
         var offsetY = Settings.PartyIndexOffsetY;
-        var useCustomColor = Settings.PartyIndexUseCustomColor;
+
+        // The colour is never taken from the name - the number sits in the game's own badge
+        // art, which a name colour picked to read against the row can be lost against.
+        var useCustomColor = Settings.AdjustPartyIndex && Settings.PartyIndexUseCustomColor;
         var color = Settings.PartyIndexColor;
 
         if (!Settings.AdjustPartyIndex)
@@ -2254,11 +2258,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             fontDelta = Settings.AdjustNameFont ? Settings.NameFontDelta : 0;
             offsetX = Settings.NameShift.Enabled ? Settings.NameShift.OffsetX : 0f;
             offsetY = Settings.NameShift.Enabled ? Settings.NameShift.OffsetY : 0f;
-            useCustomColor = Settings.NameShift.UseCustomColor;
-            color = Settings.NameShift.Color;
         }
 
-        // Nothing is being done to the name either, so leave the node's layout alone. Its
+        // Nothing is being done to the name either, so leave the node's layout alone. The
         // colour is still handled below, since that is a separate setting.
         var adjustLayout = Settings.AdjustPartyIndex || fontDelta != 0 || offsetX != 0f || offsetY != 0f;
         if (!adjustLayout)

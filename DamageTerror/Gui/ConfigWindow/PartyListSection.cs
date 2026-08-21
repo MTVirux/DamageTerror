@@ -229,8 +229,9 @@ internal static class PartyListSection
                 v => settings.AdjustPartyIndex = v);
             ConfigHelpers.HelpMarker(
                 "The party slot number drawn before the name.\nOff, it takes the name's size " +
-                "change, move and colour, so the two stay on one line and match.\nOn, it uses " +
-                "the values below instead and the name no longer carries it.");
+                "change and move, so the two stay on one line.\nOn, it uses the values below " +
+                "instead and the name no longer carries it.\nIts colour is never the " +
+                "name's - it stays the game's own until the override sets one.");
 
             if (settings.AdjustPartyIndex)
             {
