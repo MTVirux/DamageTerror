@@ -173,21 +173,35 @@ public sealed class PartyListOverlaySettings
     public bool MetricShowLabels { get; set; } = true;
 
     /// <summary>
-    /// Per-metric label override. Missing or empty falls back to the shared default; nothing
-    /// but spaces leaves that one metric unlabelled. A label placed in front of its value
-    /// doubles as the separator metrics used to share.
+    /// Per-metric label override, used exactly as typed so it carries its own spacing. Missing
+    /// or empty falls back to the shared default; nothing but spaces leaves that one metric
+    /// unlabelled. A label placed in front of its value doubles as the separator metrics used
+    /// to share, which is what the spacing being the user's is for.
     /// </summary>
     [JsonProperty("MetricLabels", ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumConverter))]
     public Dictionary<BarColumn, string> MetricLabels { get; set; } = new()
     {
-        [BarColumn.DamagePercent] = "@",
+        [BarColumn.DamagePercent] = "@ ",
     };
 
-    public string MetricLabel(BarColumn col)
-        => MetricLabels.TryGetValue(col, out var custom) && custom.Length > 0
-            ? custom
-            : ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+    public string? MetricLabel(BarColumn col, IndividualMetricStyle style)
+        => LabelAffix(MetricLabels, col, style);
+
+    /// <summary>
+    /// What a label adds to a metric's text, gap included: an override exactly as typed, or
+    /// the shared default with a single space between it and the value. Null for a metric
+    /// that is to go unlabelled.
+    /// </summary>
+    private static string? LabelAffix(Dictionary<BarColumn, string> labels, BarColumn col,
+        IndividualMetricStyle style)
+    {
+        if (labels.TryGetValue(col, out var custom) && custom.Length > 0)
+            return custom.Trim().Length == 0 ? null : custom;
+
+        var fallback = ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+        return style.LabelBeforeValue ? fallback + " " : " " + fallback;
+    }
 
     /// <summary>
     /// The font size every metric used before they were given a node each. Kept only to seed
@@ -290,7 +304,7 @@ public sealed class PartyListOverlaySettings
         MigrateLegacyMetricPositions();
         MigrateLegacyMetricSeparator();
         MigrateLegacyTotals();
-        MigrateLegacyTotalsDuration();
+        MigrateLegacyTotalsLabels();
     }
 
     /// <summary>
@@ -302,12 +316,14 @@ public sealed class PartyListOverlaySettings
         if (legacySeparator == null)
             return;
 
-        var separator = legacySeparator.Trim();
+        var separator = legacySeparator;
         legacySeparator = null;
 
+        // Kept exactly as it was written, spacing and all, since a label is drawn the same
+        // way - so a separator that sat flush against its value still does.
         // Labels are set for every metric rather than left to their defaults, so a config
         // that showed bare values doesn't come back with words it never had.
-        MetricShowLabels = separator.Length > 0;
+        MetricShowLabels = separator.Trim().Length > 0;
         if (!MetricShowLabels)
             return;
 
@@ -319,13 +335,21 @@ public sealed class PartyListOverlaySettings
     }
 
     /// <summary>
-    /// Runs only for a config that still carries the toggle, and leaves a header that had
-    /// the clock switched off alone.
+    /// The header's labels, and its clock. Runs only for a config written while the clock was
+    /// still a toggle, which is the same era its labels were drawn from.
     /// </summary>
-    private void MigrateLegacyTotalsDuration()
+    private void MigrateLegacyTotalsLabels()
     {
         var showDuration = legacyTotalsDuration;
         legacyTotalsDuration = null;
+
+        if (showDuration == null)
+            return;
+
+        // A header label used to be drawn with a space put in front of it. Labels carry their
+        // own spacing now, so that space moves into the label itself.
+        foreach (var column in TotalsMetricLabels.Keys.ToList())
+            TotalsMetricLabels[column] = " " + TotalsMetricLabels[column];
 
         if (showDuration != true || TotalsMetrics.Contains(BarColumn.GroupDuration))
             return;
@@ -506,17 +530,16 @@ public sealed class PartyListOverlaySettings
     public bool TotalsShowLabels { get; set; } = false;
 
     /// <summary>
-    /// Per-metric label override. Missing or empty falls back to the shared default; nothing
-    /// but spaces leaves that one metric unlabelled.
+    /// Per-metric label override, used exactly as typed so it carries its own spacing. Missing
+    /// or empty falls back to the shared default; nothing but spaces leaves that one metric
+    /// unlabelled.
     /// </summary>
     [JsonProperty("HeaderMetricLabels", ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumConverter))]
     public Dictionary<BarColumn, string> TotalsMetricLabels { get; set; } = new();
 
-    public string TotalsLabel(BarColumn col)
-        => TotalsMetricLabels.TryGetValue(col, out var custom) && custom.Length > 0
-            ? custom
-            : ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
+    public string? TotalsLabel(BarColumn col, IndividualMetricStyle style)
+        => LabelAffix(TotalsMetricLabels, col, style);
 
     /// <summary>
     /// Per-metric position, font size and colour, the same way the individual metrics have

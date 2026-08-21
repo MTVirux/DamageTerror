@@ -1625,7 +1625,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             // Carried on the metric rather than drawn on its own node, so a metric that has
             // nothing to show takes its label with it instead of leaving one stranded.
             var text = value.Length > 0 && style != null
-                ? Compose(value, Settings.MetricShowLabels ? Settings.MetricLabel(metrics[slot]) : null, style)
+                ? Compose(value, Settings.MetricShowLabels ? Settings.MetricLabel(metrics[slot], style) : null, style)
                 : string.Empty;
 
             if (lastMetricText[row, slot] != text)
@@ -1671,13 +1671,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     /// <summary>
     /// A metric's drawn text. The label doubles as the separator metrics used to share, so it
-    /// can be asked to lead rather than follow. A label of nothing but spaces is how a single
-    /// metric opts out of a labelled set.
+    /// can be asked to lead rather than follow and brings its own spacing rather than being
+    /// given a fixed gap.
     /// </summary>
     private static string Compose(string value, string? label, IndividualMetricStyle style)
-        => string.IsNullOrWhiteSpace(label)
-            ? value
-            : style.LabelBeforeValue ? $"{label} {value}" : $"{value} {label}";
+        => label == null ? value : style.LabelBeforeValue ? label + value : value + label;
 
     /// <summary>
     /// Applies the cap width, and optionally rounds only the right end. A 9-slice can't
@@ -3380,7 +3378,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         return string.IsNullOrEmpty(value)
             ? string.Empty
-            : Compose(value, Settings.TotalsShowLabels ? Settings.TotalsLabel(col) : null, style);
+            : Compose(value, Settings.TotalsShowLabels ? Settings.TotalsLabel(col, style) : null, style);
     }
 
     /// <summary>

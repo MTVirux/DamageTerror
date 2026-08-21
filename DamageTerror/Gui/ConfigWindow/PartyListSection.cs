@@ -349,7 +349,7 @@ internal static class PartyListSection
             v => settings.MetricShowLabels = v);
         ConfigHelpers.HelpMarker(
             "Writes each metric's label beside its value, as the party list header does.\n" +
-            "Each one can be renamed, and put in front of its value to read as a separator.");
+            "Each one can be reworded, and put in front of its value to read as a separator.");
 
         ImGui.Spacing();
 
@@ -602,7 +602,7 @@ internal static class PartyListSection
                     v => settings.TotalsShowLabels = v);
                 ConfigHelpers.HelpMarker(
                     "Writes each metric's label beside its value, as the meter's status bar does.\n" +
-                    "Each one can be renamed, and put in front of its value to read as a separator.");
+                    "Each one can be reworded, and put in front of its value to read as a separator.");
 
                 ImGui.Spacing();
                 ImGui.TextDisabled("Written into the header text, in the order below.");
@@ -1069,8 +1069,10 @@ internal static class PartyListSection
             changed |= MeterTabSectionHelpers.DrawLabelOverride(metric, idPrefix + "Lbl_",
                 ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(metric, metric.ToString()), labels, label);
             ConfigHelpers.HelpMarker(
-                "Leave empty for the default shown, or put a single space in it to leave this " +
-                "one metric unlabelled.");
+                "Drawn exactly as typed, so the spacing around the value is yours: \"x\" gives " +
+                "\"24%x\" and \" x\" gives \"24% x\".\nLeave it empty for the default shown, " +
+                "which is drawn with a single space, or put nothing but spaces in it to leave " +
+                "this one metric unlabelled.");
             changed |= ConfigHelpers.CheckboxProp("Before the value", style.LabelBeforeValue,
                 v => style.LabelBeforeValue = v);
             ConfigHelpers.HelpMarker(
