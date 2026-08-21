@@ -1072,6 +1072,9 @@ internal static class PartyListSection
         if (Section("Color"))
         {
             var label = MetricPicker.GetBarColumnLabel(metric);
+            var hadColor = style.UseCustomColor;
+            var hadOutline = style.UseCustomOutlineColor;
+
             changed |= DrawCustomColor("plMetric", label,
                 style.UseCustomColor, style.Color,
                 v => style.UseCustomColor = v, v => style.Color = v,
@@ -1082,6 +1085,19 @@ internal static class PartyListSection
                 "Off follows the name's own outline. The game paints that outline from the " +
                 "row's timeline, so it moves between two blues as the row changes state - a " +
                 "cast bar taking the name over is where it shows. On pins it.");
+
+            // Switching a metric to a custom colour starts it on the game's own name colours for
+            // this player's UI theme, so pinning one changes nothing until they pick something.
+            // Only a metric still carrying the untouched default is seeded.
+            if (!hadColor && style.UseCustomColor && style.Color == NameMetricStyle.DefaultColor
+                && GameUiColors.PartyListName is { } nameColor)
+                style.Color = nameColor;
+
+            if (!hadOutline && style.UseCustomOutlineColor
+                && style.OutlineColor == NameMetricStyle.DefaultOutlineColor
+                && GameUiColors.PartyListNameOutline is { } outlineColor)
+                style.OutlineColor = outlineColor;
+
             EndSection();
         }
 

@@ -30,14 +30,19 @@ public sealed class NameMetricStyle
     [JsonProperty("Gap", NullValueHandling = NullValueHandling.Ignore)]
     internal float? LegacyGap;
 
+    /// <summary>How a resting party list name is drawn on the Dark theme. Only a starting point:
+    /// a metric switched to a custom colour is seeded from <see cref="GameUiColors"/> instead, so
+    /// it gets these same colours in the theme the player is actually on.</summary>
+    public static readonly Vector4 DefaultColor = new(1f, 1f, 1f, 1f);
+    public static readonly Vector4 DefaultOutlineColor = new(49f / 255f, 97f / 255f, 134f / 255f, 1f);
+
     /// <summary>Off follows the name's own colour, which is what the game gives the row.</summary>
     public bool UseCustomColor { get; set; } = false;
-    public Vector4 Color { get; set; } = new(1f, 1f, 1f, 1f);
+    public Vector4 Color { get; set; } = DefaultColor;
 
     /// <summary>Off follows the name's own outline. The game drives that outline from the row's
     /// timeline, so it shifts between two blues as the row changes state - a cast bar taking the
-    /// name over is the usual way to see it. On pins the outline and the metric stops following.
-    /// The default is the blue the game paints a resting name with.</summary>
+    /// name over is the usual way to see it. On pins the outline and the metric stops following.</summary>
     public bool UseCustomOutlineColor { get; set; } = false;
-    public Vector4 OutlineColor { get; set; } = new(49f / 255f, 97f / 255f, 134f / 255f, 1f);
+    public Vector4 OutlineColor { get; set; } = DefaultOutlineColor;
 }
