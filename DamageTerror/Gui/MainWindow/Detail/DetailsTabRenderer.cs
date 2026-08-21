@@ -156,6 +156,7 @@ internal sealed class DetailsTabRenderer : IDetailTabRenderer
             BarColumn.Deaths => (Label(col), c.Deaths.ToString()),
             BarColumn.Kills => (Label(col), c.Kills.ToString()),
             BarColumn.CombatantDuration => (Label(col), c.CombatantDuration),
+            BarColumn.EncounterName => (Label(col), c.EncounterName),
             BarColumn.PowerHeal => (Label(col), Fmt(c.PowerHeal)),
 
             BarColumn.PowerDrain => (Label(col), Fmt(c.PowerDrain)),

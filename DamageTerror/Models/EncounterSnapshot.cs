@@ -75,7 +75,8 @@ public sealed class EncounterSnapshot
 
     /// <summary>
     /// Rebuild dictionaries with case-insensitive comparers after JSON deserialization,
-    /// since Newtonsoft.Json creates them with the default (case-sensitive) comparer.
+    /// since Newtonsoft.Json creates them with the default (case-sensitive) comparer,
+    /// and restamp the encounter name that the combatants are not stored with.
     /// </summary>
     [OnDeserialized]
     internal void OnDeserialized(StreamingContext context)
@@ -86,6 +87,10 @@ public sealed class EncounterSnapshot
         ItemEvents = DictionaryHelpers.EnsureCaseInsensitive(ItemEvents);
         StatusHistory = DictionaryHelpers.EnsureCaseInsensitive(StatusHistory);
         StatusesReceived = DictionaryHelpers.EnsureCaseInsensitive(StatusesReceived);
+
+        if (Combatants != null)
+            foreach (var c in Combatants)
+                c.EncounterName = Encounter.Title;
     }
 
     /// <summary>

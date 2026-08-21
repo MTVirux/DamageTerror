@@ -56,6 +56,12 @@ public sealed class CombatantEntry
     public double CritHealPct { get; set; }
     public int HealCount { get; set; }
     public string CombatantDuration { get; set; } = "00:00";
+
+    /// <summary>The encounter this entry belongs to, stamped on every combatant so a metric
+    /// can read it from the same place as every other value.</summary>
+    [Newtonsoft.Json.JsonIgnore]
+    public string EncounterName { get; set; } = string.Empty;
+
     public long DamageShield { get; set; }
     public string MaxHealWardName { get; set; } = string.Empty;
     public long MaxHealWardAmount { get; set; }

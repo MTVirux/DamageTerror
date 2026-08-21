@@ -262,6 +262,7 @@ internal static class SampleDataGenerator
             c.DamageTakenPercent = SimulatorHelpers.FormatPercent(c.DamageTaken, totalDamageTaken);
             c.RaidDps = totalDps;
             c.RaidHps = totalHps;
+            c.EncounterName = title;
         }
 
         var snapshot = new EncounterSnapshot

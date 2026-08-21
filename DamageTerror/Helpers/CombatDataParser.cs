@@ -21,15 +21,17 @@ public static class CombatDataParser
             Timestamp = DateTime.UtcNow,
         };
 
+        ResolveEncounterTitle(snapshot);
+
         var raidDps = snapshot.Encounter.EncDps;
         var raidHps = snapshot.Encounter.EncHps;
+        var title = snapshot.Encounter.Title;
         foreach (var c in snapshot.Combatants)
         {
             c.RaidDps = raidDps;
             c.RaidHps = raidHps;
+            c.EncounterName = title;
         }
-
-        ResolveEncounterTitle(snapshot);
 
         return snapshot;
     }

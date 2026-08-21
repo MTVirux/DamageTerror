@@ -193,6 +193,7 @@ public sealed class EncounterReplaySimulator
             c.DamageTakenPercent = SimulatorHelpers.FormatPercent(c.DamageTaken, totalTaken);
             c.RaidDps = working.Encounter.EncDps;
             c.RaidHps = working.Encounter.EncHps;
+            c.EncounterName = working.Encounter.Title;
         }
 
         working.Encounter.Duration = SimulatorHelpers.FormatDuration(t);

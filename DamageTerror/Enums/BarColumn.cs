@@ -79,4 +79,6 @@ public enum BarColumn
     GroupPeakDps = 70,
     GroupMaxHitValue = 71,
     GroupMaxHealValue = 72,
+
+    EncounterName = 74,
 }

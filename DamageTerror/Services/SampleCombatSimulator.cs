@@ -377,6 +377,7 @@ internal sealed class SampleCombatSimulator
             c.InstantHps = s.BaseHps * (1.0 + 0.2 * Math.Sin(t * (0.25 + i * 0.05))) * (0.85 + Rng.NextDouble() * 0.3);
             c.PeakDps = Math.Max(c.PeakDps, c.InstantDps);
             c.CombatantDuration = snapshot.Encounter.Duration;
+            c.EncounterName = snapshot.Encounter.Title;
 
             totalDamage += c.Damage;
             totalHealed += c.Healed;
