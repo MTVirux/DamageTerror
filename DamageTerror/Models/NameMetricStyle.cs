@@ -30,16 +30,15 @@ public sealed class NameMetricStyle
     [JsonProperty("Gap", NullValueHandling = NullValueHandling.Ignore)]
     internal float? LegacyGap;
 
-    /// <summary>How a resting party list name is drawn on the Dark theme. Only a starting point:
-    /// a metric switched to a custom colour is seeded from <see cref="GameUiColors"/> instead, so
-    /// it gets these same colours in the theme the player is actually on.</summary>
+    /// <summary>How the game draws a resting party list name, kept here so a config can be read
+    /// without the game's palette to hand. <see cref="GameUiColors"/> is the real source.</summary>
     public static readonly Vector4 DefaultColor = new(1f, 1f, 1f, 1f);
     public static readonly Vector4 DefaultOutlineColor = new(49f / 255f, 97f / 255f, 134f / 255f, 1f);
 
-    /// <summary>Off draws the metric the way the game draws a resting party list name on the
-    /// player's own UI theme. Not the name node's live colour: the game drives that from the row's
-    /// timeline, so it moves as the row changes state - a cast bar taking the name over is the
-    /// usual way to see it, and the metrics used to be dragged along with it.</summary>
+    /// <summary>Off draws the metric the way the game draws a resting party list name. Not the
+    /// name node's live colour: the game drives that from the row's timeline, so it moves as the
+    /// row changes state - a cast bar taking the name over is the usual way to see it, and the
+    /// metrics used to be dragged along with it.</summary>
     public bool UseCustomColor { get; set; } = false;
     public Vector4 Color { get; set; } = DefaultColor;
 

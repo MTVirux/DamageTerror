@@ -265,8 +265,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly TextNode?[,] metricNodes = new TextNode?[MaxRows, MetricSlots];
     private readonly string[,] lastMetricText = new string[MaxRows, MetricSlots];
 
-    /// <summary>How the game paints a resting party list name on the player's UI theme, which is
-    /// what a metric with no colour of its own follows. Null while the palette can't be read.</summary>
+    /// <summary>How the game paints a resting party list name, which is what a metric with no
+    /// colour of its own follows. Null while the palette can't be read.</summary>
     private Vector4? paletteNameColor;
     private Vector4? paletteNameOutline;
 
@@ -984,10 +984,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (raw->SheetType != name->SheetType)
             raw->SheetType = name->SheetType;
 
-        // Inheriting means the colour the game paints a resting name with on this player's UI
-        // theme, not whatever the name node holds this frame: the row's timeline moves that
-        // colour as the row changes state, which is what dragged the metrics along when a cast
-        // bar took the name over. The node is still the fallback if the palette can't be read.
+        // Inheriting means the colour the game paints a resting name with, not whatever the name
+        // node holds this frame: the row's timeline moves that colour as the row changes state,
+        // which is what dragged the metrics along when a cast bar took the name over. The node is
+        // still the fallback if the palette can't be read.
         var textColor = style.UseCustomColor
             ? new Vector4(style.Color.X, style.Color.Y, style.Color.Z, 1f)
             : paletteNameColor ?? ToVector4(name->TextColor);

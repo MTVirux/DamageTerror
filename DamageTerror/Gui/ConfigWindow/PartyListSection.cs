@@ -1078,17 +1078,15 @@ internal static class PartyListSection
             changed |= DrawCustomColor("plMetric", label,
                 style.UseCustomColor, style.Color,
                 v => style.UseCustomColor = v, v => style.Color = v,
-                "Off draws the metric in the colour the game gives a party list name on your " +
-                "UI theme, and follows you to another theme.");
+                "Off draws the metric in the colour the game gives a party list name.");
             changed |= DrawCustomColor("plMetricOutline", $"{label} outline",
                 style.UseCustomOutlineColor, style.OutlineColor,
                 v => style.UseCustomOutlineColor = v, v => style.OutlineColor = v,
-                "Off uses the outline the game gives a party list name on your UI theme, and " +
-                "follows you to another theme.");
+                "Off uses the outline the game gives a party list name.");
 
-            // Switching a metric to a custom colour starts it on the game's own name colours for
-            // this player's UI theme, so pinning one changes nothing until they pick something.
-            // Only a metric still carrying the untouched default is seeded.
+            // Switching a metric to a custom colour starts it on the game's own name colours, so
+            // pinning one changes nothing until they pick something. Only a metric still carrying
+            // the untouched default is seeded.
             if (!hadColor && style.UseCustomColor && style.Color == NameMetricStyle.DefaultColor
                 && GameUiColors.PartyListName is { } nameColor)
                 style.Color = nameColor;

@@ -1,14 +1,14 @@
-using Dalamud.Game.Config;
-
 using Lumina.Excel.Sheets;
 
 namespace DamageTerror.Services;
 
 /// <summary>
-/// The game's own palette. A UIColor row is not one colour but one per UI theme, so a colour
-/// read off an addon under one theme is wrong under the others - the party list name's outline
-/// is 49,97,134 on Dark and 43,70,109 on Clear Green. Reading the row keeps a colour we hand
-/// the user matched to the theme they actually play on.
+/// The game's own palette, read the way the party list reads it. A UIColor row carries a colour
+/// per UI theme, but the game only reaches for those when a lookup asks: AtkUIColorHolder keeps a
+/// plain colour and a themed one per row, and hands back the plain one unless the caller passes
+/// useThemeColor. Nothing in PartyList.uld asks - its name node carries a row id and an "is a UI
+/// colour" bit and nothing else - so the party list is drawn in the untinted colours on every
+/// theme, and that is the column taken here.
 /// </summary>
 public static class GameUiColors
 {
@@ -23,8 +23,9 @@ public static class GameUiColors
 
     public static Vector4? PartyListNameOutline => Resolve(NameOutlineRow);
 
-    /// <summary>One palette row in the theme the player is on. Alpha is dropped - the sheet is
-    /// opaque throughout and the callers here draw text, not artwork.</summary>
+    /// <summary>One palette row's untinted colour - Lumina calls the column Dark because that
+    /// theme leaves it alone. Alpha is dropped: the sheet is opaque throughout and the callers
+    /// here draw text, not artwork.</summary>
     public static Vector4? Resolve(uint row)
     {
         try
@@ -33,20 +34,7 @@ public static class GameUiColors
             if (color == null)
                 return null;
 
-            // The sheet's columns are the themes in the order the game's own list offers them.
-            // The last two are Clear Pink and Clear Grey, which Lumina has not named yet.
-            var packed = Theme() switch
-            {
-                1 => color.Value.Light,
-                2 => color.Value.ClassicFF,
-                3 => color.Value.ClearBlue,
-                4 => color.Value.ClearWhite,
-                5 => color.Value.ClearGreen,
-                6 => color.Value.Unknown2,
-                7 => color.Value.Unknown3,
-                _ => color.Value.Dark,
-            };
-
+            var packed = color.Value.Dark;
             return new Vector4(
                 ((packed >> 24) & 0xFF) / 255f,
                 ((packed >> 16) & 0xFF) / 255f,
@@ -59,7 +47,4 @@ public static class GameUiColors
             return null;
         }
     }
-
-    private static uint Theme()
-        => Svc.GameConfig.TryGet(SystemConfigOption.ColorThemeType, out uint theme) ? theme : 0;
 }
