@@ -386,7 +386,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly NodeTintState[,] castBarTint = new NodeTintState[MaxRows, CastBarSlots];
     private readonly TextColorState[] castNameColor = new TextColorState[MaxRows];
     private readonly float[,] originalStatusX = new float[MaxRows, StatusIconSlots];
-    private readonly float[,] originalStatusY = new float[MaxRows, StatusIconSlots];
+    private readonly float[] statusLineY = new float[MaxRows];
+    private readonly bool[] statusLineCaptured = new bool[MaxRows];
     private readonly float[,] originalStatusScale = new float[MaxRows, StatusIconSlots];
     private readonly float[,] originalStatusOriginX = new float[MaxRows, StatusIconSlots];
     private readonly float[,] originalStatusOriginY = new float[MaxRows, StatusIconSlots];
@@ -967,6 +968,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         Array.Clear(barTextureApplied);
         Array.Clear(badgeTextureApplied);
         Array.Clear(statusCaptured);
+        Array.Clear(statusLineCaptured);
 
         // Our containers go last, once everything inside them has gone.
         overlayRoot?.Dispose();
@@ -3432,7 +3434,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         for (var row = 0; row < MaxRows; row++)
         {
             var anchorX = float.MaxValue;
-            var anchorY = float.MaxValue;
 
             for (var i = 0; i < StatusIconSlots; i++)
             {
@@ -3440,21 +3441,26 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 if (node == null)
                     continue;
 
-                // Where we last left this slot: on our own placement while we hold it,
-                // back on the game's original once we have handed it back. Re-capturing
-                // only when it has moved off that is what keeps our own numbers out of the
-                // originals - the game writes these positions when the addon is set up and
-                // never again, so a laundered original is permanent and the icon sits off
-                // the line for the rest of the session.
-                var ourX = statusApplied[row, i] ? appliedStatusX[row, i] : originalStatusX[row, i];
-                var ourY = statusApplied[row, i] ? appliedStatusY[row, i] : originalStatusY[row, i];
-                var moved = Math.Abs(node->X - ourX) > 0.01f || Math.Abs(node->Y - ourY) > 0.01f;
+                // The game rebuilds a row's icons - a member joining, an instance swap -
+                // by re-laying them on wherever they already sit, and hands them between
+                // slots without moving them. So a slot can come back on a placement of
+                // ours, and reading that back as the game's line bakes one offset into it
+                // for good. Only a position that is neither of our two - the line itself
+                // and the line plus our offset - is the game moving the row.
+                var line = statusLineY[row];
 
-                if (!statusCaptured[row, i] || moved)
+                if (!statusLineCaptured[row]
+                    || (Math.Abs(node->Y - line) > 0.01f
+                        && Math.Abs(node->Y - (line + Settings.StatusOffsetY)) > 0.01f))
                 {
-                    originalStatusX[row, i] = node->X;
-                    originalStatusY[row, i] = node->Y;
+                    statusLineY[row] = node->Y;
+                    statusLineCaptured[row] = true;
                 }
+
+                var ourX = statusApplied[row, i] ? appliedStatusX[row, i] : originalStatusX[row, i];
+
+                if (!statusCaptured[row, i] || Math.Abs(node->X - ourX) > 0.01f)
+                    originalStatusX[row, i] = node->X;
 
                 var ourScale = statusApplied[row, i] ? appliedStatusScale[row, i] : originalStatusScale[row, i];
 
@@ -3468,7 +3474,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 statusCaptured[row, i] = true;
 
                 anchorX = Math.Min(anchorX, originalStatusX[row, i]);
-                anchorY = Math.Min(anchorY, originalStatusY[row, i]);
             }
 
             if (anchorX == float.MaxValue)
@@ -3496,7 +3501,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
                 var source = slotSource[i];
                 var targetX = anchorX + ((originalStatusX[row, source] - anchorX) * scale) + Settings.StatusOffsetX;
-                var targetY = anchorY + ((originalStatusY[row, source] - anchorY) * scale) + Settings.StatusOffsetY;
+                var targetY = statusLineY[row] + Settings.StatusOffsetY;
                 var targetScale = originalStatusScale[row, i] * scale;
 
                 if (Math.Abs(node->X - targetX) > 0.01f || Math.Abs(node->Y - targetY) > 0.01f)
@@ -4215,7 +4220,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         statusApplied[row, slot] = false;
 
-        node->SetPositionFloat(originalStatusX[row, slot], originalStatusY[row, slot]);
+        node->SetPositionFloat(originalStatusX[row, slot], statusLineY[row]);
         node->OriginX = originalStatusOriginX[row, slot];
         node->OriginY = originalStatusOriginY[row, slot];
         node->SetScale(originalStatusScale[row, slot], originalStatusScale[row, slot]);
