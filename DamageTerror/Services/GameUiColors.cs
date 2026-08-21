@@ -17,11 +17,18 @@ public static class GameUiColors
     private const uint NameTextRow = 1;
     private const uint NameOutlineRow = 36;
 
-    /// <summary>How the game draws a resting party list name, or null when the palette can't be
-    /// read.</summary>
-    public static Vector4? PartyListName => Resolve(NameTextRow);
+    /// <summary>What the party list was last seen drawing a name with, filled in by the overlay
+    /// from a row that is actually showing one. It beats reading the sheet: it is the colour on
+    /// screen, whichever row of the palette the game reached for.</summary>
+    public static Vector4? ObservedName { get; set; }
 
-    public static Vector4? PartyListNameOutline => Resolve(NameOutlineRow);
+    public static Vector4? ObservedNameOutline { get; set; }
+
+    /// <summary>How the game draws a resting party list name, or null when nothing has been seen
+    /// and the palette can't be read either.</summary>
+    public static Vector4? PartyListName => ObservedName ?? Resolve(NameTextRow);
+
+    public static Vector4? PartyListNameOutline => ObservedNameOutline ?? Resolve(NameOutlineRow);
 
     /// <summary>One palette row's untinted colour - Lumina calls the column Dark because that
     /// theme leaves it alone. Alpha is dropped: the sheet is opaque throughout and the callers

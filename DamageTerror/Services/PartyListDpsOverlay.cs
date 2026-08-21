@@ -265,10 +265,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly TextNode?[,] metricNodes = new TextNode?[MaxRows, MetricSlots];
     private readonly string[,] lastMetricText = new string[MaxRows, MetricSlots];
 
-    /// <summary>How the game paints a resting party list name, which is what a metric with no
-    /// colour of its own follows. Null while the palette can't be read.</summary>
-    private Vector4? paletteNameColor;
-    private Vector4? paletteNameOutline;
 
     private readonly float[] lastBarWidth = new float[MaxRows];
     private readonly float[] lastBarHeight = new float[MaxRows];
@@ -880,11 +876,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         RefreshCacheIfStale();
         StampRanks();
 
-        // Read once a frame rather than once a metric - it is a sheet lookup and a game setting,
-        // and every row wants the same answer.
-        paletteNameColor = GameUiColors.PartyListName;
-        paletteNameOutline = GameUiColors.PartyListNameOutline;
-
         SyncOverlayRoot(addon);
 
         if (overlayRoot != null)
@@ -911,6 +902,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var agent = AgentHUD.Instance();
         var members = agent == null ? default : agent->PartyMembers;
         var count = agent == null ? 0 : Math.Min(agent->PartyMemberCount, members.Length);
+
+        // After the name passes, so what the metrics copy is the name as it ends up on screen
+        // rather than the colour the game left on it.
+        SampleNameStyle(addon);
 
         // Out of combat every row is treated as unmatched, which is already the path that
         // hides the metrics node and zero-widths the bar.
@@ -984,20 +979,19 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (raw->SheetType != name->SheetType)
             raw->SheetType = name->SheetType;
 
-        // Inheriting means the colour the game paints a resting name with, not whatever the name
-        // node holds this frame: the row's timeline moves that colour as the row changes state,
-        // which is what dragged the metrics along when a cast bar took the name over. The node is
-        // still the fallback if the palette can't be read.
+        // Inheriting follows a name that is being drawn, not this row's node: the row's timeline
+        // moves the name's colour as the row changes state, so a row with a cast bar over its name
+        // is left wearing a colour none of the others are. Its own node is still the fallback.
         var textColor = style.UseCustomColor
             ? new Vector4(style.Color.X, style.Color.Y, style.Color.Z, 1f)
-            : paletteNameColor ?? ToVector4(name->TextColor);
+            : GameUiColors.ObservedName ?? ToVector4(name->TextColor);
         if (node.TextColor != textColor)
             node.TextColor = textColor;
 
         // The metric's own outline wins over the party list wide tint, being the narrower setting.
         var edgeColor = style.UseCustomOutlineColor
             ? new Vector4(style.OutlineColor.X, style.OutlineColor.Y, style.OutlineColor.Z, 1f)
-            : paletteNameOutline ?? ToVector4(name->EdgeColor);
+            : GameUiColors.ObservedNameOutline ?? ToVector4(name->EdgeColor);
         if (!style.UseCustomOutlineColor && Settings.TintTextOutline)
         {
             var tint = Settings.TextOutlineTint;
@@ -3818,6 +3812,41 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private static bool IsNodeVisible(AtkResNode* node)
         => node != null && (node->NodeFlags & NodeFlags.Visible) != 0;
+
+    /// <summary>Whether a node reaches the screen, which is its own flag and every parent's - the
+    /// party list hides whole groups rather than the leaves inside them.</summary>
+    private static bool IsNodeDrawn(AtkResNode* node)
+    {
+        if (node == null)
+            return false;
+
+        for (var current = node; current != null; current = current->ParentNode)
+            if ((current->NodeFlags & NodeFlags.Visible) == 0)
+                return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Remembers how a party list name is being drawn, taken from a row that is showing one. The
+    /// row's timeline moves the name's colour as the row changes state, so a row with a cast bar
+    /// over its name sits on a colour none of the others wear - reading a drawn name instead is
+    /// what keeps a metric matching the name rather than the state one row happens to be in.
+    /// </summary>
+    private void SampleNameStyle(AddonPartyList* addon)
+    {
+        for (var row = 0; row < MaxRows; row++)
+        {
+            var member = RowMember(addon, row);
+            var name = member == null ? null : member->Name;
+            if (name == null || !IsNodeDrawn(&name->AtkResNode))
+                continue;
+
+            GameUiColors.ObservedName = ToVector4(name->TextColor);
+            GameUiColors.ObservedNameOutline = ToVector4(name->EdgeColor);
+            return;
+        }
+    }
 
     /// <summary>The node this row's fill is attached to, which its coordinates are relative to.</summary>
     private AtkResNode* BarParent(AddonPartyList* addon, int row)
