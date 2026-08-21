@@ -19,6 +19,11 @@ public sealed class NameMetricStyle
     /// <summary>Offset from the name's font size, which the metric otherwise copies.</summary>
     public int FontDelta { get; set; } = -2;
 
+    /// <summary>Takes the metric off the row for as long as a cast bar is up. The cast bar covers
+    /// the name's line and is drawn under the metrics, so this is for anyone who would rather read
+    /// the cast than the number.</summary>
+    public bool HideWhileCasting { get; set; } = false;
+
     /// <summary>Where the metric sits, measured from the row's top left corner. Nothing about
     /// the name is read, so a long name no longer moves it.</summary>
     public float OffsetX { get; set; } = DefaultOffsetX;

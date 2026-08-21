@@ -1049,6 +1049,16 @@ internal static class PartyListSection
         var style = settings.Style(metric);
         var changed = false;
 
+        if (Section("Visibility"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Hide while casting", style.HideWhileCasting,
+                v => style.HideWhileCasting = v);
+            ConfigHelpers.HelpMarker(
+                "The cast bar takes over the name's line and is drawn under the metrics.\n" +
+                "On, this metric steps aside until the cast is over.");
+            EndSection();
+        }
+
         if (Section("Position"))
         {
             changed |= Slider("Horizontal offset", style.OffsetX, -40f, 400f,

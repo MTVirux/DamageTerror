@@ -1552,6 +1552,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                         && TryProjectRect(addon, (AtkResNode*)rowNode, (AtkResNode*)overlayRoot, out rowRect);
 
         var metrics = Settings.Metrics;
+        var casting = IsRowCasting(addon, row);
 
         for (var slot = 0; slot < MetricSlots; slot++)
         {
@@ -1559,9 +1560,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             if (node == null)
                 continue;
 
+            var style = slot < metrics.Count ? Settings.Style(metrics[slot]) : null;
+
             // Formatted through the meter's own column value, so a metric reads here exactly
             // as it does in the meter window. No tab to take overrides from, hence null.
-            var value = placeable && stats != null && slot < metrics.Count
+            var value = placeable && stats != null && style != null
                 ? CombatantBarComponent.GetColumnDisplayValue(stats, metrics[slot], config, null)
                 : string.Empty;
 
@@ -1575,14 +1578,15 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 node.String = text;
             }
 
-            var visible = text.Length > 0;
+            // A metric asked to stand aside leaves the row to the cast bar, which is drawn under
+            // it and over the name it was placed against.
+            var visible = text.Length > 0 && !(casting && style?.HideWhileCasting == true);
             if (node.IsVisible != visible)
                 node.IsVisible = visible;
 
-            if (!visible)
+            if (!visible || style == null)
                 continue;
 
-            var style = Settings.Style(metrics[slot]);
             CopyNameFont(node, nameNode, style);
 
             // The name's box height and vertical alignment band, so a metric left on the name's
@@ -3826,6 +3830,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         return true;
     }
+
+    /// <summary>Whether the row's cast bar is on screen, which is when it has taken the name's
+    /// place and is sitting under whatever was placed on the name's line.</summary>
+    private static bool IsRowCasting(AddonPartyList* addon, int row)
+        => IsNodeDrawn(GetCastBarNode(addon, row, 0));
 
     /// <summary>
     /// Remembers how a party list name is being drawn, taken from a row that is showing one. The
