@@ -980,8 +980,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (node.TextColor != textColor)
             node.TextColor = textColor;
 
-        var edgeColor = ToVector4(name->EdgeColor);
-        if (Settings.TintTextOutline)
+        // The metric's own outline wins over the party list wide tint - it is the narrower
+        // setting - and neither reads the name, which is the only way the outline stops
+        // following the row's state.
+        var edgeColor = style.UseCustomOutlineColor
+            ? new Vector4(style.OutlineColor.X, style.OutlineColor.Y, style.OutlineColor.Z, 1f)
+            : ToVector4(name->EdgeColor);
+        if (!style.UseCustomOutlineColor && Settings.TintTextOutline)
         {
             var tint = Settings.TextOutlineTint;
             edgeColor = new Vector4(tint.X, tint.Y, tint.Z, edgeColor.W);

@@ -1071,10 +1071,17 @@ internal static class PartyListSection
 
         if (Section("Color"))
         {
-            changed |= DrawCustomColor("plMetric", MetricPicker.GetBarColumnLabel(metric),
+            var label = MetricPicker.GetBarColumnLabel(metric);
+            changed |= DrawCustomColor("plMetric", label,
                 style.UseCustomColor, style.Color,
                 v => style.UseCustomColor = v, v => style.Color = v,
                 "Off follows the name's own colour, the way the game draws it.");
+            changed |= DrawCustomColor("plMetricOutline", $"{label} outline",
+                style.UseCustomOutlineColor, style.OutlineColor,
+                v => style.UseCustomOutlineColor = v, v => style.OutlineColor = v,
+                "Off follows the name's own outline. The game paints that outline from the " +
+                "row's timeline, so it moves between two blues as the row changes state - a " +
+                "cast bar taking the name over is where it shows. On pins it.");
             EndSection();
         }
 
