@@ -394,6 +394,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[,] appliedStatusY = new float[MaxRows, StatusIconSlots];
     private readonly float[,] appliedStatusScale = new float[MaxRows, StatusIconSlots];
     private readonly bool[,] statusApplied = new bool[MaxRows, StatusIconSlots];
+    private readonly bool[,] statusCaptured = new bool[MaxRows, StatusIconSlots];
     private readonly NodeTintState[,] statusTint = new NodeTintState[MaxRows, StatusIconSlots];
     private readonly TextColorState[,] timerColor = new TextColorState[MaxRows, StatusIconSlots];
     private readonly float[,] originalGlowX = new float[MaxRows, GlowGroups];
@@ -965,6 +966,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         Array.Clear(barTextureApplied);
         Array.Clear(badgeTextureApplied);
+        Array.Clear(statusCaptured);
 
         // Our containers go last, once everything inside them has gone.
         overlayRoot?.Dispose();
@@ -3438,22 +3440,32 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 if (node == null)
                     continue;
 
-                var fresh = !statusApplied[row, i];
+                // Where we last left this slot: on our own placement while we hold it,
+                // back on the game's original once we have handed it back. Re-capturing
+                // only when it has moved off that is what keeps our own numbers out of the
+                // originals - the game writes these positions when the addon is set up and
+                // never again, so a laundered original is permanent and the icon sits off
+                // the line for the rest of the session.
+                var ourX = statusApplied[row, i] ? appliedStatusX[row, i] : originalStatusX[row, i];
+                var ourY = statusApplied[row, i] ? appliedStatusY[row, i] : originalStatusY[row, i];
+                var moved = Math.Abs(node->X - ourX) > 0.01f || Math.Abs(node->Y - ourY) > 0.01f;
 
-                if (fresh
-                    || Math.Abs(node->X - appliedStatusX[row, i]) > 0.01f
-                    || Math.Abs(node->Y - appliedStatusY[row, i]) > 0.01f)
+                if (!statusCaptured[row, i] || moved)
                 {
                     originalStatusX[row, i] = node->X;
                     originalStatusY[row, i] = node->Y;
                 }
 
-                if (fresh || Math.Abs(node->ScaleX - appliedStatusScale[row, i]) > 0.001f)
+                var ourScale = statusApplied[row, i] ? appliedStatusScale[row, i] : originalStatusScale[row, i];
+
+                if (!statusCaptured[row, i] || Math.Abs(node->ScaleX - ourScale) > 0.001f)
                 {
                     originalStatusScale[row, i] = node->ScaleX;
                     originalStatusOriginX[row, i] = node->OriginX;
                     originalStatusOriginY[row, i] = node->OriginY;
                 }
+
+                statusCaptured[row, i] = true;
 
                 anchorX = Math.Min(anchorX, originalStatusX[row, i]);
                 anchorY = Math.Min(anchorY, originalStatusY[row, i]);
@@ -4195,13 +4207,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>Hands one status icon slot back to the game, if we ever moved it.</summary>
     private void RestoreStatusSlot(int row, int slot, AtkResNode* node)
     {
-        if (!statusApplied[row, slot])
+        // Without the node there is nothing to hand back, so the slot stays ours - clearing
+        // the flag here would leave it sitting on our placement with nothing recording that
+        // we put it there.
+        if (!statusApplied[row, slot] || node == null)
             return;
 
         statusApplied[row, slot] = false;
-
-        if (node == null)
-            return;
 
         node->SetPositionFloat(originalStatusX[row, slot], originalStatusY[row, slot]);
         node->OriginX = originalStatusOriginX[row, slot];
