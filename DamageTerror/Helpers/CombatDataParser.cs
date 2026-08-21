@@ -12,10 +12,12 @@ public static class CombatDataParser
 
         var combatantObj = data["Combatant"] as JObject;
 
+        var encounter = ParseEncounter(encounterObj, data["isActive"]?.ToString());
+
         var snapshot = new EncounterSnapshot
         {
-            Encounter = ParseEncounter(encounterObj, data["isActive"]?.ToString()),
-            Combatants = ParseCombatants(combatantObj),
+            Encounter = encounter,
+            Combatants = ParseCombatants(combatantObj, encounter.Duration),
             Timestamp = DateTime.UtcNow,
         };
 
@@ -79,7 +81,7 @@ public static class CombatDataParser
         };
     }
 
-    private static List<CombatantEntry> ParseCombatants(JObject? combatants)
+    private static List<CombatantEntry> ParseCombatants(JObject? combatants, string encounterDuration)
     {
         var list = new List<CombatantEntry>();
         if (combatants == null)
@@ -128,7 +130,7 @@ public static class CombatDataParser
                 InstantHps = GetDouble(c, "HPS"),
                 CritHealPct = GetDouble(c, "critheal%"),
                 HealCount = GetInt(c, "cures"),
-                CombatantDuration = GetString(c, "DURATION", "00:00"),
+                CombatantDuration = encounterDuration,
                 DamageShield = GetLong(c, "damageShield"),
                 MaxHealWardName = GetString(c, "maxhealward"),
                 MaxHealWardAmount = GetLong(c, "MAXHEALWARD"),

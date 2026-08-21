@@ -78,7 +78,7 @@ internal sealed class SampleCombatSimulator
         {
             lastSkillEventTime = elapsed;
             TickSkillEvents(elapsed);
-            UpdateShares(elapsed);
+            UpdateShares();
         }
 
         if (elapsed - lastStatusTickTime >= StatusInterval)
@@ -376,6 +376,7 @@ internal sealed class SampleCombatSimulator
             c.InstantDps = s.BaseDps * (1.0 + 0.15 * Math.Sin(t * (0.3 + i * 0.07))) * (0.9 + Rng.NextDouble() * 0.2);
             c.InstantHps = s.BaseHps * (1.0 + 0.2 * Math.Sin(t * (0.25 + i * 0.05))) * (0.85 + Rng.NextDouble() * 0.3);
             c.PeakDps = Math.Max(c.PeakDps, c.InstantDps);
+            c.CombatantDuration = snapshot.Encounter.Duration;
 
             totalDamage += c.Damage;
             totalHealed += c.Healed;
@@ -398,9 +399,9 @@ internal sealed class SampleCombatSimulator
         }
     }
 
-    /// <summary>Refreshes the formatted share / duration strings. Kept off the per-frame path
+    /// <summary>Refreshes the formatted share strings. Kept off the per-frame path
     /// because the underlying totals only move when skill events fire.</summary>
-    private void UpdateShares(float elapsed)
+    private void UpdateShares()
     {
         long totalDamage = 0, totalHealed = 0, totalDamageTaken = 0;
         foreach (var s in states)
@@ -416,7 +417,6 @@ internal sealed class SampleCombatSimulator
             c.DamagePercent = SimulatorHelpers.FormatPercent(c.Damage, totalDamage);
             c.HealedPercent = SimulatorHelpers.FormatPercent(c.Healed, totalHealed);
             c.DamageTakenPercent = SimulatorHelpers.FormatPercent(c.DamageTaken, totalDamageTaken);
-            c.CombatantDuration = SimulatorHelpers.FormatDuration(elapsed - s.JoinedAt);
         }
     }
 
