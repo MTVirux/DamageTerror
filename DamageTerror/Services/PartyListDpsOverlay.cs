@@ -39,6 +39,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private const uint HeaderMetricNodeIdBase = 0x44540280;
     private const uint OverlayRootNodeId = 0x44540300;
     private const uint BarRootNodeId = 0x44540301;
+    private const uint BadgeNodeIdBase = 0x44540310;
 
     /// <summary>One text node per metric per row - a text node has one font size and one colour.</summary>
     private const int MetricSlots = PartyListOverlaySettings.MaxMetrics;
@@ -146,6 +147,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// </remarks>
     private readonly ImGuiImageNode?[] barNodes = new ImGuiImageNode?[MaxRows];
 
+    /// <summary>The plate behind each row's slot number, drawn from the container behind the rows.</summary>
+    private readonly ImGuiImageNode?[] badgeNodes = new ImGuiImageNode?[MaxRows];
+
     /// <summary>
     /// One container of ours under the addon's root, holding every node we add. Nothing is
     /// attached to the party member components. Attaching there also registers the node in
@@ -167,6 +171,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly bool[] barTextureApplied = new bool[MaxRows];
     private readonly bool[] barOnBarRoot = new bool[MaxRows];
 
+    private readonly string? badgeTexturePath = EnsureBadgeTexture();
+    private readonly bool[] badgeTextureApplied = new bool[MaxRows];
+
     /// <remarks>
     /// One wrap per row, never shared: the node takes ownership and disposes the wrap with
     /// itself, so handing the same one to every row left the rest pointing at a disposed
@@ -175,6 +182,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[] pendingBarTexture
         = new Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[MaxRows];
     private readonly bool[] barTextureRequested = new bool[MaxRows];
+
+    private readonly Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[] pendingBadgeTexture
+        = new Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[MaxRows];
+    private readonly bool[] badgeTextureRequested = new bool[MaxRows];
 
     /// <summary>
     /// Our own bar artwork: a white body so the job colour tints it exactly, a darker
@@ -225,41 +236,100 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// Rents the image for a row and hands it to that row's node, which owns it from then on.
-    /// Rented rather than borrowed: the shared-cache wrap is only valid for the frame it is
-    /// fetched in, so a node holding it ends up pointing at a released texture and draws
-    /// nothing. The rent completes off the framework thread, so the hand-off waits for the
+    /// The plate behind a slot number: white so the colour picked for it is used exactly, with
+    /// the corners rounded off. Written once to the plugin's config directory - delete the file
+    /// to regenerate it.
+    /// </summary>
+    private static string? EnsureBadgeTexture()
+    {
+        try
+        {
+            var directory = Svc.PluginInterface.ConfigDirectory;
+            if (!directory.Exists)
+                directory.Create();
+
+            var path = Path.Combine(directory.FullName, "party-list-badge.png");
+            if (File.Exists(path))
+                return path;
+
+            const int size = 64;
+            const float radius = 12f;
+            const float inner = (size / 2f) - radius;
+
+            using var bitmap = new System.Drawing.Bitmap(size, size);
+
+            for (var x = 0; x < size; x++)
+            {
+                for (var y = 0; y < size; y++)
+                {
+                    // How far the pixel is outside the box the corner circles are centred on,
+                    // so only the corners themselves round off.
+                    var dx = Math.Max(0f, Math.Abs(x + 0.5f - (size / 2f)) - inner);
+                    var dy = Math.Max(0f, Math.Abs(y + 0.5f - (size / 2f)) - inner);
+                    var distance = (float)Math.Sqrt((dx * dx) + (dy * dy));
+                    var coverage = Math.Clamp(radius - distance + 0.5f, 0f, 1f);
+
+                    bitmap.SetPixel(x, y, System.Drawing.Color.FromArgb((int)(coverage * 255f), 255, 255, 255));
+                }
+            }
+
+            bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+            Svc.Log.Debug($"[PartyList] Generated badge texture at '{path}'");
+            return path;
+        }
+        catch (Exception ex)
+        {
+            ServiceManager.LogWarning(LogChannel.PartyMembership, $"Badge texture generation failed: {ex.Message}");
+            return null;
+        }
+    }
+
+    private void ApplyBarTexture(ImGuiImageNode bar, int row)
+        => ApplyGeneratedTexture(bar, row, barTexturePath, pendingBarTexture, barTextureRequested,
+            barTextureApplied, "Bar");
+
+    private void ApplyBadgeTexture(ImGuiImageNode badge, int row)
+        => ApplyGeneratedTexture(badge, row, badgeTexturePath, pendingBadgeTexture, badgeTextureRequested,
+            badgeTextureApplied, "Badge");
+
+    /// <summary>
+    /// Rents one of our generated images for a row and hands it to that row's node, which owns
+    /// it from then on. Rented rather than borrowed: the shared-cache wrap is only valid for the
+    /// frame it is fetched in, so a node holding it ends up pointing at a released texture and
+    /// draws nothing. The rent completes off the framework thread, so the hand-off waits for the
     /// next update pass rather than happening in the continuation.
     /// </summary>
-    private void ApplyBarTexture(ImGuiImageNode bar, int row)
+    private static void ApplyGeneratedTexture(ImGuiImageNode node, int row, string? path,
+        Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[] pending, bool[] requested,
+        bool[] applied, string label)
     {
-        if (barTexturePath == null)
+        if (path == null)
             return;
 
-        var pending = Interlocked.Exchange(ref pendingBarTexture[row], null);
-        if (pending != null)
+        var rented = Interlocked.Exchange(ref pending[row], null);
+        if (rented != null)
         {
-            bar.LoadTexture(pending);
-            bar.FitTexture = true;
-            barTextureApplied[row] = true;
+            node.LoadTexture(rented);
+            node.FitTexture = true;
+            applied[row] = true;
 
             // The node owns that wrap now, so a replacement node needs a rent of its own.
-            barTextureRequested[row] = false;
+            requested[row] = false;
             return;
         }
 
-        if (barTextureRequested[row])
+        if (requested[row])
             return;
 
-        barTextureRequested[row] = true;
-        Svc.Texture.GetFromFile(barTexturePath).RentAsync().ContinueWith(task =>
+        requested[row] = true;
+        Svc.Texture.GetFromFile(path).RentAsync().ContinueWith(task =>
         {
             if (task.IsCompletedSuccessfully)
-                Interlocked.Exchange(ref pendingBarTexture[row], task.Result)?.Dispose();
+                Interlocked.Exchange(ref pending[row], task.Result)?.Dispose();
             else
             {
-                barTextureRequested[row] = false;
-                ServiceManager.LogWarning(LogChannel.PartyMembership, "Bar texture rent failed.");
+                requested[row] = false;
+                ServiceManager.LogWarning(LogChannel.PartyMembership, $"{label} texture rent failed.");
             }
         });
     }
@@ -361,6 +431,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly float[] appliedIndexY = new float[MaxRows];
     private readonly bool[] indexApplied = new bool[MaxRows];
     private readonly TextColorState[] indexColor = new TextColorState[MaxRows];
+    private readonly byte[] originalIndexFontType = new byte[MaxRows];
+    private readonly byte[] appliedIndexFontType = new byte[MaxRows];
+    private readonly bool[] indexFontTypeApplied = new bool[MaxRows];
+    private readonly NodeAlphaState[] indexAlpha = new NodeAlphaState[MaxRows];
     private readonly string[] originalNameText = new string[MaxRows];
     private readonly string[] appliedNameText = new string[MaxRows];
     private readonly string[] appliedNameExtra = new string[MaxRows];
@@ -541,7 +615,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         // Anything still waiting to be handed over was never adopted by a node, so it is ours.
         for (var i = 0; i < MaxRows; i++)
+        {
             Interlocked.Exchange(ref pendingBarTexture[i], null)?.Dispose();
+            Interlocked.Exchange(ref pendingBadgeTexture[i], null)?.Dispose();
+        }
     }
 
     /// <summary>Ours are decoration, so they stay out of the addon's input handling.</summary>
@@ -796,6 +873,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyNameStyle(addon);
         ApplyNameText(addon);
         ApplyPartyIndexLayout(addon);
+        UpdatePartyIndexBadge(addon);
         ApplyStatusIconLayout(addon);
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
@@ -817,6 +895,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyNameStyle(addon);
         ApplyNameText(addon);
         ApplyPartyIndexLayout(addon);
+        UpdatePartyIndexBadge(addon);
         ApplyStatusIconLayout(addon);
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
@@ -859,6 +938,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         {
             barNodes[i]?.Dispose();
             barNodes[i] = null;
+            badgeNodes[i]?.Dispose();
+            badgeNodes[i] = null;
 
             for (var slot = 0; slot < MetricSlots; slot++)
             {
@@ -883,6 +964,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ClearHeaderMetricText();
 
         Array.Clear(barTextureApplied);
+        Array.Clear(badgeTextureApplied);
 
         // Our containers go last, once everything inside them has gone.
         overlayRoot?.Dispose();
@@ -944,6 +1026,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyNameStyle(addon);
         ApplyNameText(addon);
         ApplyPartyIndexLayout(addon);
+        UpdatePartyIndexBadge(addon);
         ApplyStatusIconLayout(addon);
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
@@ -1094,6 +1177,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// styled either way - it is a party list wide setting, not part of the colour override.
     /// </summary>
     private void ApplyTextColor(AtkTextNode* text, bool useCustom, Vector4 color, ref TextColorState state)
+        => ApplyTextColor(text, useCustom, color, null, Settings.TextOutlineThickness, ref state);
+
+    /// <summary>
+    /// The same, for a node given an outline of its own. That outline wins over the party list
+    /// wide tint, being the narrower setting, and brings its own weight with it.
+    /// </summary>
+    private void ApplyTextColor(AtkTextNode* text, bool useCustom, Vector4 color,
+        Vector4? outline, PartyListOutlineThickness outlineThickness, ref TextColorState state)
     {
         if (text == null)
             return;
@@ -1118,16 +1209,17 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             text->TextColor = state.Original;
         }
 
-        ApplyTextOutline(text, ref state);
+        ApplyTextOutline(text, outline, outlineThickness, ref state);
     }
 
     /// <summary>
     /// Gives the glyph outline - the edge around the text - the configured colour and weight.
     /// The game's own edge alpha is kept, so text the game fades still fades.
     /// </summary>
-    private void ApplyTextOutline(AtkTextNode* text, ref TextColorState state)
+    private void ApplyTextOutline(AtkTextNode* text, Vector4? outline,
+        PartyListOutlineThickness thickness, ref TextColorState state)
     {
-        if (!Settings.TintTextOutline)
+        if (outline == null && !Settings.TintTextOutline)
         {
             RestoreTextOutline(text, ref state);
             return;
@@ -1136,7 +1228,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (!state.EdgeActive || !SameColor(text->EdgeColor, state.AppliedEdge))
             state.OriginalEdge = text->EdgeColor;
 
-        var target = ToByteColor(Settings.TextOutlineTint);
+        var target = ToByteColor(outline ?? Settings.TextOutlineTint);
         target.A = state.OriginalEdge.A;
 
         if (!SameColor(text->EdgeColor, target))
@@ -1148,7 +1240,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (!state.FlagsActive || text->TextFlags != state.AppliedFlags)
             state.OriginalFlags = text->TextFlags;
 
-        var flags = OutlineFlags(state.OriginalFlags);
+        var flags = OutlineFlags(state.OriginalFlags, thickness);
         if (text->TextFlags != flags)
             text->TextFlags = flags;
 
@@ -1161,7 +1253,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// in the edge colour - so thickness is which of the two the text is drawn with. The rest
     /// of the text's flags are left alone.
     /// </summary>
-    private TextFlags OutlineFlags(TextFlags flags) => Settings.TextOutlineThickness switch
+    private TextFlags OutlineFlags(TextFlags flags)
+        => OutlineFlags(flags, Settings.TextOutlineThickness);
+
+    private static TextFlags OutlineFlags(TextFlags flags, PartyListOutlineThickness thickness) => thickness switch
     {
         PartyListOutlineThickness.None => flags & ~(TextFlags.Edge | TextFlags.Glare),
         PartyListOutlineThickness.Thick => flags | TextFlags.Edge | TextFlags.Glare,
@@ -2234,8 +2329,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>
     /// The slot number before each name. It has its own text node, so by default it is given
     /// the same size change and vertical shift as the name to keep the two reading as one
-    /// line; the override replaces that with values of its own. Colour is never inherited -
-    /// the number keeps the game's own unless the override gives it one.
+    /// line; the override replaces that with values of its own. Nothing else is shared with
+    /// the name - colour, face and fade are the number's own wherever it has been put.
     /// </summary>
     private void ApplyPartyIndexLayout(AddonPartyList* addon)
     {
@@ -2246,17 +2341,17 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var offsetX = Settings.PartyIndexOffsetX;
         var offsetY = Settings.PartyIndexOffsetY;
 
-        // The colour is never taken from the name - the number sits in the game's own badge
-        // art, which a name colour picked to read against the row can be lost against.
-        var useCustomColor = Settings.AdjustPartyIndex && Settings.PartyIndexUseCustomColor;
-        var color = Settings.PartyIndexColor;
-
         if (!Settings.AdjustPartyIndex)
         {
             fontDelta = Settings.AdjustNameFont ? Settings.NameFontDelta : 0;
             offsetX = Settings.NameShift.Enabled ? Settings.NameShift.OffsetX : 0f;
             offsetY = Settings.NameShift.Enabled ? Settings.NameShift.OffsetY : 0f;
         }
+
+        // The number's own outline wins over the party list wide tint, being the narrower setting.
+        var outline = Settings.PartyIndexUseCustomOutlineColor
+            ? (Vector4?)Settings.PartyIndexOutlineColor
+            : null;
 
         // Nothing is being done to the name either, so leave the node's layout alone. The
         // colour is still handled below, since that is a separate setting.
@@ -2301,8 +2396,47 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 indexApplied[row] = true;
             }
 
-            ApplyTextColor(index, useCustomColor, color, ref indexColor[row]);
+            ApplyPartyIndexFont(index, row);
+
+            ApplyTextColor(index, Settings.PartyIndexUseCustomColor, Settings.PartyIndexColor,
+                outline, Settings.PartyIndexOutlineThickness, ref indexColor[row]);
+
+            // Faded rather than unflagged: the game drives the node's own visibility as rows
+            // come and go, and a row it has just shown would draw the number for a frame.
+            if (Settings.HidePartyIndex)
+                ApplyNodeAlpha(&index->AtkResNode, 0f, ref indexAlpha[row]);
+            else
+                RestoreNodeAlpha(&index->AtkResNode, ref indexAlpha[row]);
         }
+    }
+
+    /// <summary>
+    /// The face the number is drawn in. Its own setting rather than part of the size override,
+    /// since a different face is a different look at whatever size the number already has.
+    /// </summary>
+    private void ApplyPartyIndexFont(AtkTextNode* index, int row)
+    {
+        if (Settings.PartyIndexFont == PartyListFont.Game)
+        {
+            if (!indexFontTypeApplied[row])
+                return;
+
+            indexFontTypeApplied[row] = false;
+            index->FontType = (FontType)originalIndexFontType[row];
+            return;
+        }
+
+        // The game's own face heads the list, so the rest sit one past the game's numbering.
+        var target = (byte)((int)Settings.PartyIndexFont - 1);
+
+        if (!indexFontTypeApplied[row] || (byte)index->FontType != appliedIndexFontType[row])
+            originalIndexFontType[row] = (byte)index->FontType;
+
+        if ((byte)index->FontType != target)
+            index->FontType = (FontType)target;
+
+        appliedIndexFontType[row] = target;
+        indexFontTypeApplied[row] = true;
     }
 
     private void RestorePartyIndexLayout(AddonPartyList* addon)
@@ -2331,8 +2465,114 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         for (var row = 0; row < MaxRows; row++)
         {
             var member = RowMember(addon, row);
-            RestoreTextColor(member == null ? null : member->GroupSlotIndicator, ref indexColor[row]);
+            var index = member == null ? null : member->GroupSlotIndicator;
+
+            RestoreTextColor(index, ref indexColor[row]);
+            RestoreNodeAlpha(index == null ? null : &index->AtkResNode, ref indexAlpha[row]);
+
+            if (!indexFontTypeApplied[row])
+                continue;
+
+            indexFontTypeApplied[row] = false;
+            if (index != null)
+                index->FontType = (FontType)originalIndexFontType[row];
         }
+    }
+
+    /// <summary>
+    /// Creates a row's badge plate on the container behind the rows. That container is the only
+    /// place it can be drawn from and still sit under the number: our nodes are appended, and an
+    /// appended node draws over the ones already there.
+    /// </summary>
+    private bool EnsureBadgeNode(AddonPartyList* addon, int row)
+    {
+        if (badgeNodes[row] != null)
+            return true;
+
+        if (!EnsureBarRoot(addon))
+            return false;
+
+        var badge = new ImGuiImageNode
+        {
+            NodeId = BadgeNodeIdBase + (uint)row,
+            Size = Vector2.Zero,
+            Position = Vector2.Zero,
+            Color = new Vector4(1f, 1f, 1f, 0f),
+            IsVisible = false,
+        };
+
+        MakeNonInteractive(badge);
+        badge.AttachNode((AtkResNode*)barRoot!, NodePosition.AsLastChild);
+
+        badgeNodes[row] = badge;
+        badgeTextureApplied[row] = false;
+        return true;
+    }
+
+    /// <summary>
+    /// Sizes each row's plate to the number's own box, so it follows the number wherever it has
+    /// been moved and whatever size it has been given rather than being placed on its own.
+    /// </summary>
+    private void UpdatePartyIndexBadge(AddonPartyList* addon)
+    {
+        var style = Settings.PartyIndexBadge;
+
+        if (addon == null || !style.Enabled || Settings.HidePartyIndex)
+        {
+            for (var row = 0; row < MaxRows; row++)
+                HidePartyIndexBadge(row);
+
+            return;
+        }
+
+        for (var row = 0; row < MaxRows; row++)
+        {
+            var member = RowMember(addon, row);
+            var index = member == null ? null : member->GroupSlotIndicator;
+            var badge = index != null && IsNodeDrawn(&index->AtkResNode) && EnsureBadgeNode(addon, row)
+                ? badgeNodes[row]
+                : null;
+
+            if (badge == null
+                || !TryProjectRect(addon, &index->AtkResNode, (AtkResNode*)barRoot!, out var rect))
+            {
+                HidePartyIndexBadge(row);
+                continue;
+            }
+
+            if (!badgeTextureApplied[row])
+                ApplyBadgeTexture(badge, row);
+
+            var size = new Vector2(
+                Math.Max(1f, rect.Width + (style.PaddingX * 2f)),
+                Math.Max(1f, rect.Height + (style.PaddingY * 2f)));
+
+            if (badge.Size != size)
+                badge.Size = size;
+
+            var position = new Vector2(
+                rect.X - style.PaddingX + style.OffsetX,
+                rect.Y - style.PaddingY + style.OffsetY);
+
+            if (badge.Position != position)
+                badge.Position = position;
+
+            // The artwork is white, so the colour is drawn as picked and only its alpha is ours.
+            var color = new Vector4(style.Color.X, style.Color.Y, style.Color.Z,
+                Math.Clamp(style.Opacity, 0f, 1f));
+
+            if (badge.Color != color)
+                badge.Color = color;
+
+            if (!badge.IsVisible)
+                badge.IsVisible = true;
+        }
+    }
+
+    private void HidePartyIndexBadge(int row)
+    {
+        if (badgeNodes[row] is { IsVisible: true } badge)
+            badge.IsVisible = false;
     }
 
     /// <summary>

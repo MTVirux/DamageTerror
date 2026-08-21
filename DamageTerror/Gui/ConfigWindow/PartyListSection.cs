@@ -76,6 +76,7 @@ internal static class PartyListSection
 
         changed |= DrawBarHeader(config, settings);
         changed |= DrawNameHeader(settings);
+        changed |= DrawPartyIndexHeader(settings);
         changed |= DrawGaugeHeader(settings);
         changed |= DrawMetricsHeader(settings, plugin);
         changed |= DrawStatusHeader(settings);
@@ -223,41 +224,132 @@ internal static class PartyListSection
             EndGroup();
         }
 
-        if (Group("Slot number"))
-        {
-            changed |= ConfigHelpers.CheckboxProp("Override index##plAdjustIndex", settings.AdjustPartyIndex,
-                v => settings.AdjustPartyIndex = v);
-            ConfigHelpers.HelpMarker(
-                "The party slot number drawn before the name.\nOff, it takes the name's size " +
-                "change and move, so the two stay on one line.\nOn, it uses the values below " +
-                "instead and the name no longer carries it.\nIts colour is never the " +
-                "name's - it stays the game's own until the override sets one.");
+        return changed;
+    }
 
-            if (settings.AdjustPartyIndex)
+    /// <summary>
+    /// The party slot number. Its own header rather than a corner of the name's: the two are
+    /// separate nodes, and everything here applies to the number alone - the badge behind it
+    /// included, which is a node of ours rather than anything the game draws.
+    /// </summary>
+    private static bool DrawPartyIndexHeader(PartyListOverlaySettings settings)
+    {
+        if (!ImGui.CollapsingHeader("Slot Number##plIndex"))
+            return false;
+
+        var changed = false;
+        var badge = settings.PartyIndexBadge;
+
+        if (Group("Number"))
+        {
+            if (Section("Text"))
+            {
+                changed |= ConfigHelpers.CheckboxProp("Hide slot number##plIndexHide",
+                    settings.HidePartyIndex, v => settings.HidePartyIndex = v);
+                ConfigHelpers.HelpMarker(
+                    "Fades the number out. The game lays the row out around it either way, so " +
+                    "nothing beside it moves.");
+
+                changed |= ConfigHelpers.ComboProp("Font##plIndexFace", (int)settings.PartyIndexFont,
+                    FontLabels, v => settings.PartyIndexFont = (PartyListFont)v, 180f);
+                ConfigHelpers.HelpMarker(
+                    "The face the number is drawn in.\nGame's own leaves it alone; the rest are " +
+                    "the faces the game ships, and only Axis carries every glyph.");
+
+                EndSection();
+            }
+
+            if (Section("Position and size"))
+            {
+                changed |= ConfigHelpers.CheckboxProp("Override index##plAdjustIndex",
+                    settings.AdjustPartyIndex, v => settings.AdjustPartyIndex = v);
+                ConfigHelpers.HelpMarker(
+                    "Off, the number takes the name's size change and move, so the two stay on " +
+                    "one line.\nOn, it uses the values below instead and the name no longer " +
+                    "carries it.");
+
+                if (settings.AdjustPartyIndex)
+                {
+                    ImGui.Indent();
+                    changed |= Slider("Index horizontal offset##plIndexX", settings.PartyIndexOffsetX,
+                        -40f, 40f, v => settings.PartyIndexOffsetX = v, null);
+                    changed |= Slider("Index vertical offset##plIndexY", settings.PartyIndexOffsetY,
+                        -30f, 30f, v => settings.PartyIndexOffsetY = v, null);
+                    changed |= SliderInt("Index font size change##plIndexFont", settings.PartyIndexFontDelta,
+                        -8, 8, v => settings.PartyIndexFontDelta = v,
+                        "Added to the game's own font size for the slot number.");
+                    ImGui.Unindent();
+                }
+
+                EndSection();
+            }
+
+            if (Section("Color"))
+            {
+                changed |= DrawCustomColor("plIndex", "slot number",
+                    settings.PartyIndexUseCustomColor, settings.PartyIndexColor,
+                    v => settings.PartyIndexUseCustomColor = v, v => settings.PartyIndexColor = v,
+                    "Off leaves the colour the game gives the slot number. The name's colour is " +
+                    "never used - the two are separate nodes.");
+
+                changed |= DrawCustomColor("plIndexOutline", "slot number outline",
+                    settings.PartyIndexUseCustomOutlineColor, settings.PartyIndexOutlineColor,
+                    v => settings.PartyIndexUseCustomOutlineColor = v,
+                    v => settings.PartyIndexOutlineColor = v,
+                    "Wins over the party list wide outline above, being the narrower setting.");
+
+                if (settings.PartyIndexUseCustomOutlineColor)
+                {
+                    ImGui.Indent();
+                    changed |= ConfigHelpers.ComboProp("Outline thickness##plIndexOutlineWeight",
+                        (int)settings.PartyIndexOutlineThickness, OutlineThicknessLabels,
+                        v => settings.PartyIndexOutlineThickness = (PartyListOutlineThickness)v, 180f);
+                    ImGui.Unindent();
+                }
+
+                EndSection();
+            }
+
+            EndGroup();
+        }
+
+        if (Group("Badge"))
+        {
+            changed |= ConfigHelpers.CheckboxProp("Draw a badge behind the number##plBadge",
+                badge.Enabled, v => badge.Enabled = v);
+            ConfigHelpers.HelpMarker(
+                "A plate of ours, sized to the number's own box, so it follows wherever the " +
+                "number has been put.\nIt is drawn from behind the rows, which is what keeps " +
+                "it under the number rather than over it.");
+
+            if (badge.Enabled)
             {
                 if (Section("Position"))
                 {
-                    changed |= Slider("Index horizontal offset##plIndexX", settings.PartyIndexOffsetX, -40f, 40f,
-                        v => settings.PartyIndexOffsetX = v, null);
-                    changed |= Slider("Index vertical offset##plIndexY", settings.PartyIndexOffsetY, -30f, 30f,
-                        v => settings.PartyIndexOffsetY = v, null);
+                    changed |= Slider("Badge horizontal offset##plBadgeX", badge.OffsetX, -40f, 40f,
+                        v => badge.OffsetX = v, null);
+                    changed |= Slider("Badge vertical offset##plBadgeY", badge.OffsetY, -30f, 30f,
+                        v => badge.OffsetY = v, null);
                     EndSection();
                 }
 
                 if (Section("Size"))
                 {
-                    changed |= SliderInt("Index font size change##plIndexFont", settings.PartyIndexFontDelta, -8, 8,
-                        v => settings.PartyIndexFontDelta = v,
-                        "Added to the game's own font size for the slot number.");
+                    changed |= Slider("Horizontal padding##plBadgePadX", badge.PaddingX, -10f, 30f,
+                        v => badge.PaddingX = v,
+                        "Added to each side of the number's box. Negative pulls the plate inside it.");
+                    changed |= Slider("Vertical padding##plBadgePadY", badge.PaddingY, -10f, 30f,
+                        v => badge.PaddingY = v, null);
                     EndSection();
                 }
 
                 if (Section("Color"))
                 {
-                    changed |= DrawCustomColor("plIndex", "slot number",
-                        settings.PartyIndexUseCustomColor, settings.PartyIndexColor,
-                        v => settings.PartyIndexUseCustomColor = v, v => settings.PartyIndexColor = v,
-                        "Off leaves the colour the game gives the slot number.");
+                    changed |= ConfigHelpers.ColorEditProp("Badge color##plBadgeColor", badge.Color,
+                        v => badge.Color = v,
+                        ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha);
+                    changed |= Slider("Opacity##plBadgeAlpha", badge.Opacity, 0f, 1f,
+                        v => badge.Opacity = v, null, "%.2f");
                     EndSection();
                 }
             }
@@ -798,6 +890,17 @@ internal static class PartyListSection
         ImGui.PopStyleColor();
         return open;
     }
+
+    private static readonly string[] FontLabels =
+    {
+        "Game's own",
+        "Axis",
+        "Miedinger medium",
+        "Miedinger",
+        "Trump Gothic",
+        "Jupiter",
+        "Jupiter large",
+    };
 
     private static readonly string[] OutlineThicknessLabels =
     {

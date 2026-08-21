@@ -137,9 +137,23 @@ public sealed class PartyListOverlaySettings
     public float PartyIndexOffsetX { get; set; } = 0f;
     public float PartyIndexOffsetY { get; set; } = -4f;
 
-    /// <summary>Off, the slot number follows whatever colour the name is given.</summary>
+    /// <summary>The number's own colour. Never the name's - the two are separate nodes.</summary>
     public bool PartyIndexUseCustomColor { get; set; } = false;
     public Vector4 PartyIndexColor { get; set; } = new(1f, 1f, 1f, 1f);
+
+    /// <summary>The number's own outline, which wins over the party list wide tint.</summary>
+    public bool PartyIndexUseCustomOutlineColor { get; set; } = false;
+    public Vector4 PartyIndexOutlineColor { get; set; } = new(0f, 0f, 0f, 1f);
+    public PartyListOutlineThickness PartyIndexOutlineThickness { get; set; } = PartyListOutlineThickness.Thin;
+
+    /// <summary>The face the number is drawn in, which the game picks per addon rather than per node.</summary>
+    public PartyListFont PartyIndexFont { get; set; } = PartyListFont.Game;
+
+    /// <summary>Fades the number out, leaving everything the game lays out around it in place.</summary>
+    public bool HidePartyIndex { get; set; } = false;
+
+    /// <summary>The plate we draw behind the number.</summary>
+    public PartyIndexBadgeStyle PartyIndexBadge { get; set; } = new();
 
     // Player name font. Delta rather than absolute, so it tracks the game's own size
     // across UI scale settings.
