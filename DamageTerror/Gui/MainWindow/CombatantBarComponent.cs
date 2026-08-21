@@ -85,6 +85,7 @@ public sealed class CombatantBarComponent
         { BarColumn.GroupPeakDps, "000.0K" },
         { BarColumn.GroupMaxHitValue, "000.0K" },
         { BarColumn.GroupMaxHealValue, "000.0K" },
+        { BarColumn.GroupDuration, "00:00" },
         { BarColumn.Positionals, "00/00" },
         { BarColumn.PositionalHits, "0000" },
         { BarColumn.PositionalMisses, "0000" },
@@ -183,6 +184,7 @@ public sealed class CombatantBarComponent
             BarColumn.GroupPeakDps => ValueFormatter.FormatColumn(group.PeakDps, config, BarColumn.GroupPeakDps, activeTab),
             BarColumn.GroupMaxHitValue => ValueFormatter.FormatColumn(group.MaxHitValue, config, BarColumn.GroupMaxHitValue, activeTab),
             BarColumn.GroupMaxHealValue => ValueFormatter.FormatColumn(group.MaxHealValue, config, BarColumn.GroupMaxHealValue, activeTab),
+            BarColumn.GroupDuration => group.Duration,
             _ => string.Empty,
         };
     }
@@ -198,6 +200,7 @@ public sealed class CombatantBarComponent
         BarColumn.GroupSkillIssue,
         BarColumn.GroupDamageDown,
         BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue, BarColumn.GroupMaxHealValue,
+        BarColumn.GroupDuration,
     };
 
     public static bool IsGroupColumn(BarColumn col) => GroupColumns.Contains(col);

@@ -9,7 +9,7 @@ public static class MetricPicker
         ("Hit Stats", new[] { BarColumn.Crit, BarColumn.DirectHit, BarColumn.CritDirectHit, BarColumn.CritHitCount, BarColumn.DirectHitCount, BarColumn.CritDirectHitCount, BarColumn.HitRate, BarColumn.Swings, BarColumn.Hits, BarColumn.Misses, BarColumn.Positionals, BarColumn.PositionalHits, BarColumn.PositionalMisses, BarColumn.PositionalPct }),
         ("Defense", new[] { BarColumn.DamageTaken, BarColumn.DamageTakenPercent, BarColumn.BlockPct, BarColumn.ParryPct, BarColumn.HealsTaken }),
         ("High-end Raiding", new[] { BarColumn.LegsSweeped, BarColumn.SkillIssue, BarColumn.DamageDown }),
-        ("Group", new[] { BarColumn.DpsRank, BarColumn.HpsRank, BarColumn.GroupDps, BarColumn.GroupHps, BarColumn.GroupDamage, BarColumn.GroupHealed, BarColumn.GroupDamageTaken, BarColumn.GroupDeaths, BarColumn.GroupOverheal, BarColumn.GroupSkillIssue, BarColumn.GroupDamageDown, BarColumn.GroupInstantDps, BarColumn.GroupInstantHps, BarColumn.GroupAvgDps, BarColumn.GroupAvgHps, BarColumn.GroupAvgCrit, BarColumn.GroupAvgDirectHit, BarColumn.GroupAvgCritDirectHit, BarColumn.GroupAvgOverhealPct, BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate, BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue, BarColumn.GroupMaxHealValue }),
+        ("Group", new[] { BarColumn.DpsRank, BarColumn.HpsRank, BarColumn.GroupDps, BarColumn.GroupHps, BarColumn.GroupDamage, BarColumn.GroupHealed, BarColumn.GroupDamageTaken, BarColumn.GroupDeaths, BarColumn.GroupOverheal, BarColumn.GroupSkillIssue, BarColumn.GroupDamageDown, BarColumn.GroupInstantDps, BarColumn.GroupInstantHps, BarColumn.GroupAvgDps, BarColumn.GroupAvgHps, BarColumn.GroupAvgCrit, BarColumn.GroupAvgDirectHit, BarColumn.GroupAvgCritDirectHit, BarColumn.GroupAvgOverhealPct, BarColumn.GroupAvgCritHealPct, BarColumn.GroupAvgHitRate, BarColumn.GroupPeakDps, BarColumn.GroupMaxHitValue, BarColumn.GroupMaxHealValue, BarColumn.GroupDuration }),
         ("Other", new[] { BarColumn.Deaths, BarColumn.Kills, BarColumn.CombatantDuration, BarColumn.EncounterName, BarColumn.PowerHeal }),
 #if DEBUG
         ("Unknown", new[] { BarColumn.PowerDrain, BarColumn.AbsorbHeal, BarColumn.MaxHealWard }),
@@ -118,6 +118,7 @@ public static class MetricPicker
         { BarColumn.GroupPeakDps, "Group Peak DPS" },
         { BarColumn.GroupMaxHitValue, "Group Max Hit Value" },
         { BarColumn.GroupMaxHealValue, "Group Max Heal Value" },
+        { BarColumn.GroupDuration, "Encounter Duration" },
         { BarColumn.GroupDamageDown, "Group Damage Down" },
         { BarColumn.GroupSkillIssue, "Group Skill Issue" },
         { BarColumn.Positionals, "Positionals" },
@@ -180,6 +181,7 @@ public static class MetricPicker
         { BarColumn.DamageDown, "Count of Damage Down debuffs received." },
         { BarColumn.GroupSkillIssue, "Stand in the fire DPS higher.\nGo for a High Score!" },
         { BarColumn.GroupDamageDown, "Count of Damage Down debuffs received." },
+        { BarColumn.GroupDuration, "How long the encounter has been running." },
     };
 
     public static readonly Dictionary<TooltipField, string> TooltipFieldDescriptions = new()

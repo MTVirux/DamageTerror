@@ -36,6 +36,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>Private node id ranges, so we can never collide with the game or another plugin.</summary>
     private const uint BarNodeIdBase = 0x44540100;
     private const uint MetricNodeIdBase = 0x44540200;
+    private const uint HeaderMetricNodeIdBase = 0x44540280;
     private const uint OverlayRootNodeId = 0x44540300;
     private const uint BarRootNodeId = 0x44540301;
 
@@ -265,6 +266,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly TextNode?[,] metricNodes = new TextNode?[MaxRows, MetricSlots];
     private readonly string[,] lastMetricText = new string[MaxRows, MetricSlots];
 
+    private readonly TextNode?[] headerMetricNodes = new TextNode?[MetricSlots];
+    private readonly string[] lastHeaderMetricText = new string[MetricSlots];
+
+    /// <summary>Whether any header metric drew this pass, which decides whether the header's
+    /// stand-in text has anything to stand in for.</summary>
+    private bool headerMetricsShown;
 
     private readonly float[] lastBarWidth = new float[MaxRows];
     private readonly float[] lastBarHeight = new float[MaxRows];
@@ -433,6 +440,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         this.dataService = dataService;
         this.config = config;
+
+        ClearHeaderMetricText();
 
         for (var i = 0; i < MaxRows; i++)
         {
@@ -695,6 +704,36 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         }
     }
 
+    private void EnsureHeaderMetricNodes()
+    {
+        if (overlayRoot == null)
+            return;
+
+        for (var slot = 0; slot < MetricSlots; slot++)
+        {
+            if (headerMetricNodes[slot] != null)
+                continue;
+
+            var metric = new TextNode
+            {
+                NodeId = HeaderMetricNodeIdBase + (uint)slot,
+                Size = new Vector2(160f, 20f),
+                // Overwritten each frame from the header text node's font.
+                FontSize = 14,
+                AlignmentType = AlignmentType.Left,
+                TextColor = new Vector4(1f, 1f, 1f, 1f),
+                TextOutlineColor = new Vector4(0f, 0f, 0f, 1f),
+                TextFlags = TextFlags.Edge,
+                IsVisible = false,
+            };
+
+            MakeNonInteractive(metric);
+            metric.AttachNode((AtkResNode*)overlayRoot, NodePosition.AsLastChild);
+            headerMetricNodes[slot] = metric;
+            lastHeaderMetricText[slot] = string.Empty;
+        }
+    }
+
     private void HandleSetup(AddonPartyList* addon)
     {
         var root = addon->RootNode;
@@ -741,6 +780,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             EnsureMetricNodes(i);
         }
 
+        EnsureHeaderMetricNodes();
+
         // Rebuild so the list matches the tree we just changed.
         addon->UpdateCollisionNodeList(false);
 
@@ -759,6 +800,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
         ApplyTotalsTextStyle(addon);
+        UpdateHeaderMetrics(addon);
         ApplyEncounterTotals(addon);
     }
 
@@ -779,6 +821,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
         ApplyTotalsTextStyle(addon);
+        UpdateHeaderMetrics(addon);
         ApplyEncounterTotals(addon);
     }
 
@@ -830,6 +873,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             lastBarColor[i] = NoColor;
             lastBarTrace[i] = string.Empty;
         }
+
+        for (var slot = 0; slot < MetricSlots; slot++)
+        {
+            headerMetricNodes[slot]?.Dispose();
+            headerMetricNodes[slot] = null;
+        }
+
+        ClearHeaderMetricText();
 
         Array.Clear(barTextureApplied);
 
@@ -897,6 +948,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         ApplyStatusTimerLayout(addon);
         ApplySelectionGlowLayout(addon);
         ApplyTotalsTextStyle(addon);
+        UpdateHeaderMetrics(addon);
         ApplyEncounterTotals(addon);
 
         var agent = AgentHUD.Instance();
@@ -946,52 +998,54 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// sits is the user's to decide and nothing about the name moves it.
     /// </summary>
     /// <summary>
-    /// Copies every property that decides how the name is drawn, so the metrics read as a
-    /// continuation of it rather than as a second label. Size and colour are the only things
-    /// that can differ, and only by what the metric's own style asks for.
+    /// Copies every property that decides how the text it is placed against is drawn, so a
+    /// metric reads as a continuation of it rather than as a second label. Size and colour are
+    /// the only things that can differ, and only by what the metric's own style asks for.
     /// </summary>
-    private void CopyNameFont(TextNode node, AtkTextNode* name, IndividualMetricStyle style)
+    private void CopyTextStyle(TextNode node, AtkTextNode* source, IndividualMetricStyle style,
+        Vector4? observedColor, Vector4? observedOutline)
     {
-        var font = (uint)Math.Clamp(name->FontSize + style.FontDelta, 6, 60);
+        var font = (uint)Math.Clamp(source->FontSize + style.FontDelta, 6, 60);
         if (node.FontSize != font)
             node.FontSize = font;
 
-        if (node.FontType != name->FontType)
-            node.FontType = name->FontType;
+        if (node.FontType != source->FontType)
+            node.FontType = source->FontType;
 
-        // The left-aligned member of whichever vertical band the name uses - a metric is
+        // The left-aligned member of whichever vertical band the source uses - a metric is
         // positioned by its own offset, so only the vertical part is worth copying.
-        var alignment = (AlignmentType)((int)name->AlignmentType / 3 * 3);
+        var alignment = (AlignmentType)((int)source->AlignmentType / 3 * 3);
         if (node.AlignmentType != alignment)
             node.AlignmentType = alignment;
 
         var flags = Settings.TintTextOutline
-            ? OutlineFlags(name->TextFlags)
-            : name->TextFlags;
+            ? OutlineFlags(source->TextFlags)
+            : source->TextFlags;
         if (node.TextFlags != flags)
             node.TextFlags = flags;
-        if (node.LineSpacing != name->LineSpacing)
-            node.LineSpacing = name->LineSpacing;
-        if (node.CharSpacing != name->CharSpacing)
-            node.CharSpacing = name->CharSpacing;
+        if (node.LineSpacing != source->LineSpacing)
+            node.LineSpacing = source->LineSpacing;
+        if (node.CharSpacing != source->CharSpacing)
+            node.CharSpacing = source->CharSpacing;
 
         var raw = (AtkTextNode*)node;
-        if (raw->SheetType != name->SheetType)
-            raw->SheetType = name->SheetType;
+        if (raw->SheetType != source->SheetType)
+            raw->SheetType = source->SheetType;
 
-        // Inheriting follows a name that is being drawn, not this row's node: the row's timeline
-        // moves the name's colour as the row changes state, so a row with a cast bar over its name
-        // is left wearing a colour none of the others are. Its own node is still the fallback.
+        // A row inherits from a name that is being drawn rather than its own node: the row's
+        // timeline moves the name's colour as the row changes state, so a row with a cast bar
+        // over its name is left wearing a colour none of the others are. The source node is
+        // still the fallback, and the only inheritance the header has.
         var textColor = style.UseCustomColor
             ? new Vector4(style.Color.X, style.Color.Y, style.Color.Z, 1f)
-            : GameUiColors.ObservedName ?? ToVector4(name->TextColor);
+            : observedColor ?? ToVector4(source->TextColor);
         if (node.TextColor != textColor)
             node.TextColor = textColor;
 
         // The metric's own outline wins over the party list wide tint, being the narrower setting.
         var edgeColor = style.UseCustomOutlineColor
             ? new Vector4(style.OutlineColor.X, style.OutlineColor.Y, style.OutlineColor.Z, 1f)
-            : GameUiColors.ObservedNameOutline ?? ToVector4(name->EdgeColor);
+            : observedOutline ?? ToVector4(source->EdgeColor);
         if (!style.UseCustomOutlineColor && Settings.TintTextOutline)
         {
             var tint = Settings.TextOutlineTint;
@@ -1569,8 +1623,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 : string.Empty;
 
             // Carried on the metric rather than drawn on its own node, so a metric that has
-            // nothing to show takes its separator with it instead of leaving one stranded.
-            var text = value.Length > 0 ? Settings.MetricSeparator + value : string.Empty;
+            // nothing to show takes its label with it instead of leaving one stranded.
+            var text = value.Length > 0 && style != null
+                ? Compose(value, Settings.MetricShowLabels ? Settings.MetricLabel(metrics[slot]) : null, style)
+                : string.Empty;
 
             if (lastMetricText[row, slot] != text)
             {
@@ -1587,7 +1643,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             if (!visible || style == null)
                 continue;
 
-            CopyNameFont(node, nameNode, style);
+            CopyTextStyle(node, nameNode, style, GameUiColors.ObservedName, GameUiColors.ObservedNameOutline);
 
             // The name's box height and vertical alignment band, so a metric left on the name's
             // line sits on it whether the game centres its text in the box or hangs it from the top.
@@ -1606,6 +1662,21 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         for (var slot = 0; slot < MetricSlots; slot++)
             lastMetricText[row, slot] = string.Empty;
     }
+
+    private void ClearHeaderMetricText()
+    {
+        for (var slot = 0; slot < MetricSlots; slot++)
+            lastHeaderMetricText[slot] = string.Empty;
+    }
+
+    /// <summary>
+    /// A metric's drawn text. The label doubles as the separator metrics used to share, so it
+    /// can be asked to lead rather than follow.
+    /// </summary>
+    private static string Compose(string value, string? label, IndividualMetricStyle style)
+        => string.IsNullOrEmpty(label)
+            ? value
+            : style.LabelBeforeValue ? $"{label} {value}" : $"{value} {label}";
 
     /// <summary>
     /// Applies the cap width, and optionally rounds only the right end. A 9-slice can't
@@ -3194,7 +3265,100 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// Appends encounter totals to the party list's header text ("Party", "Light Party"...).
+    /// The header's metrics, each on a text node of its own so it can be placed, sized and
+    /// coloured by itself - the same treatment a row's metrics get. The game's own header
+    /// text node is left holding the encounter name and the stand-in text.
+    /// </summary>
+    private void UpdateHeaderMetrics(AddonPartyList* addon)
+    {
+        headerMetricsShown = false;
+
+        if (addon == null)
+            return;
+
+        EnsureHeaderMetricNodes();
+
+        var headerNode = addon->PartyTypeTextNode;
+
+        Bounds headerRect = default;
+        var placeable = Settings.ShowEncounterTotals && MetricsVisible && headerNode != null
+                        && overlayRoot != null
+                        && TryProjectRect(addon, (AtkResNode*)headerNode, (AtkResNode*)overlayRoot, out headerRect);
+
+        // Measured from where the game puts the header text rather than from where we moved
+        // it to, so restyling the header text leaves the metrics where they were placed.
+        var origin = new Vector2(headerRect.X, headerRect.Y);
+        if (placeable && totalsStyleApplied)
+            origin -= new Vector2(appliedTotalsX - originalTotalsX, appliedTotalsY - originalTotalsY);
+
+        var metrics = Settings.TotalsMetrics;
+
+        for (var slot = 0; slot < MetricSlots; slot++)
+        {
+            var node = headerMetricNodes[slot];
+            if (node == null)
+                continue;
+
+            var style = placeable && slot < metrics.Count ? Settings.TotalsStyle(metrics[slot]) : null;
+            var text = style == null ? string.Empty : BuildHeaderMetric(metrics[slot], style);
+
+            if (lastHeaderMetricText[slot] != text)
+            {
+                lastHeaderMetricText[slot] = text;
+                node.String = text;
+            }
+
+            var visible = text.Length > 0;
+            if (node.IsVisible != visible)
+                node.IsVisible = visible;
+
+            if (!visible || style == null || headerNode == null)
+                continue;
+
+            headerMetricsShown = true;
+
+            CopyTextStyle(node, headerNode, style, null, null);
+
+            var size = new Vector2(node.Size.X, Math.Max(1f, headerNode->AtkResNode.Height));
+            if (node.Size != size)
+                node.Size = size;
+
+            node.Position = origin + new Vector2(style.OffsetX, style.OffsetY);
+        }
+    }
+
+    /// <summary>
+    /// One header metric's text. The group columns read as the whole encounter, since the
+    /// header has no tab to filter by, and every other one reads as your own stats. A metric
+    /// with nothing behind it is left out rather than shown as a zero, so the header doesn't
+    /// fill up before you've hit anything.
+    /// </summary>
+    private string BuildHeaderMetric(BarColumn col, IndividualMetricStyle style)
+    {
+        string value;
+
+        // Formatted through the meter's own column value, so a metric reads here exactly
+        // as it does in the meter window. No tab to take overrides from, hence null.
+        if (CombatantBarComponent.IsGroupColumn(col))
+        {
+            if (encounterAggregates == null)
+                return string.Empty;
+            value = CombatantBarComponent.GetGroupColumnDisplayValue(col, config, null, encounterAggregates);
+        }
+        else
+        {
+            if (localPlayerStats == null)
+                return string.Empty;
+            value = CombatantBarComponent.GetColumnDisplayValue(localPlayerStats, col, config, null);
+        }
+
+        return string.IsNullOrEmpty(value)
+            ? string.Empty
+            : Compose(value, Settings.TotalsShowLabels ? Settings.TotalsLabel(col) : null, style);
+    }
+
+    /// <summary>
+    /// Appends the encounter name to the party list's header text ("Party", "Light Party"...).
     /// The game's own label is captured and restored, same as the row names.
     /// </summary>
     private void ApplyEncounterTotals(AddonPartyList* addon)
@@ -3229,11 +3393,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // Hiding the label just means dropping the game's own text and keeping whatever we
         // append, so the original is still captured and restored when this is turned off.
         var body = Settings.HidePartyTypeLabel ? string.Empty : originalTotalsText;
-        var extra = Settings.ShowEncounterTotals ? BuildEncounterTotals() : string.Empty;
+        var extra = Settings.ShowEncounterTotals ? BuildHeaderTitle() : string.Empty;
 
         // Nothing to show either because the metrics are hidden or because no encounter is
         // active - either way the user's own text stands in for them.
-        if (Settings.ShowEncounterTotals && extra.Length == 0 && Settings.TotalsHiddenText.Length > 0)
+        if (Settings.ShowEncounterTotals && !headerMetricsShown && extra.Length == 0
+            && Settings.TotalsHiddenText.Length > 0)
             extra = TotalsSeparator + Settings.TotalsHiddenText;
 
         // With the game's label gone the separator has nothing to separate, so drop just that -
@@ -3334,12 +3499,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         appliedTotalsExtra = string.Empty;
     }
 
-    /// <summary>Separates the totals from the game's label, and each other.</summary>
+    /// <summary>Separates what we write on the header from the game's own label.</summary>
     private const string TotalsSeparator = "  ";
 
-    private string BuildEncounterTotals()
+    private string BuildHeaderTitle()
     {
-        if (!MetricsVisible)
+        if (!MetricsVisible || !Settings.TotalsShowTitle)
             return string.Empty;
 
         CombatEncounter? encounter = null;
@@ -3349,51 +3514,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         }
         catch (Exception ex)
         {
-            ServiceManager.LogDebug(LogChannel.PartyMembership, $"Encounter totals read failed: {ex.Message}");
+            ServiceManager.LogDebug(LogChannel.PartyMembership, $"Encounter title read failed: {ex.Message}");
         }
 
-        if (encounter == null)
-            return string.Empty;
-
-        var metrics = Settings.TotalsMetrics;
-        var parts = new List<string>(metrics.Count + 2);
-
-        if (Settings.TotalsShowTitle && !string.IsNullOrEmpty(encounter.Title))
-            parts.Add(encounter.Title);
-        if (Settings.TotalsShowDuration && !string.IsNullOrEmpty(encounter.Duration))
-            parts.Add(encounter.Duration);
-
-        var local = localPlayerStats;
-        var group = encounterAggregates;
-
-        foreach (var col in metrics)
-        {
-            string value;
-
-            // Formatted through the meter's own column value, so a metric reads here exactly
-            // as it does in the meter window. No tab to take overrides from, hence null.
-            // A metric with nothing behind it is left out rather than shown as a zero, so
-            // the header doesn't fill up before you've hit anything.
-            if (CombatantBarComponent.IsGroupColumn(col))
-            {
-                if (group == null)
-                    continue;
-                value = CombatantBarComponent.GetGroupColumnDisplayValue(col, config, null, group);
-            }
-            else
-            {
-                if (local == null)
-                    continue;
-                value = CombatantBarComponent.GetColumnDisplayValue(local, col, config, null);
-            }
-
-            if (string.IsNullOrEmpty(value))
-                continue;
-
-            parts.Add(Settings.TotalsShowLabels ? $"{value} {Settings.TotalsLabel(col)}" : value);
-        }
-
-        return parts.Count == 0 ? string.Empty : TotalsSeparator + string.Join(TotalsSeparator, parts);
+        return string.IsNullOrEmpty(encounter?.Title) ? string.Empty : TotalsSeparator + encounter.Title;
     }
 
     /// <summary>
@@ -3988,7 +4112,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             // Summed over everyone in the encounter rather than a tab's filtered set, since
             // the header has no tab. Skipped outright when no header metric asks for it.
             if (Settings.TotalsMetrics.Any(CombatantBarComponent.IsGroupColumn))
-                encounterAggregates = GroupAggregates.Compute(combatants);
+                encounterAggregates = GroupAggregates.Compute(combatants, snapshot?.Encounter.Duration ?? string.Empty);
         }
         catch (Exception ex)
         {

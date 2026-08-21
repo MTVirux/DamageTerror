@@ -344,7 +344,7 @@ internal static class MeterWindowHelper
         var combatants = MainWindow.GetSortedCombatants(encounter, sortBy, sortDesc, activeTab, partyNames, allianceNames);
         if (stampRanks)
             StampRanks(combatants);
-        var aggregates = computeAggregates ? GroupAggregates.Compute(combatants) : null;
+        var aggregates = computeAggregates ? GroupAggregates.Compute(combatants, encounter.Encounter.Duration) : null;
         var maxVal = combatants.Count > 0
             ? combatants.Max(c => CombatantBarComponent.GetSortValue(c, sortBy))
             : 0d;

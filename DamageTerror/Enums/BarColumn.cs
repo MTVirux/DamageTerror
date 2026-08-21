@@ -80,5 +80,7 @@ public enum BarColumn
     GroupMaxHitValue = 71,
     GroupMaxHealValue = 72,
 
+    GroupDuration = 73,
+
     EncounterName = 74,
 }

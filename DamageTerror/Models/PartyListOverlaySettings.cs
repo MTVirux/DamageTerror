@@ -169,12 +169,24 @@ public sealed class PartyListOverlaySettings
         set => metrics = value;
     }
 
+    /// <summary>Follows each metric with its label, the way the party list header does.</summary>
+    public bool MetricShowLabels { get; set; } = true;
+
     /// <summary>
-    /// Drawn before every metric, so it lands between the name and the first one and between
-    /// each pair after that. Part of the metric's own text, so it takes that metric's font
-    /// and colour. Empty for none.
+    /// Per-metric label override. Missing or empty falls back to the shared default. A label
+    /// placed in front of its value doubles as the separator metrics used to share.
     /// </summary>
-    public string MetricSeparator { get; set; } = "@ ";
+    [JsonProperty("MetricLabels", ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumConverter))]
+    public Dictionary<BarColumn, string> MetricLabels { get; set; } = new()
+    {
+        [BarColumn.DamagePercent] = "@",
+    };
+
+    public string MetricLabel(BarColumn col)
+        => MetricLabels.TryGetValue(col, out var custom) && custom.Length > 0
+            ? custom
+            : ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
 
     /// <summary>
     /// The font size every metric used before they were given a node each. Kept only to seed
@@ -190,7 +202,7 @@ public sealed class PartyListOverlaySettings
     [JsonConverter(typeof(TolerantEnumConverter))]
     public Dictionary<BarColumn, IndividualMetricStyle> MetricStyles { get; set; } = new()
     {
-        [BarColumn.DamagePercent] = new IndividualMetricStyle { FontDelta = 0 },
+        [BarColumn.DamagePercent] = new IndividualMetricStyle { FontDelta = 0, LabelBeforeValue = true },
         [BarColumn.Dps] = new IndividualMetricStyle { FontDelta = 0, OffsetX = IndividualMetricStyle.ColumnX(1), UseCustomColor = true },
     };
 
@@ -212,6 +224,13 @@ public sealed class PartyListOverlaySettings
         MetricStyles[metric] = style;
         return style;
     }
+
+    /// <summary>
+    /// Metrics used to share one string drawn in front of each of them. Labels do the same
+    /// job per metric, so a config carrying a separator has it folded into its labels.
+    /// </summary>
+    [JsonProperty("MetricSeparator", NullValueHandling = NullValueHandling.Ignore)]
+    private string? legacySeparator;
 
     // Metrics used to be a fixed set of six, each with a bool of its own, drawn in an order
     // of their own and styled through a dictionary keyed the same way. All of it is read
@@ -255,6 +274,8 @@ public sealed class PartyListOverlaySettings
         metrics = null;
         totalsMetrics = null;
         MetricStyles.Clear();
+        MetricLabels.Clear();
+        TotalsMetricStyles.Clear();
     }
 
     /// <summary>
@@ -266,7 +287,49 @@ public sealed class PartyListOverlaySettings
     {
         MigrateLegacyMetrics();
         MigrateLegacyMetricPositions();
+        MigrateLegacyMetricSeparator();
         MigrateLegacyTotals();
+        MigrateLegacyTotalsDuration();
+    }
+
+    /// <summary>
+    /// A separator sat in front of every metric. The same text as each metric's own label,
+    /// placed in front of its value, reads exactly the way it used to.
+    /// </summary>
+    private void MigrateLegacyMetricSeparator()
+    {
+        if (legacySeparator == null)
+            return;
+
+        var separator = legacySeparator.Trim();
+        legacySeparator = null;
+
+        // Labels are set for every metric rather than left to their defaults, so a config
+        // that showed bare values doesn't come back with words it never had.
+        MetricShowLabels = separator.Length > 0;
+        if (!MetricShowLabels)
+            return;
+
+        foreach (var column in Metrics)
+        {
+            MetricLabels[column] = separator;
+            Style(column).LabelBeforeValue = true;
+        }
+    }
+
+    /// <summary>
+    /// Runs only for a config that still carries the toggle, and leaves a header that had
+    /// the clock switched off alone.
+    /// </summary>
+    private void MigrateLegacyTotalsDuration()
+    {
+        var showDuration = legacyTotalsDuration;
+        legacyTotalsDuration = null;
+
+        if (showDuration != true || TotalsMetrics.Contains(BarColumn.GroupDuration))
+            return;
+
+        TotalsMetrics.Insert(0, BarColumn.GroupDuration);
     }
 
     /// <summary>
@@ -416,13 +479,12 @@ public sealed class PartyListOverlaySettings
     // Encounter totals, drawn on the party list's header text
     public bool ShowEncounterTotals { get; set; } = true;
     public bool TotalsShowTitle { get; set; } = false;
-    public bool TotalsShowDuration { get; set; } = true;
 
-    private List<BarColumn>? totalsMetrics = new() { BarColumn.GroupDeaths };
+    private List<BarColumn>? totalsMetrics = new() { BarColumn.GroupDuration, BarColumn.GroupDeaths };
 
     /// <summary>
-    /// The metrics written into the header after the encounter name and duration, in the
-    /// order they appear. The same columns the meter's status bar offers: the group ones
+    /// The metrics written into the header after the encounter name, in the order they
+    /// appear. The same columns the meter's status bar offers: the group ones
     /// read as the whole encounter, since the header has no tab to filter by, and every
     /// other one reads as your own stats.
     /// </summary>
@@ -448,6 +510,38 @@ public sealed class PartyListOverlaySettings
             : ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString());
 
     /// <summary>
+    /// Per-metric position, font size and colour, the same way the individual metrics have
+    /// them. Each header metric owns a text node, so the header is no longer one string in
+    /// one font.
+    /// </summary>
+    [JsonProperty("HeaderMetricStyles", ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    [JsonConverter(typeof(TolerantEnumConverter))]
+    public Dictionary<BarColumn, IndividualMetricStyle> TotalsMetricStyles { get; set; } = new();
+
+    /// <summary>
+    /// A header metric's style, seeded into its own column the first time it is asked for.
+    /// The header text's own font and colour are the starting point, so a config written
+    /// before the metrics were split keeps the look it had as one string.
+    /// </summary>
+    public IndividualMetricStyle TotalsStyle(BarColumn metric)
+    {
+        if (TotalsMetricStyles.TryGetValue(metric, out var style))
+            return style;
+
+        style = new IndividualMetricStyle
+        {
+            FontDelta = TotalsFontDelta,
+            OffsetX = IndividualMetricStyle.HeaderColumnX(TotalsMetrics.IndexOf(metric)),
+            OffsetY = 0f,
+            UseCustomColor = TotalsUseCustomColor,
+            Color = TotalsColor,
+        };
+
+        TotalsMetricStyles[metric] = style;
+        return style;
+    }
+
+    /// <summary>
     /// Drawn in place of the totals whenever there are none to show - out of combat, or with
     /// no encounter active. Empty leaves the header blank, which is the original behaviour.
     /// </summary>
@@ -460,6 +554,14 @@ public sealed class PartyListOverlaySettings
     public float TotalsOffsetY { get; set; } = -1f;
     public bool TotalsUseCustomColor { get; set; } = true;
     public Vector4 TotalsColor { get; set; } = new(1f, 1f, 1f, 1f);
+
+    /// <summary>
+    /// The header used to show the encounter clock through a toggle of its own. It is a
+    /// metric like any other now, so a config carrying the toggle has it folded into the
+    /// header's metric list. Null for a config written after the change.
+    /// </summary>
+    [JsonProperty("TotalsShowDuration", NullValueHandling = NullValueHandling.Ignore)]
+    private bool? legacyTotalsDuration;
 
     // The header used to show a fixed set of encounter stats, each with a bool of its own.
     // Read once on load into the column list, so a config written back then keeps showing

@@ -30,10 +30,13 @@ public sealed class GroupAggregates
     public long MaxHitValue { get; init; }
     public long MaxHealValue { get; init; }
 
-    public static GroupAggregates Compute(List<CombatantEntry> combatants)
+    /// <summary>The encounter's own clock, which no combatant carries - it is passed in.</summary>
+    public string Duration { get; init; } = string.Empty;
+
+    public static GroupAggregates Compute(List<CombatantEntry> combatants, string duration = "")
     {
         if (combatants.Count == 0)
-            return Empty;
+            return new GroupAggregates { Duration = duration };
 
         double sumDps = 0, sumHps = 0, sumInstantDps = 0, sumInstantHps = 0;
         long sumDamage = 0, sumHealed = 0, sumDamageTaken = 0, sumOverheal = 0;
@@ -93,6 +96,7 @@ public sealed class GroupAggregates
             PeakDps = maxPeakDps,
             MaxHitValue = maxHit,
             MaxHealValue = maxHeal,
+            Duration = duration,
         };
     }
 

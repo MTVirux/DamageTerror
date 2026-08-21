@@ -78,6 +78,7 @@ public static class ColumnLabels
         { BarColumn.GroupPeakDps, "gPeak" },
         { BarColumn.GroupMaxHitValue, "gMaxV" },
         { BarColumn.GroupMaxHealValue, "gMHV" },
+        { BarColumn.GroupDuration, "eDur" },
     };
 
     public static readonly Dictionary<TooltipField, string> DefaultTooltipFieldLabels = new()
@@ -236,5 +237,6 @@ public static class ColumnLabels
         { BarColumn.EncHps, "Encounter HPS" },
         { BarColumn.DpsRank, "DPS Rank" },
         { BarColumn.HpsRank, "HPS Rank" },
+        { BarColumn.GroupDuration, "Encounter Duration" },
     };
 }

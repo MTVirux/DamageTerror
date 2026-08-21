@@ -16,8 +16,18 @@ public sealed class IndividualMetricStyle
     /// <summary>The nth column's default position, so metrics seeded together don't overlap.</summary>
     public static float ColumnX(int index) => DefaultOffsetX + (ColumnStep * Math.Max(0, index));
 
+    /// <summary>The same for the party list header, which starts past the game's own
+    /// "Party" label rather than past a name box.</summary>
+    public const float HeaderOffsetX = 60f;
+
+    public static float HeaderColumnX(int index) => HeaderOffsetX + (ColumnStep * Math.Max(0, index));
+
     /// <summary>Offset from the name's font size, which the metric otherwise copies.</summary>
     public int FontDelta { get; set; } = -2;
+
+    /// <summary>Puts the metric's label in front of its value instead of after it, which is
+    /// what a label has to do to read as a separator.</summary>
+    public bool LabelBeforeValue { get; set; } = false;
 
     /// <summary>Takes the metric off the row for as long as a cast bar is up. The cast bar covers
     /// the name's line and is drawn under the metrics, so this is for anyone who would rather read

@@ -344,18 +344,11 @@ internal static class PartyListSection
 
         var changed = false;
 
-        var separator = settings.MetricSeparator;
-        ImGui.SetNextItemWidth(120);
-        if (ImGui.InputText("Separator##plMetricSep", ref separator, 16))
-        {
-            settings.MetricSeparator = separator;
-            changed = true;
-        }
-
+        changed |= ConfigHelpers.CheckboxProp("Metric labels##plMetricLabels", settings.MetricShowLabels,
+            v => settings.MetricShowLabels = v);
         ConfigHelpers.HelpMarker(
-            "Drawn before each metric, wherever that metric is placed.\n" +
-            "Takes the font and colour of the metric it belongs to.\n" +
-            "Leave empty for none.");
+            "Writes each metric's label beside its value, as the party list header does.\n" +
+            "Each one can be renamed, and put in front of its value to read as a separator.");
 
         ImGui.Spacing();
 
@@ -363,7 +356,7 @@ internal static class PartyListSection
         ConfigHelpers.HelpMarker(
             "Any metric the meter window can show.\nUse the tabs below to add more; the order " +
             "here only decides where a newly added one starts out.\nOpen a metric's name for " +
-            "its own position, size and colour.\nValues and formatting match the meter.");
+            "its own label, position, size and colour.\nValues and formatting match the meter.");
 
         if (settings.Metrics.Count > PartyListOverlaySettings.MaxMetrics)
             ImGui.TextColored(new Vector4(1f, 0.8f, 0.3f, 1f),
@@ -374,7 +367,8 @@ internal static class PartyListSection
             settings.Metrics,
             MetricPicker.GetBarColumnLabel,
             MetricPicker.PartyListMetricCategories,
-            metric => DrawIndividualMetricStyle(settings, metric),
+            metric => DrawMetricStyle(metric, settings.Style(metric), "plMetric",
+                settings.MetricLabels, settings.MetricShowLabels, hideWhileCasting: true),
             metric => MetricPicker.BarColumnDescriptions.GetValueOrDefault(metric),
             collapsibleExtras: true);
 
@@ -599,27 +593,30 @@ internal static class PartyListSection
                 ImGui.Indent();
                 changed |= ConfigHelpers.CheckboxProp("Encounter name##plTotalsTitle", settings.TotalsShowTitle,
                     v => settings.TotalsShowTitle = v);
-                changed |= ConfigHelpers.CheckboxProp("Duration##plTotalsDuration", settings.TotalsShowDuration,
-                    v => settings.TotalsShowDuration = v);
+                ConfigHelpers.HelpMarker(
+                    "Written to the header's own text node, beside the game's label.\n" +
+                    "The duration is a metric of its own now - add \"Encounter Duration\" below.");
                 changed |= ConfigHelpers.CheckboxProp("Metric labels##plTotalsLabels", settings.TotalsShowLabels,
                     v => settings.TotalsShowLabels = v);
                 ConfigHelpers.HelpMarker(
-                    "Writes each metric's label after its value, as the meter's status bar does.\n" +
-                    "Each one can be renamed next to the metric below.");
+                    "Writes each metric's label beside its value, as the meter's status bar does.\n" +
+                    "Each one can be renamed, and put in front of its value to read as a separator.");
 
                 ImGui.Spacing();
-                ImGui.TextDisabled("Metrics");
+                ImGui.TextDisabled("Each metric is placed by its own offsets.");
                 ConfigHelpers.HelpMarker(
-                    "Your own stats, except for the Encounter ones, which cover everybody.");
+                    "Your own stats, except for the Encounter ones, which cover everybody.\n" +
+                    "Open a metric's name for its own label, position, size and colour.");
 
                 changed |= MetricPicker.Draw(
                     "plTotalsMetrics",
                     settings.TotalsMetrics,
                     MetricPicker.GetBarColumnLabel,
                     MetricPicker.HeaderMetricCategories,
-                    metric => DrawTotalsMetricLabel(settings, metric),
+                    metric => DrawMetricStyle(metric, settings.TotalsStyle(metric), "plTotals",
+                        settings.TotalsMetricLabels, settings.TotalsShowLabels, hideWhileCasting: false),
                     metric => MetricPicker.BarColumnDescriptions.GetValueOrDefault(metric),
-                    collapsibleExtras: false);
+                    collapsibleExtras: true);
                 ImGui.Unindent();
             }
 
@@ -631,7 +628,9 @@ internal static class PartyListSection
             changed |= ConfigHelpers.CheckboxProp("Adjust header text##plAdjustTotals", settings.AdjustTotalsText,
                 v => settings.AdjustTotalsText = v);
             ConfigHelpers.HelpMarker(
-                "The header's own text node, whether the totals are written to it or not.");
+                "The header's own text node, which carries the game's label and the encounter " +
+                "name.\nThe metrics have nodes of their own and are not moved by this - it is " +
+                "only where they start out when first placed.");
 
             if (settings.AdjustTotalsText)
             {
@@ -667,11 +666,6 @@ internal static class PartyListSection
 
         return changed;
     }
-
-    private static bool DrawTotalsMetricLabel(PartyListOverlaySettings settings, BarColumn col)
-        => MeterTabSectionHelpers.DrawLabelOverride(col, "plTotalsLbl_",
-            ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(col, col.ToString()),
-            settings.TotalsMetricLabels, MetricPicker.GetBarColumnLabel(col));
 
     private static bool DrawCastBarHeader(PartyListOverlaySettings settings)
     {
@@ -1044,12 +1038,29 @@ internal static class PartyListSection
     /// Each metric is drawn by a node of its own, so all three can differ between them.
     /// The picker collapses this under the metric's name, which does the indenting.
     /// </summary>
-    private static bool DrawIndividualMetricStyle(PartyListOverlaySettings settings, BarColumn metric)
+    /// <summary>
+    /// One metric's own look, shared by the row metrics and the header ones so both offer the
+    /// same settings. Only the cast bar is particular to a row - the header has none over it.
+    /// </summary>
+    private static bool DrawMetricStyle(BarColumn metric, IndividualMetricStyle style, string idPrefix,
+        Dictionary<BarColumn, string> labels, bool showLabels, bool hideWhileCasting)
     {
-        var style = settings.Style(metric);
+        var label = MetricPicker.GetBarColumnLabel(metric);
         var changed = false;
 
-        if (Section("Visibility"))
+        if (showLabels && Section("Label"))
+        {
+            ImGui.TextDisabled("Text");
+            changed |= MeterTabSectionHelpers.DrawLabelOverride(metric, idPrefix + "Lbl_",
+                ColumnLabels.DefaultHeaderLabels.GetValueOrDefault(metric, metric.ToString()), labels, label);
+            changed |= ConfigHelpers.CheckboxProp("Before the value", style.LabelBeforeValue,
+                v => style.LabelBeforeValue = v);
+            ConfigHelpers.HelpMarker(
+                "Puts the label in front of the value, which is how a label reads as a separator.");
+            EndSection();
+        }
+
+        if (hideWhileCasting && Section("Visibility"))
         {
             changed |= ConfigHelpers.CheckboxProp("Hide while casting", style.HideWhileCasting,
                 v => style.HideWhileCasting = v);
@@ -1063,11 +1074,11 @@ internal static class PartyListSection
         {
             changed |= Slider("Horizontal offset", style.OffsetX, -40f, 400f,
                 v => style.OffsetX = v,
-                "Measured from the row's left edge.\nThe name's length has no say in it, so " +
-                "the metric holds the same place on every row.");
+                "Measured from the left edge of the row, or of the header text the game draws.\n" +
+                "Nothing about the text beside it has a say, so it holds the same place every frame.");
             changed |= Slider("Vertical offset", style.OffsetY, -20f, 80f,
                 v => style.OffsetY = v,
-                "Measured from the row's top edge.\nAround 22 puts the metric on the name's line.");
+                "Measured from the top edge of the row, or of the header text the game draws.");
             EndSection();
         }
 
@@ -1075,24 +1086,24 @@ internal static class PartyListSection
         {
             changed |= SliderInt("Font size change", style.FontDelta, -8, 8,
                 v => style.FontDelta = v,
-                "Offset from the name's font, which the metric otherwise copies exactly.");
+                "Offset from the font of the text this metric is placed against, which it " +
+                "otherwise copies exactly.");
             EndSection();
         }
 
         if (Section("Color"))
         {
-            var label = MetricPicker.GetBarColumnLabel(metric);
             var hadColor = style.UseCustomColor;
             var hadOutline = style.UseCustomOutlineColor;
 
-            changed |= DrawCustomColor("plMetric", label,
+            changed |= DrawCustomColor($"{idPrefix}Metric", label,
                 style.UseCustomColor, style.Color,
                 v => style.UseCustomColor = v, v => style.Color = v,
-                "Off draws the metric in the colour the game gives a party list name.");
-            changed |= DrawCustomColor("plMetricOutline", $"{label} outline",
+                "Off draws the metric in the colour the game gives the text it sits beside.");
+            changed |= DrawCustomColor($"{idPrefix}MetricOutline", $"{label} outline",
                 style.UseCustomOutlineColor, style.OutlineColor,
                 v => style.UseCustomOutlineColor = v, v => style.OutlineColor = v,
-                "Off uses the outline the game gives a party list name.");
+                "Off uses the outline the game gives that text.");
 
             // Switching a metric to a custom colour starts it on the game's own name colours, so
             // pinning one changes nothing until they pick something. Only a metric still carrying
