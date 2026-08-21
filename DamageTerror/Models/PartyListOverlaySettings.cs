@@ -319,6 +319,7 @@ public sealed class PartyListOverlaySettings
         MigrateLegacyMetricSeparator();
         MigrateLegacyTotals();
         MigrateLegacyTotalsLabels();
+        MigrateLegacyTotalsTitle();
     }
 
     /// <summary>
@@ -374,6 +375,26 @@ public sealed class PartyListOverlaySettings
         // label to keep it that way under a header that has labels switched on.
         if (TotalsShowLabels)
             TotalsMetricLabels[BarColumn.GroupDuration] = " ";
+    }
+
+    /// <summary>
+    /// The header's encounter name, which used to be a toggle of its own. Inserted at the
+    /// front of the metric list so it still reads ahead of everything else.
+    /// </summary>
+    private void MigrateLegacyTotalsTitle()
+    {
+        var showTitle = legacyTotalsTitle;
+        legacyTotalsTitle = null;
+
+        if (showTitle != true || TotalsMetrics.Contains(BarColumn.EncounterName))
+            return;
+
+        TotalsMetrics.Insert(0, BarColumn.EncounterName);
+
+        // The name never carried a word of its own, so it is given a blank label to keep it
+        // that way under a header that has labels switched on.
+        if (TotalsShowLabels)
+            TotalsMetricLabels[BarColumn.EncounterName] = " ";
     }
 
     /// <summary>
@@ -522,15 +543,13 @@ public sealed class PartyListOverlaySettings
 
     // Encounter totals, drawn on the party list's header text
     public bool ShowEncounterTotals { get; set; } = true;
-    public bool TotalsShowTitle { get; set; } = false;
 
     private List<BarColumn>? totalsMetrics = new() { BarColumn.GroupDuration, BarColumn.GroupDeaths };
 
     /// <summary>
-    /// The metrics written into the header after the encounter name, in the order they
-    /// appear. The same columns the meter's status bar offers: the group ones
-    /// read as the whole encounter, since the header has no tab to filter by, and every
-    /// other one reads as your own stats.
+    /// The metrics written into the header, in the order they appear. The same columns the
+    /// meter's status bar offers: the group ones read as the whole encounter, since the
+    /// header has no tab to filter by, and every other one reads as your own stats.
     /// </summary>
     [JsonProperty("HeaderMetrics", ObjectCreationHandling = ObjectCreationHandling.Replace)]
     [JsonConverter(typeof(TolerantEnumConverter))]
@@ -608,6 +627,13 @@ public sealed class PartyListOverlaySettings
     /// </summary>
     [JsonProperty("TotalsShowDuration", NullValueHandling = NullValueHandling.Ignore)]
     private bool? legacyTotalsDuration;
+
+    /// <summary>
+    /// The header used to show the encounter name through a toggle of its own, the same way
+    /// the clock did. Null for a config written after the change.
+    /// </summary>
+    [JsonProperty("TotalsShowTitle", NullValueHandling = NullValueHandling.Ignore)]
+    private bool? legacyTotalsTitle;
 
     // The header used to show a fixed set of encounter stats, each with a bool of its own.
     // Read once on load into the column list, so a config written back then keeps showing

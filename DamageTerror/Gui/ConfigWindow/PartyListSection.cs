@@ -685,11 +685,6 @@ internal static class PartyListSection
             if (settings.ShowEncounterTotals)
             {
                 ImGui.Indent();
-                changed |= ConfigHelpers.CheckboxProp("Encounter name##plTotalsTitle", settings.TotalsShowTitle,
-                    v => settings.TotalsShowTitle = v);
-                ConfigHelpers.HelpMarker(
-                    "Written to the header's own text node, beside the game's label.\n" +
-                    "The duration is a metric of its own now - add \"Encounter Duration\" below.");
                 changed |= ConfigHelpers.CheckboxProp("Metric labels##plTotalsLabels", settings.TotalsShowLabels,
                     v => settings.TotalsShowLabels = v);
                 ConfigHelpers.HelpMarker(
@@ -699,6 +694,7 @@ internal static class PartyListSection
                 ImGui.Spacing();
                 ImGui.TextDisabled("Written into the header text, in the order below.");
                 ConfigHelpers.HelpMarker(
+                    "The encounter name is a metric like any other - add \"Encounter Name\".\n" +
                     "Your own stats, except for the Encounter ones, which cover everybody.\n" +
                     "Open a metric's name to reword it, or to float it onto a node of its own " +
                     "where it gets its own position, size and colour.");
@@ -724,8 +720,8 @@ internal static class PartyListSection
             changed |= ConfigHelpers.CheckboxProp("Adjust header text##plAdjustTotals", settings.AdjustTotalsText,
                 v => settings.AdjustTotalsText = v);
             ConfigHelpers.HelpMarker(
-                "The header's own text node, which carries the game's label, the encounter name " +
-                "and every metric left inline.\nA floating metric has a node of its own and is " +
+                "The header's own text node, which carries the game's label and every metric " +
+                "left inline.\nA floating metric has a node of its own and is " +
                 "not moved by this - it is only where it starts out when first floated.");
 
             if (settings.AdjustTotalsText)

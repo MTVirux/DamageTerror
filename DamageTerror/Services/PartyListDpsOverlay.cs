@@ -3622,8 +3622,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// Appends the encounter name and the inline metrics to the party list's header text
-    /// ("Party", "Light Party"...).
+    /// Appends the inline metrics to the party list's header text ("Party", "Light Party"...).
     /// The game's own label is captured and restored, same as the row names.
     /// </summary>
     private void ApplyEncounterTotals(AddonPartyList* addon)
@@ -3768,32 +3767,16 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private const string TotalsSeparator = "  ";
 
     /// <summary>
-    /// What is written onto the game's own header text node: the encounter name, then every
-    /// metric left inline. One text node has one font and one colour, so an inline metric can
-    /// be worded but not styled - floating it is what gives it a node to be styled on.
+    /// What is written onto the game's own header text node: every metric left inline. One
+    /// text node has one font and one colour, so an inline metric can be worded but not
+    /// styled - floating it is what gives it a node to be styled on.
     /// </summary>
     private string BuildHeaderText()
     {
         if (!MetricsVisible)
             return string.Empty;
 
-        var parts = new List<string>(Settings.TotalsMetrics.Count + 1);
-
-        if (Settings.TotalsShowTitle)
-        {
-            CombatEncounter? encounter = null;
-            try
-            {
-                encounter = dataService.Store.ActiveEncounter?.Encounter;
-            }
-            catch (Exception ex)
-            {
-                ServiceManager.LogDebug(LogChannel.PartyMembership, $"Encounter title read failed: {ex.Message}");
-            }
-
-            if (!string.IsNullOrEmpty(encounter?.Title))
-                parts.Add(encounter.Title);
-        }
+        var parts = new List<string>(Settings.TotalsMetrics.Count);
 
         foreach (var metric in Settings.TotalsMetrics)
         {
