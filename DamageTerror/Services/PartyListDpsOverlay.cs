@@ -3143,6 +3143,18 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 if (node == null)
                     continue;
 
+                // A slot the row is not showing goes back to the game. Left on ours it keeps
+                // our coordinates while the game re-lays the grid out - a member leaving, an
+                // instance swap - and because the node is then exactly where we put it, the
+                // capture above reads our own placement back as the game's original, so the
+                // icon returns in the wrong spot the next time the row needs that slot.
+                if (!IsNodeVisible(node))
+                {
+                    RestoreStatusSlot(row, i, node);
+                    ApplyNodeTint(node, Settings.StatusTint, ref statusTint[row, i]);
+                    continue;
+                }
+
                 var source = slotSource[i];
                 var targetX = anchorX + ((originalStatusX[row, source] - anchorX) * scale) + Settings.StatusOffsetX;
                 var targetY = anchorY + ((originalStatusY[row, source] - anchorY) * scale) + Settings.StatusOffsetY;
@@ -3764,21 +3776,26 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             {
                 var node = addon == null ? null : GetStatusIconNode(addon, row, i);
                 RestoreNodeTint(node, ref statusTint[row, i]);
-
-                if (!statusApplied[row, i])
-                    continue;
-
-                statusApplied[row, i] = false;
-
-                if (node == null)
-                    continue;
-
-                node->SetPositionFloat(originalStatusX[row, i], originalStatusY[row, i]);
-                node->OriginX = originalStatusOriginX[row, i];
-                node->OriginY = originalStatusOriginY[row, i];
-                node->SetScale(originalStatusScale[row, i], originalStatusScale[row, i]);
+                RestoreStatusSlot(row, i, node);
             }
         }
+    }
+
+    /// <summary>Hands one status icon slot back to the game, if we ever moved it.</summary>
+    private void RestoreStatusSlot(int row, int slot, AtkResNode* node)
+    {
+        if (!statusApplied[row, slot])
+            return;
+
+        statusApplied[row, slot] = false;
+
+        if (node == null)
+            return;
+
+        node->SetPositionFloat(originalStatusX[row, slot], originalStatusY[row, slot]);
+        node->OriginX = originalStatusOriginX[row, slot];
+        node->OriginY = originalStatusOriginY[row, slot];
+        node->SetScale(originalStatusScale[row, slot], originalStatusScale[row, slot]);
     }
 
 
