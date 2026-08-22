@@ -416,6 +416,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private bool petTimerApplied;
     private TextColorState petTimerColor;
     private NodeAlphaState petTimerIconAlpha;
+    private NodeTintState petTimerIconTint;
     private readonly float[,] originalStatusX = new float[RowSlots, StatusIconSlots];
     private readonly float[] statusLineY = new float[RowSlots];
     private readonly bool[] statusLineCaptured = new bool[RowSlots];
@@ -2294,6 +2295,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var icon = PetTimerIconNode(addon);
         if (icon != null)
         {
+            // The clock is artwork, so the colour picked for the time can only be multiplied
+            // over it rather than written into it the way a text node's colour is.
+            if (Settings.PetTimerUseCustomColor)
+                ApplyNodeTint(icon, Settings.PetTimerColor, ref petTimerIconTint);
+            else
+                RestoreNodeTint(icon, ref petTimerIconTint);
+
             // Faded rather than unflagged, for the same reason the slot number is: the game
             // owns this node's visibility as companions come and go, and one it has just
             // shown would draw the clock for a frame.
@@ -3178,7 +3186,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var text = addon == null ? null : addon->MpBarSpecialTextNode;
 
         RestoreTextColor(text, ref petTimerColor);
-        RestoreNodeAlpha(PetTimerIconNode(addon), ref petTimerIconAlpha);
+
+        var icon = PetTimerIconNode(addon);
+        RestoreNodeTint(icon, ref petTimerIconTint);
+        RestoreNodeAlpha(icon, ref petTimerIconAlpha);
 
         if (!petTimerApplied)
             return;
