@@ -45,7 +45,7 @@ public sealed class ConfigManagementPage
 
     private void DrawBackupAndRecoverySection()
     {
-        if (!ImGui.CollapsingHeader("Backup & Recovery", ImGuiTreeNodeFlags.DefaultOpen))
+        if (!ImGui.CollapsingHeader("Backup & Recovery"))
             return;
 
         var backup = plugin.ConfigBackup;
@@ -132,7 +132,7 @@ public sealed class ConfigManagementPage
 
     private void DrawConfigTransferSection()
     {
-        if (!ImGui.CollapsingHeader("Import / Export##dtConfigIo", ImGuiTreeNodeFlags.DefaultOpen))
+        if (!ImGui.CollapsingHeader("Import / Export##dtConfigIo"))
             return;
 
         ImGui.TextWrapped("Export writes the ticked settings to a file. Import merges a file back in - only the settings it carries change, the rest are left as they are. The current config is backed up first, and you have to reload the plugin for an import to take effect.");
@@ -195,8 +195,7 @@ public sealed class ConfigManagementPage
 
     private void DrawExportCategoryPicker()
     {
-        if (!ImGui.TreeNodeEx($"Settings to export ({exportCategories.Count}/{ConfigCategories.All.Count})##dtExportPicker",
-            ImGuiTreeNodeFlags.DefaultOpen))
+        if (!ImGui.TreeNodeEx($"Settings to export ({exportCategories.Count}/{ConfigCategories.All.Count})##dtExportPicker"))
             return;
 
         if (ImGui.SmallButton("All##dtExportAll"))
@@ -217,31 +216,29 @@ public sealed class ConfigManagementPage
 
         ImGui.Spacing();
 
-        var appearanceDrawn = false;
+        var drawnGroups = new HashSet<string>();
         foreach (var info in ConfigCategories.All)
         {
             if (info.Group == null)
-            {
                 DrawCategoryCheckbox(info);
-                continue;
-            }
-
-            if (appearanceDrawn)
-                continue;
-
-            appearanceDrawn = true;
-            DrawAppearanceGroup();
+            else if (drawnGroups.Add(info.Group))
+                DrawCategoryGroup(info.Group);
         }
 
         ImGui.TreePop();
     }
 
-    private void DrawAppearanceGroup()
+    private void DrawCategoryGroup(string group)
     {
-        var members = ConfigCategories.All.Where(c => c.Group == ConfigCategories.AppearanceGroup).ToList();
+        var members = ConfigCategories.All.Where(c => c.Group == group).ToList();
+        if (members.Count == 0)
+            return;
 
-        var allSelected = members.All(m => exportCategories.Contains(m.Category));
-        if (ImGui.Checkbox("##dtExportAppearanceAll", ref allSelected))
+        var selected = members.Count(m => exportCategories.Contains(m.Category));
+
+        // Unticked while only some are on, so the first click turns the whole group on.
+        var allSelected = selected == members.Count;
+        if (ImGui.Checkbox($"##dtExportGroupAll{group}", ref allSelected))
         {
             foreach (var member in members)
             {
@@ -253,7 +250,7 @@ public sealed class ConfigManagementPage
         }
 
         ImGui.SameLine();
-        if (!ImGui.TreeNodeEx($"{ConfigCategories.AppearanceGroup}##dtExportAppearance", ImGuiTreeNodeFlags.DefaultOpen))
+        if (!ImGui.TreeNodeEx($"{group} ({selected}/{members.Count})##dtExportGroup{group}"))
             return;
 
         foreach (var member in members)

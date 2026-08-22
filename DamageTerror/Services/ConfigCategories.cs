@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-using System.Reflection;
+using Newtonsoft.Json.Serialization;
 
 namespace DamageTerror.Services;
 
@@ -8,8 +8,18 @@ public enum ConfigCategory
     General,
     Tabs,
     Layout,
-    PartyList,
     History,
+    PartyListGeneral,
+    PartyListBar,
+    PartyListName,
+    PartyListSlotNumber,
+    PartyListGauges,
+    PartyListMetrics,
+    PartyListStatus,
+    PartyListGlow,
+    PartyListHeader,
+    PartyListCastBar,
+    PartyListCastName,
     WindowBackground,
     MeterBars,
     NameFormat,
@@ -26,13 +36,39 @@ public enum ConfigCategory
 }
 
 /// <summary>
-/// Splits <see cref="Configuration"/>'s properties into the groups the settings
-/// sidebar uses, so an export can carry a subset of them. Every property has to
-/// land in exactly one category - <see cref="CheckCoverageOrThrow"/> enforces
-/// that in Debug builds so a new setting can't silently become unexportable.
+/// Splits the config into the groups the settings sidebar uses, so an export can
+/// carry a subset of them. Entries are the names Newtonsoft writes, not always the
+/// C# ones, since it's the JSON that gets filtered; a dotted path reaches inside a
+/// nested block like <c>PartyList</c>, which is split across several categories of
+/// its own. Every setting has to land in exactly one category -
+/// <see cref="CheckCoverageOrThrow"/> enforces that in Debug builds so a new one
+/// can't silently become unexportable.
 /// </summary>
 public static class ConfigCategories
 {
+    /// <summary>
+    /// Written by Newtonsoft but not settings: fields kept purely so an old config can
+    /// still be migrated. They're read once on load and folded into the values above, so
+    /// there's nothing to export and no category to put them in.
+    /// </summary>
+    private static readonly HashSet<string> LegacyProperties = new(StringComparer.Ordinal)
+    {
+        "PartyList.MetricSeparator",
+        "PartyList.PrefixDps",
+        "PartyList.PrefixDamage",
+        "PartyList.PrefixCrit",
+        "PartyList.PrefixDirectHit",
+        "PartyList.PrefixCritDirectHit",
+        "PartyList.PrefixDamagePercent",
+        "PartyList.MetricOrder",
+        "PartyList.MetricStyles",
+        "PartyList.TotalsShowDuration",
+        "PartyList.TotalsShowTitle",
+        "PartyList.TotalsShowRaidDps",
+        "PartyList.TotalsShowDamage",
+        "PartyList.TotalsShowDeaths",
+    };
+
     /// <summary>
     /// Stamped on every config and copied into every export whatever the selection:
     /// they say which schema and which game patch the data came from, so they belong
@@ -45,6 +81,7 @@ public static class ConfigCategories
     ];
 
     public const string AppearanceGroup = "Appearance";
+    public const string PartyListGroup = "Party List";
 
     public sealed record CategoryInfo(
         ConfigCategory Category,
@@ -111,13 +148,6 @@ public static class ConfigCategories
                 nameof(Configuration.HideWindowHeader),
             ]),
 
-        new(ConfigCategory.PartyList, "Party List", null,
-            "The native party list overlay and everything that styles it.", true,
-            [
-                nameof(Configuration.ShowPartyListDps),
-                nameof(Configuration.PartyList),
-            ]),
-
         new(ConfigCategory.History, "History", null,
             "How many encounters and timelines are kept, and for how long.", true,
             [
@@ -127,6 +157,167 @@ public static class ConfigCategories
                 nameof(Configuration.TimelineRetentionMode),
                 nameof(Configuration.MaxTimelineCount),
                 nameof(Configuration.MaxTimelineDays),
+            ]),
+
+        new(ConfigCategory.PartyListGeneral, "General", PartyListGroup,
+            "Whether the overlay runs at all, plus what applies to every row.", true,
+            [
+                nameof(Configuration.ShowPartyListDps),
+                "PartyList.HideOutOfCombat",
+                "PartyList.HideOutOfCombatDelay",
+                "PartyList.TintTextOutline",
+                "PartyList.TextOutlineTint",
+                "PartyList.TextOutlineThickness",
+                "PartyList.RowSpacing",
+            ]),
+
+        new(ConfigCategory.PartyListBar, "DPS Bar", PartyListGroup,
+            "The fill bar drawn across each row - its size, placement and colours.", true,
+            [
+                "PartyList.ShowBar",
+                "PartyList.IconUnderlap",
+                "PartyList.BarHeightPixels",
+                "PartyList.BarMinAlpha",
+                "PartyList.BarColorMode",
+                "PartyList.BarColors",
+                "PartyList.BarSingleColor",
+                "PartyList.BarMaxWidth",
+                "PartyList.BarOffsetX",
+                "PartyList.BarOffsetY",
+                "PartyList.BarBehindRowContent",
+                "PartyList.ShiftRowContent",
+                "PartyList.RowContentShiftY",
+            ]),
+
+        new(ConfigCategory.PartyListName, "Name", PartyListGroup,
+            "The player name - its font, level glyphs and position.", true,
+            [
+                "PartyList.AdjustNameFont",
+                "PartyList.NameFontDelta",
+                "PartyList.HideLevel",
+                "PartyList.NameShift",
+            ]),
+
+        new(ConfigCategory.PartyListSlotNumber, "Slot Number", PartyListGroup,
+            "The party slot number before each name, and the badge behind it.", true,
+            [
+                "PartyList.AdjustPartyIndex",
+                "PartyList.PartyIndexFontDelta",
+                "PartyList.PartyIndexOffsetX",
+                "PartyList.PartyIndexOffsetY",
+                "PartyList.PartyIndexUseCustomColor",
+                "PartyList.PartyIndexColor",
+                "PartyList.PartyIndexUseCustomOutlineColor",
+                "PartyList.PartyIndexOutlineColor",
+                "PartyList.PartyIndexOutlineThickness",
+                "PartyList.PartyIndexFont",
+                "PartyList.HidePartyIndex",
+                "PartyList.PartyIndexBadge",
+            ]),
+
+        new(ConfigCategory.PartyListGauges, "HP and MP", PartyListGroup,
+            "The HP and MP gauges, their shields, and the numbers drawn on them.", true,
+            [
+                "PartyList.HpBarOutline",
+                "PartyList.MpBarOutline",
+                "PartyList.HpBarShift",
+                "PartyList.MpBarShift",
+                "PartyList.ShieldFill",
+                "PartyList.ShieldOverflow",
+                "PartyList.HpNumbers",
+                "PartyList.MpNumbers",
+                "PartyList.AdjustGaugeNumbers",
+                "PartyList.GaugeFontDelta",
+                "PartyList.MpTrailingFontDelta",
+                "PartyList.GaugeNumberOffsetY",
+                "PartyList.TrailingDigitsOffsetX",
+                "PartyList.TrailingDigitsOffsetY",
+            ]),
+
+        new(ConfigCategory.PartyListMetrics, "Individual Metrics", PartyListGroup,
+            "The metrics drawn after each name - which ones, their labels and their styling.", true,
+            [
+                "PartyList.NameMetrics",
+                "PartyList.MetricShowLabels",
+                "PartyList.MetricLabels",
+                "PartyList.MetricsFontDelta",
+                "PartyList.MetricColumnStyles",
+            ]),
+
+        new(ConfigCategory.PartyListStatus, "Buffs and Debuffs", PartyListGroup,
+            "Status icons and their timers.", true,
+            [
+                "PartyList.AdjustStatusIcons",
+                "PartyList.StatusOffsetX",
+                "PartyList.StatusOffsetY",
+                "PartyList.StatusScale",
+                "PartyList.StatusRightAlign",
+                "PartyList.StatusTint",
+                "PartyList.AdjustStatusTimers",
+                "PartyList.StatusTimerFontDelta",
+                "PartyList.StatusTimerOffsetX",
+                "PartyList.StatusTimerOffsetY",
+                "PartyList.StatusTimerUseCustomColor",
+                "PartyList.StatusTimerColor",
+            ]),
+
+        new(ConfigCategory.PartyListGlow, "Hover and Selection", PartyListGroup,
+            "The glow the game draws on a hovered or targeted row.", true,
+            [
+                "PartyList.AdjustSelectionGlow",
+                "PartyList.SelectionOverridesHover",
+                "PartyList.HoverOffsetX",
+                "PartyList.HoverOffsetY",
+                "PartyList.HoverScale",
+                "PartyList.HoverTint",
+                "PartyList.SelectionOffsetX",
+                "PartyList.SelectionOffsetY",
+                "PartyList.SelectionScale",
+                "PartyList.SelectionTint",
+                "PartyList.FreezeGlowTransform",
+                "PartyList.IconGlowOffsetX",
+                "PartyList.IconGlowOffsetY",
+                "PartyList.IconGlowScale",
+                "PartyList.IconGlowTint",
+            ]),
+
+        new(ConfigCategory.PartyListHeader, "Party Header", PartyListGroup,
+            "The header above the list and the encounter totals drawn into it.", true,
+            [
+                "PartyList.HidePartyTypeLabel",
+                "PartyList.ShowEncounterTotals",
+                "PartyList.HeaderMetrics",
+                "PartyList.TotalsShowLabels",
+                "PartyList.HeaderMetricLabels",
+                "PartyList.HeaderMetricStyles",
+                "PartyList.TotalsHiddenText",
+                "PartyList.AdjustTotalsText",
+                "PartyList.TotalsFontDelta",
+                "PartyList.TotalsOffsetX",
+                "PartyList.TotalsOffsetY",
+                "PartyList.TotalsUseCustomColor",
+                "PartyList.TotalsColor",
+            ]),
+
+        new(ConfigCategory.PartyListCastBar, "Cast Bar", PartyListGroup,
+            "The casting bar the game draws on a row.", true,
+            [
+                "PartyList.AdjustCastBar",
+                "PartyList.CastBarShiftX",
+                "PartyList.CastBarShiftY",
+                "PartyList.CastBarScaleY",
+                "PartyList.CastBarTint",
+            ]),
+
+        new(ConfigCategory.PartyListCastName, "Spell Name", PartyListGroup,
+            "The spell name drawn beside the cast bar.", true,
+            [
+                "PartyList.AdjustCastName",
+                "PartyList.CastNameOffsetX",
+                "PartyList.CastNameOffsetY",
+                "PartyList.CastNameFontDelta",
+                "PartyList.CastNameUseCustomColor",
+                "PartyList.CastNameColor",
             ]),
 
         new(ConfigCategory.WindowBackground, "Window & Background", AppearanceGroup,
@@ -397,14 +588,37 @@ public static class ConfigCategories
 #endif
     };
 
-    private static readonly Lazy<Dictionary<string, ConfigCategory>> byProperty = new(() =>
+    private static readonly Lazy<Dictionary<string, ConfigCategory>> byPath = new(() =>
     {
         var map = new Dictionary<string, ConfigCategory>(StringComparer.Ordinal);
         foreach (var info in All)
-            foreach (var prop in info.Properties)
-                map[prop] = info.Category;
+            foreach (var path in info.Properties)
+                map[path] = info.Category;
         return map;
     });
+
+    private static readonly Lazy<HashSet<string>> containers = new(() =>
+    {
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var info in All)
+            foreach (var path in info.Properties)
+                foreach (var ancestor in Ancestors(path))
+                    result.Add(ancestor);
+        return result;
+    });
+
+    /// <summary>Every path above this one, e.g. <c>a.b.c</c> yields <c>a.b</c> then <c>a</c>.</summary>
+    public static IEnumerable<string> Ancestors(string path)
+    {
+        for (var cut = path.LastIndexOf('.'); cut > 0; cut = path.LastIndexOf('.'))
+        {
+            path = path[..cut];
+            yield return path;
+        }
+    }
+
+    /// <summary>True for a block that categories reach inside of rather than take whole.</summary>
+    public static bool IsContainer(string path) => containers.Value.Contains(path);
 
     public static IEnumerable<ConfigCategory> DefaultSelection
         => All.Where(c => c.SelectedByDefault).Select(c => c.Category);
@@ -414,11 +628,11 @@ public static class ConfigCategories
     /// <summary>Falls back to the raw name for a category this build doesn't offer (a Debug-build export read by a release build).</summary>
     public static string Label(ConfigCategory category) => Get(category)?.Label ?? category.ToString();
 
-    /// <summary>Category a config property belongs to, or null for metadata and unknown keys.</summary>
-    public static ConfigCategory? Of(string propertyName)
-        => byProperty.Value.TryGetValue(propertyName, out var category) ? category : null;
+    /// <summary>Category a config path belongs to, or null for metadata, legacy and unknown keys.</summary>
+    public static ConfigCategory? Of(string path)
+        => byPath.Value.TryGetValue(path, out var category) ? category : null;
 
-    /// <summary>Property names covered by the given categories, plus <c>Version</c>.</summary>
+    /// <summary>Paths covered by the given categories, plus the metadata stamps.</summary>
     public static HashSet<string> PropertiesFor(IEnumerable<ConfigCategory> categories)
     {
         var selected = new HashSet<ConfigCategory>(categories);
@@ -434,14 +648,13 @@ public static class ConfigCategories
     }
 
     /// <summary>
-    /// DEBUG-only guard: every serialized <see cref="Configuration"/> property must be
-    /// listed in exactly one category, and every listed name must still exist. Throws
-    /// listing whatever drifted.
+    /// DEBUG-only guard: every path Newtonsoft writes has to be listed in exactly one
+    /// category, and every listed path has to still exist. Throws listing whatever drifted.
     /// </summary>
     [Conditional("DEBUG")]
     public static void CheckCoverageOrThrow(IPluginLog log)
     {
-        var configProps = SerializedPropertyNames();
+        var expected = new HashSet<string>(SerializedPaths(typeof(Configuration), string.Empty), StringComparer.Ordinal);
 
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var duplicated = new List<string>();
@@ -449,16 +662,16 @@ public static class ConfigCategories
 
         foreach (var info in All)
         {
-            foreach (var prop in info.Properties)
+            foreach (var path in info.Properties)
             {
-                if (!configProps.Contains(prop))
-                    unknown.Add($"{info.Label}.{prop}");
-                else if (!seen.Add(prop))
-                    duplicated.Add(prop);
+                if (!expected.Contains(path))
+                    unknown.Add($"{info.Label}.{path}");
+                else if (!seen.Add(path))
+                    duplicated.Add(path);
             }
         }
 
-        var uncategorized = configProps.Where(p => !seen.Contains(p)).ToList();
+        var uncategorized = expected.Where(p => !seen.Contains(p)).ToList();
 
         var problems = new List<string>();
         if (uncategorized.Count > 0)
@@ -466,25 +679,43 @@ public static class ConfigCategories
         if (duplicated.Count > 0)
             problems.Add("in more than one category: " + string.Join(", ", duplicated));
         if (unknown.Count > 0)
-            problems.Add("no such Configuration property: " + string.Join(", ", unknown));
+            problems.Add("no such config path: " + string.Join(", ", unknown));
 
         if (problems.Count > 0)
             throw new InvalidOperationException("ConfigCategories drift - " + string.Join("; ", problems));
 
-        log.Debug($"ConfigCategories: {seen.Count} properties across {All.Count} categories");
+        log.Debug($"ConfigCategories: {seen.Count} paths across {All.Count} categories");
     }
 
-    /// <summary>Public read/write properties Newtonsoft writes to the config file, minus <c>Version</c>.</summary>
-    private static HashSet<string> SerializedPropertyNames()
+    /// <summary>
+    /// Paths Newtonsoft writes for a type, minus metadata and legacy keys, descending into
+    /// any block the categories split. Asks the serializer rather than reflecting directly,
+    /// so a <c>[JsonProperty("Other")]</c> rename or a serialized private field is seen the
+    /// way the config file sees it.
+    /// </summary>
+    private static IEnumerable<string> SerializedPaths(Type type, string prefix)
     {
-        var result = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var prop in typeof(Configuration).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        var contract = (JsonObjectContract)resolver.ResolveContract(type);
+        foreach (var property in contract.Properties)
         {
-            if (!prop.CanRead || !prop.CanWrite) continue;
-            if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-            if (MetadataProperties.Contains(prop.Name)) continue;
-            result.Add(prop.Name);
+            if (property.Ignored || property.PropertyName == null || property.PropertyType == null)
+                continue;
+
+            var path = prefix.Length == 0 ? property.PropertyName : prefix + "." + property.PropertyName;
+            if (MetadataProperties.Contains(path) || LegacyProperties.Contains(path))
+                continue;
+
+            if (IsContainer(path))
+            {
+                foreach (var nested in SerializedPaths(property.PropertyType, path))
+                    yield return nested;
+            }
+            else
+            {
+                yield return path;
+            }
         }
-        return result;
     }
+
+    private static readonly IContractResolver resolver = new DefaultContractResolver();
 }

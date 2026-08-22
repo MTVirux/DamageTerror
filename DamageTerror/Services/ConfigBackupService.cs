@@ -155,13 +155,7 @@ public sealed class ConfigBackupService
                 }
 
                 var root = JObject.Parse(File.ReadAllText(configFilePath));
-                var keep = ConfigCategories.PropertiesFor(categories);
-
-                foreach (var name in root.Properties().Select(p => p.Name).ToList())
-                {
-                    if (!keep.Contains(name))
-                        root.Remove(name);
-                }
+                KeepOnly(root, ConfigCategories.PropertiesFor(categories), string.Empty);
 
                 root[ExportMetaKey] = new JArray(categories.Select(c => c.ToString()));
 
@@ -211,8 +205,11 @@ public sealed class ConfigBackupService
                     target = new JObject();
                 }
 
-                foreach (var prop in source.Properties())
-                    target[prop.Name] = prop.Value;
+                if (isPartial)
+                    MergeInto(target, source, string.Empty);
+                else
+                    foreach (var prop in source.Properties())
+                        target[prop.Name] = prop.Value;
 
                 var tmp = configFilePath + ".import.tmp";
                 File.WriteAllText(tmp, target.ToString(Formatting.Indented));
@@ -224,6 +221,56 @@ public sealed class ConfigBackupService
             {
                 log.Error($"[ConfigBackup] Failed to import from {sourcePath}: {ex.Message}");
                 return false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Strips everything the selection doesn't cover, descending into a block the
+    /// categories split rather than taking it whole. Keys the serializer owns (<c>$type</c>)
+    /// are left where they are.
+    /// </summary>
+    private static void KeepOnly(JObject node, IReadOnlySet<string> keep, string prefix)
+    {
+        foreach (var name in node.Properties().Select(p => p.Name).ToList())
+        {
+            if (name.StartsWith('$'))
+                continue;
+
+            var path = prefix.Length == 0 ? name : prefix + "." + name;
+            if (keep.Contains(path))
+                continue;
+
+            if (node[name] is JObject child && keep.Any(k => k.StartsWith(path + ".", StringComparison.Ordinal)))
+                KeepOnly(child, keep, path);
+            else
+                node.Remove(name);
+        }
+    }
+
+    /// <summary>
+    /// Applies a partial file key by key. A block the categories split is merged into
+    /// rather than replaced, so importing one party list section leaves the others alone;
+    /// anything else - a dictionary of per-metric styles, say - is replaced whole, because
+    /// the export carried all of it.
+    /// </summary>
+    private static void MergeInto(JObject target, JObject source, string prefix)
+    {
+        foreach (var prop in source.Properties())
+        {
+            if (prop.Name.StartsWith('$'))
+                continue;
+
+            var path = prefix.Length == 0 ? prop.Name : prefix + "." + prop.Name;
+            if (ConfigCategories.IsContainer(path) &&
+                prop.Value is JObject childSource &&
+                target[prop.Name] is JObject childTarget)
+            {
+                MergeInto(childTarget, childSource, path);
+            }
+            else
+            {
+                target[prop.Name] = prop.Value;
             }
         }
     }
@@ -251,11 +298,7 @@ public sealed class ConfigBackupService
                 return new ImportContents(listed, IsPartial: true, settingCount, configVersion, gameVersion);
             }
 
-            var found = root.Properties()
-                .Select(p => ConfigCategories.Of(p.Name))
-                .OfType<ConfigCategory>()
-                .Distinct()
-                .ToList();
+            var found = CategoriesIn(root, string.Empty).Distinct().ToList();
             return new ImportContents(found, IsPartial: false, settingCount, configVersion, gameVersion);
         }
         catch (Exception ex)
@@ -300,6 +343,23 @@ public sealed class ConfigBackupService
         {
             error = ex.Message;
             return false;
+        }
+    }
+
+    private static IEnumerable<ConfigCategory> CategoriesIn(JObject node, string prefix)
+    {
+        foreach (var prop in node.Properties())
+        {
+            var path = prefix.Length == 0 ? prop.Name : prefix + "." + prop.Name;
+            if (ConfigCategories.IsContainer(path) && prop.Value is JObject child)
+            {
+                foreach (var category in CategoriesIn(child, path))
+                    yield return category;
+            }
+            else if (ConfigCategories.Of(path) is { } found)
+            {
+                yield return found;
+            }
         }
     }
 
