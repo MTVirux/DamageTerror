@@ -613,6 +613,70 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         => (AddonPartyList*)Svc.GameGui.GetAddonByName("_PartyList").Address;
 
     /// <summary>
+    /// Prints what the companion timer is actually built from, to the chat log rather than
+    /// the plugin log so it needs nothing switched on to read. The party list's own ULD does
+    /// not settle it - the addon hands the timer out as a plain res node, the base type every
+    /// node shares - and which node the clock sits on decides what the icon settings reach.
+    /// The surrounding branch is printed too, since the clock being a sibling rather than a
+    /// descendant would look identical from the timer node alone.
+    /// </summary>
+    public void PrintPetTimerShape()
+    {
+        var addon = LivePartyList();
+        if (addon == null)
+        {
+            Svc.Chat.Print("[Damage Terror] The party list is not loaded.");
+            return;
+        }
+
+        var group = addon->MpBarSpecialResNode;
+        if (group == null)
+        {
+            Svc.Chat.Print("[Damage Terror] No companion timer node - summon a chocobo first.");
+            return;
+        }
+
+        var icon = PetTimerIconNode(addon);
+        var text = addon->MpBarSpecialTextNode;
+
+        Svc.Chat.Print($"[Damage Terror] timer  {Describe(group)}");
+        Svc.Chat.Print($"[Damage Terror] icon   {(icon == null ? "NOT FOUND" : Describe(icon))}");
+        Svc.Chat.Print($"[Damage Terror] text   {(text == null ? "null" : Describe(&text->AtkResNode))}");
+
+        var budget = 24;
+        Svc.Chat.Print("[Damage Terror] timer subtree:");
+        PrintNodeTree(group, 1, ref budget);
+
+        var parent = group->ParentNode;
+        if (parent == null)
+            return;
+
+        Svc.Chat.Print($"[Damage Terror] parent {Describe(parent)}, its children:");
+        for (var child = parent->ChildNode; child != null && budget > 0; child = child->PrevSiblingNode)
+        {
+            budget--;
+            Svc.Chat.Print($"[Damage Terror]   {(child == group ? ">" : " ")} {Describe(child)}");
+        }
+    }
+
+    private static void PrintNodeTree(AtkResNode* node, int depth, ref int budget)
+    {
+        if (node == null || depth > 4 || budget <= 0)
+            return;
+
+        budget--;
+        Svc.Chat.Print($"[Damage Terror] {new string(' ', depth * 2)}{Describe(node)}");
+
+        for (var child = node->ChildNode; child != null; child = child->PrevSiblingNode)
+            PrintNodeTree(child, depth + 1, ref budget);
+    }
+
+    private static string Describe(AtkResNode* node)
+        => $"id={node->NodeId:X} {node->Type} xy=({node->X:F0},{node->Y:F0}) " +
+           $"wh=({node->Width}x{node->Height}) vis={(node->NodeFlags & NodeFlags.Visible) != 0} " +
+           $"a={node->Color.A} mul=({node->MultiplyRed},{node->MultiplyGreen},{node->MultiplyBlue})";
+
+    /// <summary>
     /// Removes our nodes ourselves rather than waiting for the controller's finalize, which
     /// is skipped when it doesn't consider the addon live. Reloading the plugin while the
     /// party list is hidden would otherwise leave our nodes linked into an addon that
