@@ -20,6 +20,7 @@ public enum ConfigCategory
     PartyListHeader,
     PartyListCastBar,
     PartyListCastName,
+    PartyListPetTimer,
     WindowBackground,
     MeterBars,
     NameFormat,
@@ -318,6 +319,17 @@ public static class ConfigCategories
                 "PartyList.CastNameFontDelta",
                 "PartyList.CastNameUseCustomColor",
                 "PartyList.CastNameColor",
+            ]),
+
+        new(ConfigCategory.PartyListPetTimer, "Pet Timer", PartyListGroup,
+            "The countdown drawn at the bottom-left of a row's icon.", true,
+            [
+                "PartyList.AdjustPetTimer",
+                "PartyList.PetTimerOffsetX",
+                "PartyList.PetTimerOffsetY",
+                "PartyList.PetTimerFontDelta",
+                "PartyList.PetTimerUseCustomColor",
+                "PartyList.PetTimerColor",
             ]),
 
         new(ConfigCategory.WindowBackground, "Window & Background", AppearanceGroup,

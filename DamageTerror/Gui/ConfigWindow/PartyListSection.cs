@@ -84,6 +84,7 @@ internal static class PartyListSection
         changed |= DrawTotalsHeader(settings);
         changed |= DrawCastBarHeader(settings);
         changed |= DrawCastNameHeader(settings);
+        changed |= DrawPetTimerHeader(settings);
 
         if (!enabled)
             ImGui.EndDisabled();
@@ -842,6 +843,54 @@ internal static class PartyListSection
                 settings.CastNameUseCustomColor, settings.CastNameColor,
                 v => settings.CastNameUseCustomColor = v, v => settings.CastNameColor = v,
                 "Off leaves the colour the game gives the spell name.");
+            EndSection();
+        }
+
+        ImGui.PopID();
+        ImGui.Unindent();
+        return changed;
+    }
+
+    private static bool DrawPetTimerHeader(PartyListOverlaySettings settings)
+    {
+        if (!ImGui.CollapsingHeader("Pet Timer##plPetTimer"))
+            return false;
+
+        var changed = ConfigHelpers.CheckboxProp("Adjust pet timer##plAdjustPetTimer",
+            settings.AdjustPetTimer, v => settings.AdjustPetTimer = v);
+        ConfigHelpers.HelpMarker(
+            "The countdown at the bottom left of a row's icon - the time left on a chocobo " +
+            "companion, and on a summoner's Bahamut or Phoenix.");
+
+        if (!settings.AdjustPetTimer)
+            return changed;
+
+        ImGui.Indent();
+        ImGui.PushID("plPetTimer");
+
+        if (Section("Position"))
+        {
+            changed |= Slider("Horizontal offset##plPetTimerX", settings.PetTimerOffsetX, -40f, 40f,
+                v => settings.PetTimerOffsetX = v, null);
+            changed |= Slider("Vertical offset##plPetTimerY", settings.PetTimerOffsetY, -40f, 40f,
+                v => settings.PetTimerOffsetY = v, null);
+            EndSection();
+        }
+
+        if (Section("Size"))
+        {
+            changed |= SliderInt("Font size change##plPetTimerFont", settings.PetTimerFontDelta, -12, 12,
+                v => settings.PetTimerFontDelta = v,
+                "Added to the game's own font size for the pet timer.");
+            EndSection();
+        }
+
+        if (Section("Color"))
+        {
+            changed |= DrawCustomColor("plPetTimer", "pet timer",
+                settings.PetTimerUseCustomColor, settings.PetTimerColor,
+                v => settings.PetTimerUseCustomColor = v, v => settings.PetTimerColor = v,
+                "Off leaves the colour the game gives the timer.");
             EndSection();
         }
 

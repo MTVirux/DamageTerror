@@ -689,6 +689,15 @@ public sealed class PartyListOverlaySettings
     public bool CastNameUseCustomColor { get; set; } = false;
     public Vector4 CastNameColor { get; set; } = new(1f, 1f, 1f, 1f);
 
+    // The countdown at the bottom-left of a row's icon - chocobo companion time left,
+    // Bahamut and Phoenix duration.
+    public bool AdjustPetTimer { get; set; } = false;
+    public float PetTimerOffsetX { get; set; } = 0f;
+    public float PetTimerOffsetY { get; set; } = 0f;
+    public int PetTimerFontDelta { get; set; } = 0;
+    public bool PetTimerUseCustomColor { get; set; } = false;
+    public Vector4 PetTimerColor { get; set; } = new(1f, 1f, 1f, 1f);
+
     /// <summary>
     /// The settings both gauges' numbers shared before they were split. Kept only to seed
     /// <see cref="HpNumbers"/> and <see cref="MpNumbers"/> for configs written back then.
