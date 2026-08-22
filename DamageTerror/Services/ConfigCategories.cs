@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reflection;
 
 namespace DamageTerror.Services;
@@ -22,7 +22,7 @@ public enum ConfigCategory
     GraphView,
     Fonts,
     WindowState,
-    Advanced,
+    Debug,
 }
 
 /// <summary>
@@ -33,8 +33,16 @@ public enum ConfigCategory
 /// </summary>
 public static class ConfigCategories
 {
-    /// <summary>Written into every export regardless of the selection; migrations key off it.</summary>
-    public const string VersionProperty = nameof(Configuration.Version);
+    /// <summary>
+    /// Stamped on every config and copied into every export whatever the selection:
+    /// they say which schema and which game patch the data came from, so they belong
+    /// to no single category and a partial import must never overwrite them.
+    /// </summary>
+    public static readonly string[] MetadataProperties =
+    [
+        nameof(Configuration.Version),
+        nameof(Configuration.LastGameVersion),
+    ];
 
     public const string AppearanceGroup = "Appearance";
 
@@ -378,13 +386,15 @@ public static class ConfigCategories
                 nameof(Configuration.HasCompletedColumnWizard),
             ]),
 
-        new(ConfigCategory.Advanced, "Advanced", null,
+#if DEBUG
+        new(ConfigCategory.Debug, "Debug", null,
             "Debug features, raw frame capture and log channel filtering.", true,
             [
                 nameof(Configuration.HideDebugFeatures),
                 nameof(Configuration.CaptureRawFrames),
                 nameof(Configuration.DisabledLogChannels),
             ]),
+#endif
     };
 
     private static readonly Lazy<Dictionary<string, ConfigCategory>> byProperty = new(() =>
@@ -399,11 +409,12 @@ public static class ConfigCategories
     public static IEnumerable<ConfigCategory> DefaultSelection
         => All.Where(c => c.SelectedByDefault).Select(c => c.Category);
 
-    public static CategoryInfo Get(ConfigCategory category) => All.First(c => c.Category == category);
+    public static CategoryInfo? Get(ConfigCategory category) => All.FirstOrDefault(c => c.Category == category);
 
-    public static string Label(ConfigCategory category) => Get(category).Label;
+    /// <summary>Falls back to the raw name for a category this build doesn't offer (a Debug-build export read by a release build).</summary>
+    public static string Label(ConfigCategory category) => Get(category)?.Label ?? category.ToString();
 
-    /// <summary>Category a config property belongs to, or null for <c>Version</c> and unknown keys.</summary>
+    /// <summary>Category a config property belongs to, or null for metadata and unknown keys.</summary>
     public static ConfigCategory? Of(string propertyName)
         => byProperty.Value.TryGetValue(propertyName, out var category) ? category : null;
 
@@ -411,7 +422,7 @@ public static class ConfigCategories
     public static HashSet<string> PropertiesFor(IEnumerable<ConfigCategory> categories)
     {
         var selected = new HashSet<ConfigCategory>(categories);
-        var result = new HashSet<string>(StringComparer.Ordinal) { VersionProperty };
+        var result = new HashSet<string>(MetadataProperties, StringComparer.Ordinal);
         foreach (var info in All)
         {
             if (!selected.Contains(info.Category))
@@ -471,7 +482,7 @@ public static class ConfigCategories
         {
             if (!prop.CanRead || !prop.CanWrite) continue;
             if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-            if (prop.Name == VersionProperty) continue;
+            if (MetadataProperties.Contains(prop.Name)) continue;
             result.Add(prop.Name);
         }
         return result;

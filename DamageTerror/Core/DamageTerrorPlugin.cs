@@ -150,7 +150,14 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             cfg.Version = 5;
         }
 
-        if (cfg.Version != loadedVersion)
+        // Stamp the patch this config was last run on so a future migration can
+        // tell whether the stored data predates a game change.
+        var loadedGameVersion = cfg.LastGameVersion;
+        var gameVersion = ServiceManager.GameVersion;
+        if (gameVersion != null)
+            cfg.LastGameVersion = gameVersion;
+
+        if (cfg.Version != loadedVersion || cfg.LastGameVersion != loadedGameVersion)
             this.PluginInterface.SavePluginConfig(cfg);
 
         this.DataService = new DataService(pluginInterface, pluginLog, this.Config);

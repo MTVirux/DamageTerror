@@ -1,4 +1,4 @@
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 using Dalamud.Configuration;
 
 namespace DamageTerror;
@@ -22,6 +22,14 @@ public sealed class Configuration : IPluginConfiguration
     public Action? Save { get; set; }
 
     public int Version { get; set; } = 1;
+
+    /// <summary>
+    /// Game version this config was last loaded on, stamped every launch. Lets a
+    /// migration tell which patch the stored data predates - the schema
+    /// <see cref="Version"/> alone can't, since a game patch can invalidate data
+    /// without us changing the schema.
+    /// </summary>
+    public string? LastGameVersion { get; set; }
 
     public string WebSocketUrl { get; set; } = "ws://127.0.0.1:10501/ws";
     public bool PreferIpc { get; set; } = true;

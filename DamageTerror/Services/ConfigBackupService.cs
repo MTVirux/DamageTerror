@@ -199,9 +199,12 @@ public sealed class ConfigBackupService
                 {
                     target = JObject.Parse(File.ReadAllText(configFilePath));
                     // A partial import can't speak for settings it doesn't carry, so the
-                    // live version - and the migrations keyed off it - stay as they are.
+                    // stamps this install was migrated against stay as they are.
                     if (isPartial)
-                        source.Remove(ConfigCategories.VersionProperty);
+                    {
+                        foreach (var name in ConfigCategories.MetadataProperties)
+                            source.Remove(name);
+                    }
                 }
                 else
                 {
@@ -236,6 +239,8 @@ public sealed class ConfigBackupService
             var root = JObject.Parse(File.ReadAllText(path));
             var marker = root[ExportMetaKey] as JArray;
             var settingCount = root.Properties().Count(p => p.Name != ExportMetaKey);
+            var configVersion = (int?)root[nameof(Configuration.Version)];
+            var gameVersion = (string?)root[nameof(Configuration.LastGameVersion)];
 
             if (marker != null)
             {
@@ -243,7 +248,7 @@ public sealed class ConfigBackupService
                     .Select(t => Enum.TryParse<ConfigCategory>(t.ToString(), out var c) ? c : (ConfigCategory?)null)
                     .OfType<ConfigCategory>()
                     .ToList();
-                return new ImportContents(listed, IsPartial: true, settingCount);
+                return new ImportContents(listed, IsPartial: true, settingCount, configVersion, gameVersion);
             }
 
             var found = root.Properties()
@@ -251,12 +256,12 @@ public sealed class ConfigBackupService
                 .OfType<ConfigCategory>()
                 .Distinct()
                 .ToList();
-            return new ImportContents(found, IsPartial: false, settingCount);
+            return new ImportContents(found, IsPartial: false, settingCount, configVersion, gameVersion);
         }
         catch (Exception ex)
         {
             log.Warning($"[ConfigBackup] Failed to inspect {path}: {ex.Message}");
-            return new ImportContents([], IsPartial: false, 0);
+            return new ImportContents([], IsPartial: false, 0, null, null);
         }
     }
 
@@ -366,4 +371,9 @@ public enum RecoveryKind
 
 public sealed record RecoveryEntry(string FilePath, RecoveryKind Kind, DateTime Timestamp, long SizeBytes);
 
-public sealed record ImportContents(IReadOnlyList<ConfigCategory> Categories, bool IsPartial, int SettingCount);
+public sealed record ImportContents(
+    IReadOnlyList<ConfigCategory> Categories,
+    bool IsPartial,
+    int SettingCount,
+    int? ConfigVersion,
+    string? GameVersion);

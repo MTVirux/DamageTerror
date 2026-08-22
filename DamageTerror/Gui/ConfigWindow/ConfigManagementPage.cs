@@ -1,4 +1,4 @@
-namespace DamageTerror.Gui.ConfigWindow;
+﻿namespace DamageTerror.Gui.ConfigWindow;
 
 public sealed class ConfigManagementPage
 {
@@ -378,6 +378,9 @@ public sealed class ConfigManagementPage
             }
         }
 
+        if (contents != null)
+            DrawImportProvenance(contents);
+
         ImGui.Spacing();
         ImGui.TextColored(new Vector4(1f, 0.8f, 0.3f, 1f),
             "You'll need to reload Damage Terror for the imported config to take effect.");
@@ -407,6 +410,26 @@ public sealed class ConfigManagementPage
         }
 
         ImGui.EndPopup();
+    }
+
+    /// <summary>Where the file came from, so a config saved on an older patch is obvious before it's applied.</summary>
+    private static void DrawImportProvenance(ImportContents contents)
+    {
+        ImGui.Spacing();
+
+        if (contents.ConfigVersion is { } configVersion)
+            ImGui.TextDisabled($"Config version {configVersion}.");
+        else
+            ImGui.TextDisabled("No config version - written by an older Damage Terror.");
+
+        var current = ServiceManager.GameVersion;
+        if (contents.GameVersion == null)
+            ImGui.TextDisabled("No game version recorded.");
+        else if (current == null || contents.GameVersion == current)
+            ImGui.TextDisabled($"Last used on game version {contents.GameVersion}.");
+        else
+            ImGui.TextColored(new Vector4(1f, 0.8f, 0.3f, 1f),
+                $"Last used on game version {contents.GameVersion} - you're on {current}.");
     }
 
     private void ClearPendingImport()

@@ -1,4 +1,4 @@
-using Dalamud.Plugin;
+﻿using Dalamud.Plugin;
 
 namespace DamageTerror.Services;
 
@@ -10,6 +10,24 @@ public static class ServiceManager
     public static ITextureProvider TextureProvider { get; private set; } = null!;
     public static IPlayerState PlayerState { get; private set; } = null!;
     public static Configuration? Config { get; set; }
+
+    private static string? gameVersion;
+
+    /// <summary>Client version the game is running, e.g. "2025.06.10.0000.0000". Null if Lumina can't tell us.</summary>
+    public static string? GameVersion => gameVersion ??= ReadGameVersion();
+
+    private static string? ReadGameVersion()
+    {
+        try
+        {
+            return DataManager.GameData.Repositories.TryGetValue("ffxiv", out var repo) ? repo.Version : null;
+        }
+        catch (Exception ex)
+        {
+            PluginLog.Warning($"Failed to read the game version: {ex.Message}");
+            return null;
+        }
+    }
 
     public static void Initialize(
         IDalamudPluginInterface pluginInterface,
