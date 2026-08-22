@@ -132,7 +132,7 @@ public sealed class ConfigManagementPage
 
     private void DrawConfigTransferSection()
     {
-        if (!ImGui.CollapsingHeader("Import / Export##dtConfigIo"))
+        if (!ImGui.CollapsingHeader("Import / Export##dtConfigIo", ImGuiTreeNodeFlags.DefaultOpen))
             return;
 
         ImGui.TextWrapped("Export writes the ticked settings to a file. Import merges a file back in - only the settings it carries change, the rest are left as they are. The current config is backed up first, and you have to reload the plugin for an import to take effect.");
