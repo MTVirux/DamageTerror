@@ -31,12 +31,26 @@ namespace DamageTerror.Services;
 /// </summary>
 public sealed unsafe class PartyListDpsOverlay : IDisposable
 {
+    /// <summary>The rows the party and duty support / trust arrays fill between them.</summary>
     private const int MaxRows = 8;
+
+    /// <summary>
+    /// Every row the list can draw, which is the party rows plus the chocobo and the pet.
+    /// Those two are not party members - the addon keeps each in a struct of its own, below
+    /// the rows the party and trust arrays fill - so they get a slot each at the end rather
+    /// than an index into either array. Row state is kept per slot, so a row always reads
+    /// back what was captured for it whatever the list is showing.
+    /// </summary>
+    private const int RowSlots = MaxRows + 2;
+    private const int ChocoboRow = MaxRows;
+    private const int PetRow = MaxRows + 1;
 
     /// <summary>Private node id ranges, so we can never collide with the game or another plugin.</summary>
     private const uint BarNodeIdBase = 0x44540100;
     private const uint MetricNodeIdBase = 0x44540200;
-    private const uint HeaderMetricNodeIdBase = 0x44540280;
+    // Follows the rows' metrics rather than sitting on a fixed gap after them, so the id
+    // ranges stay apart however many rows or metrics a row carries.
+    private const uint HeaderMetricNodeIdBase = MetricNodeIdBase + (uint)(RowSlots * MetricSlots);
     private const uint OverlayRootNodeId = 0x44540300;
     private const uint BarRootNodeId = 0x44540301;
     private const uint BadgeNodeIdBase = 0x44540310;
@@ -145,10 +159,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// produced rounded ends, but that pointer belongs to the addon's ULD - leaving the
     /// party freed it underneath our live node and crashed the game.
     /// </remarks>
-    private readonly ImGuiImageNode?[] barNodes = new ImGuiImageNode?[MaxRows];
+    private readonly ImGuiImageNode?[] barNodes = new ImGuiImageNode?[RowSlots];
 
     /// <summary>The plate behind each row's slot number, drawn from the container behind the rows.</summary>
-    private readonly ImGuiImageNode?[] badgeNodes = new ImGuiImageNode?[MaxRows];
+    private readonly ImGuiImageNode?[] badgeNodes = new ImGuiImageNode?[RowSlots];
 
     /// <summary>
     /// One container of ours under the addon's root, holding every node we add. Nothing is
@@ -168,11 +182,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private ResNode? barRoot;
 
     private readonly string? barTexturePath = EnsureBarTexture();
-    private readonly bool[] barTextureApplied = new bool[MaxRows];
-    private readonly bool[] barOnBarRoot = new bool[MaxRows];
+    private readonly bool[] barTextureApplied = new bool[RowSlots];
+    private readonly bool[] barOnBarRoot = new bool[RowSlots];
 
     private readonly string? badgeTexturePath = EnsureBadgeTexture();
-    private readonly bool[] badgeTextureApplied = new bool[MaxRows];
+    private readonly bool[] badgeTextureApplied = new bool[RowSlots];
 
     /// <remarks>
     /// One wrap per row, never shared: the node takes ownership and disposes the wrap with
@@ -180,12 +194,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// texture the moment the party list was torn down.
     /// </remarks>
     private readonly Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[] pendingBarTexture
-        = new Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[MaxRows];
-    private readonly bool[] barTextureRequested = new bool[MaxRows];
+        = new Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[RowSlots];
+    private readonly bool[] barTextureRequested = new bool[RowSlots];
 
     private readonly Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[] pendingBadgeTexture
-        = new Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[MaxRows];
-    private readonly bool[] badgeTextureRequested = new bool[MaxRows];
+        = new Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap?[RowSlots];
+    private readonly bool[] badgeTextureRequested = new bool[RowSlots];
 
     /// <summary>
     /// Our own bar artwork: a white body so the job colour tints it exactly, a darker
@@ -333,8 +347,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             }
         });
     }
-    private readonly TextNode?[,] metricNodes = new TextNode?[MaxRows, MetricSlots];
-    private readonly string[,] lastMetricText = new string[MaxRows, MetricSlots];
+    private readonly TextNode?[,] metricNodes = new TextNode?[RowSlots, MetricSlots];
+    private readonly string[,] lastMetricText = new string[RowSlots, MetricSlots];
 
     private readonly TextNode?[] headerMetricNodes = new TextNode?[MetricSlots];
     private readonly string[] lastHeaderMetricText = new string[MetricSlots];
@@ -343,18 +357,18 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// stand-in text has anything to stand in for.</summary>
     private bool headerMetricsShown;
 
-    private readonly float[] lastBarWidth = new float[MaxRows];
-    private readonly float[] lastBarHeight = new float[MaxRows];
-    private readonly Vector2[] lastBarPos = new Vector2[MaxRows];
-    private readonly float[,] originalShiftY = new float[MaxRows, ShiftSlots];
-    private readonly float[,] appliedShiftY = new float[MaxRows, ShiftSlots];
-    private readonly float[,] originalShiftX = new float[MaxRows, RowPartSlots];
-    private readonly float[,] appliedShiftX = new float[MaxRows, RowPartSlots];
-    private readonly float[,] originalPartScale = new float[MaxRows, RowPartSlots];
-    private readonly float[,] appliedPartScale = new float[MaxRows, RowPartSlots];
-    private readonly float[,] originalPartOriginX = new float[MaxRows, RowPartSlots];
-    private readonly float[,] originalPartOriginY = new float[MaxRows, RowPartSlots];
-    private readonly bool[,] shiftApplied = new bool[MaxRows, ShiftSlots];
+    private readonly float[] lastBarWidth = new float[RowSlots];
+    private readonly float[] lastBarHeight = new float[RowSlots];
+    private readonly Vector2[] lastBarPos = new Vector2[RowSlots];
+    private readonly float[,] originalShiftY = new float[RowSlots, ShiftSlots];
+    private readonly float[,] appliedShiftY = new float[RowSlots, ShiftSlots];
+    private readonly float[,] originalShiftX = new float[RowSlots, RowPartSlots];
+    private readonly float[,] appliedShiftX = new float[RowSlots, RowPartSlots];
+    private readonly float[,] originalPartScale = new float[RowSlots, RowPartSlots];
+    private readonly float[,] appliedPartScale = new float[RowSlots, RowPartSlots];
+    private readonly float[,] originalPartOriginX = new float[RowSlots, RowPartSlots];
+    private readonly float[,] originalPartOriginY = new float[RowSlots, RowPartSlots];
+    private readonly bool[,] shiftApplied = new bool[RowSlots, ShiftSlots];
     private readonly float[] originalSpacingY = new float[SpacingSlots];
     private readonly float[] appliedSpacingY = new float[SpacingSlots];
     private readonly bool[] spacingApplied = new bool[SpacingSlots];
@@ -362,99 +376,99 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private ushort originalBackdropHeight;
     private ushort appliedBackdropHeight;
     private bool backdropHeightApplied;
-    private readonly NodeTintState[,,] gaugeArtTint = new NodeTintState[MaxRows, RowPartSlots, GaugeArtSlots];
-    private readonly NodeAlphaState[,] gaugeOutlineAlpha = new NodeAlphaState[MaxRows, RowPartSlots];
-    private readonly ShieldNodeState[,,] shieldState = new ShieldNodeState[MaxRows, ShieldGroups, ShieldNodeSlots];
-    private readonly float[] originalCastNameX = new float[MaxRows];
-    private readonly float[] originalCastNameY = new float[MaxRows];
-    private readonly ushort[] originalCastNameHeight = new ushort[MaxRows];
-    private readonly byte[] originalCastNameFont = new byte[MaxRows];
-    private readonly float[] appliedCastNameX = new float[MaxRows];
-    private readonly float[] appliedCastNameY = new float[MaxRows];
-    private readonly ushort[] appliedCastNameHeight = new ushort[MaxRows];
-    private readonly byte[] appliedCastNameFont = new byte[MaxRows];
-    private readonly bool[] castNameApplied = new bool[MaxRows];
-    private readonly float[,] originalCastBarX = new float[MaxRows, CastBarSlots];
-    private readonly float[,] appliedCastBarX = new float[MaxRows, CastBarSlots];
-    private readonly float[,] originalCastBarScaleX = new float[MaxRows, CastBarSlots];
-    private readonly float[,] appliedCastBarScaleX = new float[MaxRows, CastBarSlots];
-    private readonly float[,] originalCastBarOriginX = new float[MaxRows, CastBarSlots];
-    private readonly float[,] originalCastBarScaleY = new float[MaxRows, CastBarSlots];
-    private readonly float[,] appliedCastBarScaleY = new float[MaxRows, CastBarSlots];
-    private readonly float[,] originalCastBarOriginY = new float[MaxRows, CastBarSlots];
-    private readonly bool[,] castBarApplied = new bool[MaxRows, CastBarSlots];
-    private readonly NodeTintState[,] castBarTint = new NodeTintState[MaxRows, CastBarSlots];
-    private readonly TextColorState[] castNameColor = new TextColorState[MaxRows];
-    private readonly float[,] originalStatusX = new float[MaxRows, StatusIconSlots];
-    private readonly float[] statusLineY = new float[MaxRows];
-    private readonly bool[] statusLineCaptured = new bool[MaxRows];
-    private readonly float[,] originalStatusScale = new float[MaxRows, StatusIconSlots];
-    private readonly float[,] originalStatusOriginX = new float[MaxRows, StatusIconSlots];
-    private readonly float[,] originalStatusOriginY = new float[MaxRows, StatusIconSlots];
-    private readonly float[,] appliedStatusX = new float[MaxRows, StatusIconSlots];
-    private readonly float[,] appliedStatusY = new float[MaxRows, StatusIconSlots];
-    private readonly float[,] appliedStatusScale = new float[MaxRows, StatusIconSlots];
-    private readonly bool[,] statusApplied = new bool[MaxRows, StatusIconSlots];
-    private readonly bool[,] statusCaptured = new bool[MaxRows, StatusIconSlots];
-    private readonly NodeTintState[,] statusTint = new NodeTintState[MaxRows, StatusIconSlots];
-    private readonly TextColorState[,] timerColor = new TextColorState[MaxRows, StatusIconSlots];
-    private readonly float[,] originalGlowX = new float[MaxRows, GlowGroups];
-    private readonly float[,] originalGlowY = new float[MaxRows, GlowGroups];
-    private readonly float[,] originalGlowScale = new float[MaxRows, GlowGroups];
-    private readonly float[,] originalGlowOriginX = new float[MaxRows, GlowGroups];
-    private readonly float[,] originalGlowOriginY = new float[MaxRows, GlowGroups];
-    private readonly byte[,,] originalGlowMultiply = new byte[MaxRows, GlowGroups, 3];
-    private readonly AtkTimelineMask[,] originalGlowMask = new AtkTimelineMask[MaxRows, GlowGroups];
-    private readonly float[,] appliedGlowX = new float[MaxRows, GlowGroups];
-    private readonly float[,] appliedGlowY = new float[MaxRows, GlowGroups];
-    private readonly float[,] appliedGlowScale = new float[MaxRows, GlowGroups];
-    private readonly bool[,] glowApplied = new bool[MaxRows, GlowGroups];
+    private readonly NodeTintState[,,] gaugeArtTint = new NodeTintState[RowSlots, RowPartSlots, GaugeArtSlots];
+    private readonly NodeAlphaState[,] gaugeOutlineAlpha = new NodeAlphaState[RowSlots, RowPartSlots];
+    private readonly ShieldNodeState[,,] shieldState = new ShieldNodeState[RowSlots, ShieldGroups, ShieldNodeSlots];
+    private readonly float[] originalCastNameX = new float[RowSlots];
+    private readonly float[] originalCastNameY = new float[RowSlots];
+    private readonly ushort[] originalCastNameHeight = new ushort[RowSlots];
+    private readonly byte[] originalCastNameFont = new byte[RowSlots];
+    private readonly float[] appliedCastNameX = new float[RowSlots];
+    private readonly float[] appliedCastNameY = new float[RowSlots];
+    private readonly ushort[] appliedCastNameHeight = new ushort[RowSlots];
+    private readonly byte[] appliedCastNameFont = new byte[RowSlots];
+    private readonly bool[] castNameApplied = new bool[RowSlots];
+    private readonly float[,] originalCastBarX = new float[RowSlots, CastBarSlots];
+    private readonly float[,] appliedCastBarX = new float[RowSlots, CastBarSlots];
+    private readonly float[,] originalCastBarScaleX = new float[RowSlots, CastBarSlots];
+    private readonly float[,] appliedCastBarScaleX = new float[RowSlots, CastBarSlots];
+    private readonly float[,] originalCastBarOriginX = new float[RowSlots, CastBarSlots];
+    private readonly float[,] originalCastBarScaleY = new float[RowSlots, CastBarSlots];
+    private readonly float[,] appliedCastBarScaleY = new float[RowSlots, CastBarSlots];
+    private readonly float[,] originalCastBarOriginY = new float[RowSlots, CastBarSlots];
+    private readonly bool[,] castBarApplied = new bool[RowSlots, CastBarSlots];
+    private readonly NodeTintState[,] castBarTint = new NodeTintState[RowSlots, CastBarSlots];
+    private readonly TextColorState[] castNameColor = new TextColorState[RowSlots];
+    private readonly float[,] originalStatusX = new float[RowSlots, StatusIconSlots];
+    private readonly float[] statusLineY = new float[RowSlots];
+    private readonly bool[] statusLineCaptured = new bool[RowSlots];
+    private readonly float[,] originalStatusScale = new float[RowSlots, StatusIconSlots];
+    private readonly float[,] originalStatusOriginX = new float[RowSlots, StatusIconSlots];
+    private readonly float[,] originalStatusOriginY = new float[RowSlots, StatusIconSlots];
+    private readonly float[,] appliedStatusX = new float[RowSlots, StatusIconSlots];
+    private readonly float[,] appliedStatusY = new float[RowSlots, StatusIconSlots];
+    private readonly float[,] appliedStatusScale = new float[RowSlots, StatusIconSlots];
+    private readonly bool[,] statusApplied = new bool[RowSlots, StatusIconSlots];
+    private readonly bool[,] statusCaptured = new bool[RowSlots, StatusIconSlots];
+    private readonly NodeTintState[,] statusTint = new NodeTintState[RowSlots, StatusIconSlots];
+    private readonly TextColorState[,] timerColor = new TextColorState[RowSlots, StatusIconSlots];
+    private readonly float[,] originalGlowX = new float[RowSlots, GlowGroups];
+    private readonly float[,] originalGlowY = new float[RowSlots, GlowGroups];
+    private readonly float[,] originalGlowScale = new float[RowSlots, GlowGroups];
+    private readonly float[,] originalGlowOriginX = new float[RowSlots, GlowGroups];
+    private readonly float[,] originalGlowOriginY = new float[RowSlots, GlowGroups];
+    private readonly byte[,,] originalGlowMultiply = new byte[RowSlots, GlowGroups, 3];
+    private readonly AtkTimelineMask[,] originalGlowMask = new AtkTimelineMask[RowSlots, GlowGroups];
+    private readonly float[,] appliedGlowX = new float[RowSlots, GlowGroups];
+    private readonly float[,] appliedGlowY = new float[RowSlots, GlowGroups];
+    private readonly float[,] appliedGlowScale = new float[RowSlots, GlowGroups];
+    private readonly bool[,] glowApplied = new bool[RowSlots, GlowGroups];
 
-    private readonly byte[,] originalRowGlowMultiply = new byte[MaxRows, 3];
-    private readonly bool[] rowGlowTintApplied = new bool[MaxRows];
-    private readonly bool[] originalIconGlowOnTop = new bool[MaxRows];
-    private readonly bool[] iconGlowOnTopApplied = new bool[MaxRows];
-    private readonly byte[,] originalTimerFont = new byte[MaxRows, StatusIconSlots];
-    private readonly byte[,] appliedTimerFont = new byte[MaxRows, StatusIconSlots];
-    private readonly float[,] originalTimerX = new float[MaxRows, StatusIconSlots];
-    private readonly float[,] originalTimerY = new float[MaxRows, StatusIconSlots];
-    private readonly float[,] appliedTimerX = new float[MaxRows, StatusIconSlots];
-    private readonly float[,] appliedTimerY = new float[MaxRows, StatusIconSlots];
-    private readonly bool[,] timerApplied = new bool[MaxRows, StatusIconSlots];
-    private readonly byte[] originalNameFont = new byte[MaxRows];
-    private readonly byte[] appliedNameFont = new byte[MaxRows];
-    private readonly bool[] nameFontApplied = new bool[MaxRows];
-    private readonly TextColorState[] nameColor = new TextColorState[MaxRows];
-    private readonly byte[] originalIndexFont = new byte[MaxRows];
-    private readonly byte[] appliedIndexFont = new byte[MaxRows];
-    private readonly float[] originalIndexX = new float[MaxRows];
-    private readonly float[] originalIndexY = new float[MaxRows];
-    private readonly float[] appliedIndexX = new float[MaxRows];
-    private readonly float[] appliedIndexY = new float[MaxRows];
-    private readonly bool[] indexApplied = new bool[MaxRows];
-    private readonly TextColorState[] indexColor = new TextColorState[MaxRows];
-    private readonly byte[] originalIndexFontType = new byte[MaxRows];
-    private readonly byte[] appliedIndexFontType = new byte[MaxRows];
-    private readonly bool[] indexFontTypeApplied = new bool[MaxRows];
-    private readonly NodeAlphaState[] indexAlpha = new NodeAlphaState[MaxRows];
-    private readonly string[] originalNameText = new string[MaxRows];
-    private readonly string[] appliedNameText = new string[MaxRows];
-    private readonly string[] appliedNameExtra = new string[MaxRows];
-    private readonly bool[] nameTextApplied = new bool[MaxRows];
-    private readonly byte[,,] originalGaugeFont = new byte[MaxRows, GaugeCount, GaugeTextSlots];
-    private readonly byte[,,] appliedGaugeFont = new byte[MaxRows, GaugeCount, GaugeTextSlots];
-    private readonly float[,,] originalGaugeX = new float[MaxRows, GaugeCount, GaugeTextSlots];
-    private readonly float[,,] appliedGaugeX = new float[MaxRows, GaugeCount, GaugeTextSlots];
-    private readonly float[,,] originalGaugeY = new float[MaxRows, GaugeCount, GaugeTextSlots];
-    private readonly float[,,] appliedGaugeY = new float[MaxRows, GaugeCount, GaugeTextSlots];
-    private readonly bool[,,] gaugeTextApplied = new bool[MaxRows, GaugeCount, GaugeTextSlots];
-    private readonly TextColorState[,,] gaugeTextColor = new TextColorState[MaxRows, GaugeCount, GaugeTextSlots];
-    private readonly float[] originalHpArrowX = new float[MaxRows];
-    private readonly float[] originalHpArrowY = new float[MaxRows];
-    private readonly float[] appliedHpArrowX = new float[MaxRows];
-    private readonly float[] appliedHpArrowY = new float[MaxRows];
-    private readonly bool[] hpArrowApplied = new bool[MaxRows];
-    private readonly Vector4[] lastBarColor = new Vector4[MaxRows];
+    private readonly byte[,] originalRowGlowMultiply = new byte[RowSlots, 3];
+    private readonly bool[] rowGlowTintApplied = new bool[RowSlots];
+    private readonly bool[] originalIconGlowOnTop = new bool[RowSlots];
+    private readonly bool[] iconGlowOnTopApplied = new bool[RowSlots];
+    private readonly byte[,] originalTimerFont = new byte[RowSlots, StatusIconSlots];
+    private readonly byte[,] appliedTimerFont = new byte[RowSlots, StatusIconSlots];
+    private readonly float[,] originalTimerX = new float[RowSlots, StatusIconSlots];
+    private readonly float[,] originalTimerY = new float[RowSlots, StatusIconSlots];
+    private readonly float[,] appliedTimerX = new float[RowSlots, StatusIconSlots];
+    private readonly float[,] appliedTimerY = new float[RowSlots, StatusIconSlots];
+    private readonly bool[,] timerApplied = new bool[RowSlots, StatusIconSlots];
+    private readonly byte[] originalNameFont = new byte[RowSlots];
+    private readonly byte[] appliedNameFont = new byte[RowSlots];
+    private readonly bool[] nameFontApplied = new bool[RowSlots];
+    private readonly TextColorState[] nameColor = new TextColorState[RowSlots];
+    private readonly byte[] originalIndexFont = new byte[RowSlots];
+    private readonly byte[] appliedIndexFont = new byte[RowSlots];
+    private readonly float[] originalIndexX = new float[RowSlots];
+    private readonly float[] originalIndexY = new float[RowSlots];
+    private readonly float[] appliedIndexX = new float[RowSlots];
+    private readonly float[] appliedIndexY = new float[RowSlots];
+    private readonly bool[] indexApplied = new bool[RowSlots];
+    private readonly TextColorState[] indexColor = new TextColorState[RowSlots];
+    private readonly byte[] originalIndexFontType = new byte[RowSlots];
+    private readonly byte[] appliedIndexFontType = new byte[RowSlots];
+    private readonly bool[] indexFontTypeApplied = new bool[RowSlots];
+    private readonly NodeAlphaState[] indexAlpha = new NodeAlphaState[RowSlots];
+    private readonly string[] originalNameText = new string[RowSlots];
+    private readonly string[] appliedNameText = new string[RowSlots];
+    private readonly string[] appliedNameExtra = new string[RowSlots];
+    private readonly bool[] nameTextApplied = new bool[RowSlots];
+    private readonly byte[,,] originalGaugeFont = new byte[RowSlots, GaugeCount, GaugeTextSlots];
+    private readonly byte[,,] appliedGaugeFont = new byte[RowSlots, GaugeCount, GaugeTextSlots];
+    private readonly float[,,] originalGaugeX = new float[RowSlots, GaugeCount, GaugeTextSlots];
+    private readonly float[,,] appliedGaugeX = new float[RowSlots, GaugeCount, GaugeTextSlots];
+    private readonly float[,,] originalGaugeY = new float[RowSlots, GaugeCount, GaugeTextSlots];
+    private readonly float[,,] appliedGaugeY = new float[RowSlots, GaugeCount, GaugeTextSlots];
+    private readonly bool[,,] gaugeTextApplied = new bool[RowSlots, GaugeCount, GaugeTextSlots];
+    private readonly TextColorState[,,] gaugeTextColor = new TextColorState[RowSlots, GaugeCount, GaugeTextSlots];
+    private readonly float[] originalHpArrowX = new float[RowSlots];
+    private readonly float[] originalHpArrowY = new float[RowSlots];
+    private readonly float[] appliedHpArrowX = new float[RowSlots];
+    private readonly float[] appliedHpArrowY = new float[RowSlots];
+    private readonly bool[] hpArrowApplied = new bool[RowSlots];
+    private readonly Vector4[] lastBarColor = new Vector4[RowSlots];
 
     /// <summary>
     /// Sentinel for "nothing has been written to this node's colour yet". A real colour can
@@ -465,7 +479,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private static readonly Vector4 NoColor = new(float.NaN);
 
     /// <summary>Last line <see cref="LogBarState"/> emitted per row, so it only logs on change.</summary>
-    private readonly string[] lastBarTrace = new string[MaxRows];
+    private readonly string[] lastBarTrace = new string[RowSlots];
     private string lastGateTrace = string.Empty;
     private readonly Dictionary<string, CombatantEntry> statsByName = new(StringComparer.OrdinalIgnoreCase);
 
@@ -519,7 +533,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         ClearHeaderMetricText();
 
-        for (var i = 0; i < MaxRows; i++)
+        for (var i = 0; i < RowSlots; i++)
         {
             ClearMetricText(i);
             lastBarWidth[i] = -1f;
@@ -616,7 +630,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         controller.Dispose();
 
         // Anything still waiting to be handed over was never adopted by a node, so it is ours.
-        for (var i = 0; i < MaxRows; i++)
+        for (var i = 0; i < RowSlots; i++)
         {
             Interlocked.Exchange(ref pendingBarTexture[i], null)?.Dispose();
             Interlocked.Exchange(ref pendingBadgeTexture[i], null)?.Dispose();
@@ -828,7 +842,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         // Anything already carrying our ids is a leftover from a previous instance.
         SweepOrphanedNodes(root);
-        for (var i = 0; i < MaxRows; i++)
+        for (var i = 0; i < RowSlots; i++)
         {
             SweepOrphanedNodes(addon->PartyMembers[i].TargetGlowContainer);
             SweepOrphanedNodes(addon->TrustMembers[i].TargetGlowContainer);
@@ -850,7 +864,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             overlayRoot.AttachNode(root, NodePosition.AsLastChild);
         }
 
-        for (var i = 0; i < MaxRows; i++)
+        for (var i = 0; i < RowSlots; i++)
         {
             if (GetRowNode(addon, i) == null)
                 continue;
@@ -936,7 +950,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         RestoreRowContentShift(addon);
         RestoreRowSpacing(addon);
 
-        for (var i = 0; i < MaxRows; i++)
+        for (var i = 0; i < RowSlots; i++)
         {
             barNodes[i]?.Dispose();
             barNodes[i] = null;
@@ -1016,7 +1030,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         SyncOverlayRoot(addon);
 
         if (overlayRoot != null)
-            for (var i = 0; i < MaxRows; i++)
+            for (var i = 0; i < RowSlots; i++)
                 if (GetRowNode(addon, i) != null)
                     EnsureBarNode(addon, i);
 
@@ -1062,7 +1076,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 $"parsedNames={statsByName.Count} maxDps={maxDps:F0}");
         }
 
-        for (var i = 0; i < MaxRows; i++)
+        for (var i = 0; i < RowSlots; i++)
         {
             CombatantEntry? stats = null;
 
@@ -1436,7 +1450,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (addon == null)
             return;
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             ApplyGaugeOutline(addon, row, HpBarSlot);
             ApplyGaugeOutline(addon, row, MpBarSlot);
@@ -1489,7 +1503,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void RestoreGaugeOutlines(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             RestoreGaugeOutline(addon, row, HpBarSlot);
             RestoreGaugeOutline(addon, row, MpBarSlot);
@@ -1572,7 +1586,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (addon == null)
             return;
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
             for (var group = 0; group < ShieldGroups; group++)
                 ApplyShieldGroup(addon, row, group, ShieldPart(group));
     }
@@ -1665,7 +1679,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void RestoreShieldStyles(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
             for (var group = 0; group < ShieldGroups; group++)
                 RestoreShieldGroup(addon, row, group);
     }
@@ -1959,7 +1973,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void PositionNodes(AddonPartyList* addon)
     {
-        for (var i = 0; i < MaxRows; i++)
+        for (var i = 0; i < RowSlots; i++)
         {
             if (GetRowNode(addon, i) == null)
                 continue;
@@ -2065,7 +2079,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (addon == null)
             return;
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             for (var slot = 0; slot < ShiftSlots; slot++)
             {
@@ -2156,7 +2170,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             return;
         }
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var member = RowMember(addon, row);
             if (member == null || member->CastingActionName == null || member->CastingProgressBarBackground == null)
@@ -2228,7 +2242,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             return;
         }
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var member = RowMember(addon, row);
             var background = member == null ? null : member->CastingProgressBarBackground;
@@ -2289,7 +2303,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void RestoreCastBarLayout(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             for (var slot = 0; slot < CastBarSlots; slot++)
             {
@@ -2363,7 +2377,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (!adjustLayout)
             RestorePartyIndexLayout(addon);
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var member = RowMember(addon, row);
             var index = member == null ? null : member->GroupSlotIndicator;
@@ -2445,7 +2459,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void RestorePartyIndexLayout(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             if (!indexApplied[row])
                 continue;
@@ -2466,7 +2480,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         RestorePartyIndexLayout(addon);
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var member = RowMember(addon, row);
             var index = member == null ? null : member->GroupSlotIndicator;
@@ -2523,13 +2537,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         if (addon == null || !style.Enabled || Settings.HidePartyIndex)
         {
-            for (var row = 0; row < MaxRows; row++)
+            for (var row = 0; row < RowSlots; row++)
                 HidePartyIndexBadge(row);
 
             return;
         }
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var member = RowMember(addon, row);
             var index = member == null ? null : member->GroupSlotIndicator;
@@ -2589,7 +2603,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (addon == null)
             return;
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var member = RowMember(addon, row);
             var name = member == null ? null : member->Name;
@@ -2629,7 +2643,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (addon == null)
             return;
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var member = RowMember(addon, row);
             var name = member == null ? null : member->Name;
@@ -2668,13 +2682,13 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// </summary>
     public void ResyncNameText()
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
             nameTextApplied[row] = false;
     }
 
     private void RestoreNameText(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             if (!nameTextApplied[row])
                 continue;
@@ -2764,7 +2778,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void RestoreNameStyle(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var member = RowMember(addon, row);
             var name = member == null ? null : member->Name;
@@ -2829,7 +2843,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // Refilled per gauge; hoisted so the allocation doesn't sit inside the loops.
         var texts = stackalloc AtkTextNode*[GaugeTextSlots];
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             for (var gaugeIndex = 0; gaugeIndex < GaugeCount; gaugeIndex++)
             {
@@ -3008,7 +3022,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         var texts = stackalloc AtkTextNode*[GaugeTextSlots];
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
             for (var gaugeIndex = 0; gaugeIndex < GaugeCount; gaugeIndex++)
                 RestoreGaugeNumbers(addon, row, gaugeIndex, texts);
     }
@@ -3045,7 +3059,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void RestoreCastNameLayout(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var member = RowMember(addon, row);
             var text = member == null ? null : member->CastingActionName;
@@ -3290,7 +3304,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void RestoreRowContentShift(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
             for (var slot = 0; slot < ShiftSlots; slot++)
                 RestoreShiftSlot(addon, row, slot);
     }
@@ -3431,7 +3445,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var scale = Math.Max(0.1f, Settings.StatusScale);
         Span<int> slotSource = stackalloc int[StatusIconSlots];
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var anchorX = float.MaxValue;
 
@@ -3881,7 +3895,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             return;
         }
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             // A selected row can keep its own look while the mouse is over it, since the
             // shared node can only show one of the two.
@@ -4050,7 +4064,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void RestoreSelectionGlowLayout(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             for (var slot = 0; slot < GlowGroups; slot++)
             {
@@ -4134,7 +4148,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         var texts = stackalloc AtkTextNode*[1];
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             for (var i = 0; i < StatusIconSlots; i++)
             {
@@ -4183,7 +4197,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     {
         var texts = stackalloc AtkTextNode*[1];
 
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             for (var i = 0; i < StatusIconSlots; i++)
             {
@@ -4210,7 +4224,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
     private void RestoreStatusIconLayout(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             for (var i = 0; i < StatusIconSlots; i++)
             {
@@ -4269,7 +4283,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// </summary>
     private void SampleNameStyle(AddonPartyList* addon)
     {
-        for (var row = 0; row < MaxRows; row++)
+        for (var row = 0; row < RowSlots; row++)
         {
             var member = RowMember(addon, row);
             var name = member == null ? null : member->Name;
@@ -4295,12 +4309,20 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// The member data behind a row. Duty support and trust NPCs are not party members -
     /// the addon draws them from a second array of its own, below the real party rows - so
     /// a row past the party's count resolves there and a row index always means the same
-    /// row on screen whatever the content is.
+    /// row on screen whatever the content is. The chocobo and the pet sit below all of
+    /// those in structs of their own, on the two slots the row space keeps for them, so
+    /// every pass that styles a row reaches them the same way it reaches a party member.
     /// </summary>
     private static AddonPartyList.PartyListMemberStruct* RowMember(AddonPartyList* addon, int row)
     {
-        if (addon == null || row < 0 || row >= MaxRows)
+        if (addon == null || row < 0 || row >= RowSlots)
             return null;
+
+        if (row == ChocoboRow)
+            return &addon->Chocobo;
+
+        if (row == PetRow)
+            return &addon->Pet;
 
         var trust = row - Math.Clamp(addon->MemberCount, 0, MaxRows);
         if (trust >= 0 && trust < addon->TrustCount)
