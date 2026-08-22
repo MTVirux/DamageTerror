@@ -415,6 +415,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private byte appliedPetTimerFont;
     private bool petTimerApplied;
     private TextColorState petTimerColor;
+    private NodeAlphaState petTimerIconAlpha;
     private readonly float[,] originalStatusX = new float[RowSlots, StatusIconSlots];
     private readonly float[] statusLineY = new float[RowSlots];
     private readonly bool[] statusLineCaptured = new bool[RowSlots];
@@ -2290,6 +2291,18 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         ApplyTextColor(text, Settings.PetTimerUseCustomColor, Settings.PetTimerColor, ref petTimerColor);
 
+        var icon = PetTimerIconNode(addon);
+        if (icon != null)
+        {
+            // Faded rather than unflagged, for the same reason the slot number is: the game
+            // owns this node's visibility as companions come and go, and one it has just
+            // shown would draw the clock for a frame.
+            if (Settings.HidePetTimerIcon)
+                ApplyNodeAlpha(icon, 0f, ref petTimerIconAlpha);
+            else
+                RestoreNodeAlpha(icon, ref petTimerIconAlpha);
+        }
+
         appliedPetTimerX = targetX;
         appliedPetTimerY = targetY;
         appliedPetTimerFont = font;
@@ -3165,6 +3178,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var text = addon == null ? null : addon->MpBarSpecialTextNode;
 
         RestoreTextColor(text, ref petTimerColor);
+        RestoreNodeAlpha(PetTimerIconNode(addon), ref petTimerIconAlpha);
 
         if (!petTimerApplied)
             return;
@@ -3175,6 +3189,24 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             group->SetPositionFloat(originalPetTimerX, originalPetTimerY);
         if (text != null)
             text->FontSize = originalPetTimerFont;
+    }
+
+    /// <summary>
+    /// The clock drawn beside the companion timer. It is the one image the timer's container
+    /// holds, so it is found by walking rather than by node id - nothing else in there is an
+    /// image, and an id would only survive until the game's own layout changed.
+    /// </summary>
+    private static AtkResNode* PetTimerIconNode(AddonPartyList* addon)
+    {
+        var group = addon == null ? null : addon->MpBarSpecialResNode;
+        if (group == null)
+            return null;
+
+        for (var child = group->ChildNode; child != null; child = child->PrevSiblingNode)
+            if (child->Type == NodeType.Image)
+                return child;
+
+        return null;
     }
 
     /// <summary>

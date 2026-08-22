@@ -696,6 +696,7 @@ public sealed class PartyListOverlaySettings
     public float PetTimerOffsetY { get; set; } = 0f;
     public int PetTimerFontDelta { get; set; } = 0;
     public bool PetTimerUseCustomColor { get; set; } = false;
+    public bool HidePetTimerIcon { get; set; } = false;
     public Vector4 PetTimerColor { get; set; } = new(1f, 1f, 1f, 1f);
 
     /// <summary>

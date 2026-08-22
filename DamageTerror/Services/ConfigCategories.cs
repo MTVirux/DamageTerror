@@ -329,6 +329,7 @@ public static class ConfigCategories
                 "PartyList.PetTimerOffsetY",
                 "PartyList.PetTimerFontDelta",
                 "PartyList.PetTimerUseCustomColor",
+                "PartyList.HidePetTimerIcon",
                 "PartyList.PetTimerColor",
             ]),
 

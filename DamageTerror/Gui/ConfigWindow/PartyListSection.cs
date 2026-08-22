@@ -868,6 +868,10 @@ internal static class PartyListSection
         ImGui.Indent();
         ImGui.PushID("plPetTimer");
 
+        changed |= ConfigHelpers.CheckboxProp("Hide clock icon##plHidePetTimerIcon",
+            settings.HidePetTimerIcon, v => settings.HidePetTimerIcon = v);
+        ConfigHelpers.HelpMarker("Leaves the time itself drawn.");
+
         if (Section("Position"))
         {
             changed |= Slider("Horizontal offset##plPetTimerX", settings.PetTimerOffsetX, -40f, 40f,
