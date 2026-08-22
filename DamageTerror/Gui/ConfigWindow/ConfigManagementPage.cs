@@ -195,7 +195,8 @@ public sealed class ConfigManagementPage
 
     private void DrawExportCategoryPicker()
     {
-        if (!ImGui.TreeNodeEx($"Settings to export ({exportCategories.Count}/{ConfigCategories.All.Count})##dtExportPicker"))
+        if (!ImGui.TreeNodeEx($"Settings to export ({exportCategories.Count}/{ConfigCategories.All.Count})##dtExportPicker",
+            ImGuiTreeNodeFlags.DefaultOpen))
             return;
 
         if (ImGui.SmallButton("All##dtExportAll"))
