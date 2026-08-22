@@ -1,4 +1,4 @@
-using Dalamud.Interface.Windowing;
+﻿using Dalamud.Interface.Windowing;
 
 namespace DamageTerror.Gui.ConfigWindow;
 
@@ -9,6 +9,7 @@ public sealed class ConfigWindow : Window, IDisposable
     private readonly AppearanceTab appearanceTab;
     private readonly EncounterHistoryTab historyTab;
     private readonly SampleDataPage sampleDataPage;
+    private readonly ConfigManagementPage configManagementPage;
 
     private ConfigPage selectedPage = ConfigPage.General;
 
@@ -33,6 +34,7 @@ public sealed class ConfigWindow : Window, IDisposable
         Formatting,
         History,
         SampleData,
+        ConfigManagement,
 #if DEBUG
         Debug,
 #endif
@@ -59,6 +61,7 @@ public sealed class ConfigWindow : Window, IDisposable
         (ConfigPage.Font,         "Fonts",                  "Appearance",   FontAwesomeIcon.Font),
         (ConfigPage.History,      "History",                null,           FontAwesomeIcon.History),
         (ConfigPage.SampleData,  "Sample Data",            null,           FontAwesomeIcon.Flask),
+        (ConfigPage.ConfigManagement, "Config Management",  null,           FontAwesomeIcon.Wrench),
 #if DEBUG
         (ConfigPage.Debug,       "Debug",                  null,           FontAwesomeIcon.Bug),
 #endif
@@ -72,6 +75,7 @@ public sealed class ConfigWindow : Window, IDisposable
         this.appearanceTab = new AppearanceTab(presetManager);
         this.historyTab = new EncounterHistoryTab(plugin);
         this.sampleDataPage = new SampleDataPage(plugin);
+        this.configManagementPage = new ConfigManagementPage(plugin);
         this.SizeConstraints = new WindowSizeConstraints()
         {
             MinimumSize = new Vector2(620, 480),
@@ -292,6 +296,10 @@ public sealed class ConfigWindow : Window, IDisposable
 
             case ConfigPage.SampleData:
                 sampleDataPage.Draw();
+                break;
+
+            case ConfigPage.ConfigManagement:
+                configManagementPage.Draw();
                 break;
 
 #if DEBUG
