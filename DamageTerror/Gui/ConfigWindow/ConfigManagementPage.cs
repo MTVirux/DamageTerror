@@ -141,9 +141,9 @@ public sealed class ConfigManagementPage
             var defaultName = $"DamageTerror-config-{DateTime.Now:yyyyMMdd-HHmmss}";
             AppearanceTab.FileDialogManager.SaveFileDialog(
                 "Export Damage Terror Config",
-                "Configuration{.json}",
+                "Damage Terror Config{.dtcnf}",
                 defaultName,
-                ".json",
+                ".dtcnf",
                 (ok, path) =>
                 {
                     if (!ok || string.IsNullOrEmpty(path))
@@ -164,7 +164,7 @@ public sealed class ConfigManagementPage
         {
             AppearanceTab.FileDialogManager.OpenFileDialog(
                 "Import Damage Terror Config",
-                "Configuration{.json}",
+                "Damage Terror Config{.dtcnf,.json}",
                 (ok, path) =>
                 {
                     if (!ok || string.IsNullOrEmpty(path))
