@@ -35,15 +35,22 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private const int MaxRows = 8;
 
     /// <summary>
-    /// Every row the list can draw, which is the party rows plus the chocobo and the pet.
-    /// Those two are not party members - the addon keeps each in a struct of its own, below
+    /// Every row the list can draw, which is the party rows plus the three companion rows.
+    /// Companions are not party members - the addon keeps each in a struct of its own, below
     /// the rows the party and trust arrays fill - so they get a slot each at the end rather
     /// than an index into either array. Row state is kept per slot, so a row always reads
     /// back what was captured for it whatever the list is showing.
+    /// <para>
+    /// There are three of them because the addon draws pets from two different rows: the
+    /// plain one and the special one a job's own summon takes, which is where a scholar's
+    /// fairy lands. Only two ever draw at once - the game's data has two companion slots -
+    /// but which two depends on what is out, so all three are kept.
+    /// </para>
     /// </summary>
-    private const int RowSlots = MaxRows + 2;
+    private const int RowSlots = MaxRows + 3;
     private const int ChocoboRow = MaxRows;
     private const int PetRow = MaxRows + 1;
+    private const int SpecialPetRow = MaxRows + 2;
 
     /// <summary>Private node id ranges, so we can never collide with the game or another plugin.</summary>
     private const uint BarNodeIdBase = 0x44540100;
@@ -103,10 +110,11 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// as the party's makeup changes, and a slot that changed node underneath the capture
     /// would re-base on our own offset and compound it.
     /// </summary>
-    private const int SpacingSlots = MaxRows * 2 + 2;
+    private const int SpacingSlots = MaxRows * 2 + 3;
     private const int TrustSpacingSlot = MaxRows;
     private const int ChocoboSpacingSlot = MaxRows * 2;
     private const int PetSpacingSlot = MaxRows * 2 + 1;
+    private const int SpecialPetSpacingSlot = MaxRows * 2 + 2;
 
     /// <summary>
     /// The leading shift slots that are row parts with a style of their own - name, HP bar,
@@ -1064,7 +1072,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // hides the metrics node and zero-widths the bar.
         var showMetrics = MetricsVisible;
 
-        var gate = $"{showMetrics}|{encounterActive}|{count}|{addon->MemberCount}|{addon->TrustCount}|{statsByName.Count > 0}";
+        var companions = CompanionTrace(addon);
+        var gate = $"{showMetrics}|{encounterActive}|{count}|{addon->MemberCount}|{addon->TrustCount}|{statsByName.Count > 0}|{companions}";
         if (lastGateTrace != gate)
         {
             lastGateTrace = gate;
@@ -1073,6 +1082,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 $"[PartyList] gate showMetrics={showMetrics} encounterActive={encounterActive} " +
                 $"hideOutOfCombat={Settings.HideOutOfCombat} showBar={Settings.ShowBar} " +
                 $"rows={count} party={addon->MemberCount} trust={addon->TrustCount} " +
+                $"companions[chocobo/pet/special]={companions} " +
                 $"parsedNames={statsByName.Count} maxDps={maxDps:F0}");
         }
 
@@ -3155,6 +3165,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var below = drawn * spacing;
         ShiftBySpacing(addon, ChocoboSpacingSlot, below);
         ShiftBySpacing(addon, PetSpacingSlot, below);
+        ShiftBySpacing(addon, SpecialPetSpacingSlot, below);
 
         // How far the bottom row moved is how much taller the list has become. A chocobo or
         // pet row sits one slot below the party, so its presence adds a row's worth.
@@ -3259,6 +3270,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         if (slot == PetSpacingSlot)
             return &addon->Pet;
+
+        if (slot == SpecialPetSpacingSlot)
+            return &addon->SpecialPet;
 
         if (slot >= TrustSpacingSlot)
         {
@@ -4324,6 +4338,9 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         if (row == PetRow)
             return &addon->Pet;
 
+        if (row == SpecialPetRow)
+            return &addon->SpecialPet;
+
         var trust = row - Math.Clamp(addon->MemberCount, 0, MaxRows);
         if (trust >= 0 && trust < addon->TrustCount)
         {
@@ -4333,6 +4350,21 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         fixed (AddonPartyList.PartyListMemberStruct* members = addon->PartyMembers)
             return members + row;
+    }
+
+    /// <summary>
+    /// Which companion rows the list is drawing, as one digit each. Says which of the three
+    /// structs a companion actually landed in, which is not something the counts tell you.
+    /// </summary>
+    private static string CompanionTrace(AddonPartyList* addon)
+    {
+        static char Drawn(AddonPartyList* addon, int row)
+        {
+            var node = GetRowNode(addon, row);
+            return node != null && IsNodeDrawn(&node->AtkResNode) ? '1' : '0';
+        }
+
+        return $"{Drawn(addon, ChocoboRow)}{Drawn(addon, PetRow)}{Drawn(addon, SpecialPetRow)}";
     }
 
     private static AtkComponentNode* GetRowNode(AddonPartyList* addon, int index)
