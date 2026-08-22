@@ -416,7 +416,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private bool petTimerApplied;
     private TextColorState petTimerColor;
     private NodeAlphaState petTimerIconAlpha;
-    private NodeTintState petTimerIconTint;
+    private TextColorState petTimerIconColor;
     private string lastPetTimerTrace = string.Empty;
     private readonly float[,] originalStatusX = new float[RowSlots, StatusIconSlots];
     private readonly float[] statusLineY = new float[RowSlots];
@@ -640,7 +640,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var text = addon->MpBarSpecialTextNode;
 
         Svc.Chat.Print($"[Damage Terror] timer  {Describe(group)}");
-        Svc.Chat.Print($"[Damage Terror] icon   {(icon == null ? "NOT FOUND" : Describe(icon))}");
+        Svc.Chat.Print($"[Damage Terror] icon   {(icon == null ? "NOT FOUND" : Describe(&icon->AtkResNode))}");
         Svc.Chat.Print($"[Damage Terror] text   {(text == null ? "null" : Describe(&text->AtkResNode))}");
 
         var budget = 24;
@@ -2361,20 +2361,16 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var icon = PetTimerIconNode(addon);
         if (icon != null)
         {
-            // The clock is artwork, so the colour picked for the time can only be multiplied
-            // over it rather than written into it the way a text node's colour is.
-            if (Settings.PetTimerUseCustomColor)
-                ApplyNodeTint(icon, Settings.PetTimerColor, ref petTimerIconTint);
-            else
-                RestoreNodeTint(icon, ref petTimerIconTint);
+            ApplyTextColor(icon, Settings.PetTimerUseCustomColor, Settings.PetTimerColor,
+                ref petTimerIconColor);
 
             // Faded rather than unflagged, for the same reason the slot number is: the game
             // owns this node's visibility as companions come and go, and one it has just
             // shown would draw the clock for a frame.
             if (Settings.HidePetTimerIcon)
-                ApplyNodeAlpha(icon, 0f, ref petTimerIconAlpha);
+                ApplyNodeAlpha(&icon->AtkResNode, 0f, ref petTimerIconAlpha);
             else
-                RestoreNodeAlpha(icon, ref petTimerIconAlpha);
+                RestoreNodeAlpha(&icon->AtkResNode, ref petTimerIconAlpha);
         }
 
         appliedPetTimerX = targetX;
@@ -3254,8 +3250,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         RestoreTextColor(text, ref petTimerColor);
 
         var icon = PetTimerIconNode(addon);
-        RestoreNodeTint(icon, ref petTimerIconTint);
-        RestoreNodeAlpha(icon, ref petTimerIconAlpha);
+        RestoreTextColor(icon, ref petTimerIconColor);
+        RestoreNodeAlpha(icon == null ? null : &icon->AtkResNode, ref petTimerIconAlpha);
 
         if (!petTimerApplied)
             return;
@@ -3269,33 +3265,23 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// The clock drawn beside the companion timer. The addon hands out the timer as a plain
-    /// res node, which is the base type of every node, so it is either the clock image itself
-    /// or something holding it - searched either way rather than assumed. Found by shape
-    /// rather than by node id, which would only survive until the game's own layout changed.
+    /// The clock drawn beside the companion timer. The game draws it as a glyph out of its
+    /// symbol font rather than as artwork, so it is a text node like the time beside it - it
+    /// is picked out as the one text in the timer that is not the time itself. Being a glyph
+    /// is why it takes a colour outright instead of the multiply an icon would be limited to.
     /// </summary>
-    private static AtkResNode* PetTimerIconNode(AddonPartyList* addon)
+    private static AtkTextNode* PetTimerIconNode(AddonPartyList* addon)
     {
         var group = addon == null ? null : addon->MpBarSpecialResNode;
-        return group == null ? null : FirstImageNode(group);
-    }
-
-    /// <summary>The node itself if it draws an image, else the first descendant that does.</summary>
-    private static AtkResNode* FirstImageNode(AtkResNode* node)
-    {
-        if (node == null)
+        if (group == null)
             return null;
 
-        if (node->Type is NodeType.Image or NodeType.NineGrid)
-            return node;
+        var time = addon->MpBarSpecialTextNode;
 
         // ChildNode heads the chain that PrevSiblingNode walks.
-        for (var child = node->ChildNode; child != null; child = child->PrevSiblingNode)
-        {
-            var found = FirstImageNode(child);
-            if (found != null)
-                return found;
-        }
+        for (var child = group->ChildNode; child != null; child = child->PrevSiblingNode)
+            if (child->Type == NodeType.Text && (time == null || child != &time->AtkResNode))
+                return (AtkTextNode*)child;
 
         return null;
     }
@@ -4580,7 +4566,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var trace = group == null
             ? "none"
             : $"group={group->NodeId:X}/{group->Type} icon=" +
-              (icon == null ? "null" : $"{icon->NodeId:X}/{icon->Type}") +
+              (icon == null ? "null" : $"{icon->AtkResNode.NodeId:X}/{icon->AtkResNode.Type}") +
               " text=" + (text == null
                   ? "null"
                   : $"{text->AtkResNode.NodeId:X} parent=" +
