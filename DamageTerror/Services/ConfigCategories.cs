@@ -322,7 +322,7 @@ public static class ConfigCategories
             ]),
 
         new(ConfigCategory.PartyListPetTimer, "Pet Timer", PartyListGroup,
-            "The countdown drawn at the bottom-left of a row's icon.", true,
+            "The companion timer drawn where a player's MP bar would be.", true,
             [
                 "PartyList.AdjustPetTimer",
                 "PartyList.PetTimerOffsetX",

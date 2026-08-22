@@ -689,8 +689,8 @@ public sealed class PartyListOverlaySettings
     public bool CastNameUseCustomColor { get; set; } = false;
     public Vector4 CastNameColor { get; set; } = new(1f, 1f, 1f, 1f);
 
-    // The countdown at the bottom-left of a row's icon - chocobo companion time left,
-    // Bahamut and Phoenix duration.
+    // The companion timer - the bar and number drawn where a player's MP bar would be,
+    // counting a chocobo's remaining time down.
     public bool AdjustPetTimer { get; set; } = false;
     public float PetTimerOffsetX { get; set; } = 0f;
     public float PetTimerOffsetY { get; set; } = 0f;

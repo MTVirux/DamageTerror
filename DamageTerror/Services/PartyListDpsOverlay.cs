@@ -407,14 +407,14 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private readonly bool[,] castBarApplied = new bool[RowSlots, CastBarSlots];
     private readonly NodeTintState[,] castBarTint = new NodeTintState[RowSlots, CastBarSlots];
     private readonly TextColorState[] castNameColor = new TextColorState[RowSlots];
-    private readonly float[] originalPetTimerX = new float[RowSlots];
-    private readonly float[] originalPetTimerY = new float[RowSlots];
-    private readonly byte[] originalPetTimerFont = new byte[RowSlots];
-    private readonly float[] appliedPetTimerX = new float[RowSlots];
-    private readonly float[] appliedPetTimerY = new float[RowSlots];
-    private readonly byte[] appliedPetTimerFont = new byte[RowSlots];
-    private readonly bool[] petTimerApplied = new bool[RowSlots];
-    private readonly TextColorState[] petTimerColor = new TextColorState[RowSlots];
+    private float originalPetTimerX;
+    private float originalPetTimerY;
+    private byte originalPetTimerFont;
+    private float appliedPetTimerX;
+    private float appliedPetTimerY;
+    private byte appliedPetTimerFont;
+    private bool petTimerApplied;
+    private TextColorState petTimerColor;
     private readonly float[,] originalStatusX = new float[RowSlots, StatusIconSlots];
     private readonly float[] statusLineY = new float[RowSlots];
     private readonly bool[] statusLineCaptured = new bool[RowSlots];
@@ -2243,10 +2243,12 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// Restyles the countdown the game draws in the bottom-left corner of a row's icon -
-    /// chocobo companion time remaining, and Bahamut/Phoenix duration. The node is positioned
-    /// in its own parent's space with nothing to line it up against, so unlike the cast name
-    /// there is no projection: the offsets are plain offsets from wherever the game put it.
+    /// Restyles the companion timer - the bar and number the game draws where a player's MP
+    /// bar would be, counting a chocobo's remaining time down. It is one pair of nodes on the
+    /// addon rather than a part of every row: the game moves them onto whichever row needs
+    /// them, which is why it keeps that row's starting Y of its own. So the offsets go on the
+    /// container, carrying the number along with the bar, and only the font and colour are
+    /// written on the text.
     /// </summary>
     private void ApplyPetTimerLayout(AddonPartyList* addon)
     {
@@ -2259,42 +2261,39 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
             return;
         }
 
-        for (var row = 0; row < RowSlots; row++)
-        {
-            var member = RowMember(addon, row);
-            if (member == null || member->IconBottomLeftText == null)
-                continue;
+        var group = addon->MpBarSpecialResNode;
+        var text = addon->MpBarSpecialTextNode;
+        if (group == null || text == null)
+            return;
 
-            var textRes = &member->IconBottomLeftText->AtkResNode;
+        // Each property is captured independently: a game-side change to one must not
+        // recapture another whose current value is ours, or teardown restores garbage. The
+        // game re-seats this node every time the row under it changes, so a position that
+        // isn't the one we wrote is the game's own and becomes the new original.
+        var fresh = !petTimerApplied;
 
-            // Each property is captured independently: a game-side change to one must not
-            // recapture another whose current value is ours, or teardown restores garbage.
-            var fresh = !petTimerApplied[row];
+        if (fresh || Math.Abs(group->X - appliedPetTimerX) > 0.01f)
+            originalPetTimerX = group->X;
+        if (fresh || Math.Abs(group->Y - appliedPetTimerY) > 0.01f)
+            originalPetTimerY = group->Y;
+        if (fresh || text->FontSize != appliedPetTimerFont)
+            originalPetTimerFont = text->FontSize;
 
-            if (fresh || Math.Abs(textRes->X - appliedPetTimerX[row]) > 0.01f)
-                originalPetTimerX[row] = textRes->X;
-            if (fresh || Math.Abs(textRes->Y - appliedPetTimerY[row]) > 0.01f)
-                originalPetTimerY[row] = textRes->Y;
-            if (fresh || member->IconBottomLeftText->FontSize != appliedPetTimerFont[row])
-                originalPetTimerFont[row] = member->IconBottomLeftText->FontSize;
+        var targetX = originalPetTimerX + Settings.PetTimerOffsetX;
+        var targetY = originalPetTimerY + Settings.PetTimerOffsetY;
+        var font = (byte)Math.Clamp(originalPetTimerFont + Settings.PetTimerFontDelta, 8, 60);
 
-            var targetX = originalPetTimerX[row] + Settings.PetTimerOffsetX;
-            var targetY = originalPetTimerY[row] + Settings.PetTimerOffsetY;
-            var font = (byte)Math.Clamp(originalPetTimerFont[row] + Settings.PetTimerFontDelta, 8, 60);
+        if (Math.Abs(group->X - targetX) > 0.01f || Math.Abs(group->Y - targetY) > 0.01f)
+            group->SetPositionFloat(targetX, targetY);
+        if (text->FontSize != font)
+            text->FontSize = font;
 
-            if (Math.Abs(textRes->X - targetX) > 0.01f || Math.Abs(textRes->Y - targetY) > 0.01f)
-                textRes->SetPositionFloat(targetX, targetY);
-            if (member->IconBottomLeftText->FontSize != font)
-                member->IconBottomLeftText->FontSize = font;
+        ApplyTextColor(text, Settings.PetTimerUseCustomColor, Settings.PetTimerColor, ref petTimerColor);
 
-            ApplyTextColor(member->IconBottomLeftText, Settings.PetTimerUseCustomColor,
-                Settings.PetTimerColor, ref petTimerColor[row]);
-
-            appliedPetTimerX[row] = targetX;
-            appliedPetTimerY[row] = targetY;
-            appliedPetTimerFont[row] = font;
-            petTimerApplied[row] = true;
-        }
+        appliedPetTimerX = targetX;
+        appliedPetTimerY = targetY;
+        appliedPetTimerFont = font;
+        petTimerApplied = true;
     }
 
     /// <summary>
@@ -3157,28 +3156,25 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// Hands the row icon's bottom-left countdown back the position and font size the game
-    /// gave it. Nothing derived is stored - the offsets were plain offsets from that placement.
+    /// Hands the companion timer back the position and font size the game gave it. Nothing
+    /// derived is stored - the offsets were plain offsets from that placement.
     /// </summary>
     private void RestorePetTimerLayout(AddonPartyList* addon)
     {
-        for (var row = 0; row < RowSlots; row++)
-        {
-            var member = RowMember(addon, row);
-            var text = member == null ? null : member->IconBottomLeftText;
-            RestoreTextColor(text, ref petTimerColor[row]);
+        var group = addon == null ? null : addon->MpBarSpecialResNode;
+        var text = addon == null ? null : addon->MpBarSpecialTextNode;
 
-            if (!petTimerApplied[row])
-                continue;
+        RestoreTextColor(text, ref petTimerColor);
 
-            petTimerApplied[row] = false;
+        if (!petTimerApplied)
+            return;
 
-            if (text == null)
-                continue;
+        petTimerApplied = false;
 
-            text->AtkResNode.SetPositionFloat(originalPetTimerX[row], originalPetTimerY[row]);
-            text->FontSize = originalPetTimerFont[row];
-        }
+        if (group != null)
+            group->SetPositionFloat(originalPetTimerX, originalPetTimerY);
+        if (text != null)
+            text->FontSize = originalPetTimerFont;
     }
 
     /// <summary>

@@ -859,8 +859,8 @@ internal static class PartyListSection
         var changed = ConfigHelpers.CheckboxProp("Adjust pet timer##plAdjustPetTimer",
             settings.AdjustPetTimer, v => settings.AdjustPetTimer = v);
         ConfigHelpers.HelpMarker(
-            "The countdown at the bottom left of a row's icon - the time left on a chocobo " +
-            "companion, and on a summoner's Bahamut or Phoenix.");
+            "The bar and number drawn where a player's MP bar would be, counting a " +
+            "chocobo's remaining time down.");
 
         if (!settings.AdjustPetTimer)
             return changed;
