@@ -41,10 +41,10 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// than an index into either array. Row state is kept per slot, so a row always reads
     /// back what was captured for it whatever the list is showing.
     /// <para>
-    /// There are three of them because the addon draws pets from two different rows: the
-    /// plain one and the special one a job's own summon takes, which is where a scholar's
-    /// fairy lands. Only two ever draw at once - the game's data has two companion slots -
-    /// but which two depends on what is out, so all three are kept.
+    /// There are three of them because a pet has two rows it can be drawn in - the addon
+    /// picks the special one over the plain one whenever the party list data clears its
+    /// UsePetSlot flag, which is the row a scholar's fairy lands in. Both are kept rather
+    /// than read off that flag: whichever row the addon left empty has no node to style.
     /// </para>
     /// </summary>
     private const int RowSlots = MaxRows + 3;
