@@ -125,6 +125,76 @@ public sealed class ConfigBackupService
         }
     }
 
+    /// <summary>
+    /// Copies the live config file to a user-chosen destination. Callers are
+    /// expected to save the in-memory config first so the file is current.
+    /// </summary>
+    public bool ExportToFile(string destPath)
+    {
+        if (string.IsNullOrEmpty(destPath))
+            return false;
+
+        lock (writeLock)
+        {
+            try
+            {
+                if (!File.Exists(configFilePath))
+                    return false;
+
+                var dir = Path.GetDirectoryName(destPath);
+                if (!string.IsNullOrEmpty(dir))
+                    Directory.CreateDirectory(dir);
+
+                File.Copy(configFilePath, destPath, overwrite: true);
+                log.Information($"[ConfigBackup] Exported config to {destPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error($"[ConfigBackup] Failed to export to {destPath}: {ex.Message}");
+                return false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sanity check before an imported file is allowed to replace the live one:
+    /// it has to parse as a <see cref="Configuration"/> and carry a version.
+    /// </summary>
+    public bool IsValidConfigFile(string path, out string? error)
+    {
+        error = null;
+
+        try
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                error = "File not found.";
+                return false;
+            }
+
+            var json = File.ReadAllText(path);
+            if (JObject.Parse(json)["Version"] == null)
+            {
+                error = "Not a Damage Terror configuration file.";
+                return false;
+            }
+
+            if (JsonConvert.DeserializeObject<Configuration>(json) == null)
+            {
+                error = "Configuration could not be parsed.";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+    }
+
     public bool DeleteRecoveryFile(string path)
     {
         try
