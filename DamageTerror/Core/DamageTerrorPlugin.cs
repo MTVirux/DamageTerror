@@ -1,4 +1,4 @@
-using Dalamud.Interface.Windowing;
+﻿using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Game.Command;
 using ECommons;
@@ -176,6 +176,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 #if DEBUG
         ThemePropertyMirror.SelfCheckOrThrow(BuiltInPresets.Default(), pluginLog);
         ThemePropertyMirror.CheckDefaultsMatchConfigOrThrow(pluginLog);
+        ConfigCategories.CheckCoverageOrThrow(pluginLog);
 #endif
 
         this.mainWindow = new Gui.MainWindow.MainWindow(this, textureProvider);

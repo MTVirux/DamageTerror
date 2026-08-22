@@ -7,9 +7,11 @@ public sealed class ConfigManagementPage
     private const string ImportConfirmPopup = "Import configuration?##dtImportConfig";
 
     private readonly DamageTerrorPlugin plugin;
+    private readonly HashSet<ConfigCategory> exportCategories = new(ConfigCategories.DefaultSelection);
     private string? pendingRestorePath;
     private string? pendingDeletePath;
     private string? pendingImportPath;
+    private ImportContents? pendingImportContents;
     private bool importPopupOpen;
     private string? notice;
     private Vector4 noticeColor;
@@ -133,12 +135,19 @@ public sealed class ConfigManagementPage
         if (!ImGui.CollapsingHeader("Import / Export##dtConfigIo", ImGuiTreeNodeFlags.DefaultOpen))
             return;
 
-        ImGui.TextWrapped("Export writes a copy of the configuration file. Import replaces the live one - the current config is backed up first, and you have to reload the plugin for the imported one to take effect.");
+        ImGui.TextWrapped("Export writes the ticked settings to a file. Import merges a file back in - only the settings it carries change, the rest are left as they are. The current config is backed up first, and you have to reload the plugin for an import to take effect.");
         ImGui.Spacing();
 
+        DrawExportCategoryPicker();
+
+        ImGui.Spacing();
+
+        var canExport = exportCategories.Count > 0;
+        if (!canExport) ImGui.BeginDisabled();
         if (ImGui.Button("Export...##dtExportConfig"))
         {
             var defaultName = $"DamageTerror-config-{DateTime.Now:yyyyMMdd-HHmmss}";
+            var selection = exportCategories.ToList();
             AppearanceTab.FileDialogManager.SaveFileDialog(
                 "Export Damage Terror Config",
                 "Damage Terror Config{.dtcnf}",
@@ -150,13 +159,14 @@ public sealed class ConfigManagementPage
                         return;
 
                     plugin.SaveConfig();
-                    if (plugin.ConfigBackup.ExportToFile(path))
-                        SetNotice($"Config exported to {path}", new Vector4(0.5f, 0.9f, 0.5f, 1f));
+                    if (plugin.ConfigBackup.ExportToFile(path, selection))
+                        SetNotice($"Exported {selection.Count} categories to {path}", new Vector4(0.5f, 0.9f, 0.5f, 1f));
                     else
                         SetNotice("Export failed. Check the plugin log for details.", new Vector4(1f, 0.5f, 0.5f, 1f));
                 });
         }
-        ConfigHelpers.HelpMarker("Saves the current settings, then copies the config file to the chosen location.");
+        if (!canExport) ImGui.EndDisabled();
+        ConfigHelpers.HelpMarker("Saves the current settings, then writes the ticked categories to the chosen location.");
 
         ImGui.SameLine();
 
@@ -176,10 +186,94 @@ public sealed class ConfigManagementPage
                         return;
                     }
 
+                    pendingImportContents = plugin.ConfigBackup.InspectImportFile(path);
                     pendingImportPath = path;
                 });
         }
-        ConfigHelpers.HelpMarker("Replaces the config file with the chosen one after a confirmation.");
+        ConfigHelpers.HelpMarker("Merges the chosen file into the config after a confirmation.");
+    }
+
+    private void DrawExportCategoryPicker()
+    {
+        if (!ImGui.TreeNodeEx($"Settings to export ({exportCategories.Count}/{ConfigCategories.All.Count})##dtExportPicker",
+            ImGuiTreeNodeFlags.DefaultOpen))
+            return;
+
+        if (ImGui.SmallButton("All##dtExportAll"))
+        {
+            foreach (var info in ConfigCategories.All)
+                exportCategories.Add(info.Category);
+        }
+        ImGui.SameLine();
+        if (ImGui.SmallButton("None##dtExportNone"))
+            exportCategories.Clear();
+        ImGui.SameLine();
+        if (ImGui.SmallButton("Reset##dtExportReset"))
+        {
+            exportCategories.Clear();
+            foreach (var category in ConfigCategories.DefaultSelection)
+                exportCategories.Add(category);
+        }
+
+        ImGui.Spacing();
+
+        var appearanceDrawn = false;
+        foreach (var info in ConfigCategories.All)
+        {
+            if (info.Group == null)
+            {
+                DrawCategoryCheckbox(info);
+                continue;
+            }
+
+            if (appearanceDrawn)
+                continue;
+
+            appearanceDrawn = true;
+            DrawAppearanceGroup();
+        }
+
+        ImGui.TreePop();
+    }
+
+    private void DrawAppearanceGroup()
+    {
+        var members = ConfigCategories.All.Where(c => c.Group == ConfigCategories.AppearanceGroup).ToList();
+
+        var allSelected = members.All(m => exportCategories.Contains(m.Category));
+        if (ImGui.Checkbox("##dtExportAppearanceAll", ref allSelected))
+        {
+            foreach (var member in members)
+            {
+                if (allSelected)
+                    exportCategories.Add(member.Category);
+                else
+                    exportCategories.Remove(member.Category);
+            }
+        }
+
+        ImGui.SameLine();
+        if (!ImGui.TreeNodeEx($"{ConfigCategories.AppearanceGroup}##dtExportAppearance", ImGuiTreeNodeFlags.DefaultOpen))
+            return;
+
+        foreach (var member in members)
+            DrawCategoryCheckbox(member);
+
+        ImGui.TreePop();
+    }
+
+    private void DrawCategoryCheckbox(ConfigCategories.CategoryInfo info)
+    {
+        var selected = exportCategories.Contains(info.Category);
+        if (ImGui.Checkbox($"{info.Label}##dtExportCat{info.Category}", ref selected))
+        {
+            if (selected)
+                exportCategories.Add(info.Category);
+            else
+                exportCategories.Remove(info.Category);
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(info.Tooltip);
     }
 
     private void DrawRestoreConfirmPopup()
@@ -260,12 +354,30 @@ public sealed class ConfigManagementPage
         var open = true;
         if (!ImGui.BeginPopupModal(ImportConfirmPopup, ref open, ImGuiWindowFlags.AlwaysAutoResize))
         {
-            pendingImportPath = null;
-            importPopupOpen = false;
+            ClearPendingImport();
             return;
         }
 
-        ImGui.Text("Replace the current configuration with this file?");
+        var contents = pendingImportContents;
+        if (contents is { IsPartial: true })
+        {
+            ImGui.Text("Import these settings from the file?");
+            ImGui.Spacing();
+            foreach (var category in contents.Categories)
+                ImGui.BulletText(ConfigCategories.Label(category));
+            ImGui.Spacing();
+            ImGui.TextDisabled("Everything else keeps its current value.");
+        }
+        else
+        {
+            ImGui.Text("Replace the current configuration with this file?");
+            if (contents != null && contents.Categories.Count > 0)
+            {
+                ImGui.Spacing();
+                ImGui.TextDisabled($"Whole config file - {contents.SettingCount} settings.");
+            }
+        }
+
         ImGui.Spacing();
         ImGui.TextColored(new Vector4(1f, 0.8f, 0.3f, 1f),
             "You'll need to reload Damage Terror for the imported config to take effect.");
@@ -279,24 +391,29 @@ public sealed class ConfigManagementPage
             var backup = plugin.ConfigBackup;
             backup.WriteBackupFromLiveConfig(force: true);
 
-            if (backup.RestoreFromFile(pendingImportPath))
+            if (backup.MergeFromFile(pendingImportPath))
                 SetNotice("Config imported. Reload Damage Terror to apply.", new Vector4(1f, 0.8f, 0.3f, 1f));
             else
                 SetNotice("Import failed. Check the plugin log for details.", new Vector4(1f, 0.5f, 0.5f, 1f));
 
-            pendingImportPath = null;
-            importPopupOpen = false;
+            ClearPendingImport();
             ImGui.CloseCurrentPopup();
         }
         ImGui.SameLine();
         if (ImGui.Button("Cancel", new Vector2(120, 0)))
         {
-            pendingImportPath = null;
-            importPopupOpen = false;
+            ClearPendingImport();
             ImGui.CloseCurrentPopup();
         }
 
         ImGui.EndPopup();
+    }
+
+    private void ClearPendingImport()
+    {
+        pendingImportPath = null;
+        pendingImportContents = null;
+        importPopupOpen = false;
     }
 
     private void SetNotice(string text, Vector4 color)
