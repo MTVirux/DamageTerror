@@ -206,7 +206,7 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
 
         this.commandManager.AddHandler(CommandName, new CommandInfo(this.OnCommand)
         {
-            HelpMessage = "Toggle the meter window. Subcommands: config, tab <name|index|next|prev>, toggle <group>, partylist, partylist enable, partylist disable, pettimer",
+            HelpMessage = "Toggle the meter window. Subcommands: config, tab <name|index|next|prev>, toggle <group>, partylist, partylist enable, partylist disable",
         });
 
         this.mainWindow.IsOpen = this.Config.ShowOnStart;
@@ -413,8 +413,6 @@ public sealed class DamageTerrorPlugin : IDalamudPlugin, IDisposable
             SetPartyListDps(true);
         else if (args.Equals("partylist disable", StringComparison.OrdinalIgnoreCase))
             SetPartyListDps(false);
-        else if (args.Equals("pettimer", StringComparison.OrdinalIgnoreCase))
-            this.partyListOverlay.PrintPetTimerShape();
         else if (args.StartsWith("toggle ", StringComparison.OrdinalIgnoreCase))
         {
             var groupName = args[7..].Trim();

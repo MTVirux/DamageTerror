@@ -417,7 +417,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private TextColorState petTimerColor;
     private NodeAlphaState petTimerIconAlpha;
     private TextColorState petTimerIconColor;
-    private string lastPetTimerTrace = string.Empty;
     private readonly float[,] originalStatusX = new float[RowSlots, StatusIconSlots];
     private readonly float[] statusLineY = new float[RowSlots];
     private readonly bool[] statusLineCaptured = new bool[RowSlots];
@@ -611,70 +610,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>The party list even when hidden - it stays allocated while you are solo.</summary>
     private static AddonPartyList* LivePartyList()
         => (AddonPartyList*)Svc.GameGui.GetAddonByName("_PartyList").Address;
-
-    /// <summary>
-    /// Prints what the companion timer is actually built from, to the chat log rather than
-    /// the plugin log so it needs nothing switched on to read. The party list's own ULD does
-    /// not settle it - the addon hands the timer out as a plain res node, the base type every
-    /// node shares - and which node the clock sits on decides what the icon settings reach.
-    /// The surrounding branch is printed too, since the clock being a sibling rather than a
-    /// descendant would look identical from the timer node alone.
-    /// </summary>
-    public void PrintPetTimerShape()
-    {
-        var addon = LivePartyList();
-        if (addon == null)
-        {
-            Svc.Chat.Print("[Damage Terror] The party list is not loaded.");
-            return;
-        }
-
-        var group = addon->MpBarSpecialResNode;
-        if (group == null)
-        {
-            Svc.Chat.Print("[Damage Terror] No companion timer node - summon a chocobo first.");
-            return;
-        }
-
-        var icon = PetTimerIconNode(addon);
-        var text = addon->MpBarSpecialTextNode;
-
-        Svc.Chat.Print($"[Damage Terror] timer  {Describe(group)}");
-        Svc.Chat.Print($"[Damage Terror] icon   {(icon == null ? "NOT FOUND" : Describe(&icon->AtkResNode))}");
-        Svc.Chat.Print($"[Damage Terror] text   {(text == null ? "null" : Describe(&text->AtkResNode))}");
-
-        var budget = 24;
-        Svc.Chat.Print("[Damage Terror] timer subtree:");
-        PrintNodeTree(group, 1, ref budget);
-
-        var parent = group->ParentNode;
-        if (parent == null)
-            return;
-
-        Svc.Chat.Print($"[Damage Terror] parent {Describe(parent)}, its children:");
-        for (var child = parent->ChildNode; child != null && budget > 0; child = child->PrevSiblingNode)
-        {
-            budget--;
-            Svc.Chat.Print($"[Damage Terror]   {(child == group ? ">" : " ")} {Describe(child)}");
-        }
-    }
-
-    private static void PrintNodeTree(AtkResNode* node, int depth, ref int budget)
-    {
-        if (node == null || depth > 4 || budget <= 0)
-            return;
-
-        budget--;
-        Svc.Chat.Print($"[Damage Terror] {new string(' ', depth * 2)}{Describe(node)}");
-
-        for (var child = node->ChildNode; child != null; child = child->PrevSiblingNode)
-            PrintNodeTree(child, depth + 1, ref budget);
-    }
-
-    private static string Describe(AtkResNode* node)
-        => $"id={node->NodeId:X} {node->Type} xy=({node->X:F0},{node->Y:F0}) " +
-           $"wh=({node->Width}x{node->Height}) vis={(node->NodeFlags & NodeFlags.Visible) != 0} " +
-           $"a={node->Color.A} mul=({node->MultiplyRed},{node->MultiplyGreen},{node->MultiplyBlue})";
 
     /// <summary>
     /// Removes our nodes ourselves rather than waiting for the controller's finalize, which
@@ -1151,9 +1086,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         // hides the metrics node and zero-widths the bar.
         var showMetrics = MetricsVisible;
 
-        var companions = CompanionTrace(addon);
-        TracePetTimerShape(addon);
-        var gate = $"{showMetrics}|{encounterActive}|{count}|{addon->MemberCount}|{addon->TrustCount}|{statsByName.Count > 0}|{companions}";
+        var gate = $"{showMetrics}|{encounterActive}|{count}|{addon->MemberCount}|{addon->TrustCount}|{statsByName.Count > 0}";
         if (lastGateTrace != gate)
         {
             lastGateTrace = gate;
@@ -1162,7 +1095,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 $"[PartyList] gate showMetrics={showMetrics} encounterActive={encounterActive} " +
                 $"hideOutOfCombat={Settings.HideOutOfCombat} showBar={Settings.ShowBar} " +
                 $"rows={count} party={addon->MemberCount} trust={addon->TrustCount} " +
-                $"companions[chocobo/pet/special]={companions} " +
                 $"parsedNames={statsByName.Count} maxDps={maxDps:F0}");
         }
 
@@ -4547,53 +4479,6 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         fixed (AddonPartyList.PartyListMemberStruct* members = addon->PartyMembers)
             return members + row;
-    }
-
-    /// <summary>
-    /// What the companion timer's nodes actually are, which the party list's own ULD cannot
-    /// settle: the addon may hand out either the clock itself or something holding it, and
-    /// whether the time text sits inside it decides what moving it carries along.
-    /// </summary>
-    private void TracePetTimerShape(AddonPartyList* addon)
-    {
-        if (addon == null)
-            return;
-
-        var group = addon->MpBarSpecialResNode;
-        var text = addon->MpBarSpecialTextNode;
-        var icon = PetTimerIconNode(addon);
-
-        var trace = group == null
-            ? "none"
-            : $"group={group->NodeId:X}/{group->Type} icon=" +
-              (icon == null ? "null" : $"{icon->AtkResNode.NodeId:X}/{icon->AtkResNode.Type}") +
-              " text=" + (text == null
-                  ? "null"
-                  : $"{text->AtkResNode.NodeId:X} parent=" +
-                    (text->AtkResNode.ParentNode == null
-                        ? "null"
-                        : $"{text->AtkResNode.ParentNode->NodeId:X}"));
-
-        if (lastPetTimerTrace == trace)
-            return;
-
-        lastPetTimerTrace = trace;
-        ServiceManager.LogInfo(LogChannel.PartyMembership, $"[PartyList] pet timer {trace}");
-    }
-
-    /// <summary>
-    /// Which companion rows the list is drawing, as one digit each. Says which of the three
-    /// structs a companion actually landed in, which is not something the counts tell you.
-    /// </summary>
-    private static string CompanionTrace(AddonPartyList* addon)
-    {
-        static char Drawn(AddonPartyList* addon, int row)
-        {
-            var node = GetRowNode(addon, row);
-            return node != null && IsNodeDrawn(&node->AtkResNode) ? '1' : '0';
-        }
-
-        return $"{Drawn(addon, ChocoboRow)}{Drawn(addon, PetRow)}{Drawn(addon, SpecialPetRow)}";
     }
 
     private static AtkComponentNode* GetRowNode(AddonPartyList* addon, int index)
