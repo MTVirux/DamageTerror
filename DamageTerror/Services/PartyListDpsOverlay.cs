@@ -417,6 +417,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private TextColorState petTimerColor;
     private NodeAlphaState petTimerIconAlpha;
     private NodeTintState petTimerIconTint;
+    private string lastPetTimerTrace = string.Empty;
     private readonly float[,] originalStatusX = new float[RowSlots, StatusIconSlots];
     private readonly float[] statusLineY = new float[RowSlots];
     private readonly bool[] statusLineCaptured = new bool[RowSlots];
@@ -1087,6 +1088,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         var showMetrics = MetricsVisible;
 
         var companions = CompanionTrace(addon);
+        TracePetTimerShape(addon);
         var gate = $"{showMetrics}|{encounterActive}|{count}|{addon->MemberCount}|{addon->TrustCount}|{statsByName.Count > 0}|{companions}";
         if (lastGateTrace != gate)
         {
@@ -3203,19 +3205,33 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     }
 
     /// <summary>
-    /// The clock drawn beside the companion timer. It is the one image the timer's container
-    /// holds, so it is found by walking rather than by node id - nothing else in there is an
-    /// image, and an id would only survive until the game's own layout changed.
+    /// The clock drawn beside the companion timer. The addon hands out the timer as a plain
+    /// res node, which is the base type of every node, so it is either the clock image itself
+    /// or something holding it - searched either way rather than assumed. Found by shape
+    /// rather than by node id, which would only survive until the game's own layout changed.
     /// </summary>
     private static AtkResNode* PetTimerIconNode(AddonPartyList* addon)
     {
         var group = addon == null ? null : addon->MpBarSpecialResNode;
-        if (group == null)
+        return group == null ? null : FirstImageNode(group);
+    }
+
+    /// <summary>The node itself if it draws an image, else the first descendant that does.</summary>
+    private static AtkResNode* FirstImageNode(AtkResNode* node)
+    {
+        if (node == null)
             return null;
 
-        for (var child = group->ChildNode; child != null; child = child->PrevSiblingNode)
-            if (child->Type == NodeType.Image)
-                return child;
+        if (node->Type is NodeType.Image or NodeType.NineGrid)
+            return node;
+
+        // ChildNode heads the chain that PrevSiblingNode walks.
+        for (var child = node->ChildNode; child != null; child = child->PrevSiblingNode)
+        {
+            var found = FirstImageNode(child);
+            if (found != null)
+                return found;
+        }
 
         return null;
     }
@@ -4481,6 +4497,38 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         fixed (AddonPartyList.PartyListMemberStruct* members = addon->PartyMembers)
             return members + row;
+    }
+
+    /// <summary>
+    /// What the companion timer's nodes actually are, which the party list's own ULD cannot
+    /// settle: the addon may hand out either the clock itself or something holding it, and
+    /// whether the time text sits inside it decides what moving it carries along.
+    /// </summary>
+    private void TracePetTimerShape(AddonPartyList* addon)
+    {
+        if (addon == null)
+            return;
+
+        var group = addon->MpBarSpecialResNode;
+        var text = addon->MpBarSpecialTextNode;
+        var icon = PetTimerIconNode(addon);
+
+        var trace = group == null
+            ? "none"
+            : $"group={group->NodeId:X}/{group->Type} icon=" +
+              (icon == null ? "null" : $"{icon->NodeId:X}/{icon->Type}") +
+              " text=" + (text == null
+                  ? "null"
+                  : $"{text->AtkResNode.NodeId:X} parent=" +
+                    (text->AtkResNode.ParentNode == null
+                        ? "null"
+                        : $"{text->AtkResNode.ParentNode->NodeId:X}"));
+
+        if (lastPetTimerTrace == trace)
+            return;
+
+        lastPetTimerTrace = trace;
+        ServiceManager.LogInfo(LogChannel.PartyMembership, $"[PartyList] pet timer {trace}");
     }
 
     /// <summary>
