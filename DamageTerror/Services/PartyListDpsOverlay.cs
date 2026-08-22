@@ -3457,14 +3457,26 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                     statusLineCaptured[row] = true;
                 }
 
+                // The game re-lays a row's icon grid by stepping from the first icon's current
+                // spot, so every icon it puts down carries whatever shift we gave that first
+                // one. Reading those back as the game's own folds our offset into the
+                // originals, and the next pass adds it again on top. An icon sitting exactly
+                // one offset off its original is that rebuild, not the game moving the row.
                 var ourX = statusApplied[row, i] ? appliedStatusX[row, i] : originalStatusX[row, i];
+                var rebuiltX = originalStatusX[row, i] + Settings.StatusOffsetX;
 
-                if (!statusCaptured[row, i] || Math.Abs(node->X - ourX) > 0.01f)
+                if (!statusCaptured[row, i]
+                    || (Math.Abs(node->X - ourX) > 0.01f && Math.Abs(node->X - rebuiltX) > 0.01f))
                     originalStatusX[row, i] = node->X;
 
+                // The same for the size: the game leaves our scale on an icon it re-lays, so
+                // a slot still wearing ours has to keep the size it had underneath it.
                 var ourScale = statusApplied[row, i] ? appliedStatusScale[row, i] : originalStatusScale[row, i];
+                var rebuiltScale = originalStatusScale[row, i] * scale;
 
-                if (!statusCaptured[row, i] || Math.Abs(node->ScaleX - ourScale) > 0.001f)
+                if (!statusCaptured[row, i]
+                    || (Math.Abs(node->ScaleX - ourScale) > 0.001f
+                        && Math.Abs(node->ScaleX - rebuiltScale) > 0.001f))
                 {
                     originalStatusScale[row, i] = node->ScaleX;
                     originalStatusOriginX[row, i] = node->OriginX;
