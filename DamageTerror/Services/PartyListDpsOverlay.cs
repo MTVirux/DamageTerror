@@ -80,6 +80,21 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     /// <summary>Upper bound on status icons tracked per row.</summary>
     private const int StatusIconSlots = 20;
 
+    // Where a row's status icons sit, from the party list's own ULD: every row component
+    // (1003, 1006 and 1007) holds exactly one icon node, 24 wide, at row-local (263, 12),
+    // and the game clones it into the ten slots. So the grid is the same for every row and
+    // is a property of the layout rather than of anything we can read back off a node.
+    //
+    // It has to come from here rather than from the nodes. Their coordinates are the game's
+    // own persistent state - it shows and hides icons but never moves them - so a placement
+    // of ours left on a slot whose row went away stays on it, survives a reload, and is read
+    // back afterwards as the slot's own position, a little further out every time. Reading
+    // the grid instead of inferring it is what stops that drift and undoes what is already
+    // on the nodes. Re-derive with Lumina against ui/uld/PartyList.uld if a patch moves them.
+    private const float StatusGridOriginX = 263f;
+    private const float StatusGridOriginY = 12f;
+    private const float StatusGridStep = 24f;
+
     /// <summary>Children of the glow container scanned per row.</summary>
     private const int GlowSlots = 8;
 
@@ -418,8 +433,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
     private NodeAlphaState petTimerIconAlpha;
     private TextColorState petTimerIconColor;
     private readonly float[,] originalStatusX = new float[RowSlots, StatusIconSlots];
+    private readonly float[,] originalStatusY = new float[RowSlots, StatusIconSlots];
     private readonly float[] statusLineY = new float[RowSlots];
-    private readonly bool[] statusLineCaptured = new bool[RowSlots];
     private readonly float[,] originalStatusScale = new float[RowSlots, StatusIconSlots];
     private readonly float[,] originalStatusOriginX = new float[RowSlots, StatusIconSlots];
     private readonly float[,] originalStatusOriginY = new float[RowSlots, StatusIconSlots];
@@ -1003,7 +1018,8 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         Array.Clear(barTextureApplied);
         Array.Clear(badgeTextureApplied);
         Array.Clear(statusCaptured);
-        Array.Clear(statusLineCaptured);
+        Array.Clear(statusApplied);
+        Array.Clear(timerApplied);
 
         // Our containers go last, once everything inside them has gone.
         overlayRoot?.Dispose();
@@ -3532,6 +3548,32 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
         return icon == null || icon->OwnerNode == null ? null : &icon->OwnerNode->AtkResNode;
     }
 
+    /// <summary>Puts every row's originals back onto the grid the layout puts them on.</summary>
+    private void NormaliseStatusGrid()
+    {
+        for (var row = 0; row < RowSlots; row++)
+        {
+            for (var i = 0; i < StatusIconSlots; i++)
+            {
+                if (!statusCaptured[row, i])
+                    continue;
+
+                originalStatusX[row, i] = StatusGridOriginX + (i * StatusGridStep);
+                originalStatusY[row, i] = StatusGridOriginY;
+            }
+        }
+    }
+
+    /// <summary>The lowest slot the row has a node for, which is the one the grid is built from.</summary>
+    private static int FirstStatusSlot(AddonPartyList* addon, int row)
+    {
+        for (var i = 0; i < StatusIconSlots; i++)
+            if (GetStatusIconNode(addon, row, i) != null)
+                return i;
+
+        return -1;
+    }
+
     /// <summary>
     /// Picks the slot each icon takes its coordinates from. Normally that's its own slot.
     /// The game fills its icon grid from the left and hides the slots it doesn't need, so a
@@ -3590,50 +3632,21 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         for (var row = 0; row < RowSlots; row++)
         {
-            var anchorX = float.MaxValue;
-
             for (var i = 0; i < StatusIconSlots; i++)
             {
                 var node = GetStatusIconNode(addon, row, i);
                 if (node == null)
                     continue;
 
-                // The game rebuilds a row's icons - a member joining, an instance swap -
-                // by re-laying them on wherever they already sit, and hands them between
-                // slots without moving them. So a slot can come back on a placement of
-                // ours, and reading that back as the game's line bakes one offset into it
-                // for good. Only a position that is neither of our two - the line itself
-                // and the line plus our offset - is the game moving the row.
-                var line = statusLineY[row];
+                // Only the size is read off the node - the grid it sits on is known. A node
+                // still sitting exactly on our own placement is one nothing has resized since,
+                // so what we recorded stands.
+                var fresh = !statusCaptured[row, i];
+                var placed = statusApplied[row, i];
 
-                if (!statusLineCaptured[row]
-                    || (Math.Abs(node->Y - line) > 0.01f
-                        && Math.Abs(node->Y - (line + Settings.StatusOffsetY)) > 0.01f))
-                {
-                    statusLineY[row] = node->Y;
-                    statusLineCaptured[row] = true;
-                }
-
-                // The game re-lays a row's icon grid by stepping from the first icon's current
-                // spot, so every icon it puts down carries whatever shift we gave that first
-                // one. Reading those back as the game's own folds our offset into the
-                // originals, and the next pass adds it again on top. An icon sitting exactly
-                // one offset off its original is that rebuild, not the game moving the row.
-                var ourX = statusApplied[row, i] ? appliedStatusX[row, i] : originalStatusX[row, i];
-                var rebuiltX = originalStatusX[row, i] + Settings.StatusOffsetX;
-
-                if (!statusCaptured[row, i]
-                    || (Math.Abs(node->X - ourX) > 0.01f && Math.Abs(node->X - rebuiltX) > 0.01f))
-                    originalStatusX[row, i] = node->X;
-
-                // The same for the size: the game leaves our scale on an icon it re-lays, so
-                // a slot still wearing ours has to keep the size it had underneath it.
-                var ourScale = statusApplied[row, i] ? appliedStatusScale[row, i] : originalStatusScale[row, i];
-                var rebuiltScale = originalStatusScale[row, i] * scale;
-
-                if (!statusCaptured[row, i]
-                    || (Math.Abs(node->ScaleX - ourScale) > 0.001f
-                        && Math.Abs(node->ScaleX - rebuiltScale) > 0.001f))
+                if (fresh
+                    || (!(placed && Math.Abs(node->ScaleX - appliedStatusScale[row, i]) <= 0.001f)
+                        && Math.Abs(node->ScaleX - originalStatusScale[row, i]) > 0.001f))
                 {
                     originalStatusScale[row, i] = node->ScaleX;
                     originalStatusOriginX[row, i] = node->OriginX;
@@ -3641,12 +3654,19 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 }
 
                 statusCaptured[row, i] = true;
-
-                anchorX = Math.Min(anchorX, originalStatusX[row, i]);
             }
+        }
 
-            if (anchorX == float.MaxValue)
+        NormaliseStatusGrid();
+
+        for (var row = 0; row < RowSlots; row++)
+        {
+            var first = FirstStatusSlot(addon, row);
+            if (first < 0)
                 continue;
+
+            var anchorX = originalStatusX[row, first];
+            statusLineY[row] = originalStatusY[row, first];
 
             BuildStatusSlotSource(addon, row, slotSource);
 
@@ -3664,6 +3684,15 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 if (!IsNodeVisible(node))
                 {
                     RestoreStatusSlot(row, i, node);
+
+                    // Put it back on the grid even if we never moved it. The coordinates are
+                    // the game's own persistent state, so a slot can still be carrying a
+                    // placement from a session that failed to hand it back - and left there
+                    // that is what the next capture reads as the slot's own position.
+                    if (Math.Abs(node->X - originalStatusX[row, i]) > 0.01f
+                        || Math.Abs(node->Y - originalStatusY[row, i]) > 0.01f)
+                        node->SetPositionFloat(originalStatusX[row, i], originalStatusY[row, i]);
+
                     ApplyNodeTint(node, Settings.StatusTint, ref statusTint[row, i]);
                     continue;
                 }
@@ -3689,6 +3718,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                 statusApplied[row, i] = true;
             }
         }
+
     }
 
     /// <summary>
@@ -4389,7 +4419,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         statusApplied[row, slot] = false;
 
-        node->SetPositionFloat(originalStatusX[row, slot], statusLineY[row]);
+        node->SetPositionFloat(originalStatusX[row, slot], originalStatusY[row, slot]);
         node->OriginX = originalStatusOriginX[row, slot];
         node->OriginY = originalStatusOriginY[row, slot];
         node->SetScale(originalStatusScale[row, slot], originalStatusScale[row, slot]);
