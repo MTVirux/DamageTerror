@@ -875,12 +875,23 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
 
         // Anything already carrying our ids is a leftover from a previous instance.
         SweepOrphanedNodes(root);
-        for (var i = 0; i < RowSlots; i++)
+        // Both game arrays hold MaxRows entries; the chocobo and pet rows live outside them.
+        for (var i = 0; i < MaxRows; i++)
         {
             SweepOrphanedNodes(addon->PartyMembers[i].TargetGlowContainer);
             SweepOrphanedNodes(addon->TrustMembers[i].TargetGlowContainer);
             SweepOrphanedNodes(RowComponentNode(addon->PartyMembers[i].PartyMemberComponent));
             SweepOrphanedNodes(RowComponentNode(addon->TrustMembers[i].PartyMemberComponent));
+        }
+
+        for (var i = MaxRows; i < RowSlots; i++)
+        {
+            var member = RowMember(addon, i);
+            if (member == null)
+                continue;
+
+            SweepOrphanedNodes(member->TargetGlowContainer);
+            SweepOrphanedNodes(RowComponentNode(member->PartyMemberComponent));
         }
 
         if (overlayRoot == null)
