@@ -675,6 +675,9 @@ public sealed class PartyListOverlaySettings
     public float CastBarShiftX { get; set; } = 11f;
     public float CastBarShiftY { get; set; } = 5f;
 
+    /// <summary>Slides the whole bar sideways, unlike the left inset which only moves its left edge.</summary>
+    public float CastBarOffsetX { get; set; } = 0f;
+
     /// <summary>Height multiplier, taken from the bar's top edge so the shift still lands.</summary>
     public float CastBarScaleY { get; set; } = 1f;
 

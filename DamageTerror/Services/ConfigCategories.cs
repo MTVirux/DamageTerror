@@ -305,6 +305,7 @@ public static class ConfigCategories
             [
                 "PartyList.AdjustCastBar",
                 "PartyList.CastBarShiftX",
+                "PartyList.CastBarOffsetX",
                 "PartyList.CastBarShiftY",
                 "PartyList.CastBarScaleY",
                 "PartyList.CastBarTint",

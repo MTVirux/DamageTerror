@@ -2395,7 +2395,7 @@ public sealed unsafe class PartyListDpsOverlay : IDisposable
                     originalCastBarOriginY[row, slot] = node->OriginY;
                 }
 
-                var targetX = originalCastBarX[row, slot] + Settings.CastBarShiftX;
+                var targetX = originalCastBarX[row, slot] + Settings.CastBarShiftX + Settings.CastBarOffsetX;
                 var targetScaleX = originalCastBarScaleX[row, slot] * factor;
                 var targetScaleY = originalCastBarScaleY[row, slot] * Math.Max(0.1f, Settings.CastBarScaleY);
 

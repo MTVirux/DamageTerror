@@ -779,6 +779,9 @@ internal static class PartyListSection
             changed |= Slider("Left inset##plCastBarX", settings.CastBarShiftX, 0f, 80f,
                 v => settings.CastBarShiftX = v,
                 "Moves the left edge right and narrows the bar by the same amount.");
+            changed |= Slider("Horizontal offset##plCastBarOffsetX", settings.CastBarOffsetX, -80f, 80f,
+                v => settings.CastBarOffsetX = v,
+                "Slides the whole bar sideways without changing its width.");
             changed |= Slider("Vertical offset##plCastBarY", settings.CastBarShiftY, -30f, 30f,
                 v => settings.CastBarShiftY = v, null);
             EndSection();
