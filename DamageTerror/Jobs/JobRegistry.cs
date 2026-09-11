@@ -113,6 +113,8 @@ public static class JobRegistry
                 new(34622, "Swiftskin's Coil", "Flank", [(0, false), (9, true)]),
             ]),
 
+        new("Bst", "Beastmaster", JobRole.MeleeDps, 43, Rgb(165, 95, 55)),
+
         // ── Ranged DPS ──
         new("Brd", "Bard", JobRole.RangedDps, 23, Rgb(145, 186, 94),
             dotTickPotencies: new() { { 124, 15 }, { 129, 20 }, { 1200, 20 }, { 1201, 25 } },
